@@ -41,7 +41,7 @@
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/gff.pb.h"
 #include "third_party/nucleus/core/status.h"
-#include "third_party/nucleus/vendor/statusor.h"
+#include "third_party/nucleus/core/statusor.h"
 
 namespace nucleus {
 

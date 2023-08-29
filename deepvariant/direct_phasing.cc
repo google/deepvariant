@@ -47,7 +47,7 @@
 #include "absl/status/status.h"
 #include "boost/graph/graphviz.hpp"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "third_party/nucleus/vendor/statusor.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "absl/log/log.h"
 
 namespace learning {

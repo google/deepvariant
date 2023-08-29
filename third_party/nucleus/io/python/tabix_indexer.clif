@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
+from "third_party/nucleus/core/statusor_clif_converters.h" import *
 
 from "third_party/nucleus/io/tabix_indexer.h":
   namespace `nucleus`:

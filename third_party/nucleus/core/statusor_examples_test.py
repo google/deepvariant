@@ -32,7 +32,7 @@ from __future__ import division
 from __future__ import print_function
 
 from absl.testing import absltest
-from third_party.nucleus.vendor.python import statusor_examples
+from third_party.nucleus.core.python import statusor_examples
 
 
 class StatusorClifWrapTest(absltest.TestCase):

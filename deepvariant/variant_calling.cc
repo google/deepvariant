@@ -50,7 +50,7 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/vendor/statusor.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "absl/log/log.h"
 
 namespace learning {

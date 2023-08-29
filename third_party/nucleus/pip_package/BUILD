@@ -36,11 +36,11 @@ py_binary(
     ],
     legacy_create_init = 1,
     deps = [
+        "//third_party/nucleus/core/python:statusor_examples",
         "//third_party/nucleus/examples:examples_py",
         "//third_party/nucleus/io:io_py",
         "//third_party/nucleus/testing:testing_py",
         "//third_party/nucleus/util:util_py",
-        "//third_party/nucleus/vendor/python:statusor_examples",
     ],
 )
 

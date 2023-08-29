@@ -46,7 +46,7 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/vendor/status_matchers.h"
+#include "third_party/nucleus/core/status_matchers.h"
 #include "google/protobuf/repeated_field.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/env.h"

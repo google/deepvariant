@@ -29,10 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "third_party/nucleus/vendor/statusor.h"
+#include "third_party/nucleus/core/statusor.h"
 
 #include "tensorflow/core/platform/test.h"
-#include "third_party/nucleus/vendor/status_matchers.h"
+#include "third_party/nucleus/core/status_matchers.h"
 #include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {

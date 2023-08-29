@@ -65,6 +65,7 @@ cc_library(
         "//deepvariant/realigner/python:fast_pass_aligner_cclib",
         "//deepvariant/realigner/python:ssw_cclib",
         "//deepvariant/realigner/python:window_selector_cclib",
+        "//third_party/nucleus/core/python:statusor_examples_cclib",
         "//third_party/nucleus/io/python:bed_reader_cclib",
         "//third_party/nucleus/io/python:bed_writer_cclib",
         "//third_party/nucleus/io/python:bedgraph_reader_cclib",
@@ -86,7 +87,6 @@ cc_library(
         "//third_party/nucleus/io/python:vcf_writer_cclib",
         "//third_party/nucleus/util/python:math_cclib",
         "//third_party/nucleus/util/python:utils_cclib",
-        "//third_party/nucleus/vendor/python:statusor_examples_cclib",
     ],
 )
 

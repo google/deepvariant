@@ -29,54 +29,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Examples of StatusOr usage in C++ for CLIF bindings and tests.
-#ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
-#define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
+#ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_CLIF_CONVERTERS_H_
+#define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_CLIF_CONVERTERS_H_
 
-#include <memory>
-
-#include "third_party/nucleus/platform/types.h"
+#include "clif/python/postconv.h"
+#include "clif/python/types.h"
 #include "third_party/nucleus/core/status.h"
-#include "third_party/nucleus/vendor/statusor.h"
+#include "third_party/nucleus/core/statusor.h"
+
+// Note: comment below is an instruction to CLIF.
+// NOLINTNEXTLINE
+// CLIF use `::nucleus::StatusOr` as StatusOr, NumTemplateParameter:1, HasPyObjFromOnly
+// CLIF use `::nucleus::Status` as Status, HasPyObjFromOnly
 
 namespace nucleus {
 
-static StatusOr<int> MakeIntOK() { return 42; }
+PyObject* Clif_PyObjFrom(const nucleus::Status& c, const ::clif::py::PostConv&);
 
-static StatusOr<int> MakeIntFail() {
-  return Status(absl::StatusCode::kInvalidArgument, "MakeIntFail");
+}  // namespace nucleus
+
+namespace nucleus {
+namespace internal {
+
+void ErrorFromStatus(const ::nucleus::Status& status);
+
+}  // namespace internal
+
+template <typename T>
+PyObject* Clif_PyObjFrom(const StatusOr<T>& c, const ::clif::py::PostConv& pc) {
+  if (!c.ok()) {
+    internal::ErrorFromStatus(c.status());
+    return nullptr;
+  } else {
+    using ::clif::Clif_PyObjFrom;
+    return Clif_PyObjFrom(c.ValueOrDie(), pc.Get(0));
+  }
 }
 
-static StatusOr<string> MakeStrOK() { return string("hello"); }
-
-static StatusOr<string> MakeStrOKStrippedType() { return string("hello"); }
-
-static StatusOr<string> MakeStrFail() {
-  return Status(absl::StatusCode::kInvalidArgument, "MakeStrFail");
-}
-
-static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrOK() {
-  return std::unique_ptr<int>(new int(421));
-}
-
-static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrFail() {
-  return Status(absl::StatusCode::kInvalidArgument, "MakeIntUniquePtrFail");
-}
-
-static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorOK() {
-  return std::unique_ptr<std::vector<int>>(new std::vector<int>({1, 2, 42}));
-}
-
-static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorFail() {
-  return Status(absl::StatusCode::kInvalidArgument, "MakeIntVectorFail");
-}
-
-static Status FuncReturningStatusOK() { return Status(); }
-
-static Status FuncReturningStatusFail() {
-  return Status(absl::StatusCode::kInvalidArgument, "FuncReturningStatusFail");
+template <typename T>
+PyObject* Clif_PyObjFrom(StatusOr<T>&& c, const ::clif::py::PostConv& pc) {
+  if (!c.ok()) {
+    internal::ErrorFromStatus(c.status());
+    return nullptr;
+  } else {
+    using ::clif::Clif_PyObjFrom;
+    return Clif_PyObjFrom(c.ConsumeValueOrDie(), pc.Get(0));
+  }
 }
 
 }  // namespace nucleus
 
-#endif  // THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
+#endif  // THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_CLIF_CONVERTERS_H_

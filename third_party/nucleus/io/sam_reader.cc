@@ -59,7 +59,7 @@
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/core/status.h"
-#include "third_party/nucleus/vendor/statusor.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "google/protobuf/repeated_field.h"
 
 namespace nucleus {

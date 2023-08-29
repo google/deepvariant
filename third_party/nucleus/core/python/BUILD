@@ -14,8 +14,8 @@ py_clif_cc(
     name = "statusor_examples",
     srcs = ["statusor_examples.clif"],
     deps = [
-        "//third_party/nucleus/vendor:statusor_clif_converters",
-        "//third_party/nucleus/vendor:statusor_examples",
+        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core:statusor_examples",
     ],
 )
 

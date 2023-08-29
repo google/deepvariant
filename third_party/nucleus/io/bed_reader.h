@@ -39,7 +39,7 @@
 #include "third_party/nucleus/io/text_reader.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/bed.pb.h"
-#include "third_party/nucleus/vendor/statusor.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/core/status.h"
 
 namespace nucleus {

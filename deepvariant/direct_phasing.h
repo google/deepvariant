@@ -51,7 +51,7 @@ friend class test_case_name##_##test_name##_Test
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
-#include "third_party/nucleus/vendor/statusor.h"
+#include "third_party/nucleus/core/statusor.h"
 
 namespace learning {
 namespace genomics {

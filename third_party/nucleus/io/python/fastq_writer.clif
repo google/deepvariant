@@ -29,7 +29,7 @@
 
 from "third_party/nucleus/protos/fastq_pyclif.h" import *
 from "third_party/nucleus/util/proto_clif_converter.h" import *
-from "third_party/nucleus/vendor/statusor_clif_converters.h" import *
+from "third_party/nucleus/core/statusor_clif_converters.h" import *
 
 from "third_party/nucleus/io/fastq_writer.h":
   namespace `nucleus`:

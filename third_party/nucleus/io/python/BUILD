@@ -29,9 +29,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:variants_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:vcf_reader",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -59,9 +59,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:variants_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:vcf_writer",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -96,9 +96,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:reference_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:sam_reader",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -131,9 +131,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:reads_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:sam_writer",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -146,8 +146,8 @@ py_clif_cc(
         "//third_party/nucleus/protos:reference_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:reference",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -177,9 +177,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:bed_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:bed_reader",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -206,9 +206,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:bed_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:bed_writer",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -239,9 +239,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:bedgraph_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:bedgraph_reader",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -252,9 +252,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:bedgraph_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:bedgraph_writer",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -268,9 +268,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:fastq_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:fastq_reader",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -297,9 +297,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:fastq_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:fastq_writer",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -351,9 +351,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:gff_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:gff_reader",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -383,9 +383,9 @@ py_clif_cc(
         "//third_party/nucleus/protos:gff_pyclif",
     ],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:gff_writer",
         "//third_party/nucleus/util:proto_clif_converter",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 
@@ -411,8 +411,8 @@ py_clif_cc(
     name = "tabix_indexer",
     srcs = ["tabix_indexer.clif"],
     deps = [
+        "//third_party/nucleus/core:statusor_clif_converters",
         "//third_party/nucleus/io:tabix_indexer",
-        "//third_party/nucleus/vendor:statusor_clif_converters",
     ],
 )
 

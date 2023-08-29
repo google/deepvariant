@@ -43,7 +43,7 @@
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
-#include "third_party/nucleus/vendor/statusor.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/io/record_reader.h"
 #include "tensorflow/core/lib/io/record_writer.h"

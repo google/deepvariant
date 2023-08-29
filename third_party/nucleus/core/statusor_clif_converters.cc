@@ -29,54 +29,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_CLIF_CONVERTERS_H_
-#define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_CLIF_CONVERTERS_H_
+#include "third_party/nucleus/core/statusor_clif_converters.h"
 
-#include "clif/python/postconv.h"
-#include "clif/python/types.h"
-#include "third_party/nucleus/core/status.h"
-#include "third_party/nucleus/vendor/statusor.h"
-
-// Note: comment below is an instruction to CLIF.
-// NOLINTNEXTLINE
-// CLIF use `::nucleus::StatusOr` as StatusOr, NumTemplateParameter:1, HasPyObjFromOnly
-// CLIF use `::nucleus::Status` as Status, HasPyObjFromOnly
+#include <string>
 
 namespace nucleus {
 
-PyObject* Clif_PyObjFrom(const nucleus::Status& c, const ::clif::py::PostConv&);
+PyObject* Clif_PyObjFrom(const nucleus::Status& c, const clif::py::PostConv&) {
+  if (!c.ok()) {
+    ::nucleus::internal::ErrorFromStatus(c);
+    return nullptr;
+  } else {
+    Py_RETURN_NONE;
+  }
+}
 
 }  // namespace nucleus
 
 namespace nucleus {
 namespace internal {
 
-void ErrorFromStatus(const ::nucleus::Status& status);
+void ErrorFromStatus(const nucleus::Status& status) {
+  PyErr_SetString(PyExc_ValueError, status.ToString().c_str());
+}
 
 }  // namespace internal
-
-template <typename T>
-PyObject* Clif_PyObjFrom(const StatusOr<T>& c, const ::clif::py::PostConv& pc) {
-  if (!c.ok()) {
-    internal::ErrorFromStatus(c.status());
-    return nullptr;
-  } else {
-    using ::clif::Clif_PyObjFrom;
-    return Clif_PyObjFrom(c.ValueOrDie(), pc.Get(0));
-  }
-}
-
-template <typename T>
-PyObject* Clif_PyObjFrom(StatusOr<T>&& c, const ::clif::py::PostConv& pc) {
-  if (!c.ok()) {
-    internal::ErrorFromStatus(c.status());
-    return nullptr;
-  } else {
-    using ::clif::Clif_PyObjFrom;
-    return Clif_PyObjFrom(c.ConsumeValueOrDie(), pc.Get(0));
-  }
-}
-
 }  // namespace nucleus
-
-#endif  // THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_CLIF_CONVERTERS_H_

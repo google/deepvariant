@@ -29,29 +29,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "third_party/nucleus/vendor/statusor_clif_converters.h"
+// Examples of StatusOr usage in C++ for CLIF bindings and tests.
+#ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
+#define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
 
-#include <string>
+#include <memory>
+
+#include "third_party/nucleus/platform/types.h"
+#include "third_party/nucleus/core/status.h"
+#include "third_party/nucleus/core/statusor.h"
 
 namespace nucleus {
 
-PyObject* Clif_PyObjFrom(const nucleus::Status& c, const clif::py::PostConv&) {
-  if (!c.ok()) {
-    ::nucleus::internal::ErrorFromStatus(c);
-    return nullptr;
-  } else {
-    Py_RETURN_NONE;
-  }
+static StatusOr<int> MakeIntOK() { return 42; }
+
+static StatusOr<int> MakeIntFail() {
+  return Status(absl::StatusCode::kInvalidArgument, "MakeIntFail");
+}
+
+static StatusOr<string> MakeStrOK() { return string("hello"); }
+
+static StatusOr<string> MakeStrOKStrippedType() { return string("hello"); }
+
+static StatusOr<string> MakeStrFail() {
+  return Status(absl::StatusCode::kInvalidArgument, "MakeStrFail");
+}
+
+static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrOK() {
+  return std::unique_ptr<int>(new int(421));
+}
+
+static StatusOr<std::unique_ptr<int>> MakeIntUniquePtrFail() {
+  return Status(absl::StatusCode::kInvalidArgument, "MakeIntUniquePtrFail");
+}
+
+static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorOK() {
+  return std::unique_ptr<std::vector<int>>(new std::vector<int>({1, 2, 42}));
+}
+
+static StatusOr<std::unique_ptr<std::vector<int>>> MakeIntVectorFail() {
+  return Status(absl::StatusCode::kInvalidArgument, "MakeIntVectorFail");
+}
+
+static Status FuncReturningStatusOK() { return Status(); }
+
+static Status FuncReturningStatusFail() {
+  return Status(absl::StatusCode::kInvalidArgument, "FuncReturningStatusFail");
 }
 
 }  // namespace nucleus
 
-namespace nucleus {
-namespace internal {
-
-void ErrorFromStatus(const nucleus::Status& status) {
-  PyErr_SetString(PyExc_ValueError, status.ToString().c_str());
-}
-
-}  // namespace internal
-}  // namespace nucleus
+#endif  // THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_

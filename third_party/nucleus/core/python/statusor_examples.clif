@@ -27,19 +27,20 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from "third_party/nucleus/protos/variants_pyclif.h" import *
-from "third_party/nucleus/util/proto_clif_converter.h" import *
 from "third_party/nucleus/core/statusor_clif_converters.h" import *
 
-from "third_party/nucleus/io/vcf_writer.h":
+from "third_party/nucleus/core/statusor_examples.h":
   namespace `nucleus`:
-    class VcfWriter:
-      @classmethod
-      def `ToFile` as to_file(cls, variantsPath: str, vcfHeader: VcfHeader,
-                              options: VcfWriterOptions)
-        -> StatusOr<VcfWriter>
-      def `WritePython` as write(self, variantMessage: ConstProtoPtr<Variant>) -> Status
-      @__enter__
-      def PythonEnter(self)
-      @__exit__
-      def Close(self) -> Status
+    def MakeIntOK() -> StatusOr<int>
+    def MakeIntFail() -> StatusOr<int>
+    def MakeStrOK() -> StatusOr<str>
+    # Note: this "stripped" type doesn't work for strings. The test will fail if
+    # enabled. See internal for more information.
+    # def MakeStrOKStrippedType() -> str
+    def MakeStrFail() -> StatusOr<str>
+    def MakeIntUniquePtrOK() -> StatusOr<int>
+    def MakeIntUniquePtrFail() -> StatusOr<int>
+    def MakeIntVectorOK() -> StatusOr<list<int>>
+    def MakeIntVectorFail() -> StatusOr<list<int>>
+    def FuncReturningStatusOK() -> Status
+    def FuncReturningStatusFail() -> Status
