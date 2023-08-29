@@ -41,10 +41,10 @@ def get_exome_config(
   config.tune_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepvariant_exome/dv-wes-keras-cl522895908/dv-wes-keras-cl522895908_tune.dataset_config.pbtxt'
   config.num_validation_examples = None
 
-  config.num_epochs = 19
-  config.learning_rate = 0.006711579692248813
+  config.num_epochs = 80
+  config.learning_rate = 0.01
   config.learning_rate_num_epochs_per_decay = 2.0
-  config.learning_rate_decay_rate = 0.9913758960978765
+  config.learning_rate_decay_rate = 0.9999
   config.rho = 0.9763046740422171
   config.momentum = 0.9848544529312561
   config.epsilon = 0.8696723762650027
@@ -52,7 +52,7 @@ def get_exome_config(
   config.weight_decay = 0.1
   config.backbone_dropout_rate = 0.22517227651098964
 
-  config.init_weights_file = '/readahead/512M/cns/oz-d/home/brain-genomics/kishwar/deepvariant_1.6_release_models/wgs_rc0/wgs.rc0.ckpt'
+  config.init_weights_file = None
 
   return config
 
@@ -60,7 +60,6 @@ def get_exome_config(
 def get_config(config_name: str) -> ml_collections.ConfigDict:
   """Training parameters."""
   config = ml_collections.ConfigDict()
-  config.early_stopping = ml_collections.ConfigDict()
 
   config.model_type = 'inception_v3'
   config.trial = 0  # Used to allow for replicates during training.
@@ -89,9 +88,12 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.best_metrics = 'val_categorical_accuracy'
   config.weight_decay = 0.00004
   config.backbone_dropout_rate = 0.2
+  # Stop training when this many consecutive evaluations yield no improvement.
+  config.early_stopping_patience = 10
 
   # TensorBoard Options
   config.log_every_steps = 100
+  # Tuning happens at every epoch. The frequency can be increased here.
   config.tune_every_steps = 100_000
 
   # Data Pipeline Options

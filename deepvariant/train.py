@@ -210,50 +210,61 @@ def train(config: ml_collections.ConfigDict):
         average_decay=config.average_decay,
     )
 
-  with strategy.scope():
-    train_metrics = keras_modeling.create_metrics()
-    tune_metrics = keras_modeling.create_metrics()
+  # ================= #
+  # Setup Checkpoint  #
+  # ================= #
+
+  # The state object allows checkpointing of the model and associated variables
+  # for the optimizer, step, and train/tune metrics.
+  ckpt_manager = keras_modeling.create_state(
+      config,
+      model_dir,
+      model,
+      optimizer,
+      strategy,
+  )
+  state = ckpt_manager.checkpoint
 
   @tf.function
   def run_train_step(inputs):
     model_inputs, labels = inputs
 
     with tf.GradientTape() as tape:
-      logits = model(model_inputs)
+      logits = state.model(model_inputs, training=True)
       probabilities = tf.nn.softmax(logits)
       train_loss = compute_loss(probabilities=probabilities, labels=labels)
 
     gradients = tape.gradient(train_loss, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-    for metric in train_metrics[:-1]:
+    for metric in state.train_metrics[:-1]:
       metric.update_state(
           y_pred=probabilities,
           y_true=labels,
       )
-    train_metrics[-1].update_state(train_loss)
+    state.train_metrics[-1].update_state(train_loss)
     return train_loss
 
   @tf.function
   def run_tune_step(tune_inputs):
     """Single non-distributed tune step."""
     model_inputs, labels = tune_inputs
-    logits = model(model_inputs)
+    logits = state.model(model_inputs, training=False)
     probabilities = tf.nn.softmax(logits)
     tune_loss = compute_loss(probabilities=probabilities, labels=labels)
 
-    for metric in tune_metrics[:-1]:
+    for metric in state.tune_metrics[:-1]:
       metric.update_state(
           y_pred=probabilities,
           y_true=labels,
       )
-      tune_metrics[-1].update_state(tune_loss)
+      state.tune_metrics[-1].update_state(tune_loss)
     return tune_loss
 
   @tf.function
   def distributed_train_step(iterator):
     per_replica_losses = strategy.run(run_train_step, args=(next(iterator),))
-    # state.global_step.assign_add(1)
+    state.global_step.assign_add(1)
     return strategy.reduce(
         tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None
     )
@@ -300,39 +311,6 @@ def train(config: ml_collections.ConfigDict):
       steps_per_tune,
   )
 
-  # ================= #
-  # Setup Checkpoint  #
-  # ================= #
-
-  with strategy.scope():
-    checkpoint = tf.train.Checkpoint(
-        optimizer=optimizer,
-        model=model,
-    )
-    ckpt_manager = tf.train.CheckpointManager(
-        checkpoint=checkpoint,
-        directory=model_dir,
-        max_to_keep=5,
-    )
-    starting_epoch = 0
-    # TODO: Restore checkpoint using a state object.
-    # if ckpt_manager.latest_checkpoint:
-    #   ckpt_manager.restore(ckpt_manager.latest_checkpoint)
-    #   restored_step = checkpoint.global_step.numpy().item()
-    #   starting_epoch = restored_step // steps_per_epoch
-    #   # Calculate the number of remaining training steps.
-    #   best_tune = checkpoint.tune_metrics.result()[_BEST_CHECKPOINT_METRIC]
-    #   logging.info(
-    #       'Restored from checkpoint %s at epoch=%s',
-    #       ckpt_manager.latest_checkpoint,
-    #       starting_epoch,
-    #   )
-    # else:
-    #   # Set n_steps train to full number of training steps.
-    #   logging.info('Initializing from scratch.')
-    #   starting_epoch = 0
-    #   best_tune = 0
-
   # ============= #
   # Training Loop #
   # ============= #
@@ -351,99 +329,110 @@ def train(config: ml_collections.ConfigDict):
     def get_checkpoint_metric():
       """Returns the metric we are optimizing for."""
       best_checkpoint_metric_idx = [
-          f'tune/{x.name}' for x in tune_metrics
+          f'tune/{x.name}' for x in state.tune_metrics
       ].index(config.best_checkpoint_metric)
-      return tune_metrics[best_checkpoint_metric_idx].result()
+      return state.tune_metrics[best_checkpoint_metric_idx].result()
 
     best_checkpoint_metric = get_checkpoint_metric()
 
     with metric_writers.ensure_flushes(metric_writer):
-      for epoch in range(starting_epoch, config.num_epochs):
-        logging.info('Starting epoch %s', epoch)
-        for loop_train_step in range(steps_per_epoch):
-          # ===== #
-          # train #
-          # ===== #
-          # Calculate full train step.
-          train_step = loop_train_step + (epoch * steps_per_epoch)
+      for train_step in range(state.global_step.numpy(), num_train_steps):
+        # Calculate current epoch
+        epoch = train_step // steps_per_epoch
+        if train_step % steps_per_epoch == 0:
+          logging.info('Starting epoch %s', epoch)
 
-          is_last_step = (train_step == (steps_per_epoch - 1)) and (
-              epoch == (config.num_epochs - 1)
+        # ===== #
+        # train #
+        # ===== #
+        # Calculate full train step.
+        is_last_step = train_step == (num_train_steps - 1)
+
+        with tf.profiler.experimental.Trace('train', step_num=train_step, _r=1):
+          distributed_train_step(train_iter)
+
+          # Quick indication that training is happening.
+          logging.log_first_n(
+              logging.INFO, 'Finished training step %d.', 5, train_step
           )
 
-          with tf.profiler.experimental.Trace(
-              'train', step_num=train_step, _r=1
-          ):
-            distributed_train_step(train_iter)
+        # Log metrics
+        report_progress(train_step)
 
-            # Quick indication that training is happening.
-            logging.log_first_n(
-                logging.INFO, 'Finished training step %d.', 5, train_step
+        if (train_step % config.log_every_steps == 0) or is_last_step:
+          metrics_to_write = {
+              f'train/{x.name}': x.result() for x in state.train_metrics
+          }
+          metrics_to_write['train/learning_rate'] = optimizer.learning_rate(
+              train_step
+          )
+          metrics_to_write['epoch'] = epoch
+          metric_writer.write_scalars(
+              train_step,
+              metrics_to_write,
+          )
+          # Reset train metrics.
+          for metric in state.train_metrics:
+            metric.reset_states()
+
+        # ==== #
+        # tune #
+        # ==== #
+        # Run tune at every epoch, periodically, and at final step.
+        if (
+            (train_step > 0 and train_step % steps_per_epoch == 0)
+            or (train_step > 0 and train_step % config.tune_every_steps == 0)
+            or is_last_step
+        ):
+          logging.info('Running tune at step=%d epoch=%d', train_step, epoch)
+          for loop_step_tune in range(steps_per_tune):
+            step_tune = loop_step_tune + (epoch * steps_per_tune)
+            with tf.profiler.experimental.Trace(
+                'tune', step_num=step_tune, _r=1
+            ):
+              distributed_tune_step(tune_iter)
+
+          metric_writer.write_scalars(
+              train_step,
+              {f'tune/{x.name}': x.result() for x in state.tune_metrics},
+          )
+          if get_checkpoint_metric() > best_checkpoint_metric:
+            best_checkpoint_metric = get_checkpoint_metric()
+            checkpoint_path = ckpt_manager.save(train_step)
+            # Reset early stopping counter
+            state.early_stopping.assign(0)
+            logging.info(
+                'Saved checkpoint %s=%s step=%s epoch=%s path=%s',
+                config.best_checkpoint_metric,
+                get_checkpoint_metric(),
+                train_step,
+                epoch,
+                checkpoint_path,
             )
-
-          # Log metrics
-          report_progress(train_step)
-
-          if (train_step % config.log_every_steps == 0) or is_last_step:
-            metrics_to_write = {
-                f'train/{x.name}': x.result() for x in train_metrics
-            }
-            metrics_to_write['train/learning_rate'] = optimizer.learning_rate(
-                train_step
+          else:
+            if (
+                config.early_stopping_patience
+                and state.early_stopping.value()
+                >= config.early_stopping_patience
+            ):
+              break
+            logging.info(
+                'Skipping checkpoint with %s=%s < previous best %s=%s',
+                config.best_checkpoint_metric,
+                get_checkpoint_metric(),
+                config.best_checkpoint_metric,
+                best_checkpoint_metric,
             )
-            metrics_to_write['epoch'] = epoch
+            state.early_stopping.assign_add(1)
+          if config.early_stopping_patience:
             metric_writer.write_scalars(
                 train_step,
-                metrics_to_write,
+                {'tune/early_stopping': state.early_stopping.value()},
             )
-            # Reset train metrics.
-            for metric in train_metrics:
-              metric.reset_states()
 
-          # ==== #
-          # tune #
-          # ==== #
-          # Run tune at every epoch, periodically, and at final step.
-          if (
-              (train_step > 0 and train_step % steps_per_epoch == 0)
-              or (train_step > 0 and train_step % config.tune_every_steps == 0)
-              or is_last_step
-          ):
-            logging.info('Running tune at step=%d epoch=%d', train_step, epoch)
-            for loop_step_tune in range(steps_per_tune):
-              step_tune = loop_step_tune + (epoch * steps_per_tune)
-              with tf.profiler.experimental.Trace(
-                  'tune', step_num=step_tune, _r=1
-              ):
-                distributed_tune_step(tune_iter)
-
-            metric_writer.write_scalars(
-                train_step,
-                {f'tune/{x.name}': x.result() for x in tune_metrics},
-            )
-            if get_checkpoint_metric() > best_checkpoint_metric:
-              best_checkpoint_metric = get_checkpoint_metric()
-              checkpoint_path = ckpt_manager.save(train_step)
-              logging.info(
-                  'Saved checkpoint %s=%s step=%s epoch=%s path=%s',
-                  config.best_checkpoint_metric,
-                  get_checkpoint_metric(),
-                  train_step,
-                  epoch,
-                  checkpoint_path,
-              )
-            else:
-              logging.info(
-                  'Skipping checkpoint with %s=%s < previous best %s=%s',
-                  config.best_checkpoint_metric,
-                  get_checkpoint_metric(),
-                  config.best_checkpoint_metric,
-                  best_checkpoint_metric,
-              )
-
-            # Reset tune metrics
-            for metric in tune_metrics:
-              metric.reset_states()
+          # Reset tune metrics
+          for metric in state.tune_metrics:
+            metric.reset_states()
 
 
 def main(unused_argv):

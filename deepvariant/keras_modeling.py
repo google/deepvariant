@@ -407,6 +407,68 @@ def create_metrics():
   ]
 
 
+def create_state(
+    config: ml_collections.ConfigDict,
+    model_dir: str,
+    model: tf.keras.Model,
+    optimizer: tf.optimizers.Optimizer,
+    strategy: tf.distribute.Strategy,
+) -> tf.train.CheckpointManager:
+  """Initializes a checkpoint manager, and restores a checkpoint if one exists.
+
+  Args:
+    config: Training configuration.
+    model_dir: Where model is stored.
+    model: a tf Model.
+    optimizer: A tf Optimizer.
+    strategy: Distribution strategy.
+
+  Returns:
+    The state as `tf.train.Checkpoint`. This includes the `model` (network),
+    the `optimizer`, metrics (train and tune), and the `global_step` variable.
+  """
+  with strategy.scope():
+    # TODO: Load model and optimizer within this function.
+    global_step = tf.Variable(
+        0, trainable=False, name='global_step', dtype=tf.int64
+    )
+    early_stopping = tf.Variable(
+        0, trainable=False, name='early_stopping', dtype=tf.int64
+    )
+
+    state = tf.train.Checkpoint(
+        model=model,
+        optimizer=optimizer,
+        global_step=global_step,
+        early_stopping=early_stopping,
+        train_metrics=create_metrics(),
+        tune_metrics=create_metrics(),
+    )
+    ckpt_manager = tf.train.CheckpointManager(
+        checkpoint=state,
+        directory=model_dir,
+        max_to_keep=5,
+    )
+    ckpt_manager.restore_or_initialize()
+
+    if ckpt_manager.latest_checkpoint:
+      # Report current checkpoint state.
+      best_checkpoint_metric_idx = [
+          f'tune/{x.name}' for x in state.tune_metrics
+      ].index(config.best_checkpoint_metric)
+      logging.info(
+          'Restored checkpoint %s at step=%s. %s=%s',
+          os.path.basename(ckpt_manager.latest_checkpoint),
+          global_step.numpy(),
+          config.best_checkpoint_metric,
+          state.tune_metrics[best_checkpoint_metric_idx].result(),
+      )
+    else:
+      logging.info('Initialized Checkpoint')
+
+    return ckpt_manager
+
+
 def get_model(
     config: ml_collections.ConfigDict,
 ) -> Union[tf.keras.Model, Callable[..., tf.keras.Model]]:
