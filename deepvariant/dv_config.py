@@ -69,6 +69,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.train_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepvariant_wgs/cl511097225-element-vg/cl511097225-element-vg_train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepvariant_wgs/cl511097225-element-vg/cl511097225-element-vg_tune.dataset_config.pbtxt'
 
+  config.best_checkpoint_metric = 'tune/f1_weighted'
   config.batch_size = 16384
   config.num_epochs = 10
   config.num_validation_examples = 1500000

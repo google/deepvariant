@@ -48,8 +48,6 @@ from deepvariant import keras_modeling
 from official.modeling import optimization
 
 
-_BEST_CHECKPOINT_METRIC = 'tune/f1_weighted'
-
 _LEADER = flags.DEFINE_string(
     'leader',
     'local',
@@ -342,7 +340,10 @@ def train(config: ml_collections.ConfigDict):
   metric_writer = metric_writers.create_default_writer(logdir=experiment_dir)
   num_train_steps = steps_per_epoch * config.num_epochs
   report_progress = periodic_actions.ReportProgress(
-      num_train_steps=num_train_steps, writer=metric_writer, every_secs=600
+      num_train_steps=num_train_steps,
+      writer=metric_writer,
+      every_secs=300,
+      on_steps=[0, num_train_steps - 1],
   )
 
   with strategy.scope():
@@ -351,7 +352,7 @@ def train(config: ml_collections.ConfigDict):
       """Returns the metric we are optimizing for."""
       best_checkpoint_metric_idx = [
           f'tune/{x.name}' for x in tune_metrics
-      ].index(_BEST_CHECKPOINT_METRIC)
+      ].index(config.best_checkpoint_metric)
       return tune_metrics[best_checkpoint_metric_idx].result()
 
     best_checkpoint_metric = get_checkpoint_metric()
@@ -420,22 +421,23 @@ def train(config: ml_collections.ConfigDict):
                 train_step,
                 {f'tune/{x.name}': x.result() for x in tune_metrics},
             )
-
             if get_checkpoint_metric() > best_checkpoint_metric:
               best_checkpoint_metric = get_checkpoint_metric()
               checkpoint_path = ckpt_manager.save(train_step)
               logging.info(
-                  'Saved checkpoint %s=%s (path=%s)',
-                  _BEST_CHECKPOINT_METRIC,
+                  'Saved checkpoint %s=%s step=%s epoch=%s path=%s',
+                  config.best_checkpoint_metric,
                   get_checkpoint_metric(),
+                  train_step,
+                  epoch,
                   checkpoint_path,
               )
             else:
               logging.info(
                   'Skipping checkpoint with %s=%s < previous best %s=%s',
-                  _BEST_CHECKPOINT_METRIC,
+                  config.best_checkpoint_metric,
                   get_checkpoint_metric(),
-                  _BEST_CHECKPOINT_METRIC,
+                  config.best_checkpoint_metric,
                   best_checkpoint_metric,
               )
 
