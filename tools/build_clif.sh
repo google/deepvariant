@@ -37,7 +37,7 @@ echo ========== See https://github.com/google/clif for how to build on different
 echo ========== Run this script in root mode.
 
 CLIF_UBUNTU_VERSION="${CLIF_UBUNTU_VERSION-20.04}"
-ABSL_VERSION=20230125.1
+ABSL_PIN="${ABSL_PIN-29bf8085f3bf17b84d30e34b3d7ff8248fda404e}"
 PROTOBUF_VERSION=3.13.0
 CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.8}"
 # CLIF_PIN can be set to a specific commit hash on
@@ -102,13 +102,16 @@ curl -Ss -o get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     rm get-pip.py
 
 # Compile and install absl-cpp from source
-wget "https://github.com/abseil/abseil-cpp/archive/$ABSL_VERSION.tar.gz" && \
-    tar -xf "$ABSL_VERSION.tar.gz" && \
-    mkdir "abseil-cpp-$ABSL_VERSION/build" && \
-    cd "abseil-cpp-$ABSL_VERSION/build" && \
-    cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE=true && \
-    make install && \
-    rm -rf "/abseil-cpp-$ABSL_VERSION" "/$ABSL_VERSION.tar.gz"
+git clone https://github.com/abseil/abseil-cpp.git
+cd abseil-cpp
+if [[ ! -z ${ABSL_PIN} ]]; then
+  git checkout "${ABSL_PIN}"
+fi
+mkdir build && cd build
+cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE=true
+make install
+cd ../..
+rm -rf abseil-cpp
 
 # Compile and install protobuf from source
 wget "https://github.com/protocolbuffers/protobuf/releases/download/v$PROTOBUF_VERSION/protobuf-cpp-$PROTOBUF_VERSION.tar.gz" && \
