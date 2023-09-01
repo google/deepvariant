@@ -32,8 +32,13 @@ Started with a collection of utilities for working with the TF models. Now this
 file includes broader utilities we use in DeepVariant.
 """
 
-
 import enum
+import json
+from typing import Optional
+
+
+
+from absl import logging
 import numpy as np
 import tensorflow as tf
 
@@ -44,7 +49,7 @@ from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from tensorflow.core.example import example_pb2
-from typing import Optional
+
 
 # Convert strings up to this length, then clip.  We picked a number that
 # was less than 1K, with a bit of extra space for the length element,
@@ -438,6 +443,30 @@ def get_example_info_json_filename(
     # or sharded filenames with -ddddd-of-ddddd, just append.
     example_info_prefix = examples_filename
   return example_info_prefix + '.example_info.json'
+
+
+def get_shape_and_channels_from_json(example_info_json):
+  """Returns the shape and channels list from the input json."""
+  if not tf.io.gfile.exists(example_info_json):
+    logging.warning(
+        (
+            'Starting from v1.4.0, we expect %s to '
+            'include information for shape and channels.'
+        ),
+        example_info_json,
+    )
+    return None, None
+  with tf.io.gfile.GFile(example_info_json) as f:
+    example_info = json.load(f)
+  example_shape = example_info['shape']
+  example_channels_enum = example_info['channels']
+  logging.info(
+      'From %s: Shape of input examples: %s, Channels of input examples: %s.',
+      example_info_json,
+      str(example_shape),
+      str(example_channels_enum),
+  )
+  return example_shape, example_channels_enum
 
 
 def get_tf_record_writer(output_filename: str) -> tf.io.TFRecordWriter:

@@ -33,7 +33,6 @@ Added in v1.4.0 but not officially supported.
 TODO: Write a unit test suite like call_variants_test.py.
 """
 
-import json
 import multiprocessing
 import os
 import time
@@ -308,30 +307,6 @@ def _create_cvo_proto(
   return call_variants_output
 
 
-def get_shape_and_channels_from_json(example_info_json):
-  """Returns the shape and channels list from the input json."""
-  if not tf.io.gfile.exists(example_info_json):
-    logging.warning(
-        (
-            'Starting from v1.4.0, we expect %s to '
-            'include information for shape and channels.'
-        ),
-        example_info_json,
-    )
-    return None, None
-  with tf.io.gfile.GFile(example_info_json) as f:
-    example_info = json.load(f)
-  example_shape = example_info['shape']
-  example_channels_enum = example_info['channels']
-  logging.info(
-      'From %s: Shape of input examples: %s, Channels of input examples: %s.',
-      example_info_json,
-      str(example_shape),
-      str(example_channels_enum),
-  )
-  return example_shape, example_channels_enum
-
-
 # TODO: Consider creating one data loading function to re-use simliar
 #                code with training in train_inceptionv3.py.
 def get_dataset(path, example_shape):
@@ -465,7 +440,9 @@ def call_variants(
   example_info_json = dv_utils.get_example_info_json_filename(
       examples_filename, 0
   )
-  example_shape = get_shape_and_channels_from_json(example_info_json)[0]
+  example_shape = dv_utils.get_shape_and_channels_from_json(example_info_json)[
+      0
+  ]
 
   if example_shape is None:
     logging.info(
