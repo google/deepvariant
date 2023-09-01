@@ -95,7 +95,6 @@
 #include "third_party/nucleus/core/status.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 

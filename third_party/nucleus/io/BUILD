@@ -1,8 +1,8 @@
 # Code for reading and writing genomics data.
 
+# Placeholder: load py_binary
 # Placeholder: load py_library
 # Placeholder: load py_test
-# Placeholder: load py_binary
 
 package(
     #default_applicable_licenses = ["//third_party/nucleus:license"],
@@ -506,6 +506,7 @@ cc_library(
         "//third_party/nucleus/protos:bedgraph_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@org_tensorflow//tensorflow/core:lib",
@@ -859,6 +860,8 @@ cc_test(
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
@@ -909,7 +912,6 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf_lite",
         "@htslib",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -1275,20 +1277,11 @@ cc_library(
     srcs = ["variant_reader.cc"],
     hdrs = ["variant_reader.h"],
     deps = [
-        ":reader_base",
-        ":reference",
         ":tfrecord_reader",
-        ":vcf_writer",
-        "//third_party/nucleus/protos:range_cc_pb2",
-        "//third_party/nucleus/protos:reference_cc_pb2",
-        "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
-        "//third_party/nucleus/util:cpp_utils",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:optional",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 

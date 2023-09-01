@@ -35,9 +35,6 @@
 #include <string>
 
 #include "absl/strings/escaping.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
-#include "tensorflow/tsl/platform/stacktrace.h"
 
 namespace nucleus {
 
@@ -48,8 +45,6 @@ Status::Status(absl::StatusCode code, absl::string_view msg) {
   state_ = std::make_unique<State>();
   state_->code = code;
   state_->msg = std::string(msg);
-  VLOG(5) << "Generated non-OK status: \"" << *this << "\". "
-          << tsl::CurrentStackTrace();
 }
 
 void Status::Update(const Status& new_status) {

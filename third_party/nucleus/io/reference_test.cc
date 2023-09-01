@@ -41,6 +41,8 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/platform/types.h"
@@ -51,7 +53,6 @@
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/core/status_matchers.h"
 #include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/logging.h"
 
 using absl::StrCat;
 using std::make_pair;

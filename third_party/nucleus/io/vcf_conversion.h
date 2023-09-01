@@ -41,7 +41,6 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/core/statusor.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 

@@ -35,9 +35,9 @@
 #include <cstdint>
 #include <memory>
 
+#include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "third_party/nucleus/io/tfrecord_reader.h"
-#include "tensorflow/core/platform/logging.h"
 
 namespace nucleus {
 
