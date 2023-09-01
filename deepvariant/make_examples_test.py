@@ -131,6 +131,38 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     flagsaver.restore_flag_values(self._saved_flags)
 
   @flagsaver.flagsaver
+  def test_make_examples_check_diff_channels_ordering(self):
+    """Confirms the channels with diff_channels are ordered as expected."""
+    FLAGS.reads = testdata.CHR20_BAM
+    region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.candidates = test_utils.test_tmpfile(
+        'check_pb_channels.vsc.tfrecord.gz'
+    )
+    FLAGS.examples = test_utils.test_tmpfile('check_pb_channels.ex.tfrecord.gz')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.add_hp_channel = True
+    FLAGS.alt_aligned_pileup = 'diff_channels'
+    FLAGS.max_reads_per_partition = 600
+    FLAGS.min_mapping_quality = 1
+    FLAGS.parse_sam_aux_fields = True
+    FLAGS.partition_size = 25000
+    FLAGS.phase_reads = True
+    FLAGS.pileup_image_width = 199
+    FLAGS.realign_reads = False
+    FLAGS.sort_by_haplotypes = True
+    FLAGS.track_ref_reads = True
+    FLAGS.vsc_min_fraction_indels = 0.12
+    FLAGS.mode = 'calling'
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+    example_info_json = dv_utils.get_example_info_json_filename(
+        FLAGS.examples, None
+    )
+    example_info = json.load(gfile.GFile(example_info_json, 'r'))
+    self.assertEqual(example_info['channels'], [1, 2, 3, 4, 5, 6, 7, 9, 10])
+
+  @flagsaver.flagsaver
   def test_make_examples_compare_realignment_modes(self):
     def _run_with_realignment_mode(enable_joint_realignment):
       FLAGS.enable_joint_realignment = enable_joint_realignment
