@@ -39,6 +39,7 @@ import time
 from typing import Any
 
 
+
 from absl import flags
 from absl import logging
 import numpy as np
@@ -68,12 +69,9 @@ _ALLOW_EXECUTION_HARDWARE = [
 # rounded to, for numerical stability.
 _GL_PRECISION = 10
 
-# This number is estimated by the following logic:
-# For a sample with 10,000,000 examples, if we log every 50,000 examples,
-# there will be 200 lines per sample.
-_LOG_EVERY_N = 50000
+_MAX_WRITER_THREADS = 16
 
-_LOG_EVERY_N_BATCHES = 100
+_LOG_EVERY_N_BATCHES = 50
 
 _DEFAULT_INPUT_READ_THREADS = 32
 _DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
@@ -109,7 +107,7 @@ flags.DEFINE_string(
 )
 flags.DEFINE_integer(
     'batch_size',
-    512,
+    1024,
     (
         'Number of candidate variant tensors to batch together during'
         ' inference. Larger batches use more memory but are more computational'
@@ -171,6 +169,17 @@ flags.DEFINE_string(
         ' information. The default value is 0, which provides the best'
         ' performance in our tests. Set this flag to "" to not set the'
         ' variable.'
+    ),
+)
+flags.DEFINE_integer(
+    'writer_threads',
+    0,
+    (
+        'Number of threads to use for writing. Set 0 to autodetect.'
+        ' In autodetect mode, 1 thread is used in CPU inference and'
+        ' all cpus are used when GPU is available. If set to a specific value'
+        ' other than 0 then autodetect is disabled. Maximum 16 processes'
+        ' can be used for writing. Default: 0'
     ),
 )
 _LIMIT = flags.DEFINE_integer(
@@ -371,7 +380,6 @@ def post_processing(output_file: str, output_queue: Any) -> None:
   writer = tfrecord.Writer(output_file)
   n_examples = 0
   n_batches = 0
-  start_time = time.time()
   while True:
     item = output_queue.get()
     if item is None:
@@ -387,25 +395,8 @@ def post_processing(output_file: str, output_queue: Any) -> None:
       }
       write_variant_call(writer, pred)
       n_examples += 1
-      duration = time.time() - start_time
-      logging.log_every_n(
-          logging.INFO,
-          'Processed %s examples in %s batches [%.3f sec per 100]',
-          _LOG_EVERY_N,
-          n_examples,
-          n_batches,
-          (100 * duration) / n_examples,
-      )
     n_batches += 1
   writer.close()
-  duration = time.time() - start_time
-  logging.info(
-      'Processed %s examples in %s batches [%.3f sec per 100]',
-      n_examples,
-      n_batches,
-      (100 * duration) / n_examples,
-  )
-  logging.info('Done calling variants from a total of %d examples.', n_examples)
 
 
 def call_variants(
@@ -413,14 +404,42 @@ def call_variants(
 ):
   """Main driver of call_variants."""
   output_queue = multiprocessing.Queue()
-  post_processing_process = multiprocessing.get_context().Process(
-      target=post_processing,
-      args=(
-          output_file,
-          output_queue,
-      ),
+
+  # See if GPU is available
+  is_gpu_available = True if tf.config.list_physical_devices('GPU') else False
+
+  # This means we are in autodetect mode.
+  if FLAGS.writer_threads == 0:
+    # If GPU is available then use all CPUs for writing.
+    total_writer_process = (
+        multiprocessing.cpu_count() if is_gpu_available else 1
+    )
+  else:
+    total_writer_process = FLAGS.writer_threads
+  # Use maximum _MAX_WRITER_THREADS threads, this is to lower the overhead of
+  # spinning up and shutting down many processes.
+  total_writer_process = min(total_writer_process, _MAX_WRITER_THREADS)
+
+  # Convert output filename to sharded output filename.
+  output_file = output_file.replace(
+      '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
   )
-  post_processing_process.start()
+
+  paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
+  all_processes = []
+  for process_id in range(0, total_writer_process):
+    post_processing_process = multiprocessing.get_context().Process(
+        target=post_processing,
+        args=(
+            paths[process_id],
+            output_queue,
+        ),
+    )
+    all_processes.append(post_processing_process)
+    post_processing_process.start()
+
+  logging.info('Total %d writing processes started.', len(all_processes))
+
   if FLAGS.kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
     logging.vlog(
@@ -465,12 +484,35 @@ def call_variants(
     image_variant_alt_allele_ds = get_dataset(examples_filename, example_shape)
 
     batch_no = 0
+    n_examples = 0
+    n_batches = 0
+    start_time = time.time()
     for batch in image_variant_alt_allele_ds:
-      predictions = model.predict_on_batch(batch[0])
+      if not is_gpu_available:
+        # This is faster on CPU but slower on GPU.
+        predictions = model.predict_on_batch(batch[0])
+      else:
+        # This is faster on GPU but slower on CPU.
+        predictions = model(batch[0], training=False).numpy()
       batch_no += 1
+      duration = time.time() - start_time
+      n_examples += len(predictions)
+      n_batches += 1
+      logging.log_every_n(
+          logging.INFO,
+          'Predicted %s examples in %s batches [%.3f sec per 100].',
+          _LOG_EVERY_N_BATCHES,
+          n_examples,
+          n_batches,
+          (100 * duration) / n_examples,
+      )
       output_queue.put((predictions, batch[1], batch[2]))
-    output_queue.put(None)
-    post_processing_process.join()
+
+    # Put none values in the queue so the running processes can terminate.
+    for _ in range(0, total_writer_process):
+      output_queue.put(None)
+    for post_processing_process in all_processes:
+      post_processing_process.join()
 
 
 def main(argv=()):
@@ -486,7 +528,9 @@ def main(argv=()):
     proto_utils.uses_fast_cpp_protos_or_die()
 
     logging_level.set_from_flag()
-
+    # Make sure output filename is consistent and can be used for multi-writing.
+    if not FLAGS.outfile.endswith('.tfrecord.gz'):
+      raise ValueError('Output filename must end with .tfrecord.gz')
     call_variants(
         examples_filename=FLAGS.examples,
         checkpoint_path=FLAGS.checkpoint,

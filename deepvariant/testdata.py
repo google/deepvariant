@@ -71,6 +71,7 @@ CONFIDENT_REGIONS_BED = None
 TRUTH_VARIANTS_VCF = None
 TRUTH_VARIANTS_VCF_WITH_TYPES = None
 GOLDEN_POSTPROCESS_INPUT = None
+GOLDEN_POSTPROCESS_INPUT_SHARDED = None
 GOLDEN_POSTPROCESS_OUTPUT = None
 GOLDEN_POSTPROCESS_OUTPUT_PASS_ONLY = None
 GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED = None
@@ -129,6 +130,7 @@ def init():
   global TRUTH_VARIANTS_VCF
   global TRUTH_VARIANTS_VCF_WITH_TYPES
   global GOLDEN_POSTPROCESS_INPUT
+  global GOLDEN_POSTPROCESS_INPUT_SHARDED
   global GOLDEN_POSTPROCESS_OUTPUT
   global GOLDEN_POSTPROCESS_OUTPUT_PASS_ONLY
   global GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED
@@ -198,6 +200,9 @@ def init():
   )
   GOLDEN_POSTPROCESS_INPUT = deepvariant_testdata(
       'golden.postprocess_single_site_input.tfrecord.gz'
+  )
+  GOLDEN_POSTPROCESS_INPUT_SHARDED = deepvariant_testdata(
+      'golden.postprocess_single_site_input-00000-of-00001.tfrecord.gz'
   )
   GOLDEN_POSTPROCESS_OUTPUT = deepvariant_testdata(
       'golden.postprocess_single_site_output.vcf'

@@ -1069,8 +1069,20 @@ def build_index(vcf_file, csi=False):
 
 def get_cvo_paths_and_first_record():
   """Returns sharded filenames for and one record from CVO input file."""
-
-  paths = sharded_file_utils.maybe_generate_sharded_filenames(FLAGS.infile)
+  filename_resolver = FLAGS.infile.replace('.tfrecord.gz', '*')
+  all_files = sharded_file_utils.glob_list_sharded_file_patterns(
+      filename_resolver
+  )
+  filename_pattern = FLAGS.infile.replace(
+      '.tfrecord.gz', '@' + str(len(all_files)) + '.tfrecord.gz'
+  )
+  paths = sharded_file_utils.maybe_generate_sharded_filenames(filename_pattern)
+  # This check is to make sure all files we glob is exactly the same as the
+  # paths we create, otherwise we have multiple file patterns.
+  if sorted(all_files) != sorted(paths):
+    raise ValueError(
+        'Found multiple file patterns in input filename space: ', FLAGS.infile
+    )
   record = dv_utils.get_one_example_from_examples_path(
       ','.join(paths), proto=deepvariant_pb2.CallVariantsOutput
   )

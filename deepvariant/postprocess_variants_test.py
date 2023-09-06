@@ -204,16 +204,21 @@ def _create_nonvariant(ref_name, start, end, ref_base):
 
 def make_golden_dataset(compressed_inputs=False):
   if compressed_inputs:
+    # Call variants now produce sharded outputs so the golden test has been
+    # changed to have sharded input.
     source_path = test_utils.test_tmpfile(
-        'golden.postprocess_single_site_input.tfrecord.gz'
+        'golden.postprocess_single_site_input-00000-of-00001.tfrecord.gz'
     )
     tfrecord.write_tfrecords(
         tfrecord.read_tfrecords(
-            testdata.GOLDEN_POSTPROCESS_INPUT,
+            testdata.GOLDEN_POSTPROCESS_INPUT_SHARDED,
             proto=deepvariant_pb2.CallVariantsOutput,
         ),
         source_path,
     )
+    # However, the input filename should still not be in sharded pattern.
+    # So replacing the shard pattern to input pattern.
+    source_path = testdata.GOLDEN_POSTPROCESS_INPUT
   else:
     source_path = testdata.GOLDEN_POSTPROCESS_INPUT
   return source_path
@@ -349,18 +354,18 @@ class PostprocessVariantsTest(parameterized.TestCase):
   @flagsaver.flagsaver
   def test_reading_sharded_input_with_empty_shards_does_not_crash(self):
     valid_variants = tfrecord.read_tfrecords(
-        testdata.GOLDEN_POSTPROCESS_INPUT,
+        testdata.GOLDEN_POSTPROCESS_INPUT_SHARDED,
         proto=deepvariant_pb2.CallVariantsOutput,
     )
     empty_shard_one = test_utils.test_tmpfile(
-        'reading_empty_shard.tfrecord-00000-of-00002'
+        'reading_empty_shard-00000-of-00002.tfrecord.gz'
     )
     none_empty_shard_two = test_utils.test_tmpfile(
-        'reading_empty_shard.tfrecord-00001-of-00002'
+        'reading_empty_shard-00001-of-00002.tfrecord.gz'
     )
     tfrecord.write_tfrecords([], empty_shard_one)
     tfrecord.write_tfrecords(valid_variants, none_empty_shard_two)
-    FLAGS.infile = test_utils.test_tmpfile('reading_empty_shard.tfrecord@2')
+    FLAGS.infile = test_utils.test_tmpfile('reading_empty_shard.tfrecord.gz')
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('calls_reading_empty_shard.vcf')
 

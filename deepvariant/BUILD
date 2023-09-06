@@ -19,7 +19,6 @@ filegroup(
         "model_eval",
         "model_train",
         "multisample_make_examples",
-        "postprocess_variants_nucleus",
         "runtime_by_region_vis",
         "show_examples",
         "vcf_stats_report",
@@ -67,7 +66,6 @@ py_library(
         ":model_train_lib",
         ":modeling",
         ":pileup_image",
-        ":postprocess_variants_nucleus_py_lib",
         "//deepvariant/python:allelecounter",
         "//deepvariant/python:direct_phasing",
         "//deepvariant/python:variant_calling",
@@ -1026,93 +1024,6 @@ cc_test(
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
-    ],
-)
-
-py_library(
-    name = "postprocess_variants_nucleus_py_lib",
-    srcs = ["postprocess_variants_nucleus.py"],
-    data = glob([
-        "multiallelic_model/**",
-    ]),
-    srcs_version = "PY3",
-    deps = [
-        # END_INTERNAL
-        ":dv_vcf_constants",
-        ":logging_level",
-        ":dv_utils",
-        ":dv_constants",
-        ":haplotypes",
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "//deepvariant/python:postprocess_variants",
-        "//third_party/nucleus/io:fasta",
-        "//third_party/nucleus/io:sharded_file_utils",
-        "//third_party/nucleus/io:tabix",
-        "//third_party/nucleus/io:tfrecord",
-        "//third_party/nucleus/io:vcf",
-        "//third_party/nucleus/io/python:merge_variants",
-        "//third_party/nucleus/protos:struct_py_pb2",
-        "//third_party/nucleus/protos:variants_py_pb2",
-        "//third_party/nucleus/util:errors",
-        "//third_party/nucleus/util:genomics_math",
-        "//third_party/nucleus/util:proto_utils",
-        "//third_party/nucleus/util:ranges",
-        "//third_party/nucleus/util:struct_utils",
-        "//third_party/nucleus/util:variant_utils",
-        "//third_party/nucleus/util:variantcall_utils",
-        "//third_party/nucleus/util:vcf_constants",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-    ],
-)
-
-py_binary(
-    name = "postprocess_variants_nucleus",
-    srcs = [
-        "postprocess_variants_nucleus.py",
-    ],
-    main = "postprocess_variants_nucleus.py",
-    python_version = "PY3",
-    deps = [
-        ":postprocess_variants_nucleus_py_lib",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-        # TODO: Figure out why we need this dep.
-        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
-    ],
-)
-
-py_test(
-    name = "postprocess_variants_nucleus_test",
-    size = "medium",
-    srcs = ["postprocess_variants_nucleus_test.py"],
-    data = [":testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    tags = ["requires-net:external"],
-    deps = [
-        ":dv_constants",
-        ":dv_vcf_constants",
-        ":postprocess_variants_nucleus_py_lib",
-        ":py_testdata",
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "//third_party/nucleus/io:fasta",
-        "//third_party/nucleus/io:tfrecord",
-        "//third_party/nucleus/io:vcf",
-        "//third_party/nucleus/protos:reference_py_pb2",
-        "//third_party/nucleus/protos:struct_py_pb2",
-        "//third_party/nucleus/protos:variants_py_pb2",
-        "//third_party/nucleus/testing:py_test_utils",
-        "//third_party/nucleus/util:genomics_math",
-        "//third_party/nucleus/util:struct_utils",
-        "//third_party/nucleus/util:variant_utils",
-        "//third_party/nucleus/util:variantcall_utils",
-        "//third_party/nucleus/util:vcf_constants",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:flagsaver",
-        "@absl_py//absl/testing:parameterized",
     ],
 )
 
