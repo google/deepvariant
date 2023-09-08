@@ -416,16 +416,22 @@ def call_variants(
     )
   else:
     total_writer_process = FLAGS.writer_threads
-  # Use maximum _MAX_WRITER_THREADS threads, this is to lower the overhead of
-  # spinning up and shutting down many processes.
-  total_writer_process = min(total_writer_process, _MAX_WRITER_THREADS)
 
-  # Convert output filename to sharded output filename.
-  output_file = output_file.replace(
-      '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
-  )
+  # If output file is already sharded then don't dynamically shard.
+  if sharded_file_utils.is_sharded_filename(output_file):
+    logging.info('Output is already sharded, so dynamic sharding is disabled.')
+    total_writer_process = 1
+    paths = [output_file]
+  else:
+    # Use maximum _MAX_WRITER_THREADS threads, this is to lower the overhead of
+    # spinning up and shutting down many processes.
+    total_writer_process = min(total_writer_process, _MAX_WRITER_THREADS)
+    # Convert output filename to sharded output filename.
+    output_file = output_file.replace(
+        '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
+    )
+    paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
 
-  paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
   all_processes = []
   for process_id in range(0, total_writer_process):
     post_processing_process = multiprocessing.get_context().Process(
@@ -529,7 +535,9 @@ def main(argv=()):
 
     logging_level.set_from_flag()
     # Make sure output filename is consistent and can be used for multi-writing.
-    if not FLAGS.outfile.endswith('.tfrecord.gz'):
+    if not sharded_file_utils.is_sharded_filename(
+        FLAGS.outfile
+    ) and not FLAGS.outfile.endswith('.tfrecord.gz'):
       raise ValueError('Output filename must end with .tfrecord.gz')
     call_variants(
         examples_filename=FLAGS.examples,
