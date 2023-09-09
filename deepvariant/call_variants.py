@@ -32,6 +32,7 @@ import os
 import time
 
 
+
 from absl import flags
 from absl import logging
 import numpy as np
@@ -45,6 +46,7 @@ from deepvariant import modeling
 from deepvariant.openvino_estimator import OpenVINOEstimator
 from deepvariant.protos import deepvariant_pb2
 from google.protobuf import text_format
+from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
@@ -518,6 +520,21 @@ def call_variants(
         )
     )
 
+  # The following code is introduced to by in sync with call_variants_keras
+  # where we use multiple writers to write outpts.
+  # If output file is already sharded then don't dynamically shard.
+  if sharded_file_utils.is_sharded_filename(output_file):
+    logging.info('Output is already sharded, so dynamic sharding is disabled.')
+  else:
+    # For call_variants, we always use one writer process.
+    total_writer_process = 1
+    # Convert output filename to sharded output filename.
+    filename_pattern = output_file.replace(
+        '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
+    )
+    output_file = sharded_file_utils.maybe_generate_sharded_filenames(
+        filename_pattern
+    )[0]
   # Consume predictions one at a time and write them to output_file.
   logging.info('Writing calls to %s', output_file)
   writer = tfrecord.Writer(output_file)
