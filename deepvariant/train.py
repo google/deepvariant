@@ -230,7 +230,7 @@ def train(config: ml_collections.ConfigDict):
     model_inputs, labels = inputs
 
     with tf.GradientTape() as tape:
-      logits = state.model(model_inputs, training=True)
+      logits = model(model_inputs, training=True)
       probabilities = tf.nn.softmax(logits)
       train_loss = compute_loss(probabilities=probabilities, labels=labels)
 
@@ -249,7 +249,7 @@ def train(config: ml_collections.ConfigDict):
   def run_tune_step(tune_inputs):
     """Single non-distributed tune step."""
     model_inputs, labels = tune_inputs
-    logits = state.model(model_inputs, training=False)
+    logits = model(model_inputs, training=False)
     probabilities = tf.nn.softmax(logits)
     tune_loss = compute_loss(probabilities=probabilities, labels=labels)
 

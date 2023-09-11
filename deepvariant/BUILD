@@ -825,6 +825,7 @@ py_binary(
     python_version = "PY3",
     deps = [
         "call_variants_keras_lib",
+        ":dv_config",
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],

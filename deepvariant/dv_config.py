@@ -101,6 +101,9 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.shuffle_buffer_elements = 1024
   config.input_read_threads = 32
 
+  # Placeholder value for limiting training examples. 0=No limit.
+  config.limit = 0
+
   if config_name == 'exome':
     config = get_exome_config(config)
   elif config_name == 'base':

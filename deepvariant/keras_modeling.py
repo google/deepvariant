@@ -437,7 +437,7 @@ def create_state(
     )
 
     state = tf.train.Checkpoint(
-        model=model,
+        model,
         optimizer=optimizer,
         global_step=global_step,
         early_stopping=early_stopping,
