@@ -1,5 +1,4 @@
 # Copyright 2017 Google LLC.
-#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
 # are met:
@@ -185,6 +184,13 @@ _PAR_REGIONS = flags.DEFINE_string(
         'Variants within this region are unaffected by genotype reallocation '
         'applied on regions supplied by --haploid_contigs flag.'
     ),
+)
+
+_SOMATIC_VARIANTS_PATH = flags.DEFINE_string(
+    'somatic_variants_path',
+    None,
+    'Optional. Is specified somatic and germline variants are written to '
+    'separate files.',
 )
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
@@ -961,6 +967,52 @@ def write_variants_to_vcf(variant_iterable, output_vcf_path, header):
         )
 
 
+def _get_genotype(variant):
+  if len(variant.calls) > 1:
+    errors.log_and_raise(
+        'Multi-sample variants are not supported in somatic mode.',
+        errors.Error,
+    )
+  if not variant.calls:
+    return []
+
+  return list(variant.calls[0].genotype)
+
+
+def write_split_variants_to_vcf(
+    variant_iterable, output_vcf_path, somatic_output_path, header
+):
+  """Writes Variant protos to a VCF file.
+
+  Args:
+    variant_iterable: iterable. An iterable of sorted Variant protos.
+    output_vcf_path: str. Output file in VCF format.
+    somatic_output_path: str. Output file for somatic variants in VCF format.
+    header: VcfHeader proto. The VCF header to use for writing the variants.
+  """
+  logging.info('Writing output to VCF file: %s', output_vcf_path)
+  # pyformat: disable
+  with vcf.VcfWriter(
+      output_vcf_path, header=header,
+      round_qualities=True) as writer, vcf.VcfWriter(
+          somatic_output_path, header=header,
+          round_qualities=True) as somatic_writer:
+  # pyformat: enable
+    count = 0
+    for variant in variant_iterable:
+      if not FLAGS.only_keep_pass or variant.filter == [
+          dv_vcf_constants.DEEP_VARIANT_PASS
+      ]:
+        count += 1
+        if _get_genotype(variant) == [1, 1]:
+          somatic_writer.write(variant)
+        else:
+          writer.write(variant)
+        logging.log_every_n(
+            logging.INFO, '%s variants written.', _LOG_EVERY_N, count
+        )
+
+
 def _sort_grouped_variants(group):
   return sorted(group, key=lambda x: sorted(x.alt_allele_indices.indices))
 
@@ -1194,6 +1246,14 @@ def main(argv=()):
           errors.CommandLineError,
       )
 
+    if FLAGS.gvcf_outfile and FLAGS.somatic_variants_path:
+      errors.log_and_raise(
+          (
+              'Split somatic and germline output is not supported when '
+              'gvcf_outfile option is set.'
+          ),
+          errors.CommandLineError,
+      )
     par_regions = None
     if _PAR_REGIONS.value:
       par_regions = ranges.RangeSet.from_bed(_PAR_REGIONS.value)
@@ -1254,12 +1314,21 @@ def main(argv=()):
 
     start_time = time.time()
     if not FLAGS.nonvariant_site_tfrecord_path:
-      logging.info('Writing variants to VCF.')
-      write_variants_to_vcf(
-          variant_iterable=variant_generator,
-          output_vcf_path=FLAGS.outfile,
-          header=header,
-      )
+      if _SOMATIC_VARIANTS_PATH.value:
+        logging.info('Writing variants to germline and somatic VCFs.')
+        write_split_variants_to_vcf(
+            variant_iterable=variant_generator,
+            output_vcf_path=FLAGS.outfile,
+            somatic_output_path=FLAGS.somatic_variants_path,
+            header=header,
+        )
+      else:
+        logging.info('Writing variants to VCF.')
+        write_variants_to_vcf(
+            variant_iterable=variant_generator,
+            output_vcf_path=FLAGS.outfile,
+            header=header,
+        )
       if FLAGS.outfile.endswith('.gz'):
         build_index(FLAGS.outfile, use_csi)
       logging.info(
