@@ -315,6 +315,7 @@ def train(config: ml_collections.ConfigDict):
   # Training Loop #
   # ============= #
 
+  checkpoint_path = None
   metric_writer = metric_writers.create_default_writer(logdir=experiment_dir)
   num_train_steps = steps_per_epoch * config.num_epochs
   report_progress = periodic_actions.ReportProgress(
@@ -433,6 +434,17 @@ def train(config: ml_collections.ConfigDict):
           # Reset tune metrics
           for metric in state.tune_metrics:
             metric.reset_states()
+
+    # After training completes, load the latest checkpoint and create
+    # a saved model (.pb) and keras model formats.
+    ckpt_manager.restore_or_initialize()  # Restores the latest checkpoint.
+    model = ckpt_manager.checkpoint.root
+    logging.info(
+        'Storing checkpoint from step %d',
+        ckpt_manager.checkpoint.global_step.numpy(),
+    )
+    model.save(f'{checkpoint_path}.keras')
+    model.save(f'{checkpoint_path}_saved_model', save_format='tf')
 
 
 def main(unused_argv):
