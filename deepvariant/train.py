@@ -443,8 +443,10 @@ def train(config: ml_collections.ConfigDict):
         'Storing checkpoint from step %d',
         ckpt_manager.checkpoint.global_step.numpy(),
     )
-    model.save(f'{checkpoint_path}.keras')
-    model.save(f'{checkpoint_path}_saved_model', save_format='tf')
+    keras_model = f'{checkpoint_path}.keras'
+    saved_model_dir = checkpoint_path
+    model.save(keras_model)
+    model.save(saved_model_dir, save_format='tf')
 
 
 def main(unused_argv):
