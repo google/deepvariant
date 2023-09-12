@@ -470,22 +470,42 @@ def call_variants(
   ]
 
   if example_shape is None:
-    logging.info(
-        (
-            'Unable to read shape information from %s. Directly read from '
-            'examples instead.'
-        ),
-        example_info_json,
+    raise ValueError(
+        f'Unable to read shape information from {example_info_json}'
     )
-    example_shape = dv_utils.example_image_shape(first_example)
 
   logging.info('Shape of input examples: %s', str(example_shape))
+  use_saved_model = tf.io.gfile.exists(FLAGS.checkpoint) and tf.io.gfile.exists(
+      f'{FLAGS.checkpoint}/saved_model.pb'
+  )
+  logging.info('Use saved model: %s', str(use_saved_model))
 
   if checkpoint_path is not None:
-    model = modeling.inceptionv3(
-        example_shape, init_backbone_with_imagenet=False
-    )
-    model.load_weights(checkpoint_path).expect_partial()
+    if use_saved_model:
+      model = tf.saved_model.load(checkpoint_path)
+      model_example_info_json = f'{FLAGS.checkpoint}/example_info.json'
+      model_example_shape = dv_utils.get_shape_and_channels_from_json(
+          model_example_info_json
+      )
+      input_example_shape = dv_utils.get_shape_and_channels_from_json(
+          example_info_json
+      )
+      # These checks make sure we are using the right model with right input.
+      if model_example_shape[0] != input_example_shape[0]:
+        raise ValueError(
+            f'Input shape {input_example_shape[0]} and model shape'
+            f' {model_example_shape[0]} does not match.'
+        )
+      if model_example_shape[1] != input_example_shape[1]:
+        raise ValueError(
+            f'Input channels {input_example_shape[1]} and model channels'
+            f' {model_example_shape[1]} do not match.'
+        )
+    else:
+      model = modeling.inceptionv3(
+          example_shape, init_backbone_with_imagenet=False
+      )
+      model.load_weights(checkpoint_path).expect_partial()
 
     image_variant_alt_allele_ds = get_dataset(examples_filename, example_shape)
 
@@ -494,12 +514,16 @@ def call_variants(
     n_batches = 0
     start_time = time.time()
     for batch in image_variant_alt_allele_ds:
-      if not is_gpu_available:
-        # This is faster on CPU but slower on GPU.
-        predictions = model.predict_on_batch(batch[0])
+      if use_saved_model:
+        predictions = model.signatures['serving_default'](batch[0])
+        predictions = predictions['classification'].numpy()
       else:
-        # This is faster on GPU but slower on CPU.
-        predictions = model(batch[0], training=False).numpy()
+        if not is_gpu_available:
+          # This is faster on CPU but slower on GPU.
+          predictions = model.predict_on_batch(batch[0])
+        else:
+          # This is faster on GPU but slower on CPU.
+          predictions = model(batch[0], training=False).numpy()
       batch_no += 1
       duration = time.time() - start_time
       n_examples += len(predictions)

@@ -488,16 +488,28 @@ function get_docker_image() {
 function setup_args() {
   if [[ -n "${CUSTOMIZED_MODEL}" ]]; then
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
-    run gcloud storage cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
-    run gcloud storage cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
-    if [[ "${USE_KERAS_MODEL}" = false ]]; then
-      run gcloud storage cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
+    # Check if it's saved Model
+    saved_modelpath=${CUSTOMIZED_MODEL}/saved_model.pb
+    using_saved_model=$(gsutil -q stat "$saved_modelpath" || echo 1)
+    if [[ $using_saved_model != 1 ]]; then
+      echo "Using saved model"
+      run mkdir -p "${INPUT_DIR}/savedmodel"
+      run gcloud storage cp -R "${CUSTOMIZED_MODEL}"/'*' "${INPUT_DIR}"/savedmodel/
+      run gcloud storage cp "${CUSTOMIZED_MODEL}"/example_info.json "${INPUT_DIR}"/savedmodel/example_info.json
+      extra_args+=( --customized_model "/input/savedmodel")
+    else
+      echo "Using checkpoint"
+      run gcloud storage cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
+      run gcloud storage cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
+      if [[ "${USE_KERAS_MODEL}" = false ]]; then
+        run gcloud storage cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
+      fi
+      # Starting from v1.4.0, model.ckpt.example_info.json is used to provide more
+      # information about the model.
+      CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
+      run "gcloud storage cp ${CUSTOMIZED_MODEL_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
+      extra_args+=( --customized_model "/input/model.ckpt")
     fi
-    # Starting from v1.4.0, model.ckpt.example_info.json is used to provide more
-    # information about the model.
-    CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
-    run "gcloud storage cp ${CUSTOMIZED_MODEL_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
-    extra_args+=( --customized_model "/input/model.ckpt")
   else
     run echo "No custom model specified."
   fi

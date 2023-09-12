@@ -513,8 +513,15 @@ def check_or_create_intermediate_results_dir(
 
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
+
   if _CUSTOMIZED_MODEL.value is not None:
-    if (
+    use_saved_model = tf.io.gfile.exists(
+        _CUSTOMIZED_MODEL.value
+    ) and tf.io.gfile.exists(f'{_CUSTOMIZED_MODEL.value}/saved_model.pb')
+
+    if use_saved_model:
+      logging.info('Using saved model: %s', str(use_saved_model))
+    elif (
         not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.data-00000-of-00001')
         or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index')
         or (

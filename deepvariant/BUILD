@@ -1727,3 +1727,24 @@ py_library(
         "//third_party/nucleus/protos:reads_py_pb2",
     ],
 )
+
+py_library(
+    name = "convert_to_saved_model_lib",
+    srcs = ["convert_to_saved_model.py"],
+    deps = [
+        ":dv_utils",
+        ":keras_modeling",
+        "@absl_py//absl:app",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
+    ],
+)
+
+py_binary(
+    name = "convert_to_saved_model",
+    srcs = ["convert_to_saved_model.py"],
+    python_version = "PY3",
+    deps = [
+        ":convert_to_saved_model_lib",
+    ],
+)

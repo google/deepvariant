@@ -34,6 +34,7 @@ from typing import Callable, Optional, Tuple, Type, Union
 
 from absl import logging
 import ml_collections
+import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
 
@@ -363,6 +364,16 @@ def inceptionv3(
     )
     model.load_weights(weights)
     return model
+
+
+def print_model_summary(
+    model: tf.keras.Model, input_shape: Tuple[int, int, int, int]
+) -> None:
+  """Runs a forward pass with dummy data then prints the model summary."""
+  # Without calling this forward pass, we won't be able to print the summary.
+  dummy_data = np.zeros(input_shape)
+  _ = model(dummy_data)
+  model.summary()
 
 
 class F1ScorePerClass(tfa.metrics.F1Score):
