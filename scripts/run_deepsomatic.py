@@ -90,17 +90,8 @@ _READS_NORMAL = flags.DEFINE_string(
         'compatible with --ref.'
     ),
 )
-_OUTPUT_NON_SOMATIC_VCF = flags.DEFINE_string(
-    'output_non_somatic_vcf',
-    None,
-    'Required. Path where we should write VCF file containing non-somatic'
-    ' variants.',
-)
-_OUTPUT_SOMATIC_VCF = flags.DEFINE_string(
-    'output_somatic_vcf',
-    None,
-    'Required. Path where we should write VCF file containing somatic'
-    ' variants.',
+_OUTPUT_VCF = flags.DEFINE_string(
+    'output_vcf', None, 'Required. Path where we should write VCF file.'
 )
 # Optional flags.
 _DRY_RUN = flags.DEFINE_boolean(
@@ -218,6 +209,11 @@ _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
     ),
 )
 
+# Optional flags for postprocess_variants.
+_OUTPUT_GVCF = flags.DEFINE_string(
+    'output_gvcf', None, 'Optional. Path where we should write gVCF file.'
+)
+
 # Optional flags for vcf_stats_report.
 _VCF_STATS_REPORT = flags.DEFINE_boolean(
     'vcf_stats_report',
@@ -227,16 +223,8 @@ _VCF_STATS_REPORT = flags.DEFINE_boolean(
         'statistics about the output VCF.'
     ),
 )
-_SOMATIC_REPORT_TITLE = flags.DEFINE_string(
-    'somatic_report',
-    None,
-    (
-        'Optional. Title for the VCF stats report (HTML).'
-        'If not provided, the title will be the sample name.'
-    ),
-)
-_NON_SOMATIC_REPORT_TITLE = flags.DEFINE_string(
-    'non_somatic_report',
+_REPORT_TITLE = flags.DEFINE_string(
+    'report_title',
     None,
     (
         'Optional. Title for the VCF stats report (HTML).'
@@ -445,16 +433,14 @@ def postprocess_variants_command(
     ref: str,
     infile: str,
     outfile: str,
-    somatic_outfile: str,
     extra_args: str,
-    **kwargs,
+    **kwargs
 ) -> Tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
-  command.extend(['--somatic_variants_path', '"{}"'.format(somatic_outfile)])
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
@@ -571,8 +557,12 @@ def create_all_commands_and_logfiles(intermediate_results_dir: str,
     check_flags()
   commands = []
   # make_examples_somatic
-  # This will always be none as GVCFs are not supported in somatic mode
   nonvariant_site_tfrecord_path = None
+  if _OUTPUT_GVCF.value is not None:
+    nonvariant_site_tfrecord_path = os.path.join(
+        intermediate_results_dir,
+        'gvcf.tfrecord@{}.gz'.format(_NUM_SHARDS.value),
+    )
 
   examples = os.path.join(
       intermediate_results_dir,
@@ -633,26 +623,18 @@ def create_all_commands_and_logfiles(intermediate_results_dir: str,
       postprocess_variants_command(
           ref=_REF.value,
           infile=call_variants_output,
-          outfile=_OUTPUT_NON_SOMATIC_VCF.value,
-          somatic_outfile=_OUTPUT_SOMATIC_VCF.value,
+          outfile=_OUTPUT_VCF.value,
           extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
+          gvcf_outfile=_OUTPUT_GVCF.value,
       )
   )
 
   # vcf_stats_report
   if _VCF_STATS_REPORT.value:
-    # Report for non-somatic variants
     commands.append(
         vcf_stats_report_command(
-            vcf_path=_OUTPUT_NON_SOMATIC_VCF.value,
-            title=_NON_SOMATIC_REPORT_TITLE.value,
-        )
-    )
-    commands.append(
-        vcf_stats_report_command(
-            vcf_path=_OUTPUT_SOMATIC_VCF.value,
-            title=_SOMATIC_REPORT_TITLE.value,
+            vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value
         )
     )
 
@@ -660,7 +642,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir: str,
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
     commands.append(
         runtime_by_region_vis_command(
-            runtime_by_region_path, title=_SOMATIC_REPORT_TITLE.value
+            runtime_by_region_path, title=_REPORT_TITLE.value
         )
     )
 
@@ -672,14 +654,8 @@ def main(_):
     print('DeepSomatic: DeepVariant version {}'.format(DEEP_VARIANT_VERSION))
     return
 
-  for flag_key in [
-      'model_type',
-      'ref',
-      'reads_tumor',
-      'reads_normal',
-      'output_non_somatic_vcf',
-      'output_somatic_vcf',
-  ]:
+  for flag_key in ['model_type', 'ref', 'reads_tumor', 'reads_normal',
+                   'output_vcf']:
     if FLAGS.get_flag_value(flag_key, None) is None:
       sys.stderr.write('--{} is required.\n'.format(flag_key))
       sys.stderr.write('Pass --helpshort or --helpfull to see help on flags.\n')
