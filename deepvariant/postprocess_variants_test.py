@@ -316,32 +316,6 @@ class PostprocessVariantsTest(parameterized.TestCase):
       self.assertTrue(tf.io.gfile.exists(FLAGS.gvcf_outfile + '.tbi'))
 
   @flagsaver.flagsaver
-  def test_somatic_end2end(self):
-    FLAGS.infile = make_golden_dataset(False)
-    FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.outfile = create_outfile(
-        file_name='calls.vcf', compressed_outputs=False, only_keep_pass=False
-    )
-    FLAGS.somatic_variants_path = create_outfile(
-        file_name='somatic_calls.vcf',
-        compressed_outputs=False,
-        only_keep_pass=False,
-    )
-    FLAGS.only_keep_pass = False
-    postprocess_variants.main(['postprocess_variants.py'])
-
-    vcf_normal_output = testdata.GOLDEN_POSTPROCESS_SOMATIC_NORMAL_OUTPUT
-    vcf_tumor_output = testdata.GOLDEN_POSTPROCESS_SOMATIC_TUMOR_OUTPUT
-    self.assertEqual(
-        _read_contents(FLAGS.somatic_variants_path, False),
-        _read_contents(vcf_tumor_output),
-    )
-    self.assertEqual(
-        _read_contents(FLAGS.outfile, False),
-        _read_contents(vcf_normal_output),
-    )
-
-  @flagsaver.flagsaver
   def test_group_variants(self):
     FLAGS.infile = testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
     FLAGS.ref = testdata.CHR20_FASTA

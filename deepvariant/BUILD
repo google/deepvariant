@@ -1057,7 +1057,6 @@ py_library(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:genomics_math",
         "//third_party/nucleus/util:proto_utils",
-        "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:struct_utils",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",

@@ -78,8 +78,6 @@ GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED = None
 GOLDEN_POSTPROCESS_GVCF_INPUT = None
 GOLDEN_POSTPROCESS_GVCF_OUTPUT = None
 GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED = None
-GOLDEN_POSTPROCESS_SOMATIC_NORMAL_OUTPUT = None
-GOLDEN_POSTPROCESS_SOMATIC_TUMOR_OUTPUT = None
 GOLDEN_MAKE_EXAMPLES_RUN_INFO = None
 WS_ALLELE_COUNT_LINEAR_MODEL = None
 WS_ALLELE_COUNT_LINEAR_MODEL_PCKL = None
@@ -139,8 +137,6 @@ def init():
   global GOLDEN_POSTPROCESS_GVCF_INPUT
   global GOLDEN_POSTPROCESS_GVCF_OUTPUT
   global GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED
-  global GOLDEN_POSTPROCESS_SOMATIC_NORMAL_OUTPUT
-  global GOLDEN_POSTPROCESS_SOMATIC_TUMOR_OUTPUT
   global GOLDEN_MAKE_EXAMPLES_RUN_INFO
   global WS_ALLELE_COUNT_LINEAR_MODEL
   global WS_ALLELE_COUNT_LINEAR_MODEL_PCKL
@@ -222,12 +218,6 @@ def init():
   )
   GOLDEN_POSTPROCESS_GVCF_OUTPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_output.g.vcf'
-  )
-  GOLDEN_POSTPROCESS_SOMATIC_NORMAL_OUTPUT = deepvariant_testdata(
-      'golden.postprocess_somatic_normal_single_site_output.vcf'
-  )
-  GOLDEN_POSTPROCESS_SOMATIC_TUMOR_OUTPUT = deepvariant_testdata(
-      'golden.postprocess_somatic_tumor_single_site_output.vcf'
   )
   GOLDEN_MAKE_EXAMPLES_RUN_INFO = deepvariant_testdata(
       'golden.training_examples.tfrecord.gz.run_info.pbtxt'
