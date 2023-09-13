@@ -76,8 +76,13 @@ constexpr int64_t kStart = 10;
 AlleleCount MakeTestAlleleCount(int total_n, int alt_n,
                                 const std::string& sample_id,
                                 const std::string& ref = "A",
-                                const std::string& alt = "C", int start = 100) {
+                                const std::string& alt = "C", int start = 100,
+                                const std::string& read_prefix = "") {
   CHECK_GE(total_n, alt_n) << "Total number of reads must be >= n alt reads";
+  std::string test_read_prefix = read_prefix;
+  if (test_read_prefix.empty()) {
+    test_read_prefix = sample_id;
+  }
   AlleleCount allele_count;
   *(allele_count.mutable_position()) = nucleus::MakePosition("chr1", start);
   allele_count.set_ref_base(ref);
@@ -85,7 +90,7 @@ AlleleCount MakeTestAlleleCount(int total_n, int alt_n,
   const Allele read_allele = MakeAllele(alt, AlleleType::SUBSTITUTION, 1);
   for (int i = 0; i < alt_n; ++i) {
     (*allele_count.mutable_read_alleles())[absl::StrCat(
-        sample_id, "_read_", i)] = read_allele;
+        test_read_prefix, "_read_", i)] = read_allele;
 
     Allele* new_allele =
         (*allele_count.mutable_sample_alleles())[sample_id].add_alleles();
@@ -1016,6 +1021,40 @@ TEST_F(VariantCallingTest,
   Variant variant = WithCounts(MakeExpectedVariant("A", {"T"}, 10), {18, 2});
   EXPECT_EQ(candidates.size(), 1);
   EXPECT_THAT(candidates[0].variant(), EqualsProto(variant));
+  ReleaseAlleleCounterPointers(allele_counters);
+}
+
+// Testing that read with the same id coming from different samples is not
+// used multiple times in read  support.
+TEST_F(VariantCallingTest, TestCallsFromAlleleCountsDuplicateReadIds) {
+  // Parent 1:
+  // SNP A -> T with 3 reads support and 1 reads ref support
+  //
+  // Child:
+  // SNP A -> T with 2 reads support and 1 reads ref support
+  //
+  // Parent 2:
+  // no alt alleles, 3 reads support ref
+  //
+
+  const std::unordered_map<std::string, AlleleCounter*> allele_counters = {
+      {"parent_1", AlleleCounter::InitFromAlleleCounts({MakeTestAlleleCount(
+                       4, 3, "parent_1", "A", "T", 10, "common_prefix")})},
+      {"child", AlleleCounter::InitFromAlleleCounts({MakeTestAlleleCount(
+                    3, 2, "child", "A", "T", 10, "common_prefix")})},
+      {"parent_2", AlleleCounter::InitFromAlleleCounts(
+                       {MakeTestAlleleCount(3, 0, "parent_2", "A", "A", 10)})}};
+
+  const VariantCaller caller(MakeOptions());
+  std::vector<DeepVariantCall> candidates =
+      caller.CallsFromAlleleCounts(allele_counters, "child");
+
+  // We expect one candidate with 3 reads (instead of 5) supporting alt.
+  EXPECT_THAT(candidates, testing::SizeIs(1));
+  EXPECT_THAT(
+      SupportingReadNames(candidates[0], "T"),
+      UnorderedElementsAre("common_prefix_read_0", "common_prefix_read_1",
+                           "common_prefix_read_2"));
   ReleaseAlleleCounterPointers(allele_counters);
 }
 

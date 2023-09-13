@@ -46,13 +46,15 @@
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/btree_map.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
-#include "absl/log/log.h"
-#include "absl/strings/str_cat.h"
 
 namespace learning {
 namespace genomics {
@@ -596,6 +598,9 @@ void VariantCaller::AddSupportingReads(
   // Iterate over each read in the allele_count, and add its name to the
   // supporting reads of for the Variant allele it supports.
   const std::string unknown_allele = kSupportingUncalledAllele;
+  absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>>
+      alt_allele_support;
+  absl::flat_hash_set<std::string> ref_support;
   for (const auto& allele_counts_entry : allele_counts) {
     const AlleleCount& allele_count = allele_counts_entry.second;
     for (const auto& read_name_allele : allele_count.read_alleles()) {
@@ -610,6 +615,16 @@ void VariantCaller::AddSupportingReads(
             it == allele_map.end() ? unknown_allele : it->second;
         DeepVariantCall::SupportingReads& supports =
             (*call->mutable_allele_support())[supported_allele];
+        // Check that this read does not exist in supports already. It may
+        // happen if candidate is created from multiple samples and read with
+        // the same id exists in multiple samples. Multiple problems may arise
+        // from this: number of supporting reads is calculated incorrectly,
+        // phasing may not work due to loops in the graph caused by multiple
+        // reads with the same id supporting the same allele.
+        auto [new_item, is_inserted] =
+            alt_allele_support[supported_allele].insert(read_name);
+        if (!is_inserted) continue;
+
         supports.add_read_names(read_name);
         DeepVariantCall_SupportingReadsExt& support_infos =
             (*call->mutable_allele_support_ext())[supported_allele];
@@ -621,6 +636,9 @@ void VariantCaller::AddSupportingReads(
         DeepVariantCall_SupportingReadsExt& support_infos =
             (*call->mutable_ref_support_ext());
         DeepVariantCall_ReadSupport* read_info = support_infos.add_read_infos();
+        auto [new_element, is_inserted] = ref_support.insert(read_name);
+        if (!is_inserted) continue;
+
         read_info->set_read_name(read_name);
         read_info->set_is_low_quality(allele.is_low_quality());
       }
