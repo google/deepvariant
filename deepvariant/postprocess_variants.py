@@ -1331,6 +1331,10 @@ def main(argv=()):
         )
       if FLAGS.outfile.endswith('.gz'):
         build_index(FLAGS.outfile, use_csi)
+      if _SOMATIC_VARIANTS_PATH.value and FLAGS.somatic_variants_path.endswith(
+          '.gz'
+      ):
+        build_index(FLAGS.somatic_variants_path, use_csi)
       logging.info(
           'VCF creation took %s minutes', (time.time() - start_time) / 60
       )
@@ -1362,6 +1366,10 @@ def main(argv=()):
       )
       if FLAGS.outfile.endswith('.gz'):
         build_index(FLAGS.outfile, use_csi)
+      if FLAGS.somatic_variants_path and FLAGS.somatic_variants_path.endswith(
+          '.gz'
+      ):
+        build_index(FLAGS.somatic_variants_path, use_csi)
       if FLAGS.gvcf_outfile.endswith('.gz'):
         build_index(FLAGS.gvcf_outfile, use_csi)
       logging.info(

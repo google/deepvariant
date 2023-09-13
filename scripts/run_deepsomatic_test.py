@@ -51,19 +51,14 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
     FLAGS.reads_normal = 'your_normal_bam'
-    FLAGS.output_vcf = 'your_vcf'
-    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.output_somatic_vcf = 'your_somatic_vcf'
+    FLAGS.output_non_somatic_vcf = 'your_non_somatic_vcf'
     FLAGS.num_shards = 64
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
     FLAGS.use_keras_model = use_keras_model
     commands = run_deepsomatic.create_all_commands_and_logfiles(
         '/tmp/deepsomatic_tmp_output', used_in_test=True
     )
-
-    extra_args_plus_gvcf = (
-        '--gvcf "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
-    )
-
     self.assertEqual(
         commands[0][0],
         'time seq 0 63 | parallel -q --halt 2 --line-buffer'
@@ -72,11 +67,10 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "your_normal_bam" --examples'
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
         ' --channels "insert_size"'
-        ' %s'
         ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
         ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
         ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
-        ' --task {}' % (extra_args_plus_gvcf),
+        ' --task {}',
     )
     call_variants_bin = (
         'call_variants_keras' if use_keras_model else 'call_variants'
@@ -98,10 +92,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
             '--ref "your_ref" '
             '--infile '
             '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
-            '--outfile "your_vcf" '
-            '--gvcf_outfile "your_gvcf" '
-            '--nonvariant_site_tfrecord_path '
-            '"/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
+            '--outfile "your_non_somatic_vcf" '
+            '--somatic_variants_path "your_somatic_vcf"'
         ),
     )
 
@@ -115,8 +107,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
     FLAGS.reads_normal = 'your_normal_bam'
-    FLAGS.output_vcf = 'your_vcf'
-    FLAGS.output_gvcf = None
+    FLAGS.output_somatic_vcf = 'your_somatic_vcf'
+    FLAGS.output_non_somatic_vcf = 'your_non_somatic_vcf'
     FLAGS.num_shards = 64
     FLAGS.regions = None
     FLAGS.sample_name_tumor = sample_name_tumor
@@ -166,7 +158,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
-        '--outfile "your_vcf"'
+        '--outfile "your_non_somatic_vcf" '
+        '--somatic_variants_path "your_somatic_vcf"',
     )
 
   @parameterized.parameters(
@@ -191,8 +184,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
     FLAGS.reads_normal = 'your_normal_bam'
-    FLAGS.output_vcf = 'your_vcf'
-    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.output_somatic_vcf = 'your_somatic_vcf'
+    FLAGS.output_non_somatic_vcf = 'your_non_somatic_vcf'
     FLAGS.num_shards = 64
     FLAGS.make_examples_extra_args = make_examples_extra_args
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
@@ -207,8 +200,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "your_normal_bam" --examples'
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
         ' --channels "insert_size"'
-        ' --gvcf'
-        ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" %s'
+        ' %s'
         ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
         ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
         ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
@@ -221,30 +213,26 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
     FLAGS.reads_normal = 'your_normal_bam'
-    FLAGS.output_vcf = 'your_vcf'
-    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.output_somatic_vcf = 'your_somatic_vcf'
+    FLAGS.output_non_somatic_vcf = 'your_non_somatic_vcf'
     FLAGS.num_shards = 64
     FLAGS.logging_dir = '/tmp/deepsomatic_tmp_output/LOGDIR'
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
     commands = run_deepsomatic.create_all_commands_and_logfiles(
         '/tmp/deepsomatic_tmp_output', used_in_test=True
     )
-
     self.assertEqual(
         commands[0][0],
-        (
-            'time seq 0 63 | parallel -q --halt 2 --line-buffer'
-            ' /opt/deepvariant/bin/make_examples_somatic --mode calling --ref'
-            ' "your_ref" --reads_tumor "your_tumor_bam" --reads_normal'
-            ' "your_normal_bam" --examples'
-            ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
-            ' --channels "insert_size" --gvcf'
-            ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
-            ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
-            ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
-            ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
-            ' --task {}'
-        ),
+        'time seq 0 63 | parallel -q --halt 2 --line-buffer'
+        ' /opt/deepvariant/bin/make_examples_somatic --mode calling'
+        ' --ref "your_ref" --reads_tumor "your_tumor_bam"'
+        ' --reads_normal "your_normal_bam" --examples'
+        ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+        ' --channels "insert_size"'
+        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
+        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
+        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
+        ' --task {}',
     )
 
   @parameterized.parameters(
@@ -258,8 +246,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
     FLAGS.reads_normal = 'your_normal_bam'
-    FLAGS.output_vcf = 'your_vcf'
-    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.output_somatic_vcf = 'your_somatic_vcf'
+    FLAGS.output_non_somatic_vcf = 'your_non_somatic_vcf'
     FLAGS.num_shards = 64
     FLAGS.regions = regions
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
@@ -275,8 +263,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "your_normal_bam" --examples'
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
         ' --channels "insert_size"'
-        ' --gvcf'
-        ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" %s'
+        ' %s'
         ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
         ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
         ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
@@ -291,8 +278,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
     FLAGS.reads_normal = 'your_normal_bam'
-    FLAGS.output_vcf = 'your_vcf'
-    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.output_somatic_vcf = 'your_somatic_vcf'
+    FLAGS.output_non_somatic_vcf = 'your_non_somatic_vcf'
     FLAGS.num_shards = 64
     FLAGS.make_examples_extra_args = 'keep_secondary_alignments'
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
@@ -322,8 +309,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
     FLAGS.reads_normal = 'your_normal_bam'
-    FLAGS.output_vcf = 'your_vcf'
-    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.output_somatic_vcf = 'your_somatic_vcf'
+    FLAGS.output_non_somatic_vcf = 'your_non_somatic_vcf'
     FLAGS.num_shards = 64
     FLAGS.call_variants_extra_args = call_variants_extra_args
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
@@ -351,8 +338,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
     FLAGS.reads_normal = 'your_normal_bam'
-    FLAGS.output_vcf = 'your_vcf'
-    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.output_somatic_vcf = 'your_somatic_vcf'
+    FLAGS.output_non_somatic_vcf = 'your_non_somatic_vcf'
     FLAGS.num_shards = 64
     FLAGS.postprocess_variants_extra_args = postprocess_variants_extra_args
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
@@ -366,10 +353,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
-        '--outfile "your_vcf" '
-        '--gvcf_outfile "your_gvcf" '
-        '--nonvariant_site_tfrecord_path '
-        '"/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" '
+        '--outfile "your_non_somatic_vcf" '
+        '--somatic_variants_path "your_somatic_vcf" '
         '%s' % expected_args,
     )
 
