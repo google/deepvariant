@@ -72,6 +72,12 @@ struct MergedPhaseRead {
                                              // with inconsistent phasing.
 };
 
+// Group of related reads.
+struct Group {
+  // Key is a merged read id, value is unmerged read id.
+  absl::flat_hash_map<int, int> merged_id_to_unmerged_id;
+};
+
 struct ShardRegion {
   int shard = 0;
   int region = 0;
@@ -115,8 +121,8 @@ class Merger {
   void GroupReads();
 
   // Helper function to compare two reads.
-  bool ComparePhasing(const ShardRegion& group_1,
-                      const ShardRegion& group_2) const;
+  bool CompareGroups(const ShardRegion& group_1,
+                     const ShardRegion& group_2) const;
   void ReversePhasing(const ShardRegion& group);
   void MergeGroup(const ShardRegion& group);
   int UpdateReadsMap(const std::string& fragment_name);
@@ -135,7 +141,7 @@ class Merger {
   // When groups are merged we need to find reads with the same
   // fragment_name. To make it faster numeric IDs are used instead of string
   // ids.
-  absl::flat_hash_map<ShardRegion, std::vector<int>> groups_;
+  absl::flat_hash_map<ShardRegion, Group> groups_;
   int num_shards_;
   int num_groups_;
 };

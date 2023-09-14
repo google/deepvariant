@@ -42,6 +42,7 @@
 
 #include "deepvariant/merge_phased_reads.h"
 
+#include <cstddef>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -52,6 +53,8 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "re2/re2.h"
@@ -169,12 +172,52 @@ int Merger::UpdateReadsMap(const std::string& fragment_name) {
 
 void Merger::GroupReads() {
   for (auto index = 0; index < unmerged_reads_.size(); index++) {
-    std::vector<int>& read_ids =
-        groups_[{.shard = merged_reads_[index].shard,
-                 .region = merged_reads_[index].region_order}];
-    read_ids.push_back(index);
+    Group& read_group = groups_[{.shard = merged_reads_[index].shard,
+                                 .region = merged_reads_[index].region_order}];
+    size_t merged_index =
+        merged_reads_map_[unmerged_reads_[index].fragment_name];
+    read_group.merged_id_to_unmerged_id[merged_index] = index;
   }
   num_groups_ = groups_.size();
+}
+
+bool Merger::CompareGroups(const ShardRegion& group_1,
+                           const ShardRegion& group_2) const {
+  int num_reads_not_matching_phase = 0;
+  int num_reads_matching_phase = 0;
+  auto group_1_it = groups_.find(group_1);
+  auto group_2_it = groups_.find(group_2);
+  if (group_1_it == groups_.end() || group_2_it == groups_.end()) {
+    LOG(FATAL) << "CompareGroups() called with invalid arguments";
+  }
+  // Iterate read ids in group_2.
+  for (auto [merged_reads_idx_2, unmerged_reads_idx2] :
+       group_2_it->second.merged_id_to_unmerged_id) {
+    // Find a matching read id in group_1.
+    auto group1_index_map_it =
+        group_1_it->second.merged_id_to_unmerged_id.find(merged_reads_idx_2);
+    // If read is not found in group_1 then do nothing.
+    if (group1_index_map_it ==
+        group_1_it->second.merged_id_to_unmerged_id.end()) {
+      continue;
+    }
+    // Only consider pairs that have different phases. If one of the reads have
+    // phase zero it means it is unphased and we cannot compare it to another
+    // one.
+    int unmerged_reads_idx1 = group1_index_map_it->second;
+    if (unmerged_reads_[unmerged_reads_idx2].phase == 0 ||
+        unmerged_reads_[unmerged_reads_idx1].phase == 0) {
+      continue;
+    }
+    // Count number of reads that have matching and unmatching phases.
+    if (unmerged_reads_[unmerged_reads_idx2].phase !=
+        unmerged_reads_[unmerged_reads_idx1].phase) {
+      num_reads_not_matching_phase++;
+    } else {
+      num_reads_matching_phase++;
+    }
+  }
+  return num_reads_not_matching_phase > num_reads_matching_phase;
 }
 
 }  // namespace deepvariant
