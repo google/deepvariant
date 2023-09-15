@@ -1957,6 +1957,29 @@ class RegionProcessor:
         and candidate.variant.start < region.end
     ]
 
+  def _root_join(self, path, makedirs=True):
+    fullpath = os.path.join(
+        self.options.realigner_options.diagnostics.output_root, path
+    )
+    subdir = os.path.dirname(fullpath)
+    if makedirs and subdir:
+      epath.Path(subdir).mkdir(parents=True, exist_ok=True)
+    return fullpath
+
+  def _file_for_region(self, region, basename):
+    """Returns the path to a file in a region-specific subdirectory."""
+    # TODO: This logic currently only works for single sample.
+    # Once we extend to multi-sample, we can remove this assert.
+    assert len(self.samples) == 1
+    return self._root_join(os.path.join(ranges.to_literal(region), basename))
+
+  def log_graph_metrics(self, region, graph):
+    """Logs, if enabled, graph construction information for region."""
+    if graph:
+      dest_file = self._file_for_region(region, 'graph.dot')
+      with epath.Path(dest_file).open('w') as f:
+        f.write(graph.graphviz())
+
   def candidates_in_region(
       self,
       region: range_pb2.Range,
@@ -2131,6 +2154,16 @@ class RegionProcessor:
             read.info['HP'].values.add(int_value=read_phase)
             if writer and self.options.read_phases_output:
               writer.write_read_phase(read, read_phase, region_n)
+          # This logic below will write out the DOT files under the directory
+          # specified by the flag --realigner_diagnostics, if phase_reads is
+          # set to True.
+          # TODO: Extend the logic to work for multi-sample cases.
+          if (
+              self.options.phase_reads
+              and self.options.realigner_options.diagnostics.output_root
+              and len(self.samples) == 1
+          ):
+            self.log_graph_metrics(region, self.direct_phasing_cpp)
         reads_to_phase = None
 
       if padded_region is not None:

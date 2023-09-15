@@ -35,5 +35,6 @@ from "deepvariant/direct_phasing.h":
   namespace `learning::genomics::deepvariant`:
     class DirectPhasing:
       def __init__(self)
+      def `GraphViz` as graphviz(self) -> str
       def `PhaseReadsPython` as phase(self, candidates: list<DeepVariantCall>,
                            reads: list<ConstProtoPtr<Read>>) -> list<int>

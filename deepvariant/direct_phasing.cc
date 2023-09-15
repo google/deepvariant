@@ -38,6 +38,9 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <ostream>
+#include <sstream>
+
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/btree_map.h"
@@ -612,6 +615,53 @@ int SubstitutionAllelesDepth(const DeepVariantCall& candidate) {
     }
   }
   return count;
+}
+
+template <class BoostGraph>
+class EdgeLabelWriter {
+ public:
+  explicit EdgeLabelWriter(const BoostGraph& g) : g_(g) {}
+
+  void operator()(std::ostream& out, const DirectPhasing::Edge e) const {
+    DirectPhasing::EdgeInfo ei = g_[e];
+    out << "[label=" << ei.weight << "]";
+  }
+
+ private:
+  const BoostGraph& g_;
+};
+
+template <class BoostGraph>
+class VertexLabelWriter {
+ public:
+  explicit VertexLabelWriter(const BoostGraph& g) : g_(g) {}
+
+  void operator()(std::ostream& out, const DirectPhasing::Vertex v) const {
+    DirectPhasing::VertexInfo vi = g_[v];
+    out << "[label=\"" << vi.allele_info.position
+        << " " << vi.allele_info.bases << "\"]";
+  }
+
+ private:
+  const BoostGraph& g_;
+};
+
+DirectPhasing::VertexIndexMap DirectPhasing::IndexMap() const {
+  boost::const_associative_property_map<RawVertexIndexMap> vmap(
+      vertex_index_map_);
+  return vmap;
+}
+
+std::string DirectPhasing::GraphViz() const {
+  std::stringstream graphviz;
+  boost::write_graphviz(
+      graphviz,
+      graph_,
+      VertexLabelWriter<BoostGraph>(graph_),
+      EdgeLabelWriter<BoostGraph>(graph_),
+      boost::default_writer(),
+      IndexMap());
+  return graphviz.str();
 }
 
 }  // namespace deepvariant
