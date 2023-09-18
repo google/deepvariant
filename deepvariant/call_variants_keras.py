@@ -470,9 +470,14 @@ def call_variants(
   ]
 
   if example_shape is None:
-    raise ValueError(
-        f'Unable to read shape information from {example_info_json}'
+    logging.info(
+        (
+            'Unable to read shape information from %s. Directly read from '
+            'examples instead.'
+        ),
+        example_info_json,
     )
+    example_shape = dv_utils.example_image_shape(first_example)
 
   logging.info('Shape of input examples: %s', str(example_shape))
   use_saved_model = tf.io.gfile.exists(FLAGS.checkpoint) and tf.io.gfile.exists(
