@@ -1,6 +1,6 @@
+# Placeholder: load py_binary
 # Placeholder: load py_library
 # Placeholder: load py_test
-# Placeholder: load py_binary
 
 package(
     default_visibility = [
@@ -131,7 +131,6 @@ cc_library(
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
-        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings:cord",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core/platform/cloud:gcs_file_system",
