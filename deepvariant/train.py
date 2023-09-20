@@ -29,6 +29,7 @@
 r"""Train a DeepVariant Keras Model.
 """
 
+import os
 import sys
 import warnings
 
@@ -109,6 +110,7 @@ def train(config: ml_collections.ConfigDict):
     tf.tpu.experimental.initialize_tpu_system(resolver)
     strategy = tf.distribute.TPUStrategy(resolver)
   elif _STRATEGY.value in ['mirrored']:
+    strategy = tf.distribute.MirroredStrategy()
   else:
     raise ValueError(f'Unknown strategy: {_STRATEGY.value}')
 
@@ -123,6 +125,18 @@ def train(config: ml_collections.ConfigDict):
 
   input_shape = dv_utils.get_shape_from_examples_path(
       train_dataset_config.tfrecord_path
+  )
+
+  # Copy example_info.json to checkpoint path.
+  example_info_json_path = os.path.join(
+      os.path.dirname(train_dataset_config.tfrecord_path), 'example_info.json'
+  )
+  if not tf.io.gfile.exists(example_info_json_path):
+    raise FileNotFoundError(example_info_json_path)
+  tf.io.gfile.makedirs(experiment_dir)
+  tf.io.gfile.copy(
+      example_info_json_path,
+      os.path.join(experiment_dir, 'example_info.json'),
   )
 
   steps_per_epoch = train_dataset_config.num_examples // config.batch_size
@@ -447,6 +461,15 @@ def train(config: ml_collections.ConfigDict):
     saved_model_dir = checkpoint_path
     model.save(keras_model)
     model.save(saved_model_dir, save_format='tf')
+    # Copy example_info.json to saved_model directory.
+    tf.io.gfile.copy(
+        example_info_json_path,
+        os.path.join(
+            saved_model_dir,
+            'example_info.json',
+        ),
+        overwrite=True,
+    )
 
 
 def main(unused_argv):

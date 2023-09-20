@@ -140,6 +140,7 @@ bazel build  -c opt \
 # make sure all the builds are done before we fix things.
 
 # TODO: Replace this hand-made list with a find command.
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/train"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/call_variants"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/call_variants_keras"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples"

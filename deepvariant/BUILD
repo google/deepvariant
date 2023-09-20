@@ -21,6 +21,7 @@ filegroup(
         "multisample_make_examples",
         "runtime_by_region_vis",
         "show_examples",
+        "train",
         "vcf_stats_report",
     ],
 )
@@ -847,6 +848,7 @@ py_binary(
         "@absl_py//absl:app",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 
