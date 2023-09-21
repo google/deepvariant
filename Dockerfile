@@ -73,8 +73,6 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/vcf_stats_
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examples.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/runtime_by_region_vis.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/multisample_make_examples.zip  .
-COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_train.zip .
-COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/model_eval.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/freeze_graph.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/labeler/labeled_examples_to_vcf.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examples_somatic.zip  .
@@ -105,14 +103,6 @@ RUN \
     "${BASH_HEADER}" \
     'python3 /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
     /opt/deepvariant/bin/postprocess_variants && \
-  printf "%s\n%s\n" \
-    "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/model_train.zip "$@"' > \
-    /opt/deepvariant/bin/model_train && \
-  printf "%s\n%s\n" \
-    "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/model_eval.zip "$@"' > \
-    /opt/deepvariant/bin/model_eval && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
     'python3 /opt/deepvariant/bin/vcf_stats_report.zip "$@"' > \
@@ -157,8 +147,6 @@ RUN \
     /opt/deepvariant/bin/show_examples \
     /opt/deepvariant/bin/runtime_by_region_vis \
     /opt/deepvariant/bin/multisample_make_examples \
-    /opt/deepvariant/bin/model_train \
-    /opt/deepvariant/bin/model_eval \
     /opt/deepvariant/bin/run_deepvariant \
     /opt/deepvariant/bin/run_deepsomatic \
    /opt/deepvariant/bin/freeze_graph \

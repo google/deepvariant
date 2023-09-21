@@ -16,8 +16,6 @@ filegroup(
         "freeze_graph",
         "make_examples",
         "make_examples_somatic",
-        "model_eval",
-        "model_train",
         "multisample_make_examples",
         "runtime_by_region_vis",
         "show_examples",
@@ -63,8 +61,6 @@ py_library(
         ":keras_modeling",
         ":make_examples_core",
         ":make_examples_lib",
-        ":model_eval_lib",
-        ":model_train_lib",
         ":modeling",
         ":pileup_image",
         "//deepvariant/python:allelecounter",
@@ -1237,124 +1233,6 @@ py_test(
         ":dv_utils",
         ":modeling",
         "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_library(
-    name = "model_train_lib",
-    srcs = ["model_train.py"],
-    srcs_version = "PY3",
-    deps = [
-        ":data_providers",
-        ":logging_level",
-        ":modeling",
-        "//third_party/nucleus/util:proto_utils",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-    ],
-)
-
-py_binary(
-    name = "model_train",
-    srcs = ["model_train.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        ":model_train_main_lib",
-        # TODO: Figure out why we need this dep.
-        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
-    ],
-)
-
-py_library(
-    name = "model_train_main_lib",
-    srcs = ["model_train.py"],
-    srcs_version = "PY3",
-    deps = [
-        ":model_train_lib",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-    ],
-)
-
-py_test(
-    name = "model_train_test",
-    size = "medium",
-    srcs = ["model_train_test.py"],
-    data = [":testdata"],
-    python_version = "PY3",
-    shard_count = 10,
-    srcs_version = "PY3",
-    tags = ["nozapfhahn"],  # timeout
-    deps = [
-        ":data_providers_test_lib",
-        ":dv_constants",
-        ":model_train_main_lib",
-        ":modeling",
-        ":py_testdata",
-        "//deepvariant/testing:tf_test_utils",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:flagsaver",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_library(
-    name = "model_eval_lib",
-    srcs = ["model_eval.py"],
-    srcs_version = "PY3",
-    deps = [
-        ":data_providers",
-        ":logging_level",
-        ":modeling",
-        "//third_party/nucleus/util:proto_utils",
-        "//third_party/nucleus/util:variant_utils",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-    ],
-)
-
-py_binary(
-    name = "model_eval",
-    srcs = ["model_eval.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        ":model_eval_main_lib",
-        # TODO: Figure out why we need this dep.
-        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
-    ],
-)
-
-py_library(
-    name = "model_eval_main_lib",
-    srcs = ["model_eval.py"],
-    srcs_version = "PY3",
-    deps = [
-        ":model_eval_lib",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-    ],
-)
-
-py_test(
-    name = "model_eval_test",
-    size = "large",
-    srcs = ["model_eval_test.py"],
-    data = [":testdata"],
-    python_version = "PY3",
-    shard_count = 10,
-    srcs_version = "PY3",
-    deps = [
-        ":data_providers_test_lib",
-        ":model_eval_main_lib",
-        ":py_testdata",
-        "//deepvariant/testing:tf_test_utils",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:flagsaver",
         "@absl_py//absl/testing:parameterized",
     ],
 )
