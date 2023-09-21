@@ -477,9 +477,11 @@ void DirectPhasing::Clear() {
   hom_positions_.clear();
   positions_.clear();
   vertices_by_position_.clear();
+  vertex_index_map_.clear();
   scores_.clear();
   read_to_alleles_.clear();
   read_to_index_.clear();
+  graph_.clear();
 }
 
 // Iterate through all candidates in the region. For each potentially
