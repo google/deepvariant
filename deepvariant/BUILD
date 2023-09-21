@@ -13,7 +13,6 @@ filegroup(
     srcs = [
         "call_variants",
         "call_variants_keras",
-        "freeze_graph",
         "make_examples",
         "make_examples_somatic",
         "multisample_make_examples",
@@ -768,7 +767,6 @@ py_library(
         ":dv_utils",
         ":logging_level",
         ":modeling",
-        ":openvino_estimator",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:variants_py_pb2",
@@ -1134,15 +1132,6 @@ py_library(
         "//third_party/nucleus/io:sharded_file_utils",
         "@absl_py//absl/logging",
         "@com_google_protobuf//:protobuf_python",
-    ],
-)
-
-py_library(
-    name = "openvino_estimator",
-    srcs = ["openvino_estimator.py"],
-    srcs_version = "PY3",
-    deps = [
-        "@absl_py//absl/logging",
     ],
 )
 
@@ -1525,23 +1514,6 @@ py_test(
         ":runtime_by_region_vis_lib",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_binary(
-    name = "freeze_graph",
-    srcs = [
-        "freeze_graph.py",
-    ],
-    main = "freeze_graph.py",
-    python_version = "PY3",
-    deps = [
-        ":modeling",
-        "@absl_py//absl:app",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-        # TODO: Figure out why we need this dep.
-        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 

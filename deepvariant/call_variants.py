@@ -43,7 +43,6 @@ from deepvariant import data_providers
 from deepvariant import dv_utils
 from deepvariant import logging_level
 from deepvariant import modeling
-from deepvariant.openvino_estimator import OpenVINOEstimator
 from deepvariant.protos import deepvariant_pb2
 from google.protobuf import text_format
 from third_party.nucleus.io import sharded_file_utils
@@ -486,39 +485,28 @@ def call_variants(
 
   # Prepare input stream and estimator.
   tf_dataset = prepare_inputs(source_path=examples_filename, use_tpu=use_tpu)
-  if FLAGS.use_openvino:
-    ie_estimator = OpenVINOEstimator(
-        checkpoint_path,
-        input_fn=tf_dataset,
-        model=model,
-        openvino_model_dir=FLAGS.openvino_model_dir,
-    )
-    predictions = iter(ie_estimator)
-  else:
-    estimator = model.make_estimator(
-        batch_size=batch_size,
-        master=master,
-        use_tpu=use_tpu,
-        session_config=config,
-        include_debug_info=FLAGS.include_debug_info,
-    )
+  estimator = model.make_estimator(
+      batch_size=batch_size,
+      master=master,
+      use_tpu=use_tpu,
+      session_config=config,
+      include_debug_info=FLAGS.include_debug_info,
+  )
 
-    # Instantiate the prediction "stream", and select the EMA values from
-    # the model.
-    if checkpoint_path is None:
-      # Unit tests use this branch.
-      predict_hooks = []
-    else:
-      predict_hooks = [
-          h(checkpoint_path) for h in model.session_predict_hooks()
-      ]
-    predictions = iter(
-        estimator.predict(
-            input_fn=tf_dataset,
-            checkpoint_path=checkpoint_path,
-            hooks=predict_hooks,
-        )
-    )
+  # Instantiate the prediction "stream", and select the EMA values from
+  # the model.
+  if checkpoint_path is None:
+    # Unit tests use this branch.
+    predict_hooks = []
+  else:
+    predict_hooks = [h(checkpoint_path) for h in model.session_predict_hooks()]
+  predictions = iter(
+      estimator.predict(
+          input_fn=tf_dataset,
+          checkpoint_path=checkpoint_path,
+          hooks=predict_hooks,
+      )
+  )
 
   # The following code is introduced to by in sync with call_variants_keras
   # where we use multiple writers to write outpts.
@@ -551,23 +539,21 @@ def call_variants(
       n_batches = n_examples // batch_size + 1
       duration = time.time() - start_time
 
-      if not FLAGS.use_openvino:
-        logging.log_every_n(
-            logging.INFO,
-            'Processed %s examples in %s batches [%.3f sec per 100]',
-            _LOG_EVERY_N,
-            n_examples,
-            n_batches,
-            (100 * duration) / n_examples,
-        )
-    # One last log to capture the extra examples.
-    if not FLAGS.use_openvino:
-      logging.info(
+      logging.log_every_n(
+          logging.INFO,
           'Processed %s examples in %s batches [%.3f sec per 100]',
+          _LOG_EVERY_N,
           n_examples,
           n_batches,
           (100 * duration) / n_examples,
       )
+    # One last log to capture the extra examples.
+    logging.info(
+        'Processed %s examples in %s batches [%.3f sec per 100]',
+        n_examples,
+        n_batches,
+        (100 * duration) / n_examples,
+    )
 
     logging.info(
         'Done calling variants from a total of %d examples.', n_examples

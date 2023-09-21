@@ -1,4 +1,4 @@
-# DeepVariant usage guide
+f# DeepVariant usage guide
 
 ## Overview
 
@@ -285,37 +285,6 @@ gcloud compute instances create "${USER}-gpu" \
 NOTE: Having an instance up and running could cost you. Remember to delete the
 instances you're not using. You can find the instances at:
 https://console.cloud.google.com/compute/instances?project=YOUR_PROJECT
-
-## Convert model.ckpt to model.pb ([SavedModel](https://www.tensorflow.org/guide/saved_model) format)
-
-DeepVariant doesn't currently read in SavedModel format. But having this
-conversion available might make it easier for some users. We added a standalone
-`freeze_graph` in v1.2.0.
-
-You can see the usage in:
-
-```bash
-docker run google/deepvariant:"${BIN_VERSION}" \
-  /opt/deepvariant/bin/freeze_graph --help
-```
-
-An example usage:
-
-```bash
-BIN_VERSION=1.5.0
-gsutil -m cp gs://deepvariant/models/DeepVariant/${BIN_VERSION}/DeepVariant-inception_v3-${BIN_VERSION}+data-pacbio_standard/model.ckpt* .
-
-sudo docker run \
-  -v $PWD:/input \
-  -v $PWD:/output \
-  google/deepvariant:"${BIN_VERSION}" \
-  /opt/deepvariant/bin/freeze_graph \
-  --checkpoint /input/model.ckpt  \
-  --example_info_json /input/model.ckpt.example_info.json \
-  --output /output/model.pb
-```
-
-After this command, the output is in the `model.pb` file.
 
 [exome case study]: deepvariant-exome-case-study.md
 [whole genome case study]: deepvariant-case-study.md
