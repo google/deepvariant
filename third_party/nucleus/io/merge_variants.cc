@@ -105,7 +105,7 @@ void MergeAndWriteVariantsAndNonVariants(
     const std::vector<std::string>& non_variant_file_paths,
     const std::string& fasta_path, const std::string& vcf_out_path,
     const std::string& gvcf_out_path,
-    const nucleus::genomics::v1::VcfHeader& header) {
+    const nucleus::genomics::v1::VcfHeader& header, bool process_somatic) {
   // Create VCF and gVCF writers
   nucleus::genomics::v1::VcfWriterOptions writer_options;
   writer_options.set_round_qual_values(true);
@@ -147,13 +147,13 @@ void MergeAndWriteVariantsAndNonVariants(
 
   MergeAndWriteVariantsAndNonVariants(
       only_keep_pass, variant_reader.get(), non_variant_reader.get(),
-      vcf_writer.get(), gvcf_writer.get(), *fasta_reader);
+      vcf_writer.get(), gvcf_writer.get(), *fasta_reader, process_somatic);
 }
 
 void MergeAndWriteVariantsAndNonVariants(
     bool only_keep_pass, VariantReader* variant_reader,
     ShardedVariantReader* non_variant_reader, VcfWriter* vcf_writer,
-    VcfWriter* gvcf_writer, const GenomeReference& ref) {
+    VcfWriter* gvcf_writer, const GenomeReference& ref, bool process_somatic) {
   IndexedVariant variant = variant_reader->GetAndReadNext();
 
   IndexedVariant nonvariant = non_variant_reader->GetAndReadNext();
@@ -165,17 +165,29 @@ void MergeAndWriteVariantsAndNonVariants(
       if (!only_keep_pass ||
           (variant.variant->filter().size() == 1 &&
            variant.variant->filter(0) == DEEP_VARIANT_PASS)) {
-        NUCLEUS_QCHECK_OK(vcf_writer->Write(*variant.variant));
+        if (process_somatic) {
+          NUCLEUS_QCHECK_OK(vcf_writer->WriteSomatic(*variant.variant));
+        } else {
+          NUCLEUS_QCHECK_OK(vcf_writer->Write(*variant.variant));
+        }
       }
       ZeroScaleGl(variant.variant.get());
       TransfromToGvcf(variant.variant.get());
-      NUCLEUS_QCHECK_OK(gvcf_writer->Write(*variant.variant));
+      if (process_somatic) {
+        NUCLEUS_QCHECK_OK(gvcf_writer->WriteSomatic(*variant.variant));
+      } else {
+        NUCLEUS_QCHECK_OK(gvcf_writer->Write(*variant.variant));
+      }
 
       variant = variant_reader->GetAndReadNext();
     } else if (nonvariant.contig_map_index < variant.contig_map_index ||
                (nonvariant.contig_map_index == variant.contig_map_index &&
                 nonvariant.variant->end() <= variant.variant->start())) {
-      NUCLEUS_QCHECK_OK(gvcf_writer->Write(*nonvariant.variant));
+      if (process_somatic) {
+        NUCLEUS_QCHECK_OK(gvcf_writer->WriteSomatic(*nonvariant.variant));
+      } else {
+        NUCLEUS_QCHECK_OK(gvcf_writer->Write(*nonvariant.variant));
+      }
 
       nonvariant = non_variant_reader->GetAndReadNext();
     } else {
@@ -183,7 +195,11 @@ void MergeAndWriteVariantsAndNonVariants(
         std::unique_ptr<Variant> v = CreateRecordFromTemplate(
             *nonvariant.variant, nonvariant.variant->start(),
             variant.variant->start(), ref);
-        NUCLEUS_QCHECK_OK(gvcf_writer->Write(*v));
+        if (process_somatic) {
+          NUCLEUS_QCHECK_OK(gvcf_writer->WriteSomatic(*v));
+        } else {
+          NUCLEUS_QCHECK_OK(gvcf_writer->Write(*v));
+        }
       }
       if (nonvariant.variant->end() > variant.variant->end()) {
         nonvariant = {.variant = CreateRecordFromTemplate(

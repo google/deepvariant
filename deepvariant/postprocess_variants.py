@@ -187,6 +187,12 @@ _PAR_REGIONS = flags.DEFINE_string(
     ),
 )
 
+_PROCESS_SOMATIC = flags.DEFINE_boolean(
+    'process_somatic',
+    False,
+    'Optional. If specified the input is treated as somatic.',
+)
+
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
 # These need to be cleaned up if we remove any alt alleles. Any info field
 # listed here will be have its values cleaned up if we've removed any alt
@@ -955,7 +961,10 @@ def write_variants_to_vcf(variant_iterable, output_vcf_path, header):
           dv_vcf_constants.DEEP_VARIANT_PASS
       ]:
         count += 1
-        writer.write(variant)
+        if _PROCESS_SOMATIC.value:
+          writer.write_somatic(variant)
+        else:
+          writer.write(variant)
         logging.log_every_n(
             logging.INFO, '%s variants written.', _LOG_EVERY_N, count
         )
@@ -1252,9 +1261,20 @@ def main(argv=()):
     )
     use_csi = _decide_to_use_csi(contigs)
 
+    if _PROCESS_SOMATIC.value:
+      header.filters.append(
+          variants_pb2.VcfFilterInfo(
+              id=dv_vcf_constants.DEEP_VARIANT_GERMLINE,
+              description='Non somatic variants',
+          )
+      )
+
     start_time = time.time()
     if not FLAGS.nonvariant_site_tfrecord_path:
-      logging.info('Writing variants to VCF.')
+      if _PROCESS_SOMATIC.value:
+        logging.info('Writing variants to somatic VCF.')
+      else:
+        logging.info('Writing variants to VCF.')
       write_variants_to_vcf(
           variant_iterable=variant_generator,
           output_vcf_path=FLAGS.outfile,
@@ -1290,6 +1310,7 @@ def main(argv=()):
           FLAGS.outfile,
           FLAGS.gvcf_outfile,
           header,
+          _PROCESS_SOMATIC.value,
       )
       if FLAGS.outfile.endswith('.gz'):
         build_index(FLAGS.outfile, use_csi)

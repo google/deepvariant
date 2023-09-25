@@ -38,5 +38,6 @@ from "third_party/nucleus/io/merge_variants.h":
       fasta_path: str,
       vcf_out_file_path: str,
       gvcf_out_file_path: str,
-      header: VcfHeader)
+      header: VcfHeader,
+      process_somatic: bool = default)
 

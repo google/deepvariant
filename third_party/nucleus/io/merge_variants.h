@@ -62,12 +62,14 @@ void MergeAndWriteVariantsAndNonVariants(
     const std::vector<std::string>& non_variant_file_paths,
     const std::string& fasta_path, const std::string& vcf_out_path,
     const std::string& gvcf_out_path,
-    const nucleus::genomics::v1::VcfHeader& header);
+    const nucleus::genomics::v1::VcfHeader& header,
+    bool process_somatic = false);
 
 void MergeAndWriteVariantsAndNonVariants(
     bool only_keep_pass, VariantReader* variant_reader,
     ShardedVariantReader* non_variant_reader, VcfWriter* vcf_writer,
-    VcfWriter* gvcf_writer, const GenomeReference& ref);
+    VcfWriter* gvcf_writer, const GenomeReference& ref,
+    bool process_somatic = false);
 
 }  // namespace nucleus
 
