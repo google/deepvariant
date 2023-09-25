@@ -35,7 +35,7 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
-from deepvariant.opensource_only.scripts import run_deeptrio
+from deepvariant.scripts import run_deeptrio
 
 FLAGS = flags.FLAGS
 

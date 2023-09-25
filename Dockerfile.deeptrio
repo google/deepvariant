@@ -62,7 +62,7 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/postproces
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/vcf_stats_report.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examples.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/runtime_by_region_vis.zip  .
-COPY --from=builder /opt/deepvariant/scripts/run_deeptrio.py ./deeptrio/
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/scripts/run_deeptrio.zip  ./deeptrio/
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deeptrio/make_examples.zip  ./deeptrio/
 RUN ./run-prereq.sh
 
@@ -102,7 +102,7 @@ RUN \
     /opt/deepvariant/bin/runtime_by_region_vis && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 -u /opt/deepvariant/bin/deeptrio/run_deeptrio.py "$@"' > \
+    'python3 /opt/deepvariant/bin/deeptrio/run_deeptrio.zip "$@"' > \
     /opt/deepvariant/bin/deeptrio/run_deeptrio && \
   chmod +x /opt/deepvariant/bin/deeptrio/make_examples \
     /opt/deepvariant/bin/call_variants \

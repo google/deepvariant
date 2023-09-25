@@ -75,8 +75,8 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/runtime_by
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/multisample_make_examples.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/labeler/labeled_examples_to_vcf.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examples_somatic.zip  .
-COPY --from=builder /opt/deepvariant/scripts/run_deepvariant.py .
-COPY --from=builder /opt/deepvariant/scripts/run_deepsomatic.py .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/scripts/run_deepvariant.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/scripts/run_deepsomatic.zip  .
 
 RUN ./run-prereq.sh
 
@@ -128,11 +128,11 @@ RUN \
     /opt/deepvariant/bin/make_examples_somatic && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
+    'python3 -u /opt/deepvariant/bin/run_deepvariant.zip "$@"' > \
     /opt/deepvariant/bin/run_deepvariant && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 -u /opt/deepvariant/bin/run_deepsomatic.py "$@"' > \
+    'python3 -u /opt/deepvariant/bin/run_deepsomatic.zip "$@"' > \
     /opt/deepvariant/bin/run_deepsomatic && \
   chmod +x /opt/deepvariant/bin/make_examples \
     /opt/deepvariant/bin/call_variants \
