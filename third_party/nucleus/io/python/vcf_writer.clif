@@ -39,6 +39,7 @@ from "third_party/nucleus/io/vcf_writer.h":
                               options: VcfWriterOptions)
         -> StatusOr<VcfWriter>
       def `WritePython` as write(self, variantMessage: ConstProtoPtr<Variant>) -> Status
+      def `WriteSomaticPython` as write_somatic(self, variantMessage: ConstProtoPtr<Variant>) -> Status
       @__enter__
       def PythonEnter(self)
       @__exit__

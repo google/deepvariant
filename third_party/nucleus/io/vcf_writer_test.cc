@@ -32,6 +32,8 @@
 
 #include "third_party/nucleus/io/vcf_writer.h"
 
+#include <stdbool.h>
+
 #include <memory>
 #include <utility>
 #include <vector>
@@ -41,12 +43,12 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/core/status_matchers.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/core/status_matchers.h"
 #include "google/protobuf/repeated_field.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/env.h"
@@ -235,6 +237,166 @@ std::unique_ptr<VcfWriter> MakeDogVcfWriter(
       VcfWriter::ToFile(fname, header, writer_options).ValueOrDie());
 }
 
+constexpr char kExpectedSomaticHeaderFmt[] =
+    "##fileformat=VCFv4.2\n"
+    "##FILTER=<ID=PASS,Description=\"All filters passed\">\n"
+    "##FILTER=<ID=RefCall,Description=\"Most likely reference\">\n"
+    "##FILTER=<ID=GERMLINE,Description=\"Non somatic variant\">\n"
+    "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Stop position of "
+    "the interval\">\n"  // NOLINT
+    "##INFO=<ID=DB,Number=0,Type=Flag,Description=\"dbSNP "
+    "membership\",Source=\"dbSNP\",Version=\"build 129\">\n"  // NOLINT
+    "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele "
+    "counts\">\n"  // NOLINT
+    "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Frequency of each "
+    "ALT allele\">\n"  // NOLINT
+    "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+    "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype "
+    "Quality\">\n"  // NOLINT
+    "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth of all "
+    "passing filters reads.\">\n"  // NOLINT
+    "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum DP "
+    "observed within the GVCF block.\">\n"  // NOLINT
+    "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Read depth of all "
+    "passing filters reads for each allele.\">\n"  // NOLINT
+    "##FORMAT=<ID=VAF,Number=A,Type=Float,Description=\"Variant allele "
+    "fractions.\">\n"  // NOLINT
+    "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype "
+    "likelihoods, log10 encoded\">\n"  // NOLINT
+    "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Genotype "
+    "likelihoods, Phred encoded\">\n"  // NOLINT
+    "##FORMAT=<ID=PS,Number=1,Type=Integer,Description=\"Phase set\">\n"
+    "##PEDIGREE=<Name_1=\"Val_1\",Name_2=\"Val_2\">\n"
+    "##pedigreeDb=http://my.pedigre.es\n"
+    "##contig=<ID=Chr1,length=50,description=\"Dog chromosome 1\">\n"
+    "##contig=<ID=Chr2,length=25>\n"
+    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFido\n";
+
+// Build the skeleton of a VCF file for some pretend variants.
+// This routine will populate headers but not any records.
+std::unique_ptr<VcfWriter> MakeSomaticVcfWriter(const std::string& fname,
+                                                const bool round_qual) {
+  nucleus::genomics::v1::VcfHeader header;
+  // FILTERs. Note that the PASS filter automatically gets added even though it
+  // is not present here.
+  nucleus::genomics::v1::VcfFilterInfo& filter_ref_call =
+      *header.mutable_filters()->Add();
+  filter_ref_call.set_id("RefCall");
+  filter_ref_call.set_description("Most likely reference");
+
+  auto& filter_germline = *header.mutable_filters()->Add();
+  filter_germline.set_id("GERMLINE");
+  filter_germline.set_description("Non somatic variant");
+
+  // INFOs.
+  auto& infoEnd = *header.mutable_infos()->Add();
+  infoEnd.set_id("END");
+  infoEnd.set_number("1");
+  infoEnd.set_type("Integer");
+  infoEnd.set_description("Stop position of the interval");
+  auto& infodbsnp = *header.mutable_infos()->Add();
+  infodbsnp.set_id("DB");
+  infodbsnp.set_number("0");
+  infodbsnp.set_type("Flag");
+  infodbsnp.set_description("dbSNP membership");
+  infodbsnp.set_source("dbSNP");
+  infodbsnp.set_version("build 129");
+  auto& infoAc = *header.mutable_infos()->Add();
+  infoAc.set_id("AC");
+  infoAc.set_number("A");
+  infoAc.set_type("Integer");
+  infoAc.set_description("Allele counts");
+  auto& infoAf = *header.mutable_infos()->Add();
+  infoAf.set_id("AF");
+  infoAf.set_number("A");
+  infoAf.set_type("Float");
+  infoAf.set_description("Frequency of each ALT allele");
+
+  // FORMATs.
+  auto& format1 = *header.mutable_formats()->Add();
+  format1.set_id("GT");
+  format1.set_number("1");
+  format1.set_type("String");
+  format1.set_description("Genotype");
+  auto& format2 = *header.mutable_formats()->Add();
+  format2.set_id("GQ");
+  format2.set_number("1");
+  format2.set_type("Integer");
+  format2.set_description("Genotype Quality");
+  auto& format3 = *header.mutable_formats()->Add();
+  format3.set_id("DP");
+  format3.set_number("1");
+  format3.set_type("Integer");
+  format3.set_description("Read depth of all passing filters reads.");
+  auto& format4 = *header.mutable_formats()->Add();
+  format4.set_id("MIN_DP");
+  format4.set_number("1");
+  format4.set_type("Integer");
+  format4.set_description("Minimum DP observed within the GVCF block.");
+  auto& format5 = *header.mutable_formats()->Add();
+  format5.set_id("AD");
+  format5.set_number("R");
+  format5.set_type("Integer");
+  format5.set_description(
+      "Read depth of all passing filters reads for each allele.");
+  auto& format6 = *header.mutable_formats()->Add();
+  format6.set_id("VAF");
+  format6.set_number("A");
+  format6.set_type("Float");
+  format6.set_description("Variant allele fractions.");
+  auto& format7 = *header.mutable_formats()->Add();
+  format7.set_id("GL");
+  format7.set_number("G");
+  format7.set_type("Float");
+  format7.set_description("Genotype likelihoods, log10 encoded");
+  auto& format8 = *header.mutable_formats()->Add();
+  format8.set_id("PL");
+  format8.set_number("G");
+  format8.set_type("Integer");
+  format8.set_description("Genotype likelihoods, Phred encoded");
+  auto& format9 = *header.mutable_formats()->Add();
+  format9.set_id("PS");
+  format9.set_number("1");
+  format9.set_type("Integer");
+  format9.set_description("Phase set");
+
+  // Structured extras.
+  auto& sExtra = *header.mutable_structured_extras()->Add();
+  sExtra.set_key("PEDIGREE");
+  auto& f1 = *sExtra.mutable_fields()->Add();
+  f1.set_key("Name_1");
+  f1.set_value("Val_1");
+  auto& f2 = *sExtra.mutable_fields()->Add();
+  f2.set_key("Name_2");
+  f2.set_value("Val_2");
+
+  // Unstructured extras.
+  auto& extra = *header.mutable_extras()->Add();
+  extra.set_key("pedigreeDb");
+  extra.set_value("http://my.pedigre.es");
+
+  // Contigs.
+  auto& contig1 = *header.mutable_contigs()->Add();
+  contig1.set_name("Chr1");
+  contig1.set_description("Dog chromosome 1");
+  contig1.set_n_bases(50);
+  contig1.set_pos_in_fasta(0);
+  auto& contig2 = *header.mutable_contigs()->Add();
+  contig2.set_name("Chr2");
+  contig2.set_n_bases(25);
+  contig2.set_pos_in_fasta(1);
+
+  // Samples.
+  header.mutable_sample_names()->Add("Fido");
+
+  nucleus::genomics::v1::VcfWriterOptions writer_options;
+  if (round_qual) {
+    writer_options.set_round_qual_values(true);
+  }
+
+  return VcfWriter::ToFile(fname, header, writer_options).ConsumeValueOrDie();
+}
+
 Variant MakeVariant(const vector<string>& names, const string& refName,
                     int refStart, int refEnd, const string& refBases,
                     const vector<string>& altBases) {
@@ -360,6 +522,48 @@ TEST(VcfWriterTest, WritesVCF) {
       "Chr2\t23\tDogSNP6\t\tAAA\t0\t.\t.\tGT\t0/0\t1/0\n"
       "Chr2\t24\tDogSNP7\tA\tT,G\t0\t.\tDB;AC=1,0;AF=0.75,0\tGT\t0/1\t0/0\n"
       "Chr2\t25\tDogSNP8\tA\tT,G\t0\t.\tAC=1,0;AF=0.75,0\tGT\t0/1\t0/0\n";
+  EXPECT_EQ(kExpectedVcfContent, vcf_contents);
+}
+
+TEST(VcfWriterTest, WritesVCFSomaticMode) {
+  string output_filename = MakeTempFile("writes_somatic_vcf.vcf");
+  auto writer = MakeSomaticVcfWriter(
+      /*fname=*/output_filename,
+      /*round_qual=*/false);
+
+  // Variant with genotype 0/1 is replaced with 0/0. Filter is not changed.
+  Variant v1 = MakeVariant({"DogSNP1"}, "Chr1", 20, 21, "A", {"T"});
+  *v1.add_calls() = MakeVariantCall("Fido", {0, 1});
+  ASSERT_THAT(writer->WriteSomatic(v1), IsOK());
+
+  // Variant with genotype 1/1 is unchanged. This is a somatic variant.
+  Variant v2 = MakeVariant({}, "Chr2", 10, 11, "C", {"G", "T"});
+  v2.mutable_filter()->Add("PASS");
+  v2.set_quality(10);
+  *v2.add_calls() = MakeVariantCall("Fido", {1, 1});
+  ASSERT_THAT(writer->WriteSomatic(v2), IsOK());
+
+  // Variant has genotype 0/1 is replaced with 0/0 and filter is set to
+  // GERMLINE.
+  Variant v3 = MakeVariant({}, "Chr2", 13, 14, "C", {"G"});
+  v3.mutable_filter()->Add("PASS");
+  v3.set_quality(20);
+  *v3.add_calls() = MakeVariantCall("Fido", {0, 1});
+  ASSERT_THAT(writer->WriteSomatic(v3), IsOK());
+
+  // Check that the written data is as expected.
+  // (Close file to guarantee flushed to disk).
+  writer.reset();
+
+  string vcf_contents;
+  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
+                                           output_filename, &vcf_contents));
+
+  const string kExpectedVcfContent =
+      string(kExpectedSomaticHeaderFmt) +
+      "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT\t0/0\n"
+      "Chr2\t11\t.\tC\tG,T\t10\tPASS\t.\tGT\t1/1\n"
+      "Chr2\t14\t.\tC\tG\t20\tGERMLINE\t.\tGT\t0/0\n";
   EXPECT_EQ(kExpectedVcfContent, vcf_contents);
 }
 

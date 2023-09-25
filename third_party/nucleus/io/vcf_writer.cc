@@ -33,21 +33,23 @@
 // Implementation of vcf_writer.h
 #include "third_party/nucleus/io/vcf_writer.h"
 
+#include <array>
 #include <cmath>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/substitute.h"
-#include "absl/log/check.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
+#include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/io/vcf_conversion.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/core/status.h"
 #include "google/protobuf/map.h"
 #include "google/protobuf/repeated_field.h"
 
@@ -134,6 +136,43 @@ VcfWriter::~VcfWriter() {
     // the Close() call here.
     NUCLEUS_CHECK_OK(Close());
   }
+}
+
+// Helper functions for somatic processing.
+namespace {
+// Return genotype as a string, ex "00", "-1-1".
+std::string GetVariantGenotype(const Variant& variant) {
+  CHECK_EQ(variant.calls_size(), 1);
+  std::string ret;
+  for (const int genotype : variant.calls(0).genotype()) {
+    ret += std::to_string(genotype);
+  }
+  return ret;
+}
+
+// Set genotype field of Variant proto.
+void SetVariantGenotype(const std::array<int, 2> genotype,
+                        Variant* mutable_variant) {
+  mutable_variant->mutable_calls(0)->mutable_genotype()->Clear();
+  for (auto gt : genotype) {
+    mutable_variant->mutable_calls(0)->mutable_genotype()->Add(gt);
+  }
+}
+}  // namespace
+
+::nucleus::Status VcfWriter::WriteSomatic(const Variant& variant_message) {
+  Variant variant_message_mutable(variant_message);
+  auto original_genotype = GetVariantGenotype(variant_message);
+  if (original_genotype != "00" && original_genotype != "-1-1" &&
+      original_genotype != "11") {
+    SetVariantGenotype({0, 0}, &variant_message_mutable);
+    // Only replace filter with the GERMLINE if it is not empty (.)
+    if (!variant_message_mutable.filter().empty()) {
+      variant_message_mutable.mutable_filter()->Clear();
+      variant_message_mutable.mutable_filter()->Add("GERMLINE");
+    }
+  }
+  return Write(variant_message_mutable);
 }
 
 ::nucleus::Status VcfWriter::Write(const Variant& variant_message) {

@@ -75,6 +75,13 @@ class VcfWriter {
       const ConstProtoPtr<const nucleus::genomics::v1::Variant>& wrapped) {
     return Write(*(wrapped.p_));
   }
+  // These API extends Write() method to enable somatic processing.
+  ::nucleus::Status WriteSomatic(
+      const nucleus::genomics::v1::Variant& variant_message);
+  ::nucleus::Status WriteSomaticPython(
+      const ConstProtoPtr<const nucleus::genomics::v1::Variant>& wrapped) {
+    return WriteSomatic(*(wrapped.p_));
+  }
 
   // Close the underlying resource descriptors. Returns Status::OK() if the
   // close was successful; otherwise the status provides information about what

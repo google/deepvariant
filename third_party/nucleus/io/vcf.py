@@ -291,6 +291,9 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
   def write(self, proto):
     self._writer.write(proto)
 
+  def write_somatic(self, proto):
+    self._writer.write_somatic(proto)
+
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
 
