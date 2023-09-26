@@ -573,6 +573,7 @@ def main(argv=()):
         checkpoint_path=FLAGS.checkpoint,
         output_file=FLAGS.outfile,
     )
+    logging.info('Complete: call_variants.')
 
 
 if __name__ == '__main__':
