@@ -99,11 +99,94 @@ class RunDeepSomaticTest(parameterized.TestCase):
             '--infile '
             '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
             '--outfile "your_vcf" '
+            '--process_somatic=true '
             '--gvcf_outfile "your_gvcf" '
             '--nonvariant_site_tfrecord_path '
             '"/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
         ),
     )
+
+  @parameterized.parameters(
+      ('WGS', True, True),
+      ('WGS', False, False),
+  )
+  @flagsaver.flagsaver
+  def test_process_somatic(self, model_type, use_keras_model, process_somatic):
+    FLAGS.model_type = model_type
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads_tumor = 'your_tumor_bam'
+    FLAGS.reads_normal = 'your_normal_bam'
+    FLAGS.output_vcf = 'your_vcf'
+    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.num_shards = 64
+    FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.use_keras_model = use_keras_model
+    FLAGS.process_somatic = process_somatic
+    commands = run_deepsomatic.create_all_commands_and_logfiles(
+        '/tmp/deepsomatic_tmp_output', used_in_test=True
+    )
+
+    extra_args_plus_gvcf = (
+        '--gvcf "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
+    )
+
+    self.assertEqual(
+        commands[0][0],
+        'time seq 0 63 | parallel -q --halt 2 --line-buffer'
+        ' /opt/deepvariant/bin/make_examples_somatic --mode calling --ref'
+        ' "your_ref" --reads_tumor "your_tumor_bam" --reads_normal'
+        ' "your_normal_bam" --examples'
+        ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+        ' --channels "insert_size"'
+        ' %s'
+        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
+        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
+        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
+        ' --task {}' % (extra_args_plus_gvcf),
+    )
+    call_variants_bin = (
+        'call_variants_keras' if use_keras_model else 'call_variants'
+    )
+    self.assertEqual(
+        commands[1][0],
+        'time /opt/deepvariant/bin/{} --outfile'
+        ' "/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz"'
+        ' --examples'
+        ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+        ' --checkpoint "/opt/models/{}/model.ckpt"'.format(
+            call_variants_bin, model_type.lower()
+        ),
+    )
+    if process_somatic:
+      self.assertEqual(
+          commands[2][0],
+          (
+              'time /opt/deepvariant/bin/postprocess_variants '
+              '--ref "your_ref" '
+              '--infile '
+              '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
+              '--outfile "your_vcf" '
+              '--process_somatic=true '
+              '--gvcf_outfile "your_gvcf" '
+              '--nonvariant_site_tfrecord_path '
+              '"/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
+          ),
+      )
+    else:
+      self.assertEqual(
+          commands[2][0],
+          (
+              'time /opt/deepvariant/bin/postprocess_variants '
+              '--ref "your_ref" '
+              '--infile '
+              '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
+              '--outfile "your_vcf" '
+              '--noprocess_somatic '
+              '--gvcf_outfile "your_gvcf" '
+              '--nonvariant_site_tfrecord_path '
+              '"/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
+          ),
+      )
 
   @parameterized.parameters((None, None),
                             ('your_tumor_sample_name',
@@ -166,7 +249,8 @@ class RunDeepSomaticTest(parameterized.TestCase):
         '--ref "your_ref" '
         '--infile '
         '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
-        '--outfile "your_vcf"'
+        '--outfile "your_vcf" '
+        '--process_somatic=true',
     )
 
   @parameterized.parameters(
@@ -367,6 +451,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         '--infile '
         '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
         '--outfile "your_vcf" '
+        '--process_somatic=true '
         '--gvcf_outfile "your_gvcf" '
         '--nonvariant_site_tfrecord_path '
         '"/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" '

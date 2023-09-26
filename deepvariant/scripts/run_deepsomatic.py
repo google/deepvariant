@@ -231,6 +231,11 @@ _REPORT_TITLE = flags.DEFINE_string(
         'If not provided, the title will be the sample name.'
     ),
 )
+_PROCESS_SOMATIC = flags.DEFINE_boolean(
+    'process_somatic',
+    True,
+    'Optional. Is specified the input is treated as somatic.',
+)
 
 
 MODEL_TYPE_MAP = {
@@ -433,14 +438,19 @@ def postprocess_variants_command(
     ref: str,
     infile: str,
     outfile: str,
+    process_somatic: bool,
     extra_args: str,
-    **kwargs
+    **kwargs,
 ) -> Tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
+  if process_somatic:
+    command.extend(['--process_somatic=true'])
+  else:
+    command.extend(['--noprocess_somatic'])
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
@@ -624,6 +634,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir: str,
           ref=_REF.value,
           infile=call_variants_output,
           outfile=_OUTPUT_VCF.value,
+          process_somatic=_PROCESS_SOMATIC.value,
           extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,
