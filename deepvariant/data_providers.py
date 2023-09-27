@@ -125,7 +125,7 @@ def input_fn(
 
   if mode not in ['train', 'tune', 'predict']:
     raise ValueError('Mode must be set to one of "train", "tune", or "predict"')
-  is_training = mode == 'train'
+  is_training = mode in ['train', 'tune']
 
   # Get input shape from input path.
   input_shape = dv_utils.get_shape_from_examples_path(path)
@@ -145,9 +145,7 @@ def input_fn(
   ds = tf.data.Dataset.from_tensor_slices(file_list)
 
   if is_training:
-    ds = ds.shuffle(
-        config.shuffle_buffer_elements, reshuffle_each_iteration=True
-    )
+    ds = ds.shuffle(ds.cardinality(), reshuffle_each_iteration=True)
 
   ds = ds.interleave(
       load_dataset,

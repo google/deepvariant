@@ -41,7 +41,6 @@ from clu import periodic_actions
 import ml_collections
 from ml_collections.config_flags import config_flags
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 from deepvariant import data_providers
 from deepvariant import dv_utils
@@ -137,6 +136,7 @@ def train(config: ml_collections.ConfigDict):
   tf.io.gfile.copy(
       example_info_json_path,
       os.path.join(experiment_dir, 'example_info.json'),
+      overwrite=True,
   )
 
   steps_per_epoch = train_dataset_config.num_examples // config.batch_size
@@ -214,15 +214,17 @@ def train(config: ml_collections.ConfigDict):
 
     # Define Optimizer.
     # TODO: Add function for retrieving custom optimizer.
-    optimizer = tfa.optimizers.MovingAverage(
-        optimizer=tf.keras.optimizers.RMSprop(
-            learning_rate=learning_rate,
-            rho=config.rho,
-            momentum=config.momentum,
-            epsilon=config.epsilon,
-        ),
-        average_decay=config.average_decay,
-    )
+    if config.optimizer == 'nadam':
+      optimizer = tf.keras.optimizers.Nadam(learning_rate=learning_rate)
+    elif config.optimizer == 'rmsprop':
+      optimizer = tf.keras.optimizers.RMSprop(
+          learning_rate=learning_rate,
+          rho=config.rho,
+          momentum=config.momentum,
+          epsilon=config.epsilon,
+      )
+    else:
+      raise ValueError(f'Unknown optimizer: {config.optimizer}')
 
   # ================= #
   # Setup Checkpoint  #
@@ -378,9 +380,13 @@ def train(config: ml_collections.ConfigDict):
           metrics_to_write = {
               f'train/{x.name}': x.result() for x in state.train_metrics
           }
-          metrics_to_write['train/learning_rate'] = optimizer.learning_rate(
-              train_step
-          )
+          if isinstance(
+              optimizer.learning_rate, tf.distribute.DistributedValues
+          ):
+            current_learning_rate = optimizer.learning_rate.numpy()
+          else:
+            current_learning_rate = optimizer.learning_rate(train_step)
+          metrics_to_write['train/learning_rate'] = current_learning_rate
           metrics_to_write['epoch'] = epoch
           metric_writer.write_scalars(
               train_step,

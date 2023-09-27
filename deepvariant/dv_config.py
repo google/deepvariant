@@ -72,6 +72,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.batch_size = 16384
   config.num_epochs = 10
   config.num_validation_examples = 1500000
+  config.optimizer = 'rmsprop'
 
   # Training hyperparameters
   config.learning_rate = 0.001
@@ -98,7 +99,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
 
   # Data Pipeline Options
   config.prefetch_buffer_bytes = 16 * 1000 * 1000
-  config.shuffle_buffer_elements = 1024
+  config.shuffle_buffer_elements = 10_000
   config.input_read_threads = 32
 
   # Placeholder value for limiting training examples. 0=No limit.
