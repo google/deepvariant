@@ -12,7 +12,7 @@ filegroup(
     name = "binaries",
     srcs = [
         "call_variants",
-        "call_variants_keras",
+        "call_variants_slim",
         "make_examples",
         "make_examples_somatic",
         "multisample_make_examples",
@@ -51,8 +51,7 @@ py_library(
     srcs = [],
     deps = [
         ":allele_frequency",
-        ":call_variants_keras_lib",
-        ":call_variants_lib",
+        ":call_variants_slim_lib",
         ":data_providers",
         ":dv_utils",
         ":dv_vcf_constants",
@@ -759,8 +758,8 @@ py_test(
 )
 
 py_library(
-    name = "call_variants_lib",
-    srcs = ["call_variants.py"],
+    name = "call_variants_slim_lib",
+    srcs = ["call_variants_slim.py"],
     srcs_version = "PY3",
     deps = [
         ":data_providers",
@@ -779,11 +778,11 @@ py_library(
 )
 
 py_binary(
-    name = "call_variants",
-    srcs = ["call_variants.py"],
+    name = "call_variants_slim",
+    srcs = ["call_variants_slim.py"],
     python_version = "PY3",
     deps = [
-        ":call_variants_main_lib",
+        ":call_variants_slim_main_lib",
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
@@ -816,11 +815,11 @@ py_test(
 )
 
 py_binary(
-    name = "call_variants_keras",
-    srcs = ["call_variants_keras.py"],
+    name = "call_variants",
+    srcs = ["call_variants.py"],
     python_version = "PY3",
     deps = [
-        "call_variants_keras_lib",
+        "call_variants_lib",
         ":dv_config",
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
@@ -868,36 +867,36 @@ py_binary(
 )
 
 py_library(
-    name = "call_variants_keras_lib",
-    srcs = ["call_variants_keras.py"],
+    name = "call_variants_lib",
+    srcs = ["call_variants.py"],
     srcs_version = "PY3",
     deps = [
-        ":call_variants_main_lib",
+        ":call_variants_slim_main_lib",
         ":keras_modeling",
     ],
 )
 
 py_library(
-    name = "call_variants_main_lib",
+    name = "call_variants_slim_main_lib",
     srcs = [
-        "call_variants.py",
+        "call_variants_slim.py",
     ],
     deps = [
-        ":call_variants_lib",
+        ":call_variants_slim_lib",
         "@absl_py//absl/flags",
     ],
 )
 
 py_test(
-    name = "call_variants_test",
+    name = "call_variants_slim_test",
     size = "large",
-    srcs = ["call_variants_test.py"],
+    srcs = ["call_variants_slim_test.py"],
     args = ["--use_tpu=false"],
     data = [":testdata"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
-        ":call_variants_main_lib",
+        ":call_variants_slim_main_lib",
         ":dv_utils",
         ":modeling",
         ":py_testdata",
@@ -926,7 +925,7 @@ py_test(
         "notap",
     ],
     deps = [
-        ":call_variants_main_lib",
+        ":call_variants_slim_main_lib",
         ":modeling",
         ":py_testdata",
         "@absl_py//absl/testing:absltest",
@@ -1052,7 +1051,6 @@ py_library(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:genomics_math",
         "//third_party/nucleus/util:proto_utils",
-        "//third_party/nucleus/util:ranges",
         "//third_party/nucleus/util:struct_utils",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",

@@ -34,10 +34,10 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf
 
-from third_party.nucleus.testing import test_utils
-from deepvariant import call_variants
+from deepvariant import call_variants_slim
 from deepvariant import modeling
 from deepvariant import testdata
+from third_party.nucleus.testing import test_utils
 
 
 def setUpModule():
@@ -50,7 +50,7 @@ class CallVariantsAcceleratorTests(
 
   @parameterized.parameters(modeling.production_models())
   def test_call_variants_runs_on_gpus(self, model):
-    call_variants.call_variants(
+    call_variants_slim.call_variants(
         examples_filename=testdata.GOLDEN_CALLING_EXAMPLES,
         checkpoint_path=None,
         model=model,

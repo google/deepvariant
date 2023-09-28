@@ -45,20 +45,20 @@ class RunDeepvariantTest(parameterized.TestCase):
 
   # pylint: disable=g-complex-comprehension
   @parameterized.parameters(
-      (model_type, use_keras_model)
+      (model_type, use_slim_model)
       for model_type in ['WGS', 'WES', 'HYBRID_PACBIO_ILLUMINA']
-      for use_keras_model in [False, True]
+      for use_slim_model in [False, True]
   )
   # pylint: enable=g-complex-comprehension
   @flagsaver.flagsaver
-  def test_basic_commands(self, model_type, use_keras_model):
+  def test_basic_commands(self, model_type, use_slim_model):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
     FLAGS.reads = 'your_bam'
     FLAGS.output_vcf = 'your_vcf'
     FLAGS.output_gvcf = 'your_gvcf'
     FLAGS.num_shards = 64
-    FLAGS.use_keras_model = use_keras_model
+    FLAGS.use_slim_model = use_slim_model
     commands = run_deepvariant.create_all_commands_and_logfiles(
         '/tmp/deepvariant_tmp_output'
     )
@@ -82,7 +82,7 @@ class RunDeepvariantTest(parameterized.TestCase):
         '--task {}' % (extra_channel, extra_args_plus_gvcf),
     )
     call_variants_bin = (
-        'call_variants_keras' if use_keras_model else 'call_variants'
+        'call_variants_slim' if use_slim_model else 'call_variants'
     )
     self.assertEqual(
         commands[1][0],

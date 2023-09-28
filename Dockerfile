@@ -67,7 +67,7 @@ COPY --from=builder /opt/deepvariant/run-prereq.sh .
 COPY --from=builder /opt/deepvariant/settings.sh .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examples.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/call_variants.zip  .
-COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/call_variants_keras.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/call_variants_slim.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/postprocess_variants.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/vcf_stats_report.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examples.zip  .
@@ -96,8 +96,8 @@ RUN \
     /opt/deepvariant/bin/call_variants && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/call_variants_keras.zip "$@"' > \
-    /opt/deepvariant/bin/call_variants_keras && \
+    'python3 /opt/deepvariant/bin/call_variants_slim.zip "$@"' > \
+    /opt/deepvariant/bin/call_variants_slim && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
     'python3 /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
@@ -136,7 +136,7 @@ RUN \
     /opt/deepvariant/bin/run_deepsomatic && \
   chmod +x /opt/deepvariant/bin/make_examples \
     /opt/deepvariant/bin/call_variants \
-    /opt/deepvariant/bin/call_variants_keras \
+    /opt/deepvariant/bin/call_variants_slim \
     /opt/deepvariant/bin/postprocess_variants \
     /opt/deepvariant/bin/vcf_stats_report \
     /opt/deepvariant/bin/show_examples \

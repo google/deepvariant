@@ -47,7 +47,7 @@ Flags:
 --bin_version Version of DeepTrio model to use.
 --customized_model_child Path to checkpoint directory containing child model checkpoint.
 --customized_model_parent Path to checkpoint directory containing parent model checkpoint.
---use_keras_model (true|false) If true, the model provided is Keras model.
+--use_slim_model (true|false) If true, the model provided is Slim model.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
@@ -84,7 +84,7 @@ CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL_PARENT=""
 CUSTOMIZED_MODEL_CHILD=""
-USE_KERAS_MODEL=false  # TODO: Change this to true before release.
+USE_SLIM_MODEL=false  # TODO: Change this to true before release.
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
@@ -164,8 +164,8 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
-    --use_keras_model)
-      USE_KERAS_MODEL="$2"
+    --use_slim_model)
+      USE_SLIM_MODEL="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -565,25 +565,48 @@ function get_docker_image() {
 function setup_args() {
   if [[ -n "${CUSTOMIZED_MODEL_CHILD}" ]]; then
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL_CHILD} to ${INPUT_DIR}/child_model"
-    run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".data-00000-of-00001 "${INPUT_DIR}/child_model/model.ckpt.data-00000-of-00001"
-    run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".index "${INPUT_DIR}/child_model/model.ckpt.index"
-    if [[ "${USE_KERAS_MODEL}" = false ]]; then
-      run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".meta "${INPUT_DIR}/child_model/model.ckpt.meta"
+    # Check if it's saved Model
+    saved_modelpath=${CUSTOMIZED_MODEL_CHILD}/saved_model.pb
+    using_saved_model=$(gsutil -q stat "$saved_modelpath" || echo 1)
+    if [[ $using_saved_model != 1 ]]; then
+      echo "Using saved model"
+      run mkdir -p "${INPUT_DIR}/child_savedmodel"
+      run gcloud storage cp -R "${CUSTOMIZED_MODEL_CHILD}"/'*' "${INPUT_DIR}"/child_savedmodel/
+      run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}"/example_info.json "${INPUT_DIR}"/child_savedmodel/example_info.json
+      extra_args+=( --customized_model_child "/input/child_savedmodel")
+    else
+      echo "Using checkpoint"
+      run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".data-00000-of-00001 "${INPUT_DIR}/child_model/model.ckpt.data-00000-of-00001"
+      run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".index "${INPUT_DIR}/child_model/model.ckpt.index"
+      if [[ "${USE_SLIM_MODEL}" = true ]]; then
+        run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".meta "${INPUT_DIR}/child_model/model.ckpt.meta"
+      fi
+      CUSTOMIZED_MODEL_CHILD_DIR="$(dirname "${CUSTOMIZED_MODEL_CHILD}")"
+      run "gcloud storage cp ${CUSTOMIZED_MODEL_CHILD_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
+      extra_args+=( --customized_model_child "/input/child_model/model.ckpt")
     fi
-    CUSTOMIZED_MODEL_CHILD_DIR="$(dirname "${CUSTOMIZED_MODEL_CHILD}")"
-    run "gcloud storage cp ${CUSTOMIZED_MODEL_CHILD_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
-    extra_args+=( --customized_model_child "/input/child_model/model.ckpt")
   fi
   if [[ -n "${CUSTOMIZED_MODEL_PARENT}" ]]; then
-    run echo "Copy from gs:// path ${CUSTOMIZED_MODEL_PARENT} to ${INPUT_DIR}/parent_model"
-    run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".data-00000-of-00001 "${INPUT_DIR}/parent_model/model.ckpt.data-00000-of-00001"
-    run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".index "${INPUT_DIR}/parent_model/model.ckpt.index"
-    if [[ "${USE_KERAS_MODEL}" = false ]]; then
-      run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".meta "${INPUT_DIR}/parent_model/model.ckpt.meta"
+    # Check if it's saved Model
+    saved_modelpath=${CUSTOMIZED_MODEL_PARENT}/saved_model.pb
+    using_saved_model=$(gsutil -q stat "$saved_modelpath" || echo 1)
+    if [[ $using_saved_model != 1 ]]; then
+      echo "Using saved model"
+      run mkdir -p "${INPUT_DIR}/parent_savedmodel"
+      run gcloud storage cp -R "${CUSTOMIZED_MODEL_PARENT}"/'*' "${INPUT_DIR}"/parent_savedmodel/
+      run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}"/example_info.json "${INPUT_DIR}"/parent_savedmodel/example_info.json
+      extra_args+=( --customized_model_parent "/input/parent_savedmodel")
+    else
+      run echo "Copy from gs:// path ${CUSTOMIZED_MODEL_PARENT} to ${INPUT_DIR}/parent_model"
+      run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".data-00000-of-00001 "${INPUT_DIR}/parent_model/model.ckpt.data-00000-of-00001"
+      run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".index "${INPUT_DIR}/parent_model/model.ckpt.index"
+      if [[ "${USE_SLIM_MODEL}" = true ]]; then
+        run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".meta "${INPUT_DIR}/parent_model/model.ckpt.meta"
+      fi
+      CUSTOMIZED_MODEL_PARENT_DIR="$(dirname "${CUSTOMIZED_MODEL_PARENT}")"
+      run "gcloud storage cp ${CUSTOMIZED_MODEL_PARENT_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
+      extra_args+=( --customized_model_parent "/input/parent_model/model.ckpt")
     fi
-    CUSTOMIZED_MODEL_PARENT_DIR="$(dirname "${CUSTOMIZED_MODEL_PARENT}")"
-    run "gcloud storage cp ${CUSTOMIZED_MODEL_PARENT_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
-    extra_args+=( --customized_model_parent "/input/parent_model/model.ckpt")
   fi
   if [[ -z "${CUSTOMIZED_MODEL_CHILD}" ]] && [[ -z "${CUSTOMIZED_MODEL_PARENT}" ]]; then
     run echo "No custom model specified."
@@ -610,10 +633,10 @@ function setup_args() {
   if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" =~ ^1\.[2-9]\.0$ ]]; then
     extra_args+=( --runtime_report )
   fi
-  # --use_keras_model is introduced only after 1.5.0.
+  # --use_slim_model is introduced only after 1.6.0.
   if [[ "${BUILD_DOCKER}" = true ]] || [[ ! "${BIN_VERSION}" =~ ^1\.[0-5]\.0$ ]]; then
-    if [[ "${USE_KERAS_MODEL}" = true ]]; then
-    extra_args+=( --use_keras_model )
+    if [[ "${USE_SLIM_MODEL}" = true ]]; then
+      extra_args+=( --use_slim_model )
     fi
   fi
 }

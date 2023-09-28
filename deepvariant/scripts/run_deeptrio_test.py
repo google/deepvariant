@@ -157,14 +157,14 @@ class RunDeeptrioTest(parameterized.TestCase):
 
   # pylint: disable=g-complex-comprehension
   @parameterized.parameters(
-      (model_type, use_keras_model)
+      (model_type, use_slim_model)
       for model_type in ['WGS', 'WES', 'PACBIO']
-      for use_keras_model in [False, True]
+      for use_slim_model in [False, True]
   )
   # pylint: enable=g-complex-comprehension
   @flagsaver.flagsaver
   def test_duo_call_variants_postprocess_variants_commands(
-      self, model_type, use_keras_model
+      self, model_type, use_slim_model
   ):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
@@ -176,14 +176,14 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
     FLAGS.output_gvcf_child = 'your_gvcf_child'
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
-    FLAGS.use_keras_model = use_keras_model
+    FLAGS.use_slim_model = use_slim_model
     FLAGS.num_shards = 64
     commands, postprocess_cmds, report_commands = (
         self._create_all_commands_and_check_stdout()
     )
 
     call_variants_bin = (
-        'call_variants_keras' if use_keras_model else 'call_variants'
+        'call_variants_slim' if use_slim_model else 'call_variants'
     )
     self.assertEqual(
         commands[1],

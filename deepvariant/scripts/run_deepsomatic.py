@@ -132,8 +132,8 @@ _VERSION = flags.DEFINE_boolean(
     allow_hide_cpp=True,
 )
 # TODO
-_USE_KERAS_MODEL = flags.DEFINE_boolean(
-    'use_keras_model',
+_USE_SLIM_MODEL = flags.DEFINE_boolean(
+    'use_slim_model',
     False,
     'Default to False. If True, call_variants step will use --customized_model '
     'as a Keras model.',
@@ -409,12 +409,12 @@ def call_variants_command(
     examples: str,
     model_ckpt: str,
     extra_args: str,
-    use_keras_model: bool = False,
+    use_slim_model: bool = False,
 ) -> Tuple[str, Optional[str]]:
   """Returns a call_variants (command, logfile) for subprocess."""
   binary_name = 'call_variants'
-  if use_keras_model:
-    binary_name = 'call_variants_keras'
+  if use_slim_model:
+    binary_name = 'call_variants_slim'
   command = ['time', f'/opt/deepvariant/bin/{binary_name}']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
@@ -529,7 +529,7 @@ def check_flags():
         not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.data-00000-of-00001')
         or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index')
         or (
-            not _USE_KERAS_MODEL.value
+            not _USE_SLIM_MODEL.value
             and not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.meta')
         )
     ):
@@ -624,7 +624,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir: str,
           examples=examples,
           model_ckpt=model_ckpt,
           extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
-          use_keras_model=_USE_KERAS_MODEL.value,
+          use_slim_model=_USE_SLIM_MODEL.value,
       )
   )
 

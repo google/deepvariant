@@ -26,7 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for deepvariant .call_variants."""
+"""Tests for deepvariant .call_variants_slim."""
 
 import collections
 import errno
@@ -44,7 +44,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import estimator as tf_estimator
 
-from deepvariant import call_variants
+from deepvariant import call_variants_slim
 from deepvariant import dv_utils
 from deepvariant import modeling
 from deepvariant import testdata
@@ -125,7 +125,7 @@ class CallVariantsEndToEndTests(
     model = modeling.get_model('inception_v3')
     checkpoint_path = _LEAVE_MODEL_UNINITIALIZED
 
-    call_variants.call_variants(
+    call_variants_slim.call_variants(
         examples_filename=filename,
         checkpoint_path=checkpoint_path,
         model=model,
@@ -145,14 +145,14 @@ class CallVariantsEndToEndTests(
     checkpoint_path = _LEAVE_MODEL_UNINITIALIZED
     outfile = test_utils.test_tmpfile('call_variants.tfrecord')
     model = modeling.get_model('constant')
-    call_variants.call_variants(
+    call_variants_slim.call_variants(
         examples_filename=filename,
         checkpoint_path=checkpoint_path,
         model=model,
         output_file=outfile,
         batch_size=4,
         max_batches=None,
-        master='',
+        primary='',
         use_tpu=FLAGS.use_tpu,
     )
     call_variants_outputs = list(
@@ -222,14 +222,14 @@ class CallVariantsEndToEndTests(
       max_batches = 1
 
     outfile = test_utils.test_tmpfile('call_variants.tfrecord')
-    call_variants.call_variants(
+    call_variants_slim.call_variants(
         examples_filename=source_path,
         checkpoint_path=_LEAVE_MODEL_UNINITIALIZED,
         model=model,
         output_file=outfile,
         batch_size=batch_size,
         max_batches=max_batches,
-        master='',
+        primary='',
         use_tpu=FLAGS.use_tpu,
     )
 
@@ -368,14 +368,14 @@ class CallVariantsEndToEndTests(
             'field with length 3.'
         ),
     ):
-      ds = call_variants.prepare_inputs(source_path)
+      ds = call_variants_slim.prepare_inputs(source_path)
       _ = list(_get_infer_batches(ds, model=model, batch_size=1))
 
   def test_call_variants_with_empty_input(self):
     source_path = test_utils.test_tmpfile('empty.tfrecord')
     tfrecord.write_tfrecords([], source_path)
     # Make sure that prepare_inputs don't crash on empty input.
-    ds = call_variants.prepare_inputs(source_path)
+    ds = call_variants_slim.prepare_inputs(source_path)
     m = modeling.get_model('constant')
 
     # The API specifies that OutOfRangeError is thrown in this case.
@@ -421,7 +421,7 @@ class CallVariantsUnitTests(
       sess.run(tf.compat.v1.local_variables_initializer())
       sess.run(tf.compat.v1.global_variables_initializer())
 
-      ds = call_variants.prepare_inputs(file_string_input)
+      ds = call_variants_slim.prepare_inputs(file_string_input)
       _, variants, _ = _get_infer_batches(ds, model=self.model, batch_size=1)
 
       seen_variants = []
@@ -442,7 +442,7 @@ class CallVariantsUnitTests(
   )
   def test_round_gls(self, precision, expected):
     test_data = [3.592555731302127e-5, 0.99992620944976807, 3.78809563699178e-5]
-    actual = call_variants.round_gls(test_data, precision)
+    actual = call_variants_slim.round_gls(test_data, precision)
     self.assertEqual(actual, expected)
 
   @parameterized.parameters('auto', 'cpu')
@@ -455,7 +455,7 @@ class CallVariantsUnitTests(
     else:
       batch_size = 1
     outfile = test_utils.test_tmpfile('call_variants_cpu_only.tfrecord')
-    call_variants.call_variants(
+    call_variants_slim.call_variants(
         examples_filename=testdata.GOLDEN_CALLING_EXAMPLES,
         checkpoint_path=_LEAVE_MODEL_UNINITIALIZED,
         model=self.model,
@@ -505,7 +505,7 @@ class CallVariantsUnitTests(
       return
 
     with mock.patch.object(
-        call_variants.tf.compat.v1.Session, 'list_devices'
+        call_variants_slim.tf.compat.v1.Session, 'list_devices'
     ) as mock_ld:
       mock_ld.return_value = [
           device(name=dt + '/' + str(i), device_type=dt.upper())
@@ -515,7 +515,7 @@ class CallVariantsUnitTests(
       # Only run the tpu cases when we have an actual tpu device, supplied
       # by the flags from the BUILD rule.
       def _run():
-        call_variants.call_variants(
+        call_variants_slim.call_variants(
             use_tpu=FLAGS.use_tpu,
             examples_filename=testdata.GOLDEN_CALLING_EXAMPLES,
             checkpoint_path=_LEAVE_MODEL_UNINITIALIZED,
@@ -527,7 +527,7 @@ class CallVariantsUnitTests(
         )
 
       if expect_exception:
-        with self.assertRaises(call_variants.ExecutionHardwareError):
+        with self.assertRaises(call_variants_slim.ExecutionHardwareError):
           _run()
       else:
         _run()
@@ -537,11 +537,11 @@ class CallVariantsUnitTests(
         mock.patch.object(logging, 'error') as mock_logging,
         mock.patch.object(sys, 'exit') as mock_exit,
     ):
-      call_variants.main(['call_variants.py', 'extra_arg'])
+      call_variants_slim.main(['call_variants_slim.py', 'extra_arg'])
     mock_logging.assert_called_once_with(
         'Command line parsing failure: call_variants does not accept '
         'positional arguments but some are present on the command line: '
-        "\"['call_variants.py', 'extra_arg']\"."
+        "\"['call_variants_slim.py', 'extra_arg']\"."
     )
     mock_exit.assert_called_once_with(errno.ENOENT)
 
