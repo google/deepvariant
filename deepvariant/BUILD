@@ -871,8 +871,17 @@ py_library(
     srcs = ["call_variants.py"],
     srcs_version = "PY3",
     deps = [
-        ":call_variants_slim_main_lib",
+        ":dv_utils",
         ":keras_modeling",
+        ":logging_level",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/util:errors",
+        "//third_party/nucleus/util:proto_utils",
+        "//third_party/nucleus/util:variant_utils",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
     ],
 )
 
