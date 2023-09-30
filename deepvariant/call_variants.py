@@ -475,15 +475,15 @@ def call_variants(
     example_shape = dv_utils.example_image_shape(first_example)
 
   logging.info('Shape of input examples: %s', str(example_shape))
-  use_saved_model = tf.io.gfile.exists(FLAGS.checkpoint) and tf.io.gfile.exists(
-      f'{FLAGS.checkpoint}/saved_model.pb'
+  use_saved_model = tf.io.gfile.exists(checkpoint_path) and tf.io.gfile.exists(
+      f'{checkpoint_path}/saved_model.pb'
   )
   logging.info('Use saved model: %s', str(use_saved_model))
 
   if checkpoint_path is not None:
     if use_saved_model:
       model = tf.saved_model.load(checkpoint_path)
-      model_example_info_json = f'{FLAGS.checkpoint}/example_info.json'
+      model_example_info_json = f'{checkpoint_path}/example_info.json'
       model_example_shape = dv_utils.get_shape_and_channels_from_json(
           model_example_info_json
       )
