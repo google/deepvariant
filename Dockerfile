@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:20.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.8
 ARG DV_GPU_BUILD=0
-ARG VERSION=1.5.0
+ARG VERSION=1.6.0
 
 FROM continuumio/miniconda3 as conda_setup
 RUN conda config --add channels defaults && \
@@ -149,40 +149,49 @@ RUN \
 
 # Copy models
 WORKDIR /opt/models/wgs
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.meta .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard/model.ckpt.example_info.json .
-RUN chmod +r /opt/models/wgs/model.ckpt*
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/example_info.json .
+WORKDIR /opt/models/wgs/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/variables/variables.index .
+RUN chmod +r /opt/models/wgs/*
 
 WORKDIR /opt/models/wes
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.meta .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wes_standard/model.ckpt.example_info.json .
-RUN chmod +r /opt/models/wes/model.ckpt*
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/example_info.json .
+WORKDIR /opt/models/wes/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/variables/variables.index .
+RUN chmod +r /opt/models/wes/*
 
 WORKDIR /opt/models/pacbio
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.meta .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-pacbio_standard/model.ckpt.example_info.json .
-RUN chmod +r /opt/models/pacbio/model.ckpt*
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/example_info.json .
+WORKDIR /opt/models/pacbio/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/variables/variables.index .
+RUN chmod +r /opt/models/pacbio/*
 
-WORKDIR /opt/models/hybrid_pacbio_illumina
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.meta .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-hybrid_standard/model.ckpt.example_info.json .
-RUN chmod +r /opt/models/hybrid_pacbio_illumina/model.ckpt*
+WORKDIR /opt/models/hybrid
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/example_info.json .
+WORKDIR /opt/models/hybrid/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/variables/variables.index .
+RUN chmod +r /opt/models/hybrid/*
 
 WORKDIR /opt/models/ont_r104
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-ont_r104/model.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-ont_r104/model.ckpt.index .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-ont_r104/model.ckpt.meta .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-ont_r104/model.ckpt.example_info.json .
-
-RUN chmod +r /opt/models/ont_r104/model.ckpt*
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/example_info.json .
+WORKDIR /opt/models/ont_r104/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/variables/variables.index .
+RUN chmod +r /opt/models/ont_r104/*
 
 ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin
 
