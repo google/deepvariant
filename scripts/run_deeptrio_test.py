@@ -35,7 +35,7 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
-from deepvariant.scripts import run_deeptrio
+from deepvariant.opensource_only.scripts import run_deeptrio
 
 FLAGS = flags.FLAGS
 
@@ -404,7 +404,8 @@ class RunDeeptrioTest(parameterized.TestCase):
   ))
   @flagsaver.flagsaver
   def test_make_examples_commands_with_candidate_partition(
-      self, model_type, extra_args_1, extra_args_2):
+      self, model_type, extra_args_1, extra_args_2
+  ):
     FLAGS.model_type = model_type
     FLAGS.use_candidate_partition = True
     FLAGS.ref = 'your_ref'
@@ -539,8 +540,9 @@ class RunDeeptrioTest(parameterized.TestCase):
       ),
   )
   @flagsaver.flagsaver
-  def test_pacbio_args_overwrite(self, make_examples_extra_args, expected_args,
-                                 expected_stdout):
+  def test_pacbio_args_overwrite(
+      self, make_examples_extra_args, expected_args, expected_stdout
+  ):
     """Confirms that adding extra flags can overwrite the default from mode."""
     FLAGS.model_type = 'PACBIO'
     FLAGS.ref = 'your_ref'
@@ -561,7 +563,8 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.make_examples_extra_args = make_examples_extra_args
     commands, _, _ = self._create_all_commands_and_check_stdout(expected_stdout)
     self.assertEqual(
-        commands[0], 'time seq 0 63 | parallel -q --halt 2 --line-buffer '
+        commands[0],
+        'time seq 0 63 | parallel -q --halt 2 --line-buffer '
         '/opt/deepvariant/bin/deeptrio/make_examples --mode calling '
         '--ref "your_ref" --reads_parent1 "your_bam_parent1" '
         '--reads_parent2 "your_bam_parent2" '
@@ -571,7 +574,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--sample_name_parent1 "your_sample_parent1" '
         '--sample_name_parent2 "your_sample_parent2" '
         '%s'
-        '--task {}' % expected_args)
+        '--task {}' % expected_args,
+    )
 
   @parameterized.parameters(
       (

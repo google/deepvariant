@@ -238,8 +238,7 @@ _PROCESS_SOMATIC = flags.DEFINE_boolean(
 )
 
 
-MODEL_TYPE_MAP = {
-}
+MODEL_TYPE_MAP = {}
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
@@ -314,8 +313,13 @@ def _update_kwargs_with_warning(kwargs, extra_args):
 
 
 def make_examples_somatic_command(
-    ref, reads_tumor, reads_normal, examples, extra_args,
-    runtime_by_region_path=None, **kwargs
+    ref,
+    reads_tumor,
+    reads_normal,
+    examples,
+    extra_args,
+    runtime_by_region_path=None,
+    **kwargs,
 ) -> Tuple[str, Optional[str]]:
   """Returns a make_examples_somatic (command, logfile) for subprocess.
 
@@ -560,8 +564,9 @@ def get_model_ckpt(model_type, customized_model):  # pylint: disable=unused-argu
     # return MODEL_TYPE_MAP[model_type]
 
 
-def create_all_commands_and_logfiles(intermediate_results_dir: str,
-                                     used_in_test: bool = False):
+def create_all_commands_and_logfiles(
+    intermediate_results_dir: str, used_in_test: bool = False
+):
   """Creates 3 (command, logfile) to be executed later."""
   if not used_in_test:
     check_flags()
@@ -665,8 +670,13 @@ def main(_):
     print('DeepSomatic: DeepVariant version {}'.format(DEEP_VARIANT_VERSION))
     return
 
-  for flag_key in ['model_type', 'ref', 'reads_tumor', 'reads_normal',
-                   'output_vcf']:
+  for flag_key in [
+      'model_type',
+      'ref',
+      'reads_tumor',
+      'reads_normal',
+      'output_vcf',
+  ]:
     if FLAGS.get_flag_value(flag_key, None) is None:
       sys.stderr.write('--{} is required.\n'.format(flag_key))
       sys.stderr.write('Pass --helpshort or --helpfull to see help on flags.\n')

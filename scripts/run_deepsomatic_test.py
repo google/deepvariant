@@ -29,12 +29,13 @@
 """Tests for deepvariant .run_deepsomatic."""
 
 
+
 from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
 
-from deepvariant.scripts import run_deepsomatic
+from deepvariant.opensource_only.scripts import run_deepsomatic
 
 FLAGS = flags.FLAGS
 
@@ -188,10 +189,11 @@ class RunDeepSomaticTest(parameterized.TestCase):
           ),
       )
 
-  @parameterized.parameters((None, None),
-                            ('your_tumor_sample_name',
-                             'your_normal_sample_name'),
-                            ('just_tumor_sample_name', None))
+  @parameterized.parameters(
+      (None, None),
+      ('your_tumor_sample_name', 'your_normal_sample_name'),
+      ('just_tumor_sample_name', None),
+  )
   @flagsaver.flagsaver
   def test_sample_name_command(self, sample_name_tumor, sample_name_normal):
     FLAGS.model_type = 'WGS'
@@ -211,13 +213,9 @@ class RunDeepSomaticTest(parameterized.TestCase):
 
     extra_sample_name_flag = ''
     if sample_name_normal is not None:
-      extra_sample_name_flag += (
-          f' --sample_name_normal "{sample_name_normal}"'
-      )
+      extra_sample_name_flag += f' --sample_name_normal "{sample_name_normal}"'
     if sample_name_tumor is not None:
-      extra_sample_name_flag += (
-          f' --sample_name_tumor "{sample_name_tumor}"'
-      )
+      extra_sample_name_flag += f' --sample_name_tumor "{sample_name_tumor}"'
 
     self.assertEqual(
         commands[0][0],
@@ -368,7 +366,6 @@ class RunDeepSomaticTest(parameterized.TestCase):
     )
 
   @flagsaver.flagsaver
-
   @flagsaver.flagsaver
   def test_make_examples_extra_args_invalid(self):
     FLAGS.model_type = 'WGS'

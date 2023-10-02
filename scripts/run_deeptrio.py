@@ -976,7 +976,7 @@ def run_commands(
           subprocess.check_call(command, shell=True, executable='/bin/bash')
         except subprocess.CalledProcessError as e:
           logging.info(e.output)
-          raise Exception('Command(s) failed. See details above.') from e
+          raise ValueError('Command(s) failed. See details above.') from e
   else:
     for command in commands:
       print('\n***** Running the command:*****\n{}\n'.format(command))
@@ -991,7 +991,7 @@ def run_commands(
       if failed_task_indices:
         for i in failed_task_indices:
           logging.info('Failed command: %s', commands[i])
-        raise Exception('Command(s) failed. See details above.')
+        raise ValueError('Command(s) failed. See details above.')
 
 
 def main(_):
