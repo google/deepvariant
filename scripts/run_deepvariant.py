@@ -525,7 +525,7 @@ def check_flags():
         not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.data-00000-of-00001')
         or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index')
         or (
-            not _USE_SLIM_MODEL.value
+            _USE_SLIM_MODEL.value
             and not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.meta')
         )
     ):
