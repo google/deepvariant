@@ -181,14 +181,14 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/variables/variables.index .
 RUN chmod +r /opt/models/pacbio/*
 
-WORKDIR /opt/models/hybrid
+WORKDIR /opt/models/hybrid_pacbio_illumina
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/fingerprint.pb .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/saved_model.pb .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/example_info.json .
-WORKDIR /opt/models/hybrid/variables
+WORKDIR /opt/models/hybrid_pacbio_illumina/variables
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/variables/variables.data-00000-of-00001 .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/variables/variables.index .
-RUN chmod +r /opt/models/hybrid/*
+RUN chmod +r /opt/models/hybrid_pacbio_illumina/*
 
 WORKDIR /opt/models/ont_r104
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/fingerprint.pb .

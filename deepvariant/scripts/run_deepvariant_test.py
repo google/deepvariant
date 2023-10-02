@@ -90,7 +90,7 @@ class RunDeepvariantTest(parameterized.TestCase):
         '--outfile '
         '"/tmp/deepvariant_tmp_output/call_variants_output.tfrecord.gz" '
         '--examples "/tmp/deepvariant_tmp_output/make_examples.tfrecord@64.gz" '
-        '--checkpoint "/opt/models/{}/model.ckpt"'.format(
+        '--checkpoint "/opt/models/{}"'.format(
             call_variants_bin, model_type.lower()
         ),
     )
@@ -156,7 +156,7 @@ class RunDeepvariantTest(parameterized.TestCase):
             ' "/tmp/deepvariant_tmp_output/call_variants_output.tfrecord.gz"'
             ' --examples'
             ' "/tmp/deepvariant_tmp_output/make_examples.tfrecord@64.gz"'
-            ' --checkpoint "/opt/models/pacbio/model.ckpt"'
+            ' --checkpoint "/opt/models/pacbio"'
         ),
     )
     self.assertEqual(
@@ -222,7 +222,7 @@ class RunDeepvariantTest(parameterized.TestCase):
             ' "/tmp/deepvariant_tmp_output/call_variants_output.tfrecord.gz"'
             ' --examples'
             ' "/tmp/deepvariant_tmp_output/make_examples.tfrecord@64.gz"'
-            ' --checkpoint "/opt/models/ont_r104/model.ckpt"'
+            ' --checkpoint "/opt/models/ont_r104"'
         ),
     )
     self.assertEqual(
@@ -275,7 +275,7 @@ class RunDeepvariantTest(parameterized.TestCase):
             ' "/tmp/deepvariant_tmp_output/call_variants_output.tfrecord.gz"'
             ' --examples'
             ' "/tmp/deepvariant_tmp_output/make_examples.tfrecord@64.gz"'
-            ' --checkpoint "/opt/models/wgs/model.ckpt"'
+            ' --checkpoint "/opt/models/wgs"'
         ),
     )
     self.assertEqual(
@@ -677,7 +677,7 @@ class RunDeepvariantTest(parameterized.TestCase):
         '--outfile '
         '"/tmp/deepvariant_tmp_output/call_variants_output.tfrecord.gz" '
         '--examples "/tmp/deepvariant_tmp_output/make_examples.tfrecord@64.gz" '
-        '--checkpoint "/opt/models/wgs/model.ckpt" '
+        '--checkpoint "/opt/models/wgs" '
         '%s' % expected_args,
     )
 
