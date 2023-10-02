@@ -37,8 +37,8 @@ def get_exome_config(
   """Config parameters for exome training."""
 
   # Exome Dataset
-  config.train_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepvariant_exome/dv-wes-keras-cl522895908/dv-wes-keras-cl522895908_train.dataset_config.pbtxt'
-  config.tune_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepvariant_exome/dv-wes-keras-cl522895908/dv-wes-keras-cl522895908_tune.dataset_config.pbtxt'
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.num_validation_examples = None
 
   config.num_epochs = 80
@@ -52,7 +52,7 @@ def get_exome_config(
   config.weight_decay = 0.1
   config.backbone_dropout_rate = 0.22517227651098964
 
-  config.init_weights_file = None
+  config.init_checkpoint = ''
 
   return config
 
@@ -65,8 +65,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.trial = 0  # Used to allow for replicates during training.
 
   # Default Dataset
-  config.train_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepvariant_wgs/cl511097225-element-vg/cl511097225-element-vg_train.dataset_config.pbtxt'
-  config.tune_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepvariant_wgs/cl511097225-element-vg/cl511097225-element-vg_tune.dataset_config.pbtxt'
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
 
   config.best_checkpoint_metric = 'tune/f1_weighted'
   config.batch_size = 16384
@@ -84,7 +84,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.momentum = 0.9
   config.epsilon = 1.0
   config.warmup_steps = 10_000
-  config.init_weights_file = None
+  config.init_checkpoint = ''
   config.init_backbone_with_imagenet = True
   config.best_metrics = 'val_categorical_accuracy'
   config.weight_decay = 0.00004

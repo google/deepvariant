@@ -77,6 +77,7 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/labeler/la
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examples_somatic.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/scripts/run_deepvariant.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/scripts/run_deepsomatic.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/train.zip  .
 
 RUN ./run-prereq.sh
 
@@ -134,6 +135,10 @@ RUN \
     "${BASH_HEADER}" \
     'python3 -u /opt/deepvariant/bin/run_deepsomatic.zip "$@"' > \
     /opt/deepvariant/bin/run_deepsomatic && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python3 /opt/deepvariant/bin/train.zip "$@"' > \
+    /opt/deepvariant/bin/train && \
   chmod +x /opt/deepvariant/bin/make_examples \
     /opt/deepvariant/bin/call_variants \
     /opt/deepvariant/bin/call_variants_slim \
@@ -145,7 +150,8 @@ RUN \
     /opt/deepvariant/bin/run_deepvariant \
     /opt/deepvariant/bin/run_deepsomatic \
     /opt/deepvariant/bin/labeled_examples_to_vcf \
-    /opt/deepvariant/bin/make_examples_somatic
+    /opt/deepvariant/bin/make_examples_somatic \
+    /opt/deepvariant/bin/train
 
 # Copy models
 WORKDIR /opt/models/wgs

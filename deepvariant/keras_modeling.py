@@ -334,7 +334,7 @@ def inceptionv3(
     )
     return model
   elif not weights and not init_backbone_with_imagenet:
-    logging.info('inceptionv3: No init_weights_file.')
+    logging.info('inceptionv3: No initial checkpoint specified.')
     return model
 
   weights_num_channels = num_channels_from_checkpoint(weights)
@@ -359,9 +359,7 @@ def inceptionv3(
     model = load_weights_to_model_with_different_channels(model, input_model)
     return model
   else:
-    logging.info(
-        'inceptionv3: load_weights from init_weights_file: %s', weights
-    )
+    logging.info('inceptionv3: load_weights from checkpoint: %s', weights)
     model.load_weights(weights)
     return model
 
@@ -460,7 +458,11 @@ def create_state(
         directory=model_dir,
         max_to_keep=5,
     )
-    ckpt_manager.restore_or_initialize()
+    # If init_checkpoint or init_backbone_with_imagenet is specified, then we
+    # don't want to re-initialie or restore the checkpoint as this will
+    # overwrite the init_checkpoint weights.
+    if not config.init_checkpoint and not config.init_backbone_with_imagenet:
+      ckpt_manager.restore_or_initialize()
 
     if ckpt_manager.latest_checkpoint:
       # Report current checkpoint state.
