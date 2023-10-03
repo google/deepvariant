@@ -45,7 +45,7 @@ from deepvariant import keras_modeling as modeling
 from deepvariant import logging_level
 from deepvariant.protos import deepvariant_pb2
 from absl import app
-
+import multiprocessing
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2

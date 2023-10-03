@@ -29,6 +29,7 @@
 """Postprocess output from call_variants to produce a VCF file."""
 # TODO: Add type annotations to this module
 import collections
+import functools
 import itertools
 import os
 import tempfile
@@ -49,6 +50,8 @@ from deepvariant import haplotypes
 from deepvariant import logging_level
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import postprocess_variants as postprocess_variants_lib
+from absl import app
+import multiprocessing
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tabix
 from third_party.nucleus.io import tfrecord
@@ -63,6 +66,7 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util.struct_utils import add_string_field
+
 
 FLAGS = flags.FLAGS
 
@@ -174,6 +178,15 @@ _HAPLOID_CONTIGS = flags.DEFINE_list(
         'Optional list of non autosomal chromosomes. For all listed chromosomes'
         'HET probabilities are not considered.'
     ),
+)
+
+_CPUS = flags.DEFINE_integer(
+    'cpus',
+    multiprocessing.cpu_count(),
+    'Number of worker processes to use. Use 0 to disable parallel processing. '
+    'Minimum of 2 CPUs required for parallel processing.',
+    short_name='j',
+    required=False,
 )
 
 _PAR_REGIONS = flags.DEFINE_string(
@@ -782,6 +795,7 @@ def get_multiallelic_distributions(call_variants_outputs, pruned_alleles):
   return final_probs
 
 
+@functools.lru_cache
 def get_multiallelic_model(use_multiallelic_model):
   """Loads and returns the model, which must be in saved model format.
 
@@ -974,45 +988,93 @@ def _sort_grouped_variants(group):
   return sorted(group, key=lambda x: sorted(x.alt_allele_indices.indices))
 
 
-def _transform_call_variants_output_to_variants(
-    input_sorted_tfrecord_path,
+def _transform_call_variant_group_to_output_variant(
+    call_variant_group,
     qual_filter,
     multi_allelic_qual_filter,
     sample_name,
-    group_variants,
     use_multiallelic_model,
     debug_output_all_candidates,
     par_regions,
 ):
-  """Yields Variant protos in sorted order from CallVariantsOutput protos.
+  """Transforms a group of CalVariantOutput to VariantOutput.
 
-  Variants present in the input TFRecord are converted to Variant protos, with
-  the following filters applied: 1) variants are omitted if their quality is
-  lower than the `qual_filter` threshold. 2) multi-allelic variants omit
-  individual alleles whose qualities are lower than the
+  The group of CVOs present in the call_variants_group are converted to the
+  Variant proto, with the following filters applied: 1) variants are omitted
+  if their quality is lower than the `qual_filter` threshold. 2) multi-allelic
+  variants omit individual alleles whose qualities are lower than the
   `multi_allelic_qual_filter` threshold.
 
   Args:
-    input_sorted_tfrecord_path: str. TFRecord format file containing sorted
-      CallVariantsOutput protos.
+    call_variant_group: list[CVO]. A group of CallVariantsOutput protos.
     qual_filter: double. The qual value below which to filter variants.
     multi_allelic_qual_filter: double. The qual value below which to filter
       multi-allelic variants.
     sample_name: str. Sample name to write to VCF file.
-    group_variants: bool. If true, group variants that have same start and end
-      position.
     use_multiallelic_model: if True, use a specialized model for genotype
       resolution of multiallelic cases with two alts.
     debug_output_all_candidates: if 'ALT', output all alleles considered by
       DeepVariant as ALT alleles.
     par_regions: RangeSet containing PAR regions.
 
-  Yields:
-    Variant protos in sorted order representing the CallVariantsOutput calls.
+  Returns:
+    Variant proto representing the group of CallVariantsOutput protos.
   """
   multiallelic_model = get_multiallelic_model(
       use_multiallelic_model=use_multiallelic_model
   )
+  outputs = _sort_grouped_variants(call_variant_group)
+  canonical_variant, predictions = merge_predictions(
+      outputs,
+      multi_allelic_qual_filter,
+      multiallelic_model=multiallelic_model,
+      debug_output_all_candidates=debug_output_all_candidates,
+      par_regions=par_regions,
+  )
+  return add_call_to_variant(
+      canonical_variant,
+      predictions,
+      qual_filter=qual_filter,
+      sample_name=sample_name,
+  )
+
+
+def _transform_call_variants_output_to_variants(
+    input_sorted_tfrecord_path,
+):
+  """Yields Variant protos in sorted order from CallVariantsOutput protos.
+
+  Args:
+    input_sorted_tfrecord_path: str. TFRecord format file containing sorted
+      CallVariantsOutput protos.
+
+  Yields:
+    Variant protos in sorted order representing the CallVariantsOutput calls.
+  """
+  cvo_group_to_variant_kwargs = (
+      _get_transform_call_variant_group_to_output_variant_kwargs(
+          input_sorted_tfrecord_path
+      )
+  )
+  for cvo_group_kwargs in cvo_group_to_variant_kwargs:
+    yield _transform_call_variant_group_to_output_variant(**cvo_group_kwargs)
+
+
+def dump_variants_to_temp_file(variant_protos):
+  temp = tempfile.NamedTemporaryFile()
+  tfrecord.write_tfrecords(variant_protos, temp.name)
+  return temp
+
+
+def group_call_variants_outputs(input_sorted_tfrecord_path, group_variants):
+  """Yields CallVariantOutputs grouped by their variant range.
+
+  Args:
+    input_sorted_tfrecord_path: str. TFRecord format file containing sorted
+      CallVariantsOutput protos.
+    group_variants: bool. If true, group variants that have same start and end
+      position.
+  """
   group_fn = None
   if group_variants:
     group_fn = lambda x: variant_utils.variant_range(x.variant)
@@ -1022,27 +1084,47 @@ def _transform_call_variants_output_to_variants(
       ),
       group_fn,
   ):
-    outputs = _sort_grouped_variants(group)
-    canonical_variant, predictions = merge_predictions(
-        outputs,
-        multi_allelic_qual_filter,
-        multiallelic_model=multiallelic_model,
-        debug_output_all_candidates=debug_output_all_candidates,
-        par_regions=par_regions,
-    )
-    variant = add_call_to_variant(
-        canonical_variant,
-        predictions,
-        qual_filter=qual_filter,
-        sample_name=sample_name,
-    )
-    yield variant
+    yield list(group)
 
 
-def dump_variants_to_temp_file(variant_protos):
-  temp = tempfile.NamedTemporaryFile()
-  tfrecord.write_tfrecords(variant_protos, temp.name)
-  return temp
+def _get_transform_call_variant_group_to_output_variant_kwargs(
+    input_sorted_tfrecord_path,
+):
+  """Performs the grouping of CVOs and packages them into a list of kwargs.
+
+  Args:
+    input_sorted_tfrecord_path: str. TFRecord format file containing sorted
+      CallVariantsOutput protos.
+
+  Returns:
+    List of kwargs to be passed to invocations of the transform function.
+  """
+  par_regions = None
+  if _PAR_REGIONS.value:
+    par_regions = ranges.RangeSet.from_bed(_PAR_REGIONS.value)
+  sample_name = get_sample_name()
+
+  kwargs = []
+  for call_variant_group in group_call_variants_outputs(
+      input_sorted_tfrecord_path, FLAGS.group_variants
+  ):
+    kwargs.append(
+        dict(
+            call_variant_group=call_variant_group,
+            qual_filter=FLAGS.qual_filter,
+            multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
+            sample_name=sample_name,
+            use_multiallelic_model=FLAGS.use_multiallelic_model,
+            debug_output_all_candidates=FLAGS.debug_output_all_candidates,
+            par_regions=par_regions,
+        )
+    )
+  return kwargs
+
+
+def _mappable_transform_call_variant_group_to_output_variant(kwargs):
+  """Unpacks the arguments to individual keyword arguments."""
+  return _transform_call_variant_group_to_output_variant(**kwargs)
 
 
 def _decide_to_use_csi(contigs):
@@ -1203,10 +1285,6 @@ def main(argv=()):
           errors.CommandLineError,
       )
 
-    par_regions = None
-    if _PAR_REGIONS.value:
-      par_regions = ranges.RangeSet.from_bed(_PAR_REGIONS.value)
-
     proto_utils.uses_fast_cpp_protos_or_die()
     logging_level.set_from_flag()
 
@@ -1230,25 +1308,37 @@ def main(argv=()):
     else:
       temp = tempfile.NamedTemporaryFile()
       start_time = time.time()
-      postprocess_variants_lib.process_single_sites_tfrecords(
+      num_cvo_records = postprocess_variants_lib.process_single_sites_tfrecords(
           contigs, cvo_paths, temp.name
       )
 
       logging.info(
           'CVO sorting took %s minutes', (time.time() - start_time) / 60
       )
-
       logging.info('Transforming call_variants_output to variants.')
-      independent_variants = _transform_call_variants_output_to_variants(
-          input_sorted_tfrecord_path=temp.name,
-          qual_filter=FLAGS.qual_filter,
-          multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
-          sample_name=sample_name,
-          group_variants=FLAGS.group_variants,
-          use_multiallelic_model=FLAGS.use_multiallelic_model,
-          debug_output_all_candidates=FLAGS.debug_output_all_candidates,
-          par_regions=par_regions,
-      )
+      if _CPUS.value > 1:
+        logging.info(
+            'Using %d CPUs for parallelization of variant transformation.',
+            _CPUS.value,
+        )
+        pool = multiprocessing.Pool(_CPUS.value)
+        transform_call_variant_groups_kwargs = (
+            _get_transform_call_variant_group_to_output_variant_kwargs(
+                input_sorted_tfrecord_path=temp.name
+            )
+        )
+        # Using the heuristic #CVOs / #cpus
+        chunksize = max(num_cvo_records // _CPUS.value // 10, 1)
+        independent_variants = pool.imap(
+            _mappable_transform_call_variant_group_to_output_variant,
+            transform_call_variant_groups_kwargs,
+            chunksize=chunksize,
+        )
+        pool.close()
+      else:
+        independent_variants = _transform_call_variants_output_to_variants(
+            input_sorted_tfrecord_path=temp.name,
+        )
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants
       )
@@ -1326,4 +1416,6 @@ def main(argv=()):
 
 if __name__ == '__main__':
   flags.mark_flags_as_required(['infile', 'outfile', 'ref'])
-  tf.compat.v1.app.run()
+  logging.set_verbosity(logging.INFO)
+  logging.get_absl_logger().setLevel(logging.INFO)
+  app.run(main)

@@ -48,7 +48,7 @@ using std::string;
 // on the mapping of chromosome names to positions in FASTA in `contigs`,
 // and then outputs the sorted TFRecord of CallVariantsOutput protos to
 // `output_tfrecord_path`.
-void ProcessSingleSiteCallTfRecords(
+std::uint64_t ProcessSingleSiteCallTfRecords(
     const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
     const std::vector<std::string>& tfrecord_paths,
     const string& output_tfrecord_path);

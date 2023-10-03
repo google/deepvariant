@@ -296,6 +296,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
         'gvcf_calls.vcf', compressed_inputs_and_outputs, only_keep_pass
     )
     FLAGS.only_keep_pass = only_keep_pass
+    FLAGS.cpus = 0
     postprocess_variants.main(['postprocess_variants.py'])
 
     if only_keep_pass:
@@ -320,6 +321,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.infile = testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = create_outfile('calls.vcf')
+    FLAGS.cpus = 0
 
     FLAGS.group_variants = True
     with self.assertRaisesRegex(
@@ -368,6 +370,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.infile = test_utils.test_tmpfile('reading_empty_shard.tfrecord.gz')
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('calls_reading_empty_shard.vcf')
+    FLAGS.cpus = 0
 
     postprocess_variants.main(['postprocess_variants.py'])
 
@@ -427,6 +430,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('records.vcf')
     FLAGS.sample_name = sample_name_flag
+    FLAGS.cpus = 0
 
     FLAGS.nonvariant_site_tfrecord_path = test_utils.test_tmpfile(
         'records.postprocess_gvcf_input.tfrecord.gz'

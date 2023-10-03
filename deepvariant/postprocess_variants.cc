@@ -32,6 +32,7 @@
 #include "deepvariant/postprocess_variants.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -72,7 +73,7 @@ void SortSingleSiteCalls(
 
 }  // namespace
 
-void ProcessSingleSiteCallTfRecords(
+std::uint64_t ProcessSingleSiteCallTfRecords(
     const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
     const std::vector<std::string>& tfrecord_paths,
     const string& output_tfrecord_path) {
@@ -124,6 +125,7 @@ void ProcessSingleSiteCallTfRecords(
         << "Status = " << writer_status.error_message();
   }
   TF_CHECK_OK(output_writer.Flush()) << "Failed to flush the output writer.";
+  return single_site_calls.size();
 }
 
 }  // namespace deepvariant
