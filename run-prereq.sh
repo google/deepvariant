@@ -120,7 +120,7 @@ pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
 pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
 pip3 install "${PIP_ARGS[@]}" ml_collections
 pip3 install "${PIP_ARGS[@]}" --ignore-installed PyYAML
-pip3 install "${PIP_ARGS[@]}" clu
+pip3 install "${PIP_ARGS[@]}" 'clu==0.0.9'
 # Note that protobuf installed with pip needs to be 3.13 because of the pyclif
 # version we're using. This is currently inconsistent with C++ protobuf version
 # in WORKSPACE and protobuf.BUILD, but we can't update those, because those
