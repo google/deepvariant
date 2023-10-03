@@ -38,9 +38,6 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-#include <ostream>
-#include <sstream>
-
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/btree_map.h"
@@ -218,6 +215,32 @@ void DirectPhasing::AssignPhasesToVertices() {
     max_score_it = scores_.find(
         {max_score_it->second.from[0], max_score_it->second.from[1]});
   }
+}
+
+std::vector<PhasedVariant> DirectPhasing::GetPhasedVariants() const {
+  std::vector<PhasedVariant> phased_variants;
+  for (int pos : positions_) {
+    auto it = vertices_by_position_.find(pos);
+    if (it == vertices_by_position_.end()) {
+      continue;
+    }
+
+    std::array<std::string, 2> bases = {"", ""};
+    for (const Vertex& v : it->second) {
+      const auto& vertex = graph_[v];
+      if (vertex.allele_info.phase == 1) {
+        bases[0] = vertex.allele_info.bases;
+      } else if (vertex.allele_info.phase == 2) {
+        bases[1] = vertex.allele_info.bases;
+      }
+    }
+    if (!bases[0].empty() && !bases[1].empty()) {
+      phased_variants.push_back({.position = pos,
+                                 .phase_1_bases = bases[0],
+                                 .phase_2_bases = bases[1]});
+    }
+  }
+  return phased_variants;
 }
 
 std::vector<int> DirectPhasing::AssignPhasesToReads(

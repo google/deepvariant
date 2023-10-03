@@ -82,6 +82,13 @@ struct AlleleInfo {
   std::vector<ReadSupportInfo> read_support;
 };
 
+// Data structure to hold variant phases. It is only used for reporting.
+struct PhasedVariant {
+  int64_t position;
+  std::string phase_1_bases;
+  std::string phase_2_bases;
+};
+
 inline bool operator==(const AlleleInfo& lhs, const AlleleInfo& rhs) {
   return lhs.type == rhs.type && lhs.position == rhs.position &&
          lhs.bases == rhs.bases && lhs.read_support == rhs.read_support;
@@ -172,6 +179,9 @@ class DirectPhasing {
   // Helper function to output graph into graphviz for debugging. This function
   // is exported to Python.
   std::string GraphViz() const;
+
+  // Returns variant phases. It is only used for reporting purposes.
+  std::vector<PhasedVariant> GetPhasedVariants() const;
 
  private:
   // Dynamic score for the partition. This score defines the best phasing up to

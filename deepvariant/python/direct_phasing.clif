@@ -33,8 +33,14 @@ from "third_party/nucleus/protos/reads_pyclif.h" import *
 
 from "deepvariant/direct_phasing.h":
   namespace `learning::genomics::deepvariant`:
+    class PhasedVariant:
+      position: int
+      phase_1_bases: str
+      phase_2_bases: str
+
     class DirectPhasing:
       def __init__(self)
       def `GraphViz` as graphviz(self) -> str
+      def `GetPhasedVariants` as get_phased_variants(self) -> list<PhasedVariant>
       def `PhaseReadsPython` as phase(self, candidates: list<DeepVariantCall>,
                            reads: list<ConstProtoPtr<Read>>) -> list<int>
