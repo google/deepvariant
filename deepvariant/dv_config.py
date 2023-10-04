@@ -39,7 +39,8 @@ def get_exome_config(
   # Exome Dataset
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
-  config.num_validation_examples = None
+  # If set to 0, use full validation dataset.
+  config.num_validation_examples = 0
 
   config.num_epochs = 80
   config.learning_rate = 0.01
@@ -85,8 +86,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.epsilon = 1.0
   config.warmup_steps = 10_000
   config.init_checkpoint = ''
-  config.init_backbone_with_imagenet = True
-  config.best_metrics = 'val_categorical_accuracy'
+  config.init_backbone_with_imagenet = False
+  config.best_metrics = 'tune/f1_weighted'
   config.weight_decay = 0.00004
   config.backbone_dropout_rate = 0.2
   # Stop training when this many consecutive evaluations yield no improvement.
@@ -108,7 +109,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   if config_name == 'exome':
     config = get_exome_config(config)
   elif config_name == 'base':
-    raise ValueError('No model specified for config type.')
+    # Use the base config.
+    pass
   else:
     raise ValueError(f'Unknown config_name: {config_name}')
 
