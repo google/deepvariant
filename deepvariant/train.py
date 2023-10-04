@@ -314,11 +314,13 @@ def train(config: ml_collections.ConfigDict):
 
   logging.info(
       (
-          '1) Training Examples: %s.\n'
-          '2) Batch Size: %s.\n'
-          '3) Epochs: %s.\n'
-          '4) Steps per epoch: %s.\n'
-          '5) Steps per tune: %s.\n'
+          '\n\n'
+          'Training Examples: %s.\n'
+          'Batch Size: %s.\n'
+          'Epochs: %s.\n'
+          'Steps per epoch: %s.\n'
+          'Steps per tune: %s.\n'
+          '\n'
       ),
       train_dataset_config.num_examples,
       config.batch_size,
@@ -331,7 +333,6 @@ def train(config: ml_collections.ConfigDict):
   # Training Loop #
   # ============= #
 
-  checkpoint_path = None
   metric_writer = metric_writers.create_default_writer(logdir=experiment_dir)
   num_train_steps = steps_per_epoch * config.num_epochs
   report_progress = periodic_actions.ReportProgress(
@@ -348,7 +349,7 @@ def train(config: ml_collections.ConfigDict):
       best_checkpoint_metric_idx = [
           f'tune/{x.name}' for x in state.tune_metrics
       ].index(config.best_checkpoint_metric)
-      return state.tune_metrics[best_checkpoint_metric_idx].result()
+      return state.tune_metrics[best_checkpoint_metric_idx].result().numpy()
 
     best_checkpoint_metric = get_checkpoint_metric()
 
@@ -459,10 +460,11 @@ def train(config: ml_collections.ConfigDict):
     # a saved model (.pb) and keras model formats.
     ckpt_manager.restore_or_initialize()  # Restores the latest checkpoint.
     model = ckpt_manager.checkpoint.root
-    logging.info(
-        'Storing checkpoint from step %d',
-        ckpt_manager.checkpoint.global_step.numpy(),
-    )
+    # The latest checkpoint will be the best performing checkpoint.
+    checkpoint_path = ckpt_manager.latest_checkpoint
+    if not checkpoint_path:
+      logging.info('No checkpoint found.')
+      return
     keras_model = f'{checkpoint_path}.keras'
     saved_model_dir = checkpoint_path
     model.save(keras_model)
