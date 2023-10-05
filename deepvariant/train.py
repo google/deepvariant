@@ -75,7 +75,7 @@ _EXPERIMENT_DIR = flags.DEFINE_string(
 )
 
 _LIMIT = flags.DEFINE_integer(
-    'limit', None, 'Limit the number of steps for testing.'
+    'limit', None, 'Limit the number of steps used for train/eval.'
 )
 
 _DEBUG = flags.DEFINE_bool(
@@ -311,15 +311,17 @@ def train(config: ml_collections.ConfigDict):
       limit=steps_per_tune,
   )
   train_iter, tune_iter = iter(train_ds), iter(tune_ds)
+  num_train_steps = steps_per_epoch * config.num_epochs
 
   logging.info(
       (
           '\n\n'
-          'Training Examples: %s.\n'
-          'Batch Size: %s.\n'
-          'Epochs: %s.\n'
-          'Steps per epoch: %s.\n'
-          'Steps per tune: %s.\n'
+          'Training Examples: %s\n'
+          'Batch Size: %s\n'
+          'Epochs: %s\n'
+          'Steps per epoch: %s\n'
+          'Steps per tune: %s\n'
+          'Num train steps: %s\n'
           '\n'
       ),
       train_dataset_config.num_examples,
@@ -327,6 +329,7 @@ def train(config: ml_collections.ConfigDict):
       config.num_epochs,
       steps_per_epoch,
       steps_per_tune,
+      num_train_steps,
   )
 
   # ============= #
@@ -334,7 +337,6 @@ def train(config: ml_collections.ConfigDict):
   # ============= #
 
   metric_writer = metric_writers.create_default_writer(logdir=experiment_dir)
-  num_train_steps = steps_per_epoch * config.num_epochs
   report_progress = periodic_actions.ReportProgress(
       num_train_steps=num_train_steps,
       writer=metric_writer,
@@ -351,14 +353,52 @@ def train(config: ml_collections.ConfigDict):
       ].index(config.best_checkpoint_metric)
       return state.tune_metrics[best_checkpoint_metric_idx].result().numpy()
 
-    best_checkpoint_metric = get_checkpoint_metric()
+    best_checkpoint_metric_value = get_checkpoint_metric()
 
     with metric_writers.ensure_flushes(metric_writer):
+
+      def run_tune(train_step, epoch, steps_per_tune):
+        logging.info('Running tune at step=%d epoch=%d', train_step, epoch)
+        for loop_tune_step in range(steps_per_tune):
+          tune_step = loop_tune_step + (epoch * steps_per_tune)
+          with tf.profiler.experimental.Trace('tune', step_num=tune_step, _r=1):
+            if loop_tune_step % config.log_every_steps == 0:
+              logging.info(
+                  'Tune step %s / %s (%s%%)',
+                  loop_tune_step,
+                  steps_per_tune,
+                  round(float(loop_tune_step) / float(steps_per_tune), 1)
+                  * 100.0,
+              )
+            distributed_tune_step(tune_iter)
+
+        metric_writer.write_scalars(
+            train_step,
+            {f'tune/{x.name}': x.result() for x in state.tune_metrics},
+        )
+
       for train_step in range(state.global_step.numpy(), num_train_steps):
         # Calculate current epoch
         epoch = train_step // steps_per_epoch
         if train_step % steps_per_epoch == 0:
           logging.info('Starting epoch %s', epoch)
+
+        # If we are warmstarting, establish an initial best_checkpoint_metric
+        # value before beginning any training.
+        if train_step == 0 and (
+            config.init_checkpoint or config.init_backbone_with_imagenet
+        ):
+          logging.info('Performing initial evaluation of warmstart model.')
+          run_tune(train_step, epoch, steps_per_tune)
+          best_checkpoint_metric_value = get_checkpoint_metric()
+          logging.info(
+              'Warmstart checkpoint best checkpoint metric: %s=%s',
+              config.best_checkpoint_metric,
+              best_checkpoint_metric_value,
+          )
+          # Reset tune metrics
+          for metric in state.tune_metrics:
+            metric.reset_states()
 
         # ===== #
         # train #
@@ -406,20 +446,10 @@ def train(config: ml_collections.ConfigDict):
             or (train_step > 0 and train_step % config.tune_every_steps == 0)
             or is_last_step
         ):
-          logging.info('Running tune at step=%d epoch=%d', train_step, epoch)
-          for loop_step_tune in range(steps_per_tune):
-            step_tune = loop_step_tune + (epoch * steps_per_tune)
-            with tf.profiler.experimental.Trace(
-                'tune', step_num=step_tune, _r=1
-            ):
-              distributed_tune_step(tune_iter)
+          run_tune(train_step, epoch, steps_per_tune)
 
-          metric_writer.write_scalars(
-              train_step,
-              {f'tune/{x.name}': x.result() for x in state.tune_metrics},
-          )
-          if get_checkpoint_metric() > best_checkpoint_metric:
-            best_checkpoint_metric = get_checkpoint_metric()
+          if get_checkpoint_metric() > best_checkpoint_metric_value:
+            best_checkpoint_metric_value = get_checkpoint_metric()
             checkpoint_path = ckpt_manager.save(train_step)
             # Reset early stopping counter
             state.early_stopping.assign(0)
@@ -443,7 +473,7 @@ def train(config: ml_collections.ConfigDict):
                 config.best_checkpoint_metric,
                 get_checkpoint_metric(),
                 config.best_checkpoint_metric,
-                best_checkpoint_metric,
+                best_checkpoint_metric_value,
             )
             state.early_stopping.assign_add(1)
           if config.early_stopping_patience:
@@ -458,16 +488,21 @@ def train(config: ml_collections.ConfigDict):
 
     # After training completes, load the latest checkpoint and create
     # a saved model (.pb) and keras model formats.
-    ckpt_manager.restore_or_initialize()  # Restores the latest checkpoint.
-    model = ckpt_manager.checkpoint.root
-    # The latest checkpoint will be the best performing checkpoint.
     checkpoint_path = ckpt_manager.latest_checkpoint
     if not checkpoint_path:
       logging.info('No checkpoint found.')
       return
+
+    # The latest checkpoint will be the best performing checkpoint.
+    logging.info('Loading best checkpoint: %s', checkpoint_path)
+    tf.train.Checkpoint(model).restore(checkpoint_path).expect_partial()
+
+    logging.info('Saving model using keras format.')
     keras_model = f'{checkpoint_path}.keras'
-    saved_model_dir = checkpoint_path
     model.save(keras_model)
+
+    logging.info('Saving model using saved_model format.')
+    saved_model_dir = checkpoint_path
     model.save(saved_model_dir, save_format='tf')
     # Copy example_info.json to saved_model directory.
     tf.io.gfile.copy(
