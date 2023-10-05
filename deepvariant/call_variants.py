@@ -487,6 +487,21 @@ def call_variants(
       model_example_shape = dv_utils.get_shape_and_channels_from_json(
           model_example_info_json
       )
+      # This usually happens in multi-sample cases where the sample_name
+      # is added to the prefix, so we remove it.
+      if not tf.io.gfile.exists(example_info_json):
+        # Find the sample name by finding file prefix and then the last bit
+        # would be the sample name.
+        filename_prefix = os.path.basename(example_info_json).split('.')[0]
+        sample_name = filename_prefix.split('_')[-1]
+        expected_filename = example_info_json.replace('_' + sample_name, '')
+        if not tf.io.gfile.exists(expected_filename):
+          raise ValueError(
+              f'File {example_info_json} or {expected_filename} not found.'
+              'Please check make_examples output.'
+          )
+        example_info_json = expected_filename
+
       input_example_shape = dv_utils.get_shape_and_channels_from_json(
           example_info_json
       )
