@@ -497,10 +497,6 @@ def train(config: ml_collections.ConfigDict):
     logging.info('Loading best checkpoint: %s', checkpoint_path)
     tf.train.Checkpoint(model).restore(checkpoint_path).expect_partial()
 
-    logging.info('Saving model using keras format.')
-    keras_model = f'{checkpoint_path}.keras'
-    model.save(keras_model)
-
     logging.info('Saving model using saved_model format.')
     saved_model_dir = checkpoint_path
     model.save(saved_model_dir, save_format='tf')
