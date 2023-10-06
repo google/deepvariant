@@ -1,5 +1,10 @@
 # DeepVariant support for variant calling in chromosome X and Y
 
+## Case study
+
+A case study on how to use the parameters mentioned here are described in
+[DeepVariant haploid support](deepvariant-xy-calling-case-study.md).
+
 ## Haploid calling support
 
 As DeepVariant is a diploid variant caller, it assigns genotypes as {Hom-ref,
