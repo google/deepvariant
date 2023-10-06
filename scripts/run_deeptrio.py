@@ -52,7 +52,7 @@ FLAGS = flags.FLAGS
 _MODEL_TYPE = flags.DEFINE_enum(
     'model_type',
     None,
-    ['WGS', 'WES', 'PACBIO', 'HYBRID_PACBIO_ILLUMINA'],
+    ['WGS', 'WES', 'PACBIO', 'ONT'],
     (
         'Required. Type of model to use for variant calling. Each '
         'model_type has an associated default model, which can be '
@@ -276,17 +276,19 @@ _VCF_STATS_REPORT = flags.DEFINE_boolean(
 )
 
 MODEL_TYPE_MAP = {
-    'WGS_child': '/opt/models/deeptrio/wgs/child/model.ckpt',
-    'WGS_parent': '/opt/models/deeptrio/wgs/parent/model.ckpt',
-    'WES_child': '/opt/models/deeptrio/wes/child/model.ckpt',
-    'WES_parent': '/opt/models/deeptrio/wes/parent/model.ckpt',
-    'PACBIO_child': '/opt/models/deeptrio/pacbio/child/model.ckpt',
-    'PACBIO_parent': '/opt/models/deeptrio/pacbio/parent/model.ckpt',
+    'WGS_child': '/opt/models/deeptrio/wgs/child',
+    'WGS_parent': '/opt/models/deeptrio/wgs/parent',
+    'WES_child': '/opt/models/deeptrio/wes/child',
+    'WES_parent': '/opt/models/deeptrio/wes/parent',
+    'PACBIO_child': '/opt/models/deeptrio/pacbio/child',
+    'PACBIO_parent': '/opt/models/deeptrio/pacbio/parent',
+    'ONT_child': '/opt/models/deeptrio/ont/child',
+    'ONT_parent': '/opt/models/deeptrio/ont/parent',
 }
 
 # Current release version of DeepTrio.
 # Should be the same in dv_vcf_constants.py.
-DEEP_TRIO_VERSION = '1.4.0'
+DEEP_TRIO_VERSION = '1.6.0'
 GLNEXUS_VERSION = 'v1.2.7'
 
 DEEP_TRIO_WGS_PILEUP_HEIGHT_CHILD = 60
@@ -295,6 +297,8 @@ DEEP_TRIO_WES_PILEUP_HEIGHT_CHILD = 100
 DEEP_TRIO_WES_PILEUP_HEIGHT_PARENT = 100
 DEEP_TRIO_PACBIO_PILEUP_HEIGHT_CHILD = 60
 DEEP_TRIO_PACBIO_PILEUP_HEIGHT_PARENT = 40
+DEEP_TRIO_ONT_PILEUP_HEIGHT_CHILD = 100
+DEEP_TRIO_ONT_PILEUP_HEIGHT_PARENT = 100
 
 CHILD = 'child'
 PARENT1 = 'parent1'
@@ -516,6 +520,30 @@ def _make_examples_command(
     )
     special_args['pileup_image_height_parent'] = (
         DEEP_TRIO_PACBIO_PILEUP_HEIGHT_PARENT
+    )
+    # TODO make phasing optional.
+    special_args['phase_reads'] = True
+    if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
+      special_args['partition_size'] = 25000
+    special_args['sort_by_haplotypes'] = True
+    special_args['parse_sam_aux_fields'] = True
+    special_args['discard_non_dna_regions'] = True
+    special_args['max_reads_for_dynamic_bases_per_region'] = 200
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+
+  if _MODEL_TYPE.value == 'ONT':
+    special_args['pileup_image_width'] = 199
+    special_args['realign_reads'] = False
+    special_args['vsc_min_fraction_indels'] = 0.12
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['add_hp_channel'] = True
+    special_args['min_mapping_quality'] = 1
+    special_args['track_ref_reads'] = True
+    special_args['pileup_image_height_child'] = (
+        DEEP_TRIO_ONT_PILEUP_HEIGHT_CHILD
+    )
+    special_args['pileup_image_height_parent'] = (
+        DEEP_TRIO_ONT_PILEUP_HEIGHT_PARENT
     )
     # TODO make phasing optional.
     special_args['phase_reads'] = True

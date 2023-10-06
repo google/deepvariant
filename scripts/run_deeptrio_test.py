@@ -92,7 +92,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' "/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz"'
         ' --examples'
         ' "/tmp/deeptrio_tmp_output/make_examples_child.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/deeptrio/{}/child/model.ckpt"'.format(
+        ' --checkpoint "/opt/models/deeptrio/{}/child"'.format(
             model_type.lower()
         ),
     )
@@ -102,7 +102,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
         ' --examples'
         ' "/tmp/deeptrio_tmp_output/make_examples_parent1.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/deeptrio/{}/parent/model.ckpt"'.format(
+        ' --checkpoint "/opt/models/deeptrio/{}/parent"'.format(
             model_type.lower()
         ),
     )
@@ -112,7 +112,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' "/tmp/deeptrio_tmp_output/call_variants_output_parent2.tfrecord.gz"'
         ' --examples'
         ' "/tmp/deeptrio_tmp_output/make_examples_parent2.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/deeptrio/{}/parent/model.ckpt"'.format(
+        ' --checkpoint "/opt/models/deeptrio/{}/parent"'.format(
             model_type.lower()
         ),
     )
@@ -191,7 +191,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' "/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz"'
         ' --examples'
         ' "/tmp/deeptrio_tmp_output/make_examples_child.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/deeptrio/{}/child/model.ckpt"'.format(
+        ' --checkpoint "/opt/models/deeptrio/{}/child"'.format(
             model_type.lower()
         ),
     )
@@ -201,7 +201,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
         ' --examples'
         ' "/tmp/deeptrio_tmp_output/make_examples_parent1.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/deeptrio/{}/parent/model.ckpt"'.format(
+        ' --checkpoint "/opt/models/deeptrio/{}/parent"'.format(
             model_type.lower()
         ),
     )
@@ -692,8 +692,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' "/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz"'
         ' --examples'
         ' "/tmp/deeptrio_tmp_output/make_examples_child.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/deeptrio/wgs/child/model.ckpt" %s'
-        % expected_args,
+        ' --checkpoint "/opt/models/deeptrio/wgs/child" %s' % expected_args,
     )
 
   @parameterized.parameters(
