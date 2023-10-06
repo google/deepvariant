@@ -872,13 +872,18 @@ def merge_predictions(
     qual_filter=None,
     multiallelic_model=None,
     debug_output_all_candidates=None,
-    par_regions=None,
 ):
   """Merges the predictions from the multi-allelic calls."""
   # See the logic described in the class PileupImageCreator pileup_image.py
   #
   # Because of the logic above, this function expects all cases above to have
   # genotype_predictions that we can combine from.
+
+  # Removed par regions from parameter because RangeSet is not pickle-able.
+  par_regions = None
+  if _PAR_REGIONS.value:
+    par_regions = ranges.RangeSet.from_bed(_PAR_REGIONS.value)
+
   if not call_variants_outputs:
     raise ValueError('Expected 1 or more call_variants_outputs.')
 
@@ -995,7 +1000,6 @@ def _transform_call_variant_group_to_output_variant(
     sample_name,
     use_multiallelic_model,
     debug_output_all_candidates,
-    par_regions,
 ):
   """Transforms a group of CalVariantOutput to VariantOutput.
 
@@ -1015,7 +1019,6 @@ def _transform_call_variant_group_to_output_variant(
       resolution of multiallelic cases with two alts.
     debug_output_all_candidates: if 'ALT', output all alleles considered by
       DeepVariant as ALT alleles.
-    par_regions: RangeSet containing PAR regions.
 
   Returns:
     Variant proto representing the group of CallVariantsOutput protos.
@@ -1029,7 +1032,6 @@ def _transform_call_variant_group_to_output_variant(
       multi_allelic_qual_filter,
       multiallelic_model=multiallelic_model,
       debug_output_all_candidates=debug_output_all_candidates,
-      par_regions=par_regions,
   )
   return add_call_to_variant(
       canonical_variant,
@@ -1099,9 +1101,6 @@ def _get_transform_call_variant_group_to_output_variant_kwargs(
   Returns:
     List of kwargs to be passed to invocations of the transform function.
   """
-  par_regions = None
-  if _PAR_REGIONS.value:
-    par_regions = ranges.RangeSet.from_bed(_PAR_REGIONS.value)
   sample_name = get_sample_name()
 
   kwargs = []
@@ -1116,7 +1115,6 @@ def _get_transform_call_variant_group_to_output_variant_kwargs(
             sample_name=sample_name,
             use_multiallelic_model=FLAGS.use_multiallelic_model,
             debug_output_all_candidates=FLAGS.debug_output_all_candidates,
-            par_regions=par_regions,
         )
     )
   return kwargs
