@@ -48,6 +48,7 @@ import numpy as np
 from deeptrio import make_examples
 from deeptrio import testdata
 from deepvariant import dv_utils
+from deepvariant import dv_utils_using_clif
 from deepvariant import make_examples_core
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
@@ -1552,7 +1553,7 @@ class RegionProcessorTest(parameterized.TestCase):
       )
 
   def _example_for_variant(self, variant):
-    return dv_utils.make_example(
+    return dv_utils_using_clif.make_example(
         variant, list(variant.alternate_bases), b'foo', self.default_shape
     )
 

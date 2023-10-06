@@ -51,6 +51,7 @@ from tf_slim.nets import inception_v3
 
 from deepvariant import dv_constants
 from deepvariant import dv_utils
+from deepvariant import dv_utils_using_clif
 # pylint: disable=g-direct-tensorflow-import
 from tensorflow.python.framework import ops
 from tensorflow.python.tpu import tpu_config
@@ -365,10 +366,10 @@ def eval_metric_fn(labels, predictions, variant_types):
   weights_by_type = {'All': None}
   if variant_types is not None:
     weights_by_type['SNPs'] = is_encoded_variant_type(
-        variant_types, dv_utils.EncodedVariantType.SNP
+        variant_types, dv_utils_using_clif.EncodedVariantType.SNP
     )
     weights_by_type['Indels'] = is_encoded_variant_type(
-        variant_types, dv_utils.EncodedVariantType.INDEL
+        variant_types, dv_utils_using_clif.EncodedVariantType.INDEL
     )
 
   for metric_name, metric_func in _METRICS_FUNCS_BY_VARIANT_TYPE.items():

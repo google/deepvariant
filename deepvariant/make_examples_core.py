@@ -46,6 +46,7 @@ import numpy as np
 from deepvariant import allele_frequency
 from deepvariant import dv_constants
 from deepvariant import dv_utils
+from deepvariant import dv_utils_using_clif
 from deepvariant import dv_vcf_constants
 from deepvariant import pileup_image
 from deepvariant import resources
@@ -1517,9 +1518,9 @@ class RegionProcessor:
       labels = {i: 0 for i in range(0, dv_constants.NUM_CLASSES)}
       labels_denovo = {i: 0 for i in range(0, dv_constants.NUM_DENOVO_CLASSES)}
       types = {
-          dv_utils.EncodedVariantType.SNP: 0,
-          dv_utils.EncodedVariantType.INDEL: 0,
-          dv_utils.EncodedVariantType.UNKNOWN: 0,
+          dv_utils_using_clif.EncodedVariantType.SNP: 0,
+          dv_utils_using_clif.EncodedVariantType.INDEL: 0,
+          dv_utils_using_clif.EncodedVariantType.UNKNOWN: 0,
       }
       for candidate, label in self.label_candidates(candidates, region):
         denovo_label = 0
@@ -1554,8 +1555,10 @@ class RegionProcessor:
         n_stats['n_class_0'] += labels[0]
         n_stats['n_class_1'] += labels[1]
         n_stats['n_class_2'] += labels[2]
-        n_stats['n_snps'] += types[dv_utils.EncodedVariantType.SNP]
-        n_stats['n_indels'] += types[dv_utils.EncodedVariantType.INDEL]
+        n_stats['n_snps'] += types[dv_utils_using_clif.EncodedVariantType.SNP]
+        n_stats['n_indels'] += types[
+            dv_utils_using_clif.EncodedVariantType.INDEL
+        ]
         n_stats['n_non_denovo'] += labels_denovo[0]
         n_stats['n_denovo'] += labels_denovo[1]
     else:
@@ -2274,7 +2277,7 @@ class RegionProcessor:
     This function calls PileupImageCreator.create_pileup_images on dv_call to
     get raw image tensors for each alt_allele option (see docs for details).
     These tensors are encoded as pngs, and all of the key information is encoded
-    as a tf.Example via a call to dv_utils.make_example.
+    as a tf.Example via a call to dv_utils_using_clif.make_example.
 
     Args:
       dv_call: A DeepVariantCall.
@@ -2348,7 +2351,7 @@ class RegionProcessor:
     for alt_alleles, image_tensor in pileup_images:
       encoded_tensor, shape = self._encode_tensor(image_tensor)
       examples.append(
-          dv_utils.make_example(
+          dv_utils_using_clif.make_example(
               dv_call.variant,
               alt_alleles,
               encoded_tensor,
@@ -2703,7 +2706,7 @@ def _write_example_and_update_stats(
     runtimes: Dict[str, float],
     labels: Optional[Dict[Union[int, None], int]] = None,
     labels_denovo: Optional[Dict[Union[int, None], int]] = None,
-    types: Optional[Dict[dv_utils.EncodedVariantType, int]] = None,
+    types: Optional[Dict[dv_utils_using_clif.EncodedVariantType, int]] = None,
     denovo_enabled: bool = False,
 ):
   """Writes out the example using writer; updates labels and types as needed."""
@@ -2721,7 +2724,7 @@ def _write_example_and_update_stats(
       example_denovo_label = dv_utils.example_denovo_label(example)
     labels_denovo[example_denovo_label] += 1
   if types is not None:
-    example_type = dv_utils.encoded_variant_type(
+    example_type = dv_utils_using_clif.encoded_variant_type(
         dv_utils.example_variant(example)
     )
     types[example_type] += 1

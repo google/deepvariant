@@ -462,6 +462,7 @@ py_library(
         ":allele_frequency",
         ":dv_constants",
         ":dv_utils",
+        ":dv_utils_using_clif",
         ":dv_vcf_constants",
         ":pileup_image",
         ":resources_main_lib",
@@ -505,6 +506,7 @@ py_test(
     deps = [
         ":dv_constants",
         ":dv_utils",
+        ":dv_utils_using_clif",
         ":make_examples_core",
         ":make_examples_lib",
         ":py_testdata",
@@ -794,6 +796,7 @@ py_library(
     deps = [
         ":dv_constants",
         ":dv_utils",
+        ":dv_utils_using_clif",
         "@absl_py//absl/logging",
     ],
 )
@@ -1225,6 +1228,7 @@ py_test(
     deps = [
         ":dv_constants",
         ":dv_utils",
+        ":dv_utils_using_clif",
         ":modeling",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
@@ -1240,8 +1244,6 @@ py_library(
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:variants_py_pb2",
-        "//third_party/nucleus/util:ranges",
-        "//third_party/nucleus/util:variant_utils",
     ],
 )
 
@@ -1255,6 +1257,34 @@ py_test(
         ":dv_utils",
         ":py_testdata",
         "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
+    name = "dv_utils_using_clif",
+    srcs = ["dv_utils_using_clif.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":dv_utils",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:variant_utils",
+    ],
+)
+
+py_test(
+    name = "dv_utils_using_clif_test",
+    size = "small",
+    srcs = ["dv_utils_using_clif_test.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":dv_utils_using_clif",
+        ":py_testdata",
         "//third_party/nucleus/protos:variants_py_pb2",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",

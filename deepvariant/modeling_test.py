@@ -37,7 +37,7 @@ import tensorflow as tf
 import tf_slim
 
 from deepvariant import dv_constants
-from deepvariant import dv_utils
+from deepvariant import dv_utils_using_clif
 from deepvariant import modeling
 
 tf.compat.v1.disable_eager_execution()
@@ -78,8 +78,8 @@ class ModelingTest(
 
   def test_is_encoded_variant_type(self):
     types = [
-        dv_utils.EncodedVariantType.SNP.value,
-        dv_utils.EncodedVariantType.INDEL.value,
+        dv_utils_using_clif.EncodedVariantType.SNP.value,
+        dv_utils_using_clif.EncodedVariantType.INDEL.value,
     ]
     tensor = tf.constant(types * 4, dtype=tf.int64)
 
@@ -90,7 +90,7 @@ class ModelingTest(
     self.assertEqual(
         _run(
             modeling.is_encoded_variant_type(
-                tensor, dv_utils.EncodedVariantType.SNP
+                tensor, dv_utils_using_clif.EncodedVariantType.SNP
             )
         ),
         [True, False] * 4,
@@ -98,7 +98,7 @@ class ModelingTest(
     self.assertEqual(
         _run(
             modeling.is_encoded_variant_type(
-                tensor, dv_utils.EncodedVariantType.INDEL
+                tensor, dv_utils_using_clif.EncodedVariantType.INDEL
             )
         ),
         [False, True] * 4,

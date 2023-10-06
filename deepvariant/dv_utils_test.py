@@ -28,8 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant.dv_utils."""
 
-from unittest import mock
-
 
 
 from absl.testing import absltest
@@ -114,78 +112,6 @@ class TFUtilsTest(parameterized.TestCase):
       )
       # If the checkpoint doesn't exist, return none.
       self.assertIsNone(dv_utils.model_num_classes(None, class_variable_name))
-
-  def testMakeExample(self):
-    example = dv_utils.make_example(
-        self.variant, self.alts, self.encoded_image, self.default_shape
-    )
-
-    self.assertEqual(
-        self.encoded_image, dv_utils.example_encoded_image(example)
-    )
-    self.assertEqual(self.variant, dv_utils.example_variant(example))
-    self.assertEqual(b'1:11-11', dv_utils.example_locus(example))
-    self.assertEqual([0], dv_utils.example_alt_alleles_indices(example))
-    self.assertEqual('1:11:C->A', dv_utils.example_key(example))
-    self.assertEqual(
-        dv_utils.EncodedVariantType.SNP.value,
-        dv_utils.example_variant_type(example),
-    )
-    pass
-
-  def testMakeExampleMultiAllelic(self):
-    alts = ['AA', 'CC', 'GG']
-    self.variant.alternate_bases[:] = alts
-    # Providing GG, AA checks that we're sorting the indices.
-    example = dv_utils.make_example(
-        self.variant, ['GG', 'AA'], b'foo', self.default_shape
-    )
-    self.assertEqual([0, 2], dv_utils.example_alt_alleles_indices(example))
-    self.assertEqual(['AA', 'GG'], dv_utils.example_alt_alleles(example))
-    self.assertEqual('1:11:C->AA/GG', dv_utils.example_key(example))
-    self.assertEqual(
-        dv_utils.EncodedVariantType.INDEL.value,
-        dv_utils.example_variant_type(example),
-    )
-
-  def testAltAllelesWithVariant(self):
-    alts = list(self.variant.alternate_bases)
-    example = dv_utils.make_example(
-        self.variant, alts, b'foo', self.default_shape
-    )
-    self.assertEqual([0], dv_utils.example_alt_alleles_indices(example))
-    with mock.patch(
-        'deepvariant.dv_utils.example_variant'
-    ) as mock_ex_variant:
-      # Providing variant directly avoids the call to example_variant().
-      self.assertEqual(
-          alts, dv_utils.example_alt_alleles(example, variant=self.variant)
-      )
-      mock_ex_variant.assert_not_called()
-
-      # Checks that we load the variant if needed and that our mock is working.
-      mock_ex_variant.return_value = self.variant
-      self.assertEqual(alts, dv_utils.example_alt_alleles(example))
-      mock_ex_variant.assert_called_once_with(example)
-
-  def assertIsNotAFeature(self, label, example):
-    self.assertNotIn(label, example.features.feature)
-
-  def testExampleSetLabel(self):
-    example = dv_utils.make_example(
-        self.variant, self.alts, self.encoded_image, self.default_shape
-    )
-
-    self.assertIsNotAFeature('label', example)
-    for label in [0, 1, 2]:
-      dv_utils.example_set_label(example, label)
-      self.assertEqual(label, dv_utils.example_label(example))
-
-  def testExampleImageShape(self):
-    example = dv_utils.make_example(
-        self.variant, self.alts, self.encoded_image, self.default_shape
-    )
-    self.assertEqual(self.default_shape, dv_utils.example_image_shape(example))
 
   def testFailedExampleImageShape(self):
     # Create an empty example that doesn't have the required image/shape field.
