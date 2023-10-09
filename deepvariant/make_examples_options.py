@@ -99,7 +99,16 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'mode',
     None,
-    'Mode to run. Must be one of calling, training or candidate_sweep',
+    (
+        'Mode to run. Must be one of calling, training or candidate_sweep.'
+        ' calling - examples are prepared for inference only.'
+        ' training - examples are prepared with labels for training.'
+        ' candidate_sweep - (advanced pre-step) - candidate positions are '
+        '   prepared for the subsequent run of make_examples with intervals '
+        '   created with equal number of candidates.'
+        '   NOTE: When this option is used, make_examples must be run again '
+        '         with the mode set to calling.'
+    ),
 )
 flags.DEFINE_string(
     'regions',
