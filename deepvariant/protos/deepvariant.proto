@@ -338,6 +338,8 @@ message CallVariantsOutput {
     int32 true_label = 5;
     repeated double logits = 6;
     repeated double prelogits = 7;
+    // The encoded image used for inference.
+    bytes image_encoded = 8;
   }
   DebugInfo debug_info = 4;
 }
