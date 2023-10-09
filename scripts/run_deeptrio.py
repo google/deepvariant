@@ -240,10 +240,10 @@ _USE_CANDIDATE_PARTITION = flags.DEFINE_boolean(
     'use_candidate_partition',
     False,
     (
-        '[This flag is experimental for internal testing. '
-        'Do not set it to true.] '
         'Optional. If set, make_examples is run over partitions that contain an'
         ' equal number of candidates. Default value is False.'
+        'If using PACBIO, this will be used automatically to reduce overall'
+        ' memory usage.'
     ),
 )
 
@@ -521,7 +521,6 @@ def _make_examples_command(
     special_args['pileup_image_height_parent'] = (
         DEEP_TRIO_PACBIO_PILEUP_HEIGHT_PARENT
     )
-    # TODO make phasing optional.
     special_args['phase_reads'] = True
     if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
       special_args['partition_size'] = 25000
@@ -545,7 +544,6 @@ def _make_examples_command(
     special_args['pileup_image_height_parent'] = (
         DEEP_TRIO_ONT_PILEUP_HEIGHT_PARENT
     )
-    # TODO make phasing optional.
     special_args['phase_reads'] = True
     if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
       special_args['partition_size'] = 25000
@@ -866,14 +864,15 @@ def create_all_commands(intermediate_results_dir):
   # The first one to generate candidate_positions. The second command is for
   # generating DeepVariant examples. _USE_CANDIDATE_PARTITION is an option that
   # helps to better distribute the work between shards.
-  candidate_partition_modes = []
-  if _USE_CANDIDATE_PARTITION.value:
+
+  candidate_partition_modes = [None]
+  # In DeepTrio PacBio mode, we always enable use_candidate_partition because
+  # otherwise it can run out of memory.
+  if _USE_CANDIDATE_PARTITION.value or _MODEL_TYPE.value == 'PACBIO':
     candidate_partition_modes = [
         CandidatePartitionCommand.SWEEP,
         CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE,
     ]
-  else:
-    candidate_partition_modes = [None]
 
   for candidate_partition_mode in candidate_partition_modes:
     commands.append(

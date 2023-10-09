@@ -85,9 +85,13 @@ class RunDeeptrioTest(parameterized.TestCase):
     commands, postprocess_cmds, report_commands = (
         self._create_all_commands_and_check_stdout()
     )
-
+    # Because PACBIO model will always have use_candidate_partition on,
+    # so there will be one extra make_examples command.
+    call_variants_commands_start_index = 1
+    if model_type == 'PACBIO':
+      call_variants_commands_start_index = 2
     self.assertEqual(
-        commands[1],
+        commands[call_variants_commands_start_index],
         'time /opt/deepvariant/bin/call_variants --outfile'
         ' "/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz"'
         ' --examples'
@@ -97,7 +101,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         ),
     )
     self.assertEqual(
-        commands[2],
+        commands[call_variants_commands_start_index + 1],
         'time /opt/deepvariant/bin/call_variants --outfile'
         ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
         ' --examples'
@@ -107,7 +111,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         ),
     )
     self.assertEqual(
-        commands[3],
+        commands[call_variants_commands_start_index + 2],
         'time /opt/deepvariant/bin/call_variants --outfile'
         ' "/tmp/deeptrio_tmp_output/call_variants_output_parent2.tfrecord.gz"'
         ' --examples'
@@ -151,7 +155,12 @@ class RunDeeptrioTest(parameterized.TestCase):
             ' --gvcf_outfile "your_gvcf_parent2"'
         ),
     )
-    self.assertLen(commands, 4)
+    # Because PACBIO model will always have use_candidate_partition on,
+    # so there will be one extra make_examples command.
+    if model_type == 'PACBIO':
+      self.assertLen(commands, 5)
+    else:
+      self.assertLen(commands, 4)
     self.assertLen(postprocess_cmds, 3)
     self.assertLen(report_commands, 3)
 
@@ -185,8 +194,13 @@ class RunDeeptrioTest(parameterized.TestCase):
     call_variants_bin = (
         'call_variants_slim' if use_slim_model else 'call_variants'
     )
+    # Because PACBIO model will always have use_candidate_partition on,
+    # so there will be one extra make_examples command.
+    call_variants_commands_start_index = 1
+    if model_type == 'PACBIO':
+      call_variants_commands_start_index = 2
     self.assertEqual(
-        commands[1],
+        commands[call_variants_commands_start_index],
         f'time /opt/deepvariant/bin/{call_variants_bin} --outfile'
         ' "/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz"'
         ' --examples'
@@ -196,7 +210,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         ),
     )
     self.assertEqual(
-        commands[2],
+        commands[call_variants_commands_start_index + 1],
         f'time /opt/deepvariant/bin/{call_variants_bin} --outfile'
         ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
         ' --examples'
@@ -230,7 +244,12 @@ class RunDeeptrioTest(parameterized.TestCase):
         ),
     )
     # pylint: disable=g-generic-assert
-    self.assertLen(commands, 3)
+    # Because PACBIO model will always have use_candidate_partition on,
+    # so there will be one extra make_examples command.
+    if model_type == 'PACBIO':
+      self.assertLen(commands, 4)
+    else:
+      self.assertLen(commands, 3)
     self.assertLen(postprocess_cmds, 2)
     self.assertLen(report_commands, 2)
 
@@ -531,7 +550,12 @@ class RunDeeptrioTest(parameterized.TestCase):
               '--track_ref_reads '
               '--vsc_min_fraction_indels "0.03" '
           ),
+          # Because PacBio uses candidate_sweep, make_examples got run twice.
           (
+              '\nWarning: --alt_aligned_pileup is previously set to'
+              ' diff_channels, now to "rows".\n\nWarning:'
+              ' --vsc_min_fraction_indels is previously set to 0.12, now to'
+              ' 0.03.\n'
               '\nWarning: --alt_aligned_pileup is previously set to'
               ' diff_channels, now to "rows".\n\nWarning:'
               ' --vsc_min_fraction_indels is previously set to 0.12, now to'
