@@ -536,7 +536,7 @@ def _make_examples_command(
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['add_hp_channel'] = True
-    special_args['min_mapping_quality'] = 1
+    special_args['min_mapping_quality'] = 5
     special_args['track_ref_reads'] = True
     special_args['pileup_image_height_child'] = (
         DEEP_TRIO_ONT_PILEUP_HEIGHT_CHILD
@@ -551,6 +551,7 @@ def _make_examples_command(
     special_args['parse_sam_aux_fields'] = True
     special_args['discard_non_dna_regions'] = True
     special_args['max_reads_for_dynamic_bases_per_region'] = 200
+    special_args['max_reads_per_partition'] = 500
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   if _MODEL_TYPE.value == 'WES':
@@ -643,6 +644,7 @@ def postprocess_variants_command(
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
+  command.extend(['--cpus 0'])
   if nonvariant_site_tfrecord_path is not None:
     command.extend([
         '--nonvariant_site_tfrecord_path',
@@ -866,9 +868,11 @@ def create_all_commands(intermediate_results_dir):
   # helps to better distribute the work between shards.
 
   candidate_partition_modes = [None]
-  # In DeepTrio PacBio mode, we always enable use_candidate_partition because
-  # otherwise it can run out of memory.
-  if _USE_CANDIDATE_PARTITION.value or _MODEL_TYPE.value == 'PACBIO':
+  # In DeepTrio PacBio and ONT mode, we always enable use_candidate_partition
+  # because otherwise it can run out of memory.
+  use_candidate_partition = False
+  if _USE_CANDIDATE_PARTITION.value or _MODEL_TYPE.value in ['PACBIO', 'ONT']:
+    use_candidate_partition = True
     candidate_partition_modes = [
         CandidatePartitionCommand.SWEEP,
         CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE,
@@ -891,7 +895,7 @@ def create_all_commands(intermediate_results_dir):
                 intermediate_results_dir, _NUM_SHARDS.value
             ),
             candidate_partition_mode=candidate_partition_mode
-            if _USE_CANDIDATE_PARTITION.value
+            if use_candidate_partition
             else None,
             # kwargs:
             gvcf=nonvariant_site_tfrecord_path,

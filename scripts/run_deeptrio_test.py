@@ -128,6 +128,7 @@ class RunDeeptrioTest(parameterized.TestCase):
             '--infile '
             '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
             '--outfile "your_vcf_child" '
+            '--cpus 0 '
             '--nonvariant_site_tfrecord_path '
             '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
             '--gvcf_outfile "your_gvcf_child"'
@@ -139,7 +140,8 @@ class RunDeeptrioTest(parameterized.TestCase):
             'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
             ' --infile'
             ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
-            ' --outfile "your_vcf_parent1" --nonvariant_site_tfrecord_path'
+            ' --outfile "your_vcf_parent1" --cpus 0'
+            ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz"'
             ' --gvcf_outfile "your_gvcf_parent1"'
         ),
@@ -150,7 +152,8 @@ class RunDeeptrioTest(parameterized.TestCase):
             'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
             ' --infile'
             ' "/tmp/deeptrio_tmp_output/call_variants_output_parent2.tfrecord.gz"'
-            ' --outfile "your_vcf_parent2" --nonvariant_site_tfrecord_path'
+            ' --outfile "your_vcf_parent2" --cpus 0'
+            ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_parent2.tfrecord@64.gz"'
             ' --gvcf_outfile "your_gvcf_parent2"'
         ),
@@ -227,6 +230,7 @@ class RunDeeptrioTest(parameterized.TestCase):
             '--infile '
             '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
             '--outfile "your_vcf_child" '
+            '--cpus 0 '
             '--nonvariant_site_tfrecord_path '
             '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
             '--gvcf_outfile "your_gvcf_child"'
@@ -238,7 +242,8 @@ class RunDeeptrioTest(parameterized.TestCase):
             'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
             ' --infile'
             ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
-            ' --outfile "your_vcf_parent1" --nonvariant_site_tfrecord_path'
+            ' --outfile "your_vcf_parent1" --cpus 0'
+            ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz"'
             ' --gvcf_outfile "your_gvcf_parent1"'
         ),
@@ -271,21 +276,8 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--pileup_image_height_parent "100" ',
       ),
       (
-          'PACBIO',
-          False,
-          '--add_hp_channel --alt_aligned_pileup "diff_channels" '
-          + '--discard_non_dna_regions '
-          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-          + '--max_reads_for_dynamic_bases_per_region "200" '
-          + '--min_mapping_quality "1" '
-          + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
-          + '--pileup_image_height_child "60" '
-          + '--pileup_image_height_parent "40" --pileup_image_width "199" '
-          + '--norealign_reads --sort_by_haplotypes '
-          + '--track_ref_reads '
-          + '--vsc_min_fraction_indels "0.12" ',
-      ),
-      (
+          # For pacbio candidate paritionning is turned on by default.
+          # Currently, there is no way to disable it.
           'PACBIO',
           True,
           '--add_hp_channel --alt_aligned_pileup "diff_channels" '
@@ -343,6 +335,8 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.num_shards = 64
+    if model_type == 'PACBIO':
+      use_candidate_partition = True
     make_examples_command_index = 1 if use_candidate_partition else 0
     commands, _, _ = self._create_all_commands_and_check_stdout()
     self.assertEqual(
@@ -463,6 +457,8 @@ class RunDeeptrioTest(parameterized.TestCase):
       (
           'PACBIO',
           '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+          + '--candidate_positions '
+          + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
           + '--discard_non_dna_regions '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--max_reads_for_dynamic_bases_per_region "200" '
@@ -491,8 +487,12 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
     FLAGS.num_shards = 64
     commands, _, _ = self._create_all_commands_and_check_stdout()
+    use_candidate_partition = False
+    if model_type == 'PACBIO':
+      use_candidate_partition = True
+    make_examples_command_index = 1 if use_candidate_partition else 0
     self.assertEqual(
-        commands[0],
+        commands[make_examples_command_index],
         'time seq 0 63 '
         '| parallel -q --halt 2 --line-buffer '
         '/opt/deepvariant/bin/deeptrio/make_examples '
@@ -511,44 +511,36 @@ class RunDeeptrioTest(parameterized.TestCase):
       (
           None,
           (
-              '--add_hp_channel '
-              '--alt_aligned_pileup "diff_channels" '
-              '--discard_non_dna_regions '
-              '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-              '--max_reads_for_dynamic_bases_per_region "200" '
-              '--min_mapping_quality "1" '
-              '--parse_sam_aux_fields '
-              '--partition_size "25000" '
-              '--phase_reads '
-              '--pileup_image_height_child "60" '
-              '--pileup_image_height_parent "40" '
-              '--pileup_image_width "199" '
-              '--norealign_reads '
-              '--sort_by_haplotypes '
-              '--track_ref_reads '
-              '--vsc_min_fraction_indels "0.12" '
+              '--add_hp_channel --alt_aligned_pileup "diff_channels"'
+              ' --candidate_positions'
+              ' "/tmp/deeptrio_tmp_output/candidate_positions@64"'
+              ' --discard_non_dna_regions --gvcf'
+              ' "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz"'
+              ' --max_reads_for_dynamic_bases_per_region "200"'
+              ' --min_mapping_quality "1" --parse_sam_aux_fields'
+              ' --partition_size "10000" --phase_reads'
+              ' --pileup_image_height_child "60" --pileup_image_height_parent'
+              ' "40" --pileup_image_width "199" --norealign_reads'
+              ' --sort_by_haplotypes --track_ref_reads'
+              ' --vsc_min_fraction_indels "0.12" '
           ),
           None,
       ),
       (
           'alt_aligned_pileup="rows",vsc_min_fraction_indels=0.03',
           (
-              '--add_hp_channel '
-              '--alt_aligned_pileup "rows" '
-              '--discard_non_dna_regions '
-              '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
-              '--max_reads_for_dynamic_bases_per_region "200" '
-              '--min_mapping_quality "1" '
-              '--parse_sam_aux_fields '
-              '--partition_size "25000" '
-              '--phase_reads '
-              '--pileup_image_height_child "60" '
-              '--pileup_image_height_parent "40" '
-              '--pileup_image_width "199" '
-              '--norealign_reads '
-              '--sort_by_haplotypes '
-              '--track_ref_reads '
-              '--vsc_min_fraction_indels "0.03" '
+              '--add_hp_channel --alt_aligned_pileup "rows"'
+              ' --candidate_positions'
+              ' "/tmp/deeptrio_tmp_output/candidate_positions@64"'
+              ' --discard_non_dna_regions --gvcf'
+              ' "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz"'
+              ' --max_reads_for_dynamic_bases_per_region "200"'
+              ' --min_mapping_quality "1" --parse_sam_aux_fields'
+              ' --partition_size "10000" --phase_reads'
+              ' --pileup_image_height_child "60" --pileup_image_height_parent'
+              ' "40" --pileup_image_width "199" --norealign_reads'
+              ' --sort_by_haplotypes --track_ref_reads'
+              ' --vsc_min_fraction_indels "0.03" '
           ),
           # Because PacBio uses candidate_sweep, make_examples got run twice.
           (
@@ -589,7 +581,7 @@ class RunDeeptrioTest(parameterized.TestCase):
     self.assertEqual(
         commands[0],
         'time seq 0 63 | parallel -q --halt 2 --line-buffer '
-        '/opt/deepvariant/bin/deeptrio/make_examples --mode calling '
+        '/opt/deepvariant/bin/deeptrio/make_examples --mode candidate_sweep '
         '--ref "your_ref" --reads_parent1 "your_bam_parent1" '
         '--reads_parent2 "your_bam_parent2" '
         '--reads "your_bam_child" '
@@ -751,6 +743,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--infile '
         '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
         '--outfile "your_vcf_child" '
+        '--cpus 0 '
         '--nonvariant_site_tfrecord_path '
         '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_child" '
