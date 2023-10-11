@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~441m
-call_variants for HG002          | ~356m
-call_variants for HG003          | ~360m
-call_variants for HG004          | ~359m
-postprocess_variants (parallel)  | ~62m
-total                            | ~1578m = ~26.3 hours
+make_examples                    | ~430m
+call_variants for HG002          | ~330m
+call_variants for HG003          | ~330m
+call_variants for HG004          | ~332m
+postprocess_variants (parallel)  | ~60m
+total                            | ~1482m = ~24.7 hours
 
 ### Accuracy
 
@@ -24,27 +24,27 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11204    | 52       | 19       | 0.99538       | 0.99837          | 0.996873        |
-| SNP   | 71081    | 252      | 29       | 0.996467      | 0.999592         | 0.998027        |
+| INDEL | 11208    | 48       | 13       | 0.995736      | 0.998884         | 0.997308        |
+| SNP   | 71087    | 246      | 42       | 0.996551      | 0.99941          | 0.997979        |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10588    | 40       | 21       | 0.996236      | 0.998102         | 0.997168        |
-| SNP   | 69988    | 178      | 64       | 0.997463      | 0.999087         | 0.998274        |
+| INDEL | 10584    | 44       | 20       | 0.99586       | 0.998192         | 0.997024        |
+| SNP   | 69975    | 191      | 55       | 0.997278      | 0.999215         | 0.998246        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10952    | 48       | 27       | 0.995636      | 0.997645         | 0.99664         |
-| SNP   | 71456    | 203      | 66       | 0.997167      | 0.999078         | 0.998122        |
+| INDEL | 10945    | 55       | 27       | 0.995         | 0.997643         | 0.99632         |
+| SNP   | 71446    | 213      | 52       | 0.997028      | 0.999273         | 0.998149        |
 
 * See VCF stats report (for all chromosomes)
-  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WGS/HG002.output.visual_report.html)
-  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WGS/HG003.output.visual_report.html)
-  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WGS/HG004.output.visual_report.html)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WGS/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WGS/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WGS/HG004.output.visual_report.html)
 
 ## PacBio (HiFi)
 
