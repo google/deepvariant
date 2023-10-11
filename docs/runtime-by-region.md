@@ -47,7 +47,7 @@ make_examples runtime by region data. Continuing from the quick start, it looks
 like this:
 
 ```bash
-BIN_VERSION="1.5.0" # Only available in v1.1+.
+BIN_VERSION="1.6.0" # Only available in v1.1+.
 docker run \
   -v "INPUT_DIR":"/input" \
   -v "OUTPUT_DIR:/output" \

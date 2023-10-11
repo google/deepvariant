@@ -74,7 +74,7 @@ We will run DeepVariant from docker using the `run_deepvariant` script.
 ```bash
 BIN_VERSION="1.6.0"
 
-docker pull google/deepvariant:"${BIN_VERSION}"
+sudo docker pull google/deepvariant:"${BIN_VERSION}"
 
 sudo docker run \
 -v "${INPUT_DIR}":"${INPUT_DIR}" \

@@ -11,10 +11,8 @@ The dataset used in this case-study has following attributes:
 ```bash
 Sample: HG003
 Region: Chr20
-Chemistry: ONT R10.4.1 Ultra-long Sequencing Protocol
-Average read length: 41kb
-Basecaller: Guppy 6.3.8 "SUP"
-Coverage: 64x
+Chemistry: ONT R10.4.1
+Coverage: 80x
 ```
 
 **Model note:**
@@ -54,12 +52,12 @@ curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > ${INPUT_DIR
 
 # Download HG003 Ultra-long chr20 bam file to input directory
 HTTPDIR=https://storage.googleapis.com/deepvariant/ont-case-study-testdata
-curl ${HTTPDIR}/HG003_UL_R1041_Guppy6_sup_2_GRCh38.pass.chr20.bam > ${INPUT_DIR}/HG003_UL_R1041_Guppy6_sup_2_GRCh38.pass.chr20.bam
-curl ${HTTPDIR}/HG003_UL_R1041_Guppy6_sup_2_GRCh38.pass.chr20.bam.bai > ${INPUT_DIR}/HG003_UL_R1041_Guppy6_sup_2_GRCh38.pass.chr20.bam.bai
+curl ${HTTPDIR}/HG003_R104_sup_merged.80x.chr20.bam > ${INPUT_DIR}/HG003_R104_sup_merged.80x.chr20.bam
+curl ${HTTPDIR}/HG003_R104_sup_merged.80x.chr20.bam.bai > ${INPUT_DIR}/HG003_R104_sup_merged.80x.chr20.bam.bai
 
 # Set up input variables
 REF="GRCh38_no_alt_analysis_set.fasta"
-BAM="HG003_UL_R1041_Guppy6_sup_2_GRCh38.pass.chr20.bam"
+BAM="HG003_R104_sup_merged.80x.chr20.bam"
 THREADS=$(nproc)
 REGION="chr20"
 
@@ -76,7 +74,7 @@ mkdir -p "${OUTPUT_DIR}/${INTERMEDIATE_DIRECTORY}"
 We will run DeepVariant from docker using the `run_deepvariant` script.
 
 ```bash
-BIN_VERSION="1.5.0"
+BIN_VERSION="1.6.0"
 
 sudo docker run \
   -v "${INPUT_DIR}":"${INPUT_DIR}" \
@@ -155,10 +153,10 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628      9189      1439        18429      1009       7876    475    388       0.864603          0.904387        0.427370         0.884048                     NaN                     NaN                   1.748961                   2.278949
-INDEL   PASS        10628      9189      1439        18429      1009       7876    475    388       0.864603          0.904387        0.427370         0.884048                     NaN                     NaN                   1.748961                   2.278949
-  SNP    ALL        70166     70061       105        94381       152      24148     44     31       0.998504          0.997836        0.255857         0.998170                2.296566                1.879358                   1.883951                   1.764633
-  SNP   PASS        70166     70061       105        94381       152      24148     44     31       0.998504          0.997836        0.255857         0.998170                2.296566                1.879358                   1.883951                   1.764633
+INDEL    ALL        10628      9165      1463        18460       934       8010    432    339       0.862345          0.910622        0.433911         0.885826                     NaN                     NaN                   1.748961                   2.129371
+INDEL   PASS        10628      9165      1463        18460       934       8010    432    339       0.862345          0.910622        0.433911         0.885826                     NaN                     NaN                   1.748961                   2.129371
+  SNP    ALL        70166     69925       241        91027       151      20935     82     29       0.996565          0.997846        0.229987         0.997205                2.296566                1.944646                   1.883951                   1.843331
+  SNP   PASS        70166     69925       241        91027       151      20935     82     29       0.996565          0.997846        0.229987         0.997205                2.296566                1.944646                   1.883951                   1.843331
 ```
 
 ## Acknowledgement

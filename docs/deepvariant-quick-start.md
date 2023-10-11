@@ -33,7 +33,7 @@ If you want to compile the DeepVariant binaries for yourself, we also have a
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.5.0"
+BIN_VERSION="1.6.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -245,10 +245,10 @@ You should see output similar to the following.
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL            4         4         0           13         0          9      0      0       1.000000               1.0        0.692308         1.000000                     NaN                     NaN                   0.333333                   1.000000
-INDEL   PASS            4         4         0           13         0          9      0      0       1.000000               1.0        0.692308         1.000000                     NaN                     NaN                   0.333333                   1.000000
-  SNP    ALL           44        43         1           59         0         16      0      0       0.977273               1.0        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.340909
-  SNP   PASS           44        43         1           59         0         16      0      0       0.977273               1.0        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.340909
+INDEL    ALL            4         4         0           13         0          9      0      0            1.0               1.0        0.692308              1.0                     NaN                     NaN                   0.333333                   1.000000
+INDEL   PASS            4         4         0           13         0          9      0      0            1.0               1.0        0.692308              1.0                     NaN                     NaN                   0.333333                   1.000000
+  SNP    ALL           44        44         0           60         0         16      0      0            1.0               1.0        0.266667              1.0                     1.2                1.307692                   0.333333                   0.363636
+  SNP   PASS           44        44         0           60         0         16      0      0            1.0               1.0        0.266667              1.0                     1.2                1.307692                   0.333333                   0.363636
 ```
 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
