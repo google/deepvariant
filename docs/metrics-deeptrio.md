@@ -48,9 +48,8 @@ truth), which was held out while training.
 
 ## PacBio (HiFi)
 
-The numbers below are the same as
-https://github.com/google/deepvariant/blob/r1.4/docs/metrics-deeptrio.md#pacbio-hifi.
-To run DeepTrio PacBio, please use v1.4.0.
+In v1.6.0, we introduced read haplotagging in DeepTrio PacBio. You no longer
+need to run DeepVariant->WhatsHap->DeepTrio, and can just run DeepTrio once.
 
 ### Runtime
 
@@ -58,17 +57,17 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~829m
-call_variants for HG002          | ~263m
-call_variants for HG003          | ~266m
-call_variants for HG004          | ~268m
-postprocess_variants (parallel)  | ~78m
-total                            | ~1704m = ~28.4 hours
+make_examples                    | ~52+1050m
+call_variants for HG002          | ~326m
+call_variants for HG003          | ~328m
+call_variants for HG004          | ~337m
+postprocess_variants (parallel)  | ~84m
+total                            | ~2177m = ~36.3 hours
 
 * See VCF stats report (for all chromosomes)
-  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.4.0/PACBIO/HG002.output.visual_report.html)
-  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.4.0/PACBIO/HG003.output.visual_report.html)
-  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.4.0/PACBIO/HG004.output.visual_report.html)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/PACBIO/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/PACBIO/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/PACBIO/HG004.output.visual_report.html)
 
 ### Accuracy
 
@@ -79,22 +78,22 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11233    | 23       | 62       | 0.997957      | 0.994734         | 0.996343        |
-| SNP   | 71272    | 61       | 22       | 0.999145      | 0.999692         | 0.999418        |
+| INDEL | 11215    | 41       | 85       | 0.996357      | 0.992777         | 0.994564        |
+| SNP   | 71303    | 30       | 20       | 0.999579      | 0.99972          | 0.99965         |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10595    | 33       | 54       | 0.996895      | 0.995155         | 0.996024        |
-| SNP   | 70144    | 22       | 19       | 0.999686      | 0.999729         | 0.999708        |
+| INDEL | 10575    | 53       | 78       | 0.995013      | 0.993            | 0.994006        |
+| SNP   | 70145    | 21       | 35       | 0.999701      | 0.999502         | 0.999601        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10967    | 33       | 53       | 0.997         | 0.995403         | 0.996201        |
-| SNP   | 71594    | 65       | 38       | 0.999093      | 0.99947          | 0.999281        |
+| INDEL | 10957    | 43       | 60       | 0.996091      | 0.994796         | 0.995443        |
+| SNP   | 71621    | 38       | 28       | 0.99947       | 0.99961          | 0.99954         |
 
 ## Whole Exome Sequencing (Illumina)
 
@@ -164,7 +163,7 @@ bash inference_deeptrio.sh --model_preset WGS
 bash inference_deeptrio.sh --model_preset WES
 
 # PacBio
-bash inference_deeptrio.sh --model_preset PACBIO --bin_version 1.4.0
+bash inference_deeptrio.sh --model_preset PACBIO
 
 ```
 
