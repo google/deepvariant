@@ -11,6 +11,7 @@
 *   [DeepVariant ONT R10.4 simplex case study](deepvariant-ont-r104-simplex-case-study.md)
     [DeepVariant ONT R10.4 duplex case study](deepvariant-ont-r104-duplex-case-study.md)
 *   [DeepVariant hybrid (PacBio and Illumina) case study](deepvariant-hybrid-case-study.md)
+*   [DeepVariant MGISEQ T7 case study](deepvariant-mgiseq-t7-case-study.md)
 *   [Runtime and accuracy metrics for all DeepVariant models](metrics.md)
 *   [Best practices for multi-sample variant calling](trio-merge-case-study.md)
 *   [VG Giraffe + DeepVariant case study](deepvariant-vg-case-study.md)
