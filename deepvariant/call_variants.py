@@ -321,6 +321,8 @@ def get_dataset(path, example_shape):
       'variant/encoded': tf.io.FixedLenFeature((), tf.string),
       'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string),
   }
+  if FLAGS.debugging_true_label_mode:
+    proto_features['label'] = tf.io.FixedLenFeature((1), tf.int64)
 
   def _parse_example(example):
     """Parses a serialized tf.Example."""
@@ -333,7 +335,10 @@ def get_dataset(path, example_shape):
     image = dv_utils.preprocess_images(image)
     variant = parsed_features['variant/encoded']
     alt_allele_indices = parsed_features['alt_allele_indices/encoded']
-    return image, variant, alt_allele_indices
+    optional_label = None
+    if FLAGS.debugging_true_label_mode:
+      optional_label = parsed_features['label']
+    return image, variant, alt_allele_indices, optional_label
 
   ds = tf.data.TFRecordDataset.list_files(
       sharded_file_utils.normalize_to_sharded_file_pattern(path), shuffle=False
@@ -379,15 +384,17 @@ def post_processing(output_file: str, output_queue: Any) -> None:
     item = output_queue.get()
     if item is None:
       break
-    predictions, variants, alt_allele_indices_list = item
-    for probabilities, variant, alt_allele_indices in zip(
-        predictions, variants, alt_allele_indices_list
-    ):
+    predictions, variants, alt_allele_indices_list, optional_label_list = item
+    if optional_label_list is not None:
+      optional_label_list = optional_label_list.numpy()
+    for i, probabilities in enumerate(predictions):
       pred = {
           'probabilities': probabilities,
-          'variant': variant.numpy(),
-          'alt_allele_indices': alt_allele_indices.numpy(),
+          'variant': variants[i].numpy(),
+          'alt_allele_indices': alt_allele_indices_list[i].numpy(),
       }
+      if FLAGS.debugging_true_label_mode and optional_label_list is not None:
+        pred['label'] = optional_label_list[i][0]
       write_variant_call(writer, pred)
       n_examples += 1
     n_batches += 1
@@ -551,7 +558,7 @@ def call_variants(
           n_batches,
           (100 * duration) / n_examples,
       )
-      output_queue.put((predictions, batch[1], batch[2]))
+      output_queue.put((predictions, batch[1], batch[2], batch[3]))
 
     # Put none values in the queue so the running processes can terminate.
     for _ in range(0, total_writer_process):
