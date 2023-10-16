@@ -17,6 +17,7 @@ v1.2    | 12 HG001<br>6 HG002<sup>[(12)](#vfootnote12)</sup><br>6 HG004<sup>[(12
 v1.3    | Same model as v1.2
 v1.4    | 12 HG001<br>6 HG002<sup>[(12)](#vfootnote12)</sup><br>6 HG004<sup>[(12)](#vfootnote12)</sup><br>3 HG005<br>3 HG006<br>3 HG007 | 517,209,566
 v1.5    | 13 HG001<br>14 HG002<br>8 HG004<br>9 HG005<br>4 HG006<br>4 HG007 | 815,200,320
+v1.6    | 21 HG001<br>17 HG002<br>8 HG004<br>9 HG005<br>4 HG006<br>4 HG007 | 929,199,066
 
 ### WES models
 
@@ -34,6 +35,7 @@ v1.2    | 41 HG001<br>9 HG002<br>9 HG004<br>12 HG005<br>9 HG006<br>9 HG007<sup>[
 v1.3    | Same model as v1.2
 v1.4    | 41 HG001<br>9 HG002<br>9 HG004<br>12 HG005<br>9 HG006<br>9 HG007<sup>[(11)](#vfootnote11)</sup> | 21,212,424
 v1.5    | 40 HG001<br>9 HG002<br>9 HG004<br>12 HG005<br>9 HG006<br>9 HG007 | 21,027,625
+v1.6    | 57 HG001<br>9 HG002<br>9 HG004<br>12 HG005<br>9 HG006<br>9 HG007 | 21,027,614
 
 ### PACBIO models
 
@@ -48,17 +50,25 @@ v1.2    | 1 HG001<br>19 HG002<br>2 HG004<br>1 HG005<sup>[(10)](#vfootnote10)</su
 v1.3    | 1 HG001<br>19 HG002<br>3 HG004<br>1 HG005<br>1 HG006<br>1 HG007 | 1,177,109,190
 v1.4    | 1 HG001<br>19 HG002<br>3 HG004<br>1 HG005<br>1 HG006<br>1 HG007 | 1,177,596,708
 v1.5    | 3 HG001<br>29 HG002<br>7 HG004<br>2 HG005<br>3 HG006<br>2 HG007 | 1,729,659,396
+v1.6    | 6 HG001<br>60 HG002<br>16 HG004<br>4 HG005<br>6 HG006<br>4 HG007 | 3,195,507,862
+
+### ONT models
+
+version | Replicates                  | #examples
+------- | --------------------------- | ------------------------------
+v1.6    | 3 HG001<br>1 HG004<br>1 HG005 | 534,302,654
 
 ### HYBRID models
 
 version | Replicates                                               | #examples
 ------- | -------------------------------------------------------- | -----------
 v1.0    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 193,076,623
-v1.1    | Same model as v1.0
+v1.1    | Same model as v1.0                                       |
 v1.2    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 214,302,681
-v1.3    | Same model as v1.2
+v1.3    | Same model as v1.2                                       |
 v1.4    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 215,863,645
 v1.5    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 215,863,664
+v1.6    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 215,353,081
 
 <a name="vfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
 sequencing data into training data. In v0.6, we took it out because it didn't
