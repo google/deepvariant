@@ -34,7 +34,7 @@ If you want to access more flags that are available in `make_examples`,
 using the binaries in the Docker image.
 
 For more details, see:
-https://github.com/google/deepvariant/blob/r1.5/docs/deepvariant-quick-start.md
+https://github.com/google/deepvariant/blob/r1.6/docs/deepvariant-quick-start.md
 """
 
 import os
@@ -532,7 +532,7 @@ def check_flags():
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
-          'https://github.com/google/deepvariant/blob/r1.5/docs/'
+          'https://github.com/google/deepvariant/blob/r1.6/docs/'
           'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
           'could-not-open'.format(_CUSTOMIZED_MODEL.value)
       )

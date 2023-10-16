@@ -52,13 +52,13 @@ Flags:
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
---model_preset Preset case study to run: WGS, WGS_CHR20, WES, PACBIO, or PACBIO_CHR20.
+--model_preset Preset case study to run: WGS, WGS_CHR20, WES, ONT, ONT_CHR20, PACBIO, or PACBIO_CHR20.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 
 
 If model_preset is not specified, the below flags are required:
---model_type Type of DeepTrio model to run (WGS, WES, PACBIO)
+--model_type Type of DeepTrio model to run (WGS, WES, PACBIO, ONT)
 --bam_child Path to bam for HG002 on GCP.
 --bam_parent1 Path to bam for HG003 on GCP.
 --bam_parent2 Path to bam for HG004 on GCP.
@@ -79,7 +79,7 @@ BAM_CHILD=""
 BAM_PARENT1=""
 BAM_PARENT2=""
 DOCKER_SOURCE="google/deepvariant"
-BIN_VERSION="1.5.0"
+BIN_VERSION="1.6.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL_PARENT=""
@@ -269,6 +269,25 @@ elif [[ "${MODEL_PRESET}" = "PACBIO_CHR20" ]]; then
   BAM_CHILD="${BAM_CHILD:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG002.pfda_challenge.grch38.phased.chr20.bam}"
   BAM_PARENT1="${BAM_PARENT1:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.chr20.bam}"
   BAM_PARENT2="${BAM_PARENT2:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG004.pfda_challenge.grch38.phased.chr20.bam}"
+
+  if [[ -n "${REGIONS}" ]]; then
+    echo "For --model_preset=${MODEL_PRESET}, regions will be set to chr20."
+  fi
+  REGIONS=chr20
+elif [[ "${MODEL_PRESET}" = "ONT" ]]; then
+  MODEL_TYPE="ONT"
+  BASE="${HOME}/ont-case-study"
+
+  BAM_CHILD="${BAM_CHILD:=${GCS_DATA_DIR}/ont-case-study-testdata/HG002_R104_sup_merged.50x.bam}"
+  BAM_PARENT1="${BAM_PARENT1:=${GCS_DATA_DIR}/ont-case-study-testdata/HG003_R104_sup_merged.40x.bam}"
+  BAM_PARENT2="${BAM_PARENT2:=${GCS_DATA_DIR}/ont-case-study-testdata/HG004_R104_sup_merged.40x.bam}"
+elif [[ "${MODEL_PRESET}" = "ONT_CHR20" ]]; then
+  MODEL_TYPE="ONT"
+  BASE="${HOME}/ont-case-study"
+
+  BAM_CHILD="${BAM_CHILD:=${GCS_DATA_DIR}/ont-case-study-testdata/HG002_R104_sup_merged.50x.chr20.bam}"
+  BAM_PARENT1="${BAM_PARENT1:=${GCS_DATA_DIR}/ont-case-study-testdata/HG003_R104_sup_merged.40x.chr20.bam}"
+  BAM_PARENT2="${BAM_PARENT2:=${GCS_DATA_DIR}/ont-case-study-testdata/HG004_R104_sup_merged.40x.chr20.bam}"
 
   if [[ -n "${REGIONS}" ]]; then
     echo "For --model_preset=${MODEL_PRESET}, regions will be set to chr20."

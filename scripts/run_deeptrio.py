@@ -740,7 +740,7 @@ def check_flags():
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
-          'https://github.com/google/deepvariant/blob/r1.5/docs/'
+          'https://github.com/google/deepvariant/blob/r1.6/docs/'
           'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
           'could-not-open'.format(_CUSTOMIZED_MODEL_PARENT.value)
       )
@@ -759,7 +759,7 @@ def check_flags():
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
-          'https://github.com/google/deepvariant/blob/r1.5/docs/'
+          'https://github.com/google/deepvariant/blob/r1.6/docs/'
           'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
           'could-not-open'.format(_CUSTOMIZED_MODEL_CHILD.value)
       )

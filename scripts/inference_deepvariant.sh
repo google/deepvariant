@@ -73,7 +73,7 @@ SAVE_INTERMEDIATE_RESULTS=false
 # Strings; sorted alphabetically.
 BAM=""
 DOCKER_SOURCE="google/deepvariant"
-BIN_VERSION="1.5.0"
+BIN_VERSION="1.6.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
@@ -261,7 +261,7 @@ elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
   BASE="${HOME}/ont-case-study"
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-  BAM="${BAM:=${GCS_DATA_DIR}/ont-case-study-testdata/HG003_R1041_Guppy6_sup_2_GRCh38.pass.bam}"
+  BAM="${BAM:=${GCS_DATA_DIR}/ont-case-study-testdata/HG003_R104_sup_merged.80x.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
 elif [[ "${MODEL_PRESET}" = "ONT_R104_DUPLEX_CHR20" ]]; then
