@@ -103,12 +103,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | --------------
-make_examples                    | ~16m
+make_examples                    | ~17m
 call_variants for HG002          | ~5m
 call_variants for HG003          | ~5m
 call_variants for HG004          | ~5m
 postprocess_variants (parallel)  | ~1m
-total                            | ~32m
+total                            | ~33m
 
 ### Accuracy
 
@@ -134,13 +134,13 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 32       | 1        | 0        | 0.969697      | 1.0              | 0.984615        |
-| SNP   | 676      | 3        | 0        | 0.995582      | 1.0              | 0.997786        |
+| INDEL | 32       | 1        | 1        | 0.969697      | 0.969697         | 0.969697        |
+| SNP   | 677      | 2        | 0        | 0.997054      | 1.0              | 0.998525        |
 
 * See VCF stats report (for all chromosomes)
-  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WES/HG002.output.visual_report.html)
-  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WES/HG003.output.visual_report.html)
-  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.5.0/WES/HG004.output.visual_report.html)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WES/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WES/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WES/HG004.output.visual_report.html)
 
 ## How to reproduce the metrics on this page
 
@@ -154,7 +154,7 @@ Use `gcloud compute ssh` to log in to the newly created instance.
 Download and run any of the following case study scripts:
 
 ```
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.5/scripts/inference_deeptrio.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.6/scripts/inference_deeptrio.sh
 
 # WGS
 bash inference_deeptrio.sh --model_preset WGS
