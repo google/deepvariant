@@ -155,48 +155,48 @@ RUN \
 
 # Copy models
 WORKDIR /opt/models/wgs
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/example_info.json .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wgs.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wgs.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wgs.rc1.savedmodel/example_info.json .
 WORKDIR /opt/models/wgs/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wgs.rc1.savedmodel/variables/variables.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wgs.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wgs.rc1.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/wgs/*
 
 WORKDIR /opt/models/wes
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/example_info.json .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wes.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wes.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wes.rc1.savedmodel/example_info.json .
 WORKDIR /opt/models/wes/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.wes.rc1.savedmodel/variables/variables.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wes.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.wes.rc1.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/wes/*
 
 WORKDIR /opt/models/pacbio
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/example_info.json .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.pacbio.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.pacbio.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.pacbio.rc1.savedmodel/example_info.json .
 WORKDIR /opt/models/pacbio/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.pacbio.rc1.savedmodel/variables/variables.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.pacbio.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.pacbio.rc1.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/pacbio/*
 
 WORKDIR /opt/models/hybrid_pacbio_illumina
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/example_info.json .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.hybrid.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.hybrid.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.hybrid.rc1.savedmodel/example_info.json .
 WORKDIR /opt/models/hybrid_pacbio_illumina/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.hybrid.rc1.savedmodel/variables/variables.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.hybrid.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.hybrid.rc1.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/hybrid_pacbio_illumina/*
 
 WORKDIR /opt/models/ont_r104
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/example_info.json .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.ont.rc1.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.ont.rc1.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.ont.rc1.savedmodel/example_info.json .
 WORKDIR /opt/models/ont_r104/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/rc1_savedmodels/deepvariant.ont.rc1.savedmodel/variables/variables.index .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.ont.rc1.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.ont.rc1.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/ont_r104/*
 
 ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin
