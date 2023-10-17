@@ -118,7 +118,8 @@ flags.DEFINE_integer(
 flags.DEFINE_boolean(
     'include_debug_info',
     False,
-    'If true, include extra debug info in the output.',
+    'If true, include extra debug info in the output, including the original '
+    'image_encoded.',
 )
 flags.DEFINE_boolean(
     'debugging_true_label_mode',
@@ -262,6 +263,14 @@ def write_variant_call(writer, prediction):
 
   # Write it out.
   true_labels = prediction['label'] if FLAGS.debugging_true_label_mode else None
+  if FLAGS.debugging_true_label_mode:
+    if 'label' not in prediction:
+      logging.warning('No label is available for debugging_true_label_mode.')
+    else:
+      true_labels = prediction['label']
+  image_encoded = (
+      prediction['image_encoded'] if FLAGS.include_debug_info else None
+  )
   cvo = _create_cvo_proto(
       encoded_variant,
       rounded_gls,
@@ -269,6 +278,7 @@ def write_variant_call(writer, prediction):
       true_labels,
       logits=prediction.get('logits'),
       prelogits=prediction.get('prelogits'),
+      image_encoded=image_encoded,
   )
   return writer.write(cvo)
 
@@ -280,6 +290,7 @@ def _create_cvo_proto(
     true_labels=None,
     logits=None,
     prelogits=None,
+    image_encoded=None,
 ):
   """Returns a CallVariantsOutput proto from the relevant input information."""
   variant = variants_pb2.Variant.FromString(encoded_variant)
@@ -301,6 +312,7 @@ def _create_cvo_proto(
         true_label=true_labels,
         logits=logits,
         prelogits=prelogits,
+        image_encoded=image_encoded,
     )
   call_variants_output = deepvariant_pb2.CallVariantsOutput(
       variant=variant,
@@ -329,6 +341,9 @@ def get_dataset(path, example_shape):
     parsed_features = tf.io.parse_single_example(
         serialized=example, features=proto_features
     )
+    image_encoded = (
+        parsed_features['image/encoded'] if FLAGS.include_debug_info else b''
+    )
     image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
     image = tf.reshape(image, example_shape)
     image = tf.cast(image, tf.float32)
@@ -338,7 +353,7 @@ def get_dataset(path, example_shape):
     optional_label = None
     if FLAGS.debugging_true_label_mode:
       optional_label = parsed_features['label']
-    return image, variant, alt_allele_indices, optional_label
+    return image_encoded, image, variant, alt_allele_indices, optional_label
 
   ds = tf.data.TFRecordDataset.list_files(
       sharded_file_utils.normalize_to_sharded_file_pattern(path), shuffle=False
@@ -360,14 +375,14 @@ def get_dataset(path, example_shape):
   if _LIMIT.value > 0:
     ds = ds.take(_LIMIT.value)
 
-  image_variant_alt_allele_ds = ds.map(
+  enc_image_variant_alt_allele_ds = ds.map(
       map_func=_parse_example, num_parallel_calls=tf.data.AUTOTUNE
   )
 
-  image_variant_alt_allele_ds = image_variant_alt_allele_ds.batch(
+  enc_image_variant_alt_allele_ds = enc_image_variant_alt_allele_ds.batch(
       batch_size=FLAGS.batch_size
   ).prefetch(tf.data.AUTOTUNE)
-  return image_variant_alt_allele_ds
+  return enc_image_variant_alt_allele_ds
 
 
 def post_processing(output_file: str, output_queue: Any) -> None:
@@ -384,13 +399,20 @@ def post_processing(output_file: str, output_queue: Any) -> None:
     item = output_queue.get()
     if item is None:
       break
-    predictions, variants, alt_allele_indices_list, optional_label_list = item
+    (
+        predictions,
+        image_encodes,
+        variants,
+        alt_allele_indices_list,
+        optional_label_list,
+    ) = item
     if optional_label_list is not None:
       optional_label_list = optional_label_list.numpy()
     for i, probabilities in enumerate(predictions):
       pred = {
           'probabilities': probabilities,
           'variant': variants[i].numpy(),
+          'image_encoded': image_encodes[i].numpy(),
           'alt_allele_indices': alt_allele_indices_list[i].numpy(),
       }
       if FLAGS.debugging_true_label_mode and optional_label_list is not None:
@@ -529,23 +551,25 @@ def call_variants(
       )
       model.load_weights(checkpoint_path).expect_partial()
 
-    image_variant_alt_allele_ds = get_dataset(examples_filename, example_shape)
+    enc_image_variant_alt_allele_ds = get_dataset(
+        examples_filename, example_shape
+    )
 
     batch_no = 0
     n_examples = 0
     n_batches = 0
     start_time = time.time()
-    for batch in image_variant_alt_allele_ds:
+    for batch in enc_image_variant_alt_allele_ds:
       if use_saved_model:
-        predictions = model.signatures['serving_default'](batch[0])
+        predictions = model.signatures['serving_default'](batch[1])
         predictions = predictions['classification'].numpy()
       else:
         if not is_gpu_available:
           # This is faster on CPU but slower on GPU.
-          predictions = model.predict_on_batch(batch[0])
+          predictions = model.predict_on_batch(batch[1])
         else:
           # This is faster on GPU but slower on CPU.
-          predictions = model(batch[0], training=False).numpy()
+          predictions = model(batch[1], training=False).numpy()
       batch_no += 1
       duration = time.time() - start_time
       n_examples += len(predictions)
@@ -558,7 +582,7 @@ def call_variants(
           n_batches,
           (100 * duration) / n_examples,
       )
-      output_queue.put((predictions, batch[1], batch[2], batch[3]))
+      output_queue.put((predictions, batch[0], batch[2], batch[3], batch[4]))
 
     # Put none values in the queue so the running processes can terminate.
     for _ in range(0, total_writer_process):
