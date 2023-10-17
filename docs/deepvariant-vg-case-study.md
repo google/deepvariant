@@ -45,7 +45,7 @@ SAMP=HG003
 READS1=${DATA_DIR}/HG003.novaseq.pcr-free.35x.R1.fastq.gz
 READS2=${DATA_DIR}/HG003.novaseq.pcr-free.35x.R2.fastq.gz
 
-VG_DOCKER_VERSION=ci-684-bc9aa5dfc4b0d14519ea47333075906a4ec74656
+VG_DOCKER_VERSION=v1.47.0
 sudo docker pull quay.io/vgteam/vg:${VG_DOCKER_VERSION}
 
 time sudo docker run --rm -v ${DATA_DIR}:${DATA_DIR}  \
@@ -69,22 +69,22 @@ NOTE: No need to sort this yet, because we'll need to sort it in the next step.
 On my machine, the last few lines of the log showed:
 
 ```
-Mapped 838385300 reads across 64 threads in 18301.1 seconds with 2.21969 additional single-threaded seconds.
-Mapping speed: 715.789 reads per second per thread
-Used 1.16473e+06 CPU-seconds (including output).
-Achieved 719.812 reads per CPU-second (including output)
-Memory footprint: 60.2851 GB
+Mapped 838385300 reads across 64 threads in 17842.7 seconds with 2.03384 additional single-threaded seconds.
+Mapping speed: 734.18 reads per second per thread
+Used 1.13562e+06 CPU-seconds (including output).
+Achieved 738.262 reads per CPU-second (including output)
+Memory footprint: 60.2227 GB
 
-real    312m50.671s
-user    0m48.748s
-sys     3m58.294s
+real    300m17.121s
+user    0m47.536s
+sys     3m56.936s
 ```
 
 File size:
 
 ```
 $ ls -lh reads.unsorted.bam
--rw-rw-r-- 1 user user 68G Oct 12 07:55 reads.unsorted.bam
+-rw-rw-r-- 1 user user Oct 16 22:35 reads.unsorted.bam
 ```
 
 ## Fix the BAM's contig name
@@ -105,22 +105,22 @@ samtools view -H $INBAM  | grep -v ^@HD | grep -v ^@SQ >> new_header.sam
 ## write new BAM, removing the "GRCh38." prefixes
 time cat <(cat new_header.sam) <(samtools view $INBAM) | sed -e "s/GRCh38.//g" | samtools sort --threads 10 -m 2G -O BAM > ${BAM}
 # Index the BAM.
-samtools index -@10 ${BAM}
+samtools index -@$(nproc) ${BAM}
 ```
 
 The step with `time` above took:
 
 ```
-real    83m55.262s
-user    175m28.643s
-sys     31m50.974s
+real    81m40.953s
+user    170m42.641s
+sys     27m33.029s
 ```
 
 File size:
 
 ```
 $ ls -lh reads.sorted.chrfixed.bam
--rw-rw-r-- 1 user user 40G Oct 12 15:02 reads.sorted.chrfixed.bam
+-rw-rw-r-- 1 user user 40G Oct 17 02:23 reads.sorted.chrfixed.bam
 ```
 
 ## Run DeepVariant With `min_mapping_quality=1,keep_legacy_allele_counter_behavior=true,normalize_reads=true`
@@ -135,7 +135,11 @@ curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz | gunzip > ${D
 samtools faidx ${DATA_DIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 ```
 
-And then, run DeepVariant:
+And then, run DeepVariant.
+
+(If you want to test on one smaller chromosome first, you can add
+`--regions chr20` like what we did in
+[DeepVariant Case Study](deepvariant-case-study.md).)
 
 ```bash
 BIN_VERSION="1.6.0"
@@ -158,13 +162,10 @@ time sudo docker run --rm \
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 121m56.740s
-call_variants                    | 178m28.831s
-postprocess_variants (with gVCF) | 33m12.422s
+make_examples                    | 116m20.443s
+call_variants                    | 173m55.861s
+postprocess_variants (with gVCF) | 28m18.185s
 
-If you want to test on one smaller chromosome first, you can add
-`--regions chr20` like what we did in
-[DeepVariant Case Study](deepvariant-case-study.md).
 
 ### Run hap.py
 
@@ -201,21 +202,21 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL       504501    502112      2389       948893      1449     423994    901    340       0.995265          0.997239        0.446830         0.996251                     NaN                     NaN                   1.489759                   1.965759
-INDEL   PASS       504501    502112      2389       948893      1449     423994    901    340       0.995265          0.997239        0.446830         0.996251                     NaN                     NaN                   1.489759                   1.965759
-  SNP    ALL      3327496   3314379     13117      3724994      4161     404631   1745    298       0.996058          0.998747        0.108626         0.997401                2.102576                2.031824                   1.535137                   1.492058
-  SNP   PASS      3327496   3314379     13117      3724994      4161     404631   1745    298       0.996058          0.998747        0.108626         0.997401                2.102576                2.031824                   1.535137                   1.492058
+INDEL    ALL       504501    502108      2393       948864      1453     423968    903    342       0.995257          0.997232        0.446816         0.996243                     NaN                     NaN                   1.489759                   1.965681
+INDEL   PASS       504501    502108      2393       948864      1453     423968    903    342       0.995257          0.997232        0.446816         0.996243                     NaN                     NaN                   1.489759                   1.965681
+  SNP    ALL      3327496   3314384     13112      3725023      4167     404651   1751    300       0.996059          0.998745        0.108630         0.997400                2.102576                2.031762                   1.535137                   1.492075
+  SNP   PASS      3327496   3314384     13112      3725023      4167     404651   1751    300       0.996059          0.998745        0.108630         0.997400                2.102576                2.031762                   1.535137                   1.492075
 ```
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502112   | 2389     | 1449     | 0.995265      | 0.997239         | 0.996251        |
-| SNP   | 3314379  | 13117    | 4161     | 0.996058      | 0.998747         | 0.997401        |
+| INDEL | 502108   | 2393     | 1453     | 0.995257      | 0.997232         | 0.996243        |
+| SNP   | 3314384  | 13112    | 4167     | 0.996059      | 0.998745         | 0.9974          |
 
 This can be compared with
 https://github.com/google/deepvariant/blob/r1.6/docs/metrics.md#accuracy.
 
 Which shows that `vg giraffe` improves F1:
 
-- Indel F1: 0.995998 --> 0.996251
-- SNP F1: 0.996237 --> 0.997401
+- Indel F1: 0.995998 --> 0.996243
+- SNP F1: 0.996237 --> 0.9974
