@@ -51,6 +51,8 @@ following types of input data:
     [whole genome](docs/deeptrio-wgs-case-study.md) or whole exome.
 *   PacBio HiFi data, see the
     [PacBio case study](docs/deeptrio-pacbio-case-study.md).
+*   PacBio HiFi data, see the
+    [Oxford nanopore case study](docs/deeptrio-ont-case-study.md).
 
 Please also note:
 
@@ -81,7 +83,14 @@ docker run \
   --par_regions_bed="/input/GRCh3X_par.bed" \ **Optional. If --haploid_contigs is set, then this can be used to provide PAR regions to be excluded from genotype adjustment. Download links to this files are available in this page.
   --dry_run=false **Default is false. If set to true, commands will be printed out but not executed.
 ```
-For details on X,Y support, please see [DeepVariant haploid support](docs/deepvariant-haploid-support.md).
+
+For details on X,Y support, please see
+[DeepVariant haploid support](docs/deepvariant-haploid-support.md) and the case
+study in
+[DeepVariant X, Y case study](docs/deepvariant-xy-calling-case-study.md). You
+can download the PAR bed files from here:
+[GRCh38_par.bed](https://storage.googleapis.com/deepvariant/case-study-testdata/GRCh38_PAR.bed),
+[GRCh37_par.bed](https://storage.googleapis.com/deepvariant/case-study-testdata/GRCh37_PAR.bed).
 
 To see all flags you can use, run: `docker run
 google/deepvariant:"${BIN_VERSION}"`

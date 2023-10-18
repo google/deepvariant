@@ -3,7 +3,7 @@
 ## Case study
 
 A case study on how to use the parameters mentioned here are described in
-[DeepVariant haploid support](deepvariant-xy-calling-case-study.md).
+[DeepVariant X, Y calling case study](deepvariant-xy-calling-case-study.md).
 
 ## Haploid calling support
 
