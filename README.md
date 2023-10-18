@@ -51,7 +51,7 @@ following types of input data:
     [whole genome](docs/deeptrio-wgs-case-study.md) or whole exome.
 *   PacBio HiFi data, see the
     [PacBio case study](docs/deeptrio-pacbio-case-study.md).
-*   PacBio HiFi data, see the
+*   Oxford nanopore R10.4 data, see the
     [Oxford nanopore case study](docs/deeptrio-ont-case-study.md).
 
 Please also note:
