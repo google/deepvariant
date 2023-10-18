@@ -536,14 +536,20 @@ def call_variants(
       )
       # These checks make sure we are using the right model with right input.
       if model_example_shape[0] != input_example_shape[0]:
-        raise ValueError(
-            f'Input shape {input_example_shape[0]} and model shape'
-            f' {model_example_shape[0]} does not match.'
+        # The following has been changed from ValueError to Warning because of
+        # internal
+        logging.warning(
+            'Input shape %s and model shape %s does not match.',
+            str(input_example_shape[0]),
+            str(model_example_shape[0]),
         )
       if model_example_shape[1] != input_example_shape[1]:
-        raise ValueError(
-            f'Input channels {input_example_shape[1]} and model channels'
-            f' {model_example_shape[1]} do not match.'
+        # The following has been changed from ValueError to Warning because of
+        # internal
+        logging.warning(
+            'Input channels %s and model channels %s do not match.',
+            str(input_example_shape[1]),
+            str(model_example_shape[1]),
         )
     else:
       model = modeling.inceptionv3(
