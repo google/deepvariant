@@ -116,9 +116,6 @@ time sudo docker run \
   --regions chr20
 ```
 
-The `--use_hp_information` arg makes use of a phased reads, thus allowing a
-further improvement of the accuracy. You can use tools like whatshap to phase.
-
 By specifying `--model_type PACBIO`, you'll be using a model that is best suited
 for PacBio HiFi Whole Genome Sequencing data.
 
