@@ -88,6 +88,14 @@ class GenomicsWriter(object):
       proto:  A protocol buffer.
     """
 
+  @abc.abstractmethod
+  def write_somatic(self, proto):
+    """Writes proto to the file with somatic processing.
+
+    Args:
+      proto:  A protocol buffer.
+    """
+
   def __enter__(self):
     """Enter a `with` block."""
     return self
@@ -190,6 +198,9 @@ class DispatchingGenomicsWriter(GenomicsWriter):
 
   def write(self, proto):
     self._writer.write(proto)
+
+  def write_somatic(self, proto):
+    self._writer.write_somatic(proto)
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
