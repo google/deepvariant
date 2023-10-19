@@ -100,6 +100,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
             '--infile '
             '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
             '--outfile "your_vcf" '
+            '--cpus 0 '
             '--process_somatic=true '
             '--gvcf_outfile "your_gvcf" '
             '--nonvariant_site_tfrecord_path '
@@ -167,6 +168,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
               '--infile '
               '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
               '--outfile "your_vcf" '
+              '--cpus 0 '
               '--process_somatic=true '
               '--gvcf_outfile "your_gvcf" '
               '--nonvariant_site_tfrecord_path '
@@ -182,6 +184,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
               '--infile '
               '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
               '--outfile "your_vcf" '
+              '--cpus 0 '
               '--noprocess_somatic '
               '--gvcf_outfile "your_gvcf" '
               '--nonvariant_site_tfrecord_path '
@@ -248,6 +251,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         '--infile '
         '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
         '--outfile "your_vcf" '
+        '--cpus 0 '
         '--process_somatic=true',
     )
 
@@ -448,6 +452,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         '--infile '
         '"/tmp/deepsomatic_tmp_output/call_variants_output.tfrecord.gz" '
         '--outfile "your_vcf" '
+        '--cpus 0 '
         '--process_somatic=true '
         '--gvcf_outfile "your_gvcf" '
         '--nonvariant_site_tfrecord_path '

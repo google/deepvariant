@@ -238,7 +238,10 @@ _PROCESS_SOMATIC = flags.DEFINE_boolean(
 )
 
 
-MODEL_TYPE_MAP = {}
+MODEL_TYPE_MAP = {
+    'WGS': '/opt/models/deepsomatic/wgs',
+    'PACBIO': '/opt/models/deepsomatic/pacbio',
+}
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
@@ -451,6 +454,7 @@ def postprocess_variants_command(
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
+  command.extend(['--cpus 0'])
   if process_somatic:
     command.extend(['--process_somatic=true'])
   else:
@@ -532,10 +536,6 @@ def check_flags():
     if (
         not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.data-00000-of-00001')
         or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index')
-        or (
-            not _USE_SLIM_MODEL.value
-            and not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.meta')
-        )
     ):
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
@@ -560,8 +560,7 @@ def get_model_ckpt(model_type, customized_model):  # pylint: disable=unused-argu
   if customized_model is not None:
     return customized_model
   else:
-    raise ValueError('We have not released a DeepSomatic model yet.')
-    # return MODEL_TYPE_MAP[model_type]
+    return MODEL_TYPE_MAP[model_type]
 
 
 def create_all_commands_and_logfiles(
