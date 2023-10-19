@@ -573,7 +573,7 @@ py_binary(
 )
 
 cc_library(
-    name = "merge_phased_reads_cpp",
+    name = "merge_phased_reads_lib",
     srcs = [
         "merge_phased_reads.cc",
     ],
@@ -583,7 +583,6 @@ cc_library(
     deps = [
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
@@ -597,20 +596,12 @@ cc_library(
 cc_binary(
     name = "merge_phased_reads",
     srcs = [
-        "merge_phased_reads.cc",
-        "merge_phased_reads.h",
+        "merge_phased_reads_main.cc",
     ],
     deps = [
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
+        ":merge_phased_reads_lib",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -621,9 +612,7 @@ cc_test(
         "merge_phased_reads_test.cc",
     ],
     deps = [
-        ":merge_phased_reads_cpp",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
+        ":merge_phased_reads_lib",
         "@com_google_absl//absl/hash:hash_testing",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",

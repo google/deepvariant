@@ -33,22 +33,16 @@
 // We can find a consistent phasing if there are reads that overlap multiple
 // shards. Please note, that input file must be local, this utility does not
 // support Google paths.
-//
-// Usage:
-// blaze-bin/learning/genomics/deepvariant/merge_phased_reads_cpp \
-// --input_path <Path to sharded tsv file> \
-// --output_path <Path to output file> \
-// --logtostderr
 
 #include "deepvariant/merge_phased_reads.h"
 
 #include <cstddef>
 #include <fstream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -58,9 +52,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "re2/re2.h"
-
-ABSL_FLAG(std::string, input_path, "", "Sharded input.");
-ABSL_FLAG(std::string, output_path, "", "Output path.");
 
 namespace learning {
 namespace genomics {
@@ -142,16 +133,17 @@ void Merger::LoadFromFiles(absl::string_view input_path) {
 
       std::istringstream iss(line);
       std::vector<std::string> tokens(5);
-      MergedPhaseRead phased_read;
       int i = 0;
       while (std::getline(iss, tokens[i], '\t')) {
         i++;
       }
       int id = UpdateReadsMap(tokens[0]);
+      int region = std::stoi(tokens[2]);
+      CHECK_GT(region, 0);
       unmerged_reads_.push_back({
           .fragment_name = tokens[0],
           .phase = std::stoi(tokens[1]),
-          .region_order = std::stoi(tokens[2]),
+          .region_order = region,
           .shard = shard,
           .id = id,
       });
@@ -172,8 +164,9 @@ int Merger::UpdateReadsMap(const std::string& fragment_name) {
 
 void Merger::GroupReads() {
   for (auto index = 0; index < unmerged_reads_.size(); index++) {
-    Group& read_group = groups_[{.shard = merged_reads_[index].shard,
-                                 .region = merged_reads_[index].region_order}];
+    Group& read_group =
+        groups_[{.shard = unmerged_reads_[index].shard,
+                 .region = unmerged_reads_[index].region_order}];
     size_t merged_index =
         merged_reads_map_[unmerged_reads_[index].fragment_name];
     read_group.merged_id_to_unmerged_id[merged_index] = index;
@@ -181,6 +174,8 @@ void Merger::GroupReads() {
   num_groups_ = groups_.size();
 }
 
+// Returns true if number of reads with mismatched phases are greater than
+// number of reads with matching phases.
 bool Merger::CompareGroups(const ShardRegion& group_1,
                            const ShardRegion& group_2) const {
   int num_reads_not_matching_phase = 0;
@@ -188,7 +183,7 @@ bool Merger::CompareGroups(const ShardRegion& group_1,
   auto group_1_it = groups_.find(group_1);
   auto group_2_it = groups_.find(group_2);
   if (group_1_it == groups_.end() || group_2_it == groups_.end()) {
-    LOG(FATAL) << "CompareGroups() called with invalid arguments";
+    return false;
   }
   // Iterate read ids in group_2.
   for (auto [merged_reads_idx_2, unmerged_reads_idx2] :
@@ -220,14 +215,80 @@ bool Merger::CompareGroups(const ShardRegion& group_1,
   return num_reads_not_matching_phase > num_reads_matching_phase;
 }
 
+// Reverses phase for the group. Phases are reversed as follow:
+// Phase 1 -> Phase 2, Phase 2 -> Phase 1, Phase 0 -> Phase 0.
+void Merger::ReversePhasing(const ShardRegion& group) {
+  for (auto [phased_reads_idx, unphased_reads_idx] :
+       groups_[group].merged_id_to_unmerged_id) {
+    if (unmerged_reads_[unphased_reads_idx].phase > 0) {
+      unmerged_reads_[unphased_reads_idx].phase =
+          3 - unmerged_reads_[unphased_reads_idx].phase;
+    }
+  }
+}
+
+// Merge reads from the group into merged_reads_ vector. If read already exist
+// in the merged_reads_ vector it's phase is not changed unless it is 0.
+void Merger::MergeGroup(const ShardRegion& group) {
+  for (auto [phased_read_index, unphased_reads_index] :
+       groups_[group].merged_id_to_unmerged_id) {
+    // If merged_reads_ already contains the read we keep its phase and update
+    // phase distribution for the read.
+    std::string read_id = unmerged_reads_[unphased_reads_index].fragment_name;
+    auto& merged_read = merged_reads_[phased_read_index];
+    if (merged_read.phase == 0) {
+      merged_read.phase = unmerged_reads_[unphased_reads_index].phase;
+    }
+    merged_read.phase_dist[unmerged_reads_[unphased_reads_index].phase]++;
+  }
+}
+
+// Main entry point function. Reads are merged one group at a time iterating
+// groups in the same order they were processed by make_examples.
+// 1. reads are grouped by shard and region.
+// 2. Read phases are compared between last merged group and the group being
+//    merged. If most phases are not matched then phase is reversed for the
+//    group.
+// 3. Group is merged into merged_reads_.
+void Merger::MergeReads() {
+  GroupReads();
+  int cur_region = 1;
+  int processed_groups = 0;
+  ShardRegion prev_group;
+  while (processed_groups < num_groups_) {
+    for (int shard = 0; shard < num_shards_; shard++) {
+      const auto& cur_group_it = groups_.find({shard, cur_region});
+      if (cur_group_it == groups_.end()) {
+        continue;
+      }
+      if (CompareGroups(prev_group, {shard, cur_region})) {
+        ReversePhasing({shard, cur_region});
+      }
+      MergeGroup({shard, cur_region});
+      processed_groups++;
+      LOG_EVERY_N(INFO, 1000) << "Processed " << processed_groups << " groups";
+      prev_group = cur_group_it->first;
+    }
+    cur_region++;
+  }
+}
+
+void MergerPeer::SetUnmergedReads(
+    Merger& merger, const std::vector<UnmergedRead>& unmerged_reads) {
+  // Cannot use absl::btree_set as the rbegin() iterator is not provided.
+  std::set<int> shards;
+  for (const auto& unmerged_read : unmerged_reads) {
+    shards.insert(unmerged_read.shard);
+    merger.unmerged_reads_.push_back(unmerged_read);
+    merger.UpdateReadsMap(unmerged_read.fragment_name);
+  }
+  if (!shards.empty()) {
+    merger.num_shards_ = *shards.rbegin() + 1;
+  } else {
+    merger.num_shards_ = 0;
+  }
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-
-int main(int argc, char** argv) {
-  QCHECK(FLAGS_input_path.CurrentValue().empty() ||
-      FLAGS_output_path.CurrentValue().empty()) <<
-    "ERROR: --input_path and --output_path flags must be set.";
-
-  return 0;
-}

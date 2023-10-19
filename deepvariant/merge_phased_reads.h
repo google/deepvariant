@@ -40,8 +40,8 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/strings/string_view.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 
 namespace learning {
 namespace genomics {
@@ -117,6 +117,8 @@ class Merger {
   void CorrectAndPrintout(const std::string_view& output_path);
 
  private:
+  friend class MergerPeer;
+
   // Groups reads.
   void GroupReads();
 
@@ -144,6 +146,20 @@ class Merger {
   absl::flat_hash_map<ShardRegion, Group> groups_;
   int num_shards_;
   int num_groups_;
+};
+
+// Peer class for unit testing.
+class MergerPeer {
+ public:
+  // Populates unmerged_reads_. This is needed for unit testing.
+  static void SetUnmergedReads(
+      Merger& merger, const std::vector<UnmergedRead>& unmerged_reads);
+
+  // Returns merged_reads_. This is needed for unit testing.
+  static const std::vector<MergedPhaseRead>& merged_reads(
+      const Merger& merger) {
+    return merger.merged_reads_;
+  }
 };
 
 }  // namespace deepvariant
