@@ -1,6 +1,7 @@
-# DeepVariant MGISEQ T7 case study
+# DeepVariant Complete Genomics T7 case study
 
-In this case study, we describe applying DeepVariant to a MGISEQ T7 sample.
+In this case study, we describe applying DeepVariant to a Complete Genomics T7
+sample.
 Then we assess the quality of the DeepVariant variant calls with `hap.py`.
 
 To make it faster to run over this case study, we run only on chromosome 20.
@@ -9,7 +10,7 @@ For how to prepare environment, the steps are the same as
 [this doc](deepvariant-case-study.md).
 
 
-## Download MGISEQ T7 HG001 chr20 BAM
+## Download Complete Genomics T7 HG001 chr20 BAM
 
 ```bash
 mkdir -p input

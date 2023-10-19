@@ -1,6 +1,7 @@
-# DeepVariant MGISEQ G400 case study
+# DeepVariant Complete Genomics G400 case study
 
-In this case study, we describe applying DeepVariant to a MGISEQ G400 sample.
+In this case study, we describe applying DeepVariant to a Complete Genomics G400
+sample.
 Then we assess the quality of the DeepVariant variant calls with `hap.py`.
 
 To make it faster to run over this case study, we run only on chromosome 20.
@@ -9,7 +10,7 @@ For how to prepare environment, the steps are the same as
 [this doc](deepvariant-case-study.md).
 
 
-## Download MGISEQ G400 HG002 chr20 BAM
+## Download Complete Genomics G400 HG002 chr20 BAM
 
 ```bash
 mkdir -p input
@@ -33,7 +34,7 @@ curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > benchmark/HG002_GRCh3
 curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 ```
 
-## Download MGISEQ G400 model
+## Download Complete Genomics G400 model
 
 ```bash
 HTTPDIR=https://storage.googleapis.com/deepvariant/mgiseq-case-study-testdata
