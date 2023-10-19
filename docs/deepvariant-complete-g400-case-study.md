@@ -15,11 +15,11 @@ For how to prepare environment, the steps are the same as
 ```bash
 mkdir -p input
 
-HTTPDIR=https://storage.googleapis.com/deepvariant/mgiseq-case-study-testdata
+HTTPDIR=https://storage.googleapis.com/deepvariant/complete-case-study-testdata
 
-curl ${HTTPDIR}/HG002.mgiseq_g400.V350151728.grch38.chr20.bam > input/HG002.mgiseq_g400.V350151728.grch38.chr20.bam
+curl ${HTTPDIR}/HG002.complete_g400.V350151728.grch38.chr20.bam > input/HG002.complete_g400.V350151728.grch38.chr20.bam
 
-curl ${HTTPDIR}/HG002.mgiseq_g400.V350151728.grch38.chr20.bam.bai > input/HG002.mgiseq_g400.V350151728.grch38.chr20.bam.bai
+curl ${HTTPDIR}/HG002.complete_g400.V350151728.grch38.chr20.bam.bai > input/HG002.complete_g400.V350151728.grch38.chr20.bam.bai
 ```
 
 ## Download Genome in a Bottle Benchmarks for HG002
@@ -37,11 +37,11 @@ curl ${FTPDIR}/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG002_G
 ## Download Complete Genomics G400 model
 
 ```bash
-HTTPDIR=https://storage.googleapis.com/deepvariant/mgiseq-case-study-testdata
+HTTPDIR=https://storage.googleapis.com/deepvariant/complete-case-study-testdata
 
-curl ${HTTPDIR}/mgiseq-g400/weights-60-0.993753.ckpt.data-00000-of-00001 > input/weights-60-0.993753.ckpt.data-00000-of-00001
+curl ${HTTPDIR}/complete-g400/weights-60-0.993753.ckpt.data-00000-of-00001 > input/weights-60-0.993753.ckpt.data-00000-of-00001
 
-curl ${HTTPDIR}/mgiseq-g400/weights-60-0.993753.ckpt.index > input/weights-60-0.993753.ckpt.index
+curl ${HTTPDIR}/complete-g400/weights-60-0.993753.ckpt.index > input/weights-60-0.993753.ckpt.index
 ```
 
 ## Running DeepVariant with one command
@@ -62,7 +62,7 @@ sudo docker run \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type WGS \
   --ref /reference/GRCh38_no_alt_analysis_set.fasta \
-  --reads /input/HG002.mgiseq_g400.V350151728.grch38.chr20.bam \
+  --reads /input/HG002.complete_g400.V350151728.grch38.chr20.bam \
   --output_vcf /output/HG002.output.vcf.gz \
   --output_gvcf /output/HG002.output.g.vcf.gz \
   --num_shards $(nproc) \

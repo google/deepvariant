@@ -15,11 +15,11 @@ For how to prepare environment, the steps are the same as
 ```bash
 mkdir -p input
 
-HTTPDIR=https://storage.googleapis.com/deepvariant/mgiseq-case-study-testdata
+HTTPDIR=https://storage.googleapis.com/deepvariant/complete-case-study-testdata
 
-curl ${HTTPDIR}/HG001.mgiseq_t7.E100030471QC960.grch38.chr20.bam > input/HG001.mgiseq_t7.E100030471QC960.grch38.chr20.bam
+curl ${HTTPDIR}/HG001.complete_t7.E100030471QC960.grch38.chr20.bam > input/HG001.complete_t7.E100030471QC960.grch38.chr20.bam
 
-curl ${HTTPDIR}/HG001.mgiseq_t7.E100030471QC960.grch38.chr20.bam.bai > input/HG001.mgiseq_t7.E100030471QC960.grch38.chr20.bam.bai
+curl ${HTTPDIR}/HG001.complete_t7.E100030471QC960.grch38.chr20.bam.bai > input/HG001.complete_t7.E100030471QC960.grch38.chr20.bam.bai
 ```
 
 ## Download Genome in a Bottle Benchmarks for HG001
@@ -34,14 +34,14 @@ curl ${FTPDIR}/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz > benchmark/HG001_GRCh3
 curl ${FTPDIR}/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
 ```
 
-## Download MGISEQ T7 model
+## Download Complete Genomics T7 model
 
 ```bash
-HTTPDIR=https://storage.googleapis.com/deepvariant/mgiseq-case-study-testdata
+HTTPDIR=https://storage.googleapis.com/deepvariant/complete-case-study-testdata
 
-curl ${HTTPDIR}/mgiseq-t7/weights-51-0.995354.ckpt.data-00000-of-00001 > input/weights-51-0.995354.ckpt.data-00000-of-00001
+curl ${HTTPDIR}/complete-t7/weights-51-0.995354.ckpt.data-00000-of-00001 > input/weights-51-0.995354.ckpt.data-00000-of-00001
 
-curl ${HTTPDIR}/mgiseq-t7/weights-51-0.995354.ckpt.index > input/weights-51-0.995354.ckpt.index
+curl ${HTTPDIR}/complete-t7/weights-51-0.995354.ckpt.index > input/weights-51-0.995354.ckpt.index
 ```
 
 ## Running DeepVariant with one command
@@ -62,7 +62,7 @@ sudo docker run \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type WGS \
   --ref /reference/GRCh38_no_alt_analysis_set.fasta \
-  --reads /input/HG001.mgiseq_t7.E100030471QC960.grch38.chr20.bam \
+  --reads /input/HG001.complete_t7.E100030471QC960.grch38.chr20.bam \
   --output_vcf /output/HG001.output.vcf.gz \
   --output_gvcf /output/HG001.output.g.vcf.gz \
   --num_shards $(nproc) \
