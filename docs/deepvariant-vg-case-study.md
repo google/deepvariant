@@ -1,4 +1,4 @@
-# VG Giraffe + DeepVariant case study
+# Using graph genomes: VG Giraffe + DeepVariant case study
 ---
 
 This is an example to run `vg giraffe`, so we can go from FASTQs --> BAM.

@@ -15,7 +15,7 @@
 *   [DeepVariant Complete Genomics G400 case study](deepvariant-complete-g400-case-study.md)
 *   [Runtime and accuracy metrics for all DeepVariant models](metrics.md)
 *   [Best practices for multi-sample variant calling](trio-merge-case-study.md)
-*   [VG Giraffe + DeepVariant case study](deepvariant-vg-case-study.md)
+*   [Using graph genomes: VG Giraffe + DeepVariant case study](deepvariant-vg-case-study.md)
 
 ## Visualization and analysis
 
