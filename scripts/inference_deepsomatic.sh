@@ -46,14 +46,14 @@ Flags:
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
---model_preset Preset case study to run: WGS.
+--model_preset Preset case study to run: WGS, or PACBIO.
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
 
 If model_preset is not specified, the below flags are required:
---model_type Type of DeepSomatic model to run (WGS)
+--model_type Type of DeepSomatic model to run (WGS, PACBIO)
 --ref Path to GCP bucket containing ref file (.fa)
 --bam_normal Path to GCP bucket containing BAM_NORMAL
 --bam_tumor Path to GCP bucket containing BAM_TUMOR
@@ -257,11 +257,26 @@ if [[ "${MODEL_PRESET}" = "WGS" ]]; then
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_T_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+elif [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
+  MODEL_TYPE="PACBIO"
+  BASE="${HOME}/deepsomatic-case-studies"
+
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  BAM_NORMAL="${BAM_NORMAL:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-pacbio-case-study/HCC1395-BL.pacbio.normal.GRCh38.bam}"
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-pacbio-case-study/HCC1395.pacbio.tumor.GRCh38.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 else
   if [[ -n "${MODEL_PRESET}" ]]; then
-    echo "Error: --model_preset must be one of WGS." >&2
+    echo "Error: --model_preset must be one of WGS or PACBIO." >&2
     exit 1
   fi
+fi
+
+# Sanity check: at least check the BAM files.
+if [[ -z "${BAM_NORMAL}" ]] || [[ -z "${BAM_TUMOR}" ]]; then
+  echo "Error: Need to set input BAMs" >&2
+  exit 1
 fi
 
 INPUT_DIR="${BASE}/input/data"
@@ -336,7 +351,8 @@ function copy_gs_or_http_file() {
     gsutil -q stat "$1" || status=1
     if [[ $status == 0 ]]; then
       run echo "Copying from \"$1\" to \"$2\""
-      run gcloud storage cp "$1" "$2"
+      # Skip the file if it exists.
+      run gcloud storage cp -n "$1" "$2"
     else
       run echo "File $1 does not exist. Skip copying."
     fi
@@ -575,10 +591,10 @@ function run_sompy() {
   # shellcheck disable=SC2086
   run "zcat <"${INPUT_DIR}/$(basename $REF).gz" >"${UNCOMPRESSED_REF}""
 
-  SOMPY_VERSION="v0.3.12"
+  SOMPY_VERSION="v0.3.9"
   # Pulling twice in case the first one times out.
-  run "sudo docker pull jmcdani20/hap.py:${SOMPY_VERSION} || \
-    (sleep 5 ; sudo docker pull jmcdani20/hap.py:${SOMPY_VERSION})"
+  run "sudo docker pull pkrusche/hap.py:${SOMPY_VERSION} || \
+    (sleep 5 ; sudo docker pull pkrusche/hap.py:${SOMPY_VERSION})"
   # shellcheck disable=SC2027
   # shellcheck disable=SC2046
   # shellcheck disable=SC2086
@@ -586,7 +602,7 @@ function run_sompy() {
   run "( sudo docker run -i \
   -v "${INPUT_DIR}:${INPUT_DIR}" \
   -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
-  jmcdani20/hap.py:${SOMPY_VERSION} /opt/hap.py/bin/som.py \
+  pkrusche/hap.py:${SOMPY_VERSION} /opt/hap.py/bin/som.py \
     "${INPUT_DIR}/$(basename $TRUTH_VCF)" \
     "${OUTPUT_DIR}/${OUTPUT_VCF}" \
     --restrict-regions "${INPUT_DIR}/$(basename $TRUTH_BED)" \
@@ -605,11 +621,14 @@ function main() {
   run echo 'Starting the test...'
 
   setup_test
-  copy_data
+  # Get or build Docker image first, before downloading data.
+  # They're independent steps, but might be nice to know if the Docker soource
+  # doesn't exist.
   if [[ ${DOCKER_SOURCE} =~ ^gcr.io ]]; then
     run "gcloud auth print-access-token | sudo docker login -u oauth2accesstoken --password-stdin https://gcr.io"
   fi
   get_docker_image
+  copy_data
   setup_args
   run_deepsomatic_with_docker
   if [[ "${DRY_RUN}" == "true" ]]; then
