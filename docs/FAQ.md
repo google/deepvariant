@@ -174,10 +174,32 @@ For specifically calling on duos or trios, we introduced
 [DeepTrio](https://github.com/google/deepvariant/blob/r1.6/docs/deeptrio-details.md)
 in v1.1.
 
+## Why am I seeing "CUDA_ERROR_NOT_INITIALIZED: initialization error" while running on GPU?
+
+We have been observing the following message while running on GPU since we moved
+platform from slim to keras:
+
+```bash
+2023-10-20 22:21:03.818638: E tensorflow/compiler/xla/stream_executor/cuda/cuda_driver.cc:1278] could not retrieve CUDA device count: CUDA_ERROR_NOT_INITIALIZED: initialization error
+```
+
+We
+have tested and confirmed that this does not affect GPU usage or inference. So
+you can continue running DeepVariant without being worried about this message.
+
+## How much GPU memory is needed for the Keras models?
+
+16GB. In our test, we observe the model occupying 16GB GPU memory.
+
+## Do models from before r1.6.0 work with current inference code?
+
+No. We have moved from Slim to Keras. All models before `1.6.0` were trained in
+Slim platform. So they are not compatible with `1.6.0` anymore.
+
 ## Can call_variants be run on multiple GPUs?
 
-No. TensorFlow's Estimator API does not support running predictions on multiple
-GPUs, so call_variants can only use 1 GPU at prediction time.
+No. Although possible, we have not implemented the multi-GPU capability in GPU
+inference yet.
 
 ## Can model_train be run on multiple GPUs?
 
@@ -245,6 +267,12 @@ accuracy.
 
 This is a known issue that we don't currently address. Please see:
 https://github.com/google/deepvariant/issues/505 for more context.
+
+## Why does DeepVariant PASS variants that have such a low read depth ~2 ?
+
+Please see the answers provided by [Paul Grosu](https://github.com/pgrosu) in
+this [issue thread](https://github.com/google/deepvariant/issues/684). We thank
+Paul for providing a detailed description and reasoning.
 
 ## Singularity related questions:
 
