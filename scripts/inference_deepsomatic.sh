@@ -193,7 +193,7 @@ while (( "$#" )); do
       shift # Remove argument value from processing
       ;;
     --bam_tumor)
-      BAM_tumor="$2"
+      BAM_TUMOR="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
