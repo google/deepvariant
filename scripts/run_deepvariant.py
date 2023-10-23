@@ -210,6 +210,14 @@ _CALL_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
         ' has to be flag_name=true or flag_name=false.'
     ),
 )
+# Optional flag for postprocess variants
+_POSTPROCESS_CPUS = flags.DEFINE_integer(
+    'postprocess_cpus',
+    None,
+    'Optional. Number of cpus to use during'
+    ' postprocess_variants. Set to 0 to disable multiprocessing. Default is'
+    ' None which sets to num_shards.',
+)
 _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
     'postprocess_variants_extra_args',
     None,
@@ -436,10 +444,14 @@ def postprocess_variants_command(
     ref: str, infile: str, outfile: str, extra_args: str, **kwargs
 ) -> Tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
+  cpus = _POSTPROCESS_CPUS.value
+  if not cpus:
+    cpus = _NUM_SHARDS.value
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
+  command.extend(['--cpus', '"{}"'.format(cpus)])
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
