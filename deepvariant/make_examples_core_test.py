@@ -877,6 +877,36 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     )
 
   @flagsaver.flagsaver
+  def test_mixed_exclude_regions_flags(self):
+    FLAGS.mode = 'calling'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.examples = 'examples.tfrecord'
+    # NOTE: This is equivalent as when we write "chr20:10,010,001-10,100,000"
+    bed_path = test_utils.test_tmpfile(
+        'test_mixed_exclude_regions_flags.bed',
+        contents='\t'.join(['chr20', '20010000', '20100000']) + '\n',
+    )
+    FLAGS.exclude_regions = (
+        # The following is equivalent as:
+        # 'chr20:10,010,001-10,100,000 chr20:20,010,001-20,100,000'
+        'chr20:10,010,001-10,100,000 '
+        + bed_path
+    )
+    options = make_examples.default_options(add_flags=True)
+    _, regions_from_options = (
+        make_examples_core.processing_regions_from_options(options)
+    )
+    self.assertCountEqual(
+        list(ranges.RangeSet(regions_from_options)),
+        _from_literals_list([
+            'chr20:1-10010000',
+            'chr20:10100001-20010000',
+            'chr20:20100001-63025520',
+        ]),
+    )
+
+  @flagsaver.flagsaver
   def test_regions_exclude_n_reference(self):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA
