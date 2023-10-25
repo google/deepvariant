@@ -175,7 +175,8 @@ def summarize_by_task(df: pd.DataFrame) -> pd.DataFrame:
   Returns:
     The dataframe grouped by task.
   """
-  by_task = df.groupby(by=['Task']).sum()
+  df_numeric = df.select_dtypes(exclude=['object'])
+  by_task = df_numeric.groupby(by=['Task']).sum()
   return by_task.reset_index()
 
 
@@ -328,7 +329,7 @@ def pareto_and_runtimes_by_task(df: pd.DataFrame) -> alt.Chart:
   Returns:
     An altair chart.
   """
-  grouped = df.groupby(df['Task'], sort=False)
+  grouped = df.groupby(df['Task'], sort=False, group_keys=False)
   df = grouped.apply(calculate_pareto_metrics)
 
   # Sample along the Pareto curve, ensuring the longest regions are shown.
