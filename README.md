@@ -11,7 +11,7 @@ a standard VCF or gVCF file.
 
 DeepVariant supports germline variant-calling in diploid organisms.
 
-*   NGS (Illumina) data for either a
+*   NGS (Illumina or Element) data for either a
     [whole genome](docs/deepvariant-case-study.md) or
     [whole exome](docs/deepvariant-exome-case-study.md).
 *   [RNA-seq Case Study](docs/deepvariant-rnaseq-case-study.md) for Illumina
@@ -25,6 +25,11 @@ DeepVariant supports germline variant-calling in diploid organisms.
     [hybrid case study](docs/deepvariant-hybrid-case-study.md).
 *   Oxford Nanopore R9.4.1 data by using
     [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper).
+*   To map using a pangenome to improve accuracy, use this [vg case study]
+    (docs/deepvariant-vg-case-study.md).
+*   Complete Genomics data: [T7 case study](docs/deepvariant-complete-t7-case-study.md);
+    [G400 case study](docs/deepvariant-complete-g400-case-study.md)
+
 
 Please also note:
 
