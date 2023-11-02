@@ -26,39 +26,88 @@ gcloud storage cp gs://brain-genomics-public/research/sequencing/fastq/novaseq/w
 
 ## Download VG files
 
+Get binaries `vg` 1.51.0 and `kmc`:
+
 ```bash
-gcloud storage cp gs://hprc-pangenomes/hprc-v1.0-mc-chm13-minaf.0.1.gbz ${DATA_DIR}/
+wget https://github.com/refresh-bio/KMC/releases/download/v3.2.2/KMC3.2.2.linux.x64.tar.gz
+tar zxf KMC3.2.2.linux.x64.tar.gz bin/kmc
+mv bin/kmc ${DATA_DIR}/
+wget https://github.com/vgteam/vg/releases/download/v1.51.0/vg -O ${DATA_DIR}/vg
+chmod +x ${DATA_DIR}/vg ${DATA_DIR}/kmc
 ```
 
+Get the graph (.gbz) and haplotype index (.hapl).
 I used `aria2c` to download these files. You can use other approaches as well.
 
 ```bash
-aria2c -c -x10 -s10 -d "${DATA_DIR}" https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/freeze/freeze1/minigraph-cactus/filtered/hprc-v1.0-mc-chm13-minaf.0.1.min
-aria2c -c -x10 -s10 -d "${DATA_DIR}" https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/freeze/freeze1/minigraph-cactus/filtered/hprc-v1.0-mc-chm13-minaf.0.1.dist
+aria2c -c -x10 -s10 -d "${DATA_DIR}" https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/freeze/freeze1/minigraph-cactus/hprc-v1.1-mc-grch38/hprc-v1.1-mc-grch38.gbz
+aria2c -c -x10 -s10 -d "${DATA_DIR}" https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/freeze/freeze1/minigraph-cactus/hprc-v1.1-mc-grch38/hprc-v1.1-mc-grch38.hapl
 ```
 
 ## Run `vg giraffe` with one command to get from FASTQs to BAM.
 
+Put the paths name into a file named HG003.fq.paths:
+
+```bash
+cat > HG003.fq.paths <<- EOM
+${DATA_DIR}/HG003.novaseq.pcr-free.35x.R1.fastq.gz
+${DATA_DIR}/HG003.novaseq.pcr-free.35x.R2.fastq.gz
+EOM
 ```
-wget -P ${DATA_DIR} https://storage.googleapis.com/hprc-pangenomes/GRCh38.path_list.txt
-SAMP=HG003
-READS1=${DATA_DIR}/HG003.novaseq.pcr-free.35x.R1.fastq.gz
-READS2=${DATA_DIR}/HG003.novaseq.pcr-free.35x.R2.fastq.gz
 
-VG_DOCKER_VERSION=v1.47.0
-sudo docker pull quay.io/vgteam/vg:${VG_DOCKER_VERSION}
+Run `kmc`` on this file. I used -t$(nproc) to use all cores, and $TMPDIR for a
+scratch directory:
 
-time sudo docker run --rm -v ${DATA_DIR}:${DATA_DIR}  \
-  quay.io/vgteam/vg:${VG_DOCKER_VERSION} \
-  vg giraffe --progress \
-  --read-group "ID:1 LB:lib1 SM:${SAMP} PL:illumina PU:unit1" \
-  --sample "${SAMP}" \
+```bash
+TMPDIR=$(mktemp -d)
+time ${DATA_DIR}/kmc -k29 -m128 -okff -t$(nproc) @HG003.fq.paths ${DATA_DIR}/HG003.fq $TMPDIR
+```
+
+Output on the terminal:
+
+```
+*******************************************************************************
+Stage 1: 55%
+Stage 1: 100%
+Stage 2: 100%
+1st stage: 944.485s
+2nd stage: 506.81s
+Total    : 1451.29s
+Tmp size : 110071MB
+
+Stats:
+   No. of k-mers below min. threshold :   5828096589
+   No. of k-mers above max. threshold :            0
+   No. of unique k-mers               :   8581831809
+   No. of unique counted k-mers       :   2753735220
+   Total no. of k-mers                : 103092565745
+   Total no. of reads                 :    838385300
+   Total no. of super-k-mers          :   9929565346
+
+real    24m11.431s
+user    142m37.817s
+sys     8m14.566s
+```
+
+Run `giraffe`` on the graph, haplotype index, kmers and reads:
+
+```bash
+${DATA_DIR}/vg paths \
+  -x ${DATA_DIR}/hprc-v1.1-mc-grch38.gbz \
+  -L -Q GRCh38 > ${DATA_DIR}/GRCh38.path_list.txt
+```
+
+```bash
+time ${DATA_DIR}/vg giraffe --progress \
+ --read-group "ID:1 LB:lib1 SM:HG003 PL:illumina PU:unit1" \
+  --sample "HG003" \
   -o BAM --ref-paths ${DATA_DIR}/GRCh38.path_list.txt \
   -P -L 3000 \
-  -f $READS1 -f $READS2 \
-  -Z ${DATA_DIR}/hprc-v1.0-mc-chm13-minaf.0.1.gbz \
-  -d ${DATA_DIR}/hprc-v1.0-mc-chm13-minaf.0.1.dist \
-  -m ${DATA_DIR}/hprc-v1.0-mc-chm13-minaf.0.1.min \
+  -f ${DATA_DIR}/HG003.novaseq.pcr-free.35x.R1.fastq.gz \
+  -f ${DATA_DIR}/HG003.novaseq.pcr-free.35x.R2.fastq.gz \
+  -Z ${DATA_DIR}/hprc-v1.1-mc-grch38.gbz \
+  --kff-name ${DATA_DIR}/HG003.fq.kff \
+  --haplotype-name ${DATA_DIR}/hprc-v1.1-mc-grch38.hapl \
   -t $(nproc) > reads.unsorted.bam
 ```
 
@@ -69,41 +118,30 @@ NOTE: No need to sort this yet, because we'll need to sort it in the next step.
 On my machine, the last few lines of the log showed:
 
 ```
-Mapped 838385300 reads across 64 threads in 17842.7 seconds with 2.03384 additional single-threaded seconds.
-Mapping speed: 734.18 reads per second per thread
-Used 1.13562e+06 CPU-seconds (including output).
-Achieved 738.262 reads per CPU-second (including output)
-Memory footprint: 60.2227 GB
+Mapped 838385300 reads across 64 threads in 14093.4 seconds with 3.25431 additional single-threaded seconds.
+Mapping speed: 929.496 reads per second per thread
+Used 896175 CPU-seconds (including output).
+Achieved 935.515 reads per CPU-second (including output)
+Memory footprint: 61.0703 GB
 
-real    300m17.121s
-user    0m47.536s
-sys     3m56.936s
+real    283m10.368s
+user    15260m35.845s
+sys     214m57.882s
 ```
 
 File size:
 
 ```
 $ ls -lh reads.unsorted.bam
--rw-rw-r-- 1 user user Oct 16 22:35 reads.unsorted.bam
+-rw-rw-r-- 1 pichuan pichuan 69G Nov  1 23:56 reads.unsorted.bam
 ```
 
-## Fix the BAM's contig name
+Then, clean up contig names, and sort:
 
 ```bash
 INBAM=reads.unsorted.bam
 BAM=reads.sorted.chrfixed.bam
-
-## Download the reference fasta, index, and dict (although for this you only need the .dict).
-wget https://storage.googleapis.com/hprc-pangenomes/hg38.fa
-wget https://storage.googleapis.com/hprc-pangenomes/hg38.fa.fai
-wget https://storage.googleapis.com/hprc-pangenomes/hg38.dict
-
-# Prepare the new header.
-samtools view -H $INBAM | grep ^@HD > new_header.sam
-grep ^@SQ hg38.dict | awk '{print $1 "\t" $2 "\t" $3}' >> new_header.sam
-samtools view -H $INBAM  | grep -v ^@HD | grep -v ^@SQ >> new_header.sam
-## write new BAM, removing the "GRCh38." prefixes
-time cat <(cat new_header.sam) <(samtools view $INBAM) | sed -e "s/GRCh38.//g" | samtools sort --threads 10 -m 2G -O BAM > ${BAM}
+time samtools view -h $INBAM | sed -e "s/GRCh38#0#//g" | samtools sort --threads 10 -m 2G -O BAM > ${BAM}
 # Index the BAM.
 samtools index -@$(nproc) ${BAM}
 ```
@@ -111,16 +149,17 @@ samtools index -@$(nproc) ${BAM}
 The step with `time` above took:
 
 ```
-real    81m40.953s
-user    170m42.641s
-sys     27m33.029s
+real    73m19.172s
+user    178m59.088s
+sys     24m36.986s
 ```
+
 
 File size:
 
 ```
 $ ls -lh reads.sorted.chrfixed.bam
--rw-rw-r-- 1 user user 40G Oct 17 02:23 reads.sorted.chrfixed.bam
+-rw-rw-r-- 1 pichuan pichuan 40G Nov  2 02:09 reads.sorted.chrfixed.bam
 ```
 
 ## Run DeepVariant With `min_mapping_quality=1,keep_legacy_allele_counter_behavior=true,normalize_reads=true`
@@ -162,9 +201,9 @@ time sudo docker run --rm \
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 116m20.443s
-call_variants                    | 173m55.861s
-postprocess_variants (with gVCF) | 28m18.185s
+make_examples                    | 116m37.385s
+call_variants                    | 214m37.055s
+postprocess_variants (with gVCF) | 30m59.968s
 
 
 ### Run hap.py
@@ -202,21 +241,21 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL       504501    502108      2393       948864      1453     423968    903    342       0.995257          0.997232        0.446816         0.996243                     NaN                     NaN                   1.489759                   1.965681
-INDEL   PASS       504501    502108      2393       948864      1453     423968    903    342       0.995257          0.997232        0.446816         0.996243                     NaN                     NaN                   1.489759                   1.965681
-  SNP    ALL      3327496   3314384     13112      3725023      4167     404651   1751    300       0.996059          0.998745        0.108630         0.997400                2.102576                2.031762                   1.535137                   1.492075
-  SNP   PASS      3327496   3314384     13112      3725023      4167     404651   1751    300       0.996059          0.998745        0.108630         0.997400                2.102576                2.031762                   1.535137                   1.492075
+INDEL    ALL       504501    502199      2302       960061      1526     434935    906    371       0.995437          0.997094        0.453029         0.996265                     NaN                     NaN                   1.489759                   1.952023
+INDEL   PASS       504501    502199      2302       960061      1526     434935    906    371       0.995437          0.997094        0.453029         0.996265                     NaN                     NaN                   1.489759                   1.952023
+  SNP    ALL      3327496   3316515     10981      3858659      5550     534709   2104    475       0.996700          0.998330        0.138574         0.997514                2.102576                1.970783                   1.535137                   1.436586
+  SNP   PASS      3327496   3316515     10981      3858659      5550     534709   2104    475       0.996700          0.998330        0.138574         0.997514                2.102576                1.970783                   1.535137                   1.436586
 ```
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502108   | 2393     | 1453     | 0.995257      | 0.997232         | 0.996243        |
-| SNP   | 3314384  | 13112    | 4167     | 0.996059      | 0.998745         | 0.9974          |
+| INDEL | 502199   | 2302     | 1526     | 0.995437      | 0.997094         | 0.996265        |
+| SNP   | 3316515  | 10981    | 5550     | 0.9967        | 0.99833          | 0.997514        |
 
 This can be compared with
 https://github.com/google/deepvariant/blob/r1.6/docs/metrics.md#accuracy.
 
 Which shows that `vg giraffe` improves F1:
 
-- Indel F1: 0.995998 --> 0.996243
-- SNP F1: 0.996237 --> 0.9974
+- Indel F1: 0.995998 --> 0.996265
+- SNP F1: 0.996237 --> 0.997514
