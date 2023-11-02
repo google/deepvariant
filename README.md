@@ -20,16 +20,17 @@ DeepVariant supports germline variant-calling in diploid organisms.
     [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
 *   Oxford Nanopore R10.4.1 Simplex or Duplex data, see the
     [ONT R10.4.1 Simplex case study](docs/deepvariant-ont-r104-simplex-case-study.md)
-    and [ONT R10.4.1 Duplex case study](docs/deepvariant-ont-r104-duplex-case-study.md).
+    and
+    [ONT R10.4.1 Duplex case study](docs/deepvariant-ont-r104-duplex-case-study.md).
 *   Hybrid PacBio HiFi + Illumina WGS, see the
     [hybrid case study](docs/deepvariant-hybrid-case-study.md).
 *   Oxford Nanopore R9.4.1 data by using
     [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper).
-*   To map using a pangenome to improve accuracy, use this [vg case study]
-    (docs/deepvariant-vg-case-study.md).
-*   Complete Genomics data: [T7 case study](docs/deepvariant-complete-t7-case-study.md);
+*   To map using a pangenome to improve accuracy, use this
+    [vg case study](docs/deepvariant-vg-case-study.md).
+*   Complete Genomics data:
+    [T7 case study](docs/deepvariant-complete-t7-case-study.md);
     [G400 case study](docs/deepvariant-complete-g400-case-study.md)
-
 
 Please also note:
 
