@@ -85,6 +85,7 @@ def make_example(
     shape,
     second_image=None,
     sequencing_type=0,
+    deterministic=False,
 ):
   """Creates a new tf.Example suitable for use with DeepVariant.
 
@@ -101,6 +102,7 @@ def make_example(
       encodes read data from another DNA sample. Must satisfy the same
       requirements as encoded_image.
     sequencing_type: int. The sequencing type of the input image.
+    deterministic: Used to set SerializeToString.
 
   Returns:
     A tf.Example proto containing the standard DeepVariant features.
@@ -112,7 +114,7 @@ def make_example(
           ranges.make_range(variant.reference_name, variant.start, variant.end)
       ).encode('latin-1')
   )
-  dv_utils.example_set_variant(example, variant)
+  dv_utils.example_set_variant(example, variant, deterministic=deterministic)
   variant_type = encoded_variant_type(variant).value
   features.feature['variant_type'].int64_list.value.append(variant_type)
   all_alts = list(variant.alternate_bases)
@@ -121,7 +123,7 @@ def make_example(
   features.feature['alt_allele_indices/encoded'].bytes_list.value.append(
       deepvariant_pb2.CallVariantsOutput.AltAlleleIndices(
           indices=alt_indices
-      ).SerializeToString()
+      ).SerializeToString(deterministic=deterministic)
   )
 
   features.feature['image/encoded'].bytes_list.value.append(encoded_image)

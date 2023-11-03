@@ -594,6 +594,14 @@ _DENOVO_REGIONS = flags.DEFINE_string(
     'Regions where variants are de novo. Used to label variants as de novo.',
 )
 
+_DETERMINISTIC_SERIALIZATION = flags.DEFINE_bool(
+    'deterministic_serialization',
+    False,
+    'If True, the saved protos will be '
+    'run with SerializeToString(deterministic=True). This is useful for '
+    'creating deterministic testdata.',
+)
+
 
 def shared_flags_to_options(
     add_flags,
@@ -640,6 +648,7 @@ def shared_flags_to_options(
       main_sample_index=main_sample_index,
       sample_role_to_train=sample_role_to_train,
       output_sitelist=_OUTPUT_SITELIST.value,
+      deterministic_serialization=_DETERMINISTIC_SERIALIZATION.value,
   )
 
   if add_flags:

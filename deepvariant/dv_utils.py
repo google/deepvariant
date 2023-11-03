@@ -162,16 +162,17 @@ def example_set_denovo_label(
   example.features.feature['denovo_label'].int64_list.value[:] = [numeric_label]
 
 
-def example_set_variant(example, variant):
+def example_set_variant(example, variant, deterministic=False):
   """Sets the variant/encoded feature of example to variant.SerializeToString().
 
   Args:
     example: a tf.Example proto.
     variant: third_party.nucleus.protos.Variant protobuf containing information
       about a candidate variant call.
+    deterministic: Used to set SerializeToString.
   """
   example.features.feature['variant/encoded'].bytes_list.value[:] = [
-      variant.SerializeToString()
+      variant.SerializeToString(deterministic=deterministic)
   ]
 
 

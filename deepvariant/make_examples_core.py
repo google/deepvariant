@@ -1125,6 +1125,8 @@ class OutputsWriter:
       self._add_writer('sitelist', epath.Path(sitelist_fname).open('w'))
       writer = self._writers['sitelist']
 
+    self._deterministic_serialization = options.deterministic_serialization
+
   def _add_suffix(self, file_path, suffix):
     """Adds suffix to file name if a suffix is given."""
     if not suffix:
@@ -1208,7 +1210,11 @@ class OutputsWriter:
     writer = self._writers[writer_name]
     if writer:
       for proto in protos:
-        writer.write(proto.SerializeToString())
+        writer.write(
+            proto.SerializeToString(
+                deterministic=self._deterministic_serialization
+            )
+        )
 
   def _write_text(self, writer_name: str, line: str):
     writer = self._writers[writer_name]
@@ -2430,7 +2436,9 @@ class RegionProcessor:
       )
     alt_alleles_indices = dv_utils.example_alt_alleles_indices(example)
 
-    dv_utils.example_set_variant(example, label.variant)
+    dv_utils.example_set_variant(
+        example, label.variant, self.options.deterministic_serialization
+    )
 
     # Set the label of the example to the # alts given our alt_alleles_indices.
     dv_utils.example_set_label(
