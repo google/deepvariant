@@ -322,14 +322,20 @@ class VariantCaller(metaclass=abc.ABCMeta):
 
       if gl_is_valid:
         combinable = list(combinable)
-        min_gq = min(elt.raw_gq for elt in combinable)
+        # min_gq_record is a tuple where first element is the index of the
+        # element with the lowest raw_gq value, second element is the min
+        # raw_gq value.
+        min_gq_record = min(
+            enumerate(elt.raw_gq for elt in combinable), key=lambda p: p[1]
+        )
+        min_gq = min_gq_record[1]
         min_dp = min(elt.read_depth for elt in combinable)
         med_dp = int(statistics.median(elt.read_depth for elt in combinable))
         first_record, last_record = combinable[0], combinable[-1]
         call = variants_pb2.VariantCall(
             call_set_name=self.options.sample_name,
             genotype=[0, 0],
-            genotype_likelihood=first_record.likelihoods,
+            genotype_likelihood=combinable[min_gq_record[0]].likelihoods,
         )
         variantcall_utils.set_gq(call, min_gq)
         variantcall_utils.set_min_dp(call, min_dp)

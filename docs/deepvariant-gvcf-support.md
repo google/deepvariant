@@ -110,7 +110,8 @@ non-variant site genotype quality, and thus more records are created.
 To mitigate this effect, the `make_examples` program has a flag
 `--gvcf_gq_binsize <int>`. This flag allows the merging of adjacent records that
 all have GQ values within a bin of the given size, and for each record emits the
-minimum GQ value seen within the bin.
+minimum GQ value seen within the bin. PL value is taken from the same record
+containing the minimum GQ value.
 
 For example, setting `--gvcf_gq_binsize 5` has the effect that adjacent records
 with GQ=0; GQ in [1, 5]; GQ in [6, 10]; GQ in [11, 15]; etc. are binned
