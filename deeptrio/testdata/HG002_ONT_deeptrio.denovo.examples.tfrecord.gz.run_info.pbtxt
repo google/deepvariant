@@ -3455,10 +3455,10 @@ options {
     min_base_quality: 10
     min_base_quality_mode: ENFORCED_BY_CLIENT
   }
-  reference_filename: "/google/src/cloud/koles/dt-oom/google3/learning/genomics/deeptrio/testdata/input/grch38.chr20_5050000_5075000.masked.fa.gz"
-  examples_filename: "/google/src/cloud/koles/dt-oom/google3/learning/genomics/deeptrio/testdata/HG002_ONT_deeptrio.denovo.examples.tfrecord.gz"
-  confident_regions_filename: "/google/src/cloud/koles/dt-oom/google3/learning/genomics/deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.bed"
-  truth_variants_filename: "/google/src/cloud/koles/dt-oom/google3/learning/genomics/deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.vcf.gz"
+  reference_filename: "deeptrio/testdata/input/grch38.chr20_5050000_5075000.masked.fa.gz"
+  examples_filename: "deeptrio/testdata/HG002_ONT_deeptrio.denovo.examples.tfrecord.gz"
+  confident_regions_filename: "deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.bed"
+  truth_variants_filename: "deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.vcf.gz"
   mode: TRAINING
   min_shared_contigs_basepairs: 0.8999999761581421
   realigner_options {
@@ -3503,7 +3503,7 @@ options {
   }
   max_reads_per_partition: 1500
   labeler_algorithm: HAPLOTYPE_LABELER
-  run_info_filename: "/google/src/cloud/koles/dt-oom/google3/learning/genomics/deeptrio/testdata/HG002_ONT_deeptrio.denovo.examples.tfrecord.gz.run_info.pbtxt"
+  run_info_filename: "deeptrio/testdata/HG002_ONT_deeptrio.denovo.examples.tfrecord.gz.run_info.pbtxt"
   variant_caller: VERY_SENSITIVE_CALLER
   use_ref_for_cram: true
   parse_sam_aux_fields: true
@@ -3512,7 +3512,7 @@ options {
   main_sample_index: 1
   bam_fname: "HG002_R10_chr20_5050000_5075000.bam|HG003_R10_chr20_5050000_5075000.bam|HG004_R10_chr20_5050000_5075000.bam"
   sample_options {
-    reads_filenames: "/google/src/cloud/koles/dt-oom/google3/learning/genomics/deeptrio/testdata/input/HG003_R10_chr20_5050000_5075000.bam"
+    reads_filenames: "deeptrio/testdata/input/HG003_R10_chr20_5050000_5075000.bam"
     variant_caller_options {
       min_count_snps: 2
       min_count_indels: 2
@@ -3538,7 +3538,7 @@ options {
     skip_output_generation: true
   }
   sample_options {
-    reads_filenames: "/google/src/cloud/koles/dt-oom/google3/learning/genomics/deeptrio/testdata/input/HG002_R10_chr20_5050000_5075000.bam"
+    reads_filenames: "deeptrio/testdata/input/HG002_R10_chr20_5050000_5075000.bam"
     variant_caller_options {
       min_count_snps: 2
       min_count_indels: 2
@@ -3563,7 +3563,7 @@ options {
     name: "HG002"
   }
   sample_options {
-    reads_filenames: "/google/src/cloud/koles/dt-oom/google3/learning/genomics/deeptrio/testdata/input/HG004_R10_chr20_5050000_5075000.bam"
+    reads_filenames: "deeptrio/testdata/input/HG004_R10_chr20_5050000_5075000.bam"
     variant_caller_options {
       min_count_snps: 2
       min_count_indels: 2
@@ -3595,7 +3595,8 @@ options {
   phase_reads: true
   phase_reads_region_padding_pct: 20
   phase_max_candidates: 5000
-  denovo_regions_filename: "/google/src/cloud/koles/dt-oom/google3/learning/genomics/deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.denovo_regions.bed"
+  denovo_regions_filename: "deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.denovo_regions.bed"
+  deterministic_serialization: true
 }
 labeling_metrics {
   n_truth_variant_sites: 40
@@ -3612,14 +3613,14 @@ labeling_metrics {
   n_exact_position_and_allele_and_genotype_matches: 38
 }
 resource_metrics {
-  host_name: "koles2.pao.corp.google.com"
-  physical_core_count: 12
-  cpu_frequency_mhz: 2341.5133333333333
-  total_memory_mb: 128631
-  wall_time_seconds: 43.8516480922699
-  cpu_user_time_seconds: 49.096224
-  cpu_system_time_seconds: 1.043409
-  memory_peak_rss_mb: 1141
+  host_name: "host"
+  physical_core_count: 6
+  cpu_frequency_mhz: 2406.72375
+  total_memory_mb: 63891
+  wall_time_seconds: 46.088374853134155
+  cpu_user_time_seconds: 53.72471
+  cpu_system_time_seconds: 0.879749
+  memory_peak_rss_mb: 1110
   write_bytes: 24576
 }
 stats {
