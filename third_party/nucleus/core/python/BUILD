@@ -1,5 +1,5 @@
-# Placeholder: load py_test
 load("//third_party:clif.bzl", "py_clif_cc")
+# Placeholder: load py_test
 
 package(
     #default_applicable_licenses = ["//third_party/nucleus:license"],
@@ -27,6 +27,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":statusor_examples",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
     ],
 )

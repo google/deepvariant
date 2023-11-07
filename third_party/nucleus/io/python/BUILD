@@ -1,5 +1,5 @@
-# Placeholder: load py_test
 load("//third_party:clif.bzl", "py_clif_cc")
+# Placeholder: load py_test
 
 package(
     #default_applicable_licenses = ["//third_party/nucleus:license"],
@@ -48,6 +48,7 @@ py_test(
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
     ],
 )
@@ -79,6 +80,7 @@ py_test(
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -116,6 +118,7 @@ py_test(
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -162,6 +165,7 @@ py_test(
         ":reference",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -194,6 +198,7 @@ py_test(
         ":bed_reader",
         "//third_party/nucleus/protos:bed_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -224,6 +229,7 @@ py_test(
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:bed_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -285,6 +291,7 @@ py_test(
         ":fastq_reader",
         "//third_party/nucleus/protos:fastq_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -316,6 +323,7 @@ py_test(
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:fastq_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -337,6 +345,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":hts_verbose",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
     ],
 )
@@ -368,6 +377,7 @@ py_test(
         ":gff_reader",
         "//third_party/nucleus/protos:gff_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -402,6 +412,7 @@ py_test(
         "//third_party/nucleus/protos:gff_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
+        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
