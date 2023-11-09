@@ -58,6 +58,17 @@ def get_exome_config(
   return config
 
 
+def test_options(config: ml_collections.ConfigDict):
+  """Config parameters for test training."""
+
+  # Config values to reduce the size and time for training
+  config.batch_size = 49
+  config.num_epochs = 2
+  config.num_validation_examples = 1
+  config.warmup_steps = 0
+  config.limit = 3
+
+
 def get_config(config_name: str) -> ml_collections.ConfigDict:
   """Training parameters."""
   config = ml_collections.ConfigDict()
@@ -106,6 +117,13 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Placeholder value for limiting training examples. 0=No limit.
   config.limit = 0
 
+  if config_name and ':' in config_name:
+    config_name, alt_mode = config_name.split(':')
+  else:
+    alt_mode = None
+
+  config.alt_mode = alt_mode
+
   if config_name == 'exome':
     config = get_exome_config(config)
   elif config_name == 'base':
@@ -113,5 +131,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     pass
   else:
     raise ValueError(f'Unknown config_name: {config_name}')
+
+  if alt_mode == 'test':
+    test_options(config)
 
   return config

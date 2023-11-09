@@ -823,16 +823,32 @@ py_binary(
         "train.py",
     ],
     main = "train.py",
+    python_version = "PY3",
     deps = [
         ":data_providers",
-        ":dv_constants",
         ":dv_utils",
         ":keras_modeling",
-        "//third_party/nucleus/io:sharded_file_utils",
         "@absl_py//absl:app",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
+py_test(
+    name = "train_test",
+    size = "large",
+    srcs = ["train_test.py"],
+    data = [":testdata"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":dv_config",
+        ":py_testdata",
+        ":train",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@absl_py//absl/testing:flagsaver",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
