@@ -35,19 +35,24 @@
 
 #include <algorithm>
 #include <functional>
-#include <iterator>
 #include <memory>
+#include <numeric>
+#include <random>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/pileup_channel_lib.h"
+#include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "absl/log/check.h"
-#include "absl/log/log.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
@@ -130,6 +135,13 @@ int GetHPValueForHPChannel(const Read& read,
   return hp_value;
 }
 
+bool SortByAlignment(std::tuple<int, int, std::unique_ptr<ImageRow>>& a,
+                     std::tuple<int, int, std::unique_ptr<ImageRow>>& b) {
+  // Sort tuples by making tuples with just the ints.
+  return std::tuple<int, int>(std::get<0>(a), std::get<1>(a)) <
+         std::tuple<int, int>(std::get<0>(b), std::get<1>(b));
+}
+
 }  // namespace
 
 ImageRow::ImageRow(int width, int num_channels, bool use_allele_frequency,
@@ -146,7 +158,8 @@ ImageRow::ImageRow(int width, int num_channels, bool use_allele_frequency,
       num_channels(num_channels),
       use_allele_frequency(use_allele_frequency),
       add_hp_channel(add_hp_channel),
-      channels(channels) {}
+      channels(channels),
+      channel_data(channels.size(), std::vector<unsigned char>(width, 0)) {}
 
 int ImageRow::Width() const {
   CHECK(
@@ -281,6 +294,104 @@ vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
   return channels_list;
 }
 
+std::vector<std::unique_ptr<ImageRow>>
+PileupImageEncoderNative::BuildPileupForOneSample(
+    const DeepVariantCall& dv_call, const string& ref_bases,
+    const std::vector<
+          nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>>&
+          wrapped_reads, int image_start_pos,
+    const vector<std::string>& alt_alleles,
+    const SampleOptions& sample_options) {
+  int pileup_height = sample_options.pileup_height();
+  if (pileup_height == 0) {
+    pileup_height = options_.height();
+  }
+  int max_reads = pileup_height - options_.reference_band_height();
+
+  std::vector<std::unique_ptr<ImageRow>> rows;
+  rows.reserve(pileup_height);
+
+  // Reference band at the top of the image.
+  for (int i = 0; i < options_.reference_band_height(); i++) {
+    rows.push_back(EncodeReference(ref_bases));
+  }
+
+  // Create vector of read indices.
+  std::vector<int> read_indices(wrapped_reads.size());
+  std::iota(read_indices.begin(), read_indices.end(), 0);
+  if (wrapped_reads.size() > max_reads) {
+    // Shuffle the indices instead of the reads, so that we won't change the
+    // order of the reads list.
+    std::shuffle(read_indices.begin(), read_indices.end(),
+                 std::mt19937_64(options_.random_seed()));
+  }
+
+  // We add a row for each read in order, down-sampling if the number of
+  // reads is greater than the max reads for each sample.
+  std::vector<std::tuple<int, int, std::unique_ptr<ImageRow>>> pileup_of_reads;
+  for (int index : read_indices) {
+    if (pileup_of_reads.size() >= max_reads) {
+      break;
+    }
+    const Read& read = *wrapped_reads[index].p_;
+    std::unique_ptr<ImageRow> image_row =
+        EncodeRead(dv_call, ref_bases, read, image_start_pos, alt_alleles);
+    if (image_row == nullptr) {
+      continue;
+    }
+    pileup_of_reads.push_back(std::make_tuple(
+        GetHapIndex(read), read.alignment().position().position(),
+        std::move(image_row)));
+  }
+
+  // Sort reads by alignment position.
+  std::sort(pileup_of_reads.begin(), pileup_of_reads.end(), SortByAlignment);
+  for (auto& [hap_index, position, row] : pileup_of_reads) {
+    rows.push_back(std::move(row));
+  }
+
+  // Finally, fill in any missing rows to bring our image to pileup_height rows
+  // with empty (all black) pixels.
+  int empty_rows = pileup_height - rows.size();
+  if (empty_rows > 0) {
+    for (int i = 0; i < empty_rows; i++) {
+      rows.push_back(std::make_unique<ImageRow>(
+          ImageRow(ref_bases.size(), options_.num_channels(),
+                   options_.use_allele_frequency(), options_.add_hp_channel(),
+                   ToVector(options_.channels()))));
+    }
+  }
+
+  return rows;
+}
+
+int PileupImageEncoderNative::GetHapIndex(const Read& read) {
+  int default_hap_idx = 0;
+  if (!options_.sort_by_haplotypes() || !read.info().contains("HP")) {
+    return default_hap_idx;
+  }
+  nucleus::genomics::v1::ListValue read_info_hp = read.info().at("HP");
+  if (read_info_hp.values().empty()) {
+    return default_hap_idx;
+  }
+  nucleus::genomics::v1::Value hp_field = read_info_hp.values(0);
+  if (hp_field.kind_case() != nucleus::genomics::v1::Value::kIntValue) {
+    return default_hap_idx;
+  }
+  int hp_value = hp_field.int_value();
+  int hp_tag_for_assembly_polishing = options_.hp_tag_for_assembly_polishing();
+  if (hp_tag_for_assembly_polishing > 0 &&
+      hp_value == hp_tag_for_assembly_polishing) {
+    // For the target HP tag, set it to -1 so it will be sorted on top of the
+    // pileup image.
+    return -1;
+  } else if (hp_value < 0) {
+    // For reads with HP < 0, assume it is not tagged.
+    return 0;
+  } else {
+    return hp_value;
+  }
+}
 
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
     const DeepVariantCall& dv_call, const string& ref_bases, const Read& read,
@@ -318,9 +429,8 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
 
   // Calculate OptChannels.
   OptChannels channel_set{options_};
-  bool ok = channel_set.CalculateChannels(img_row.channels, read,
-                                          ref_bases, dv_call, alt_alleles,
-                                          image_start_pos);
+  bool ok = channel_set.CalculateChannels(
+      img_row.channels, read, ref_bases, dv_call, alt_alleles, image_start_pos);
   // Bail out if we found an issue while calculating channels
   // (a low-quality base at the call site, mapping quality is too low, etc)
   if (!ok) {
@@ -328,8 +438,6 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
   }
 
   // Fill OptChannel set.
-  img_row.channel_data.resize(img_row.channels.size(),
-                            std::vector<unsigned char>(ref_bases.size(), 0));
   for (int j = 0; j < img_row.channels.size(); j++) {
     const std::string channel = img_row.channels[j];
     img_row.channel_data[j] = channel_set.data_[channel];
@@ -485,10 +593,6 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeReference(
   ImageRow img_row(ref_bases.size(), options_.num_channels(),
                    options_.use_allele_frequency(), options_.add_hp_channel(),
                    ToVector(options_.channels()));
-
-  // Initialize dynamic channels
-  img_row.channel_data.resize(img_row.channels.size(),
-                              std::vector<unsigned char>(ref_bases.size(), 0));
 
   // Calculate reference rows at the top of each channel image.
   // These are retrieved for each position in the loop below.

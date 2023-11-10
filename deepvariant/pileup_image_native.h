@@ -84,6 +84,34 @@ class PileupImageEncoderNative {
   // Return all the channels in this image, as a list of enums.
   std::vector<DeepVariantChannelEnum> AllChannelsEnum(
       const std::string& alt_aligned_representation);
+
+  // Create read pileup image section for one sample.
+  std::vector<std::unique_ptr<ImageRow>> BuildPileupForOneSample(
+      const DeepVariantCall& dv_call, const string& ref_bases,
+      const std::vector<
+          nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>>&
+          wrapped_reads,
+      int image_start_pos, const std::vector<std::string>& alt_alleles,
+      const SampleOptions& sample_options);
+
+  // Simple wrapper around BuildPileupForOneSample that allows us to efficiently
+  // pass large protobufs in from Python. Simply unwraps the ConstProtoPtr
+  // objects and calls BuildPileupForOneSample().
+  std::vector<std::unique_ptr<ImageRow>> BuildPileupForOneSamplePython(
+      const nucleus::ConstProtoPtr<
+          const learning::genomics::deepvariant::DeepVariantCall>&
+          wrapped_dv_call,
+      const string& ref_bases,
+      const std::vector<
+          nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>>&
+          wrapped_reads,
+      int image_start_pos, const std::vector<std::string>& alt_alleles,
+      const SampleOptions& sample_options) {
+    return BuildPileupForOneSample(*(wrapped_dv_call.p_), ref_bases,
+                                   wrapped_reads, image_start_pos, alt_alleles,
+                                   sample_options);
+  }
+
   // Encode one read into a row of pixels for our image.
   std::unique_ptr<ImageRow> EncodeRead(
       const learning::genomics::deepvariant::DeepVariantCall& dv_call,
@@ -127,14 +155,13 @@ class PileupImageEncoderNative {
   int MappingQualityColor(int mapping_qual) const;
 
  private:
+  int GetHapIndex(const nucleus::genomics::v1::Read& read);
+
   const PileupImageOptions options_;
 };
-
 
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-
-
 
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_PILEUP_IMAGE_NATIVE_H_

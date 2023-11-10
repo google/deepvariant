@@ -29,7 +29,7 @@
 """Encodes reference and read data into a PileupImage for DeepVariant."""
 
 import itertools
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional
 
 
 
@@ -391,103 +391,20 @@ class PileupImageCreator(object):
           )
       )
 
-    def build_pileup_for_one_sample(
-        reads: List[reads_pb2.Read], sample: sample_lib.Sample
-    ) -> List[np.ndarray]:
-      """Create read pileup image section for one sample."""
-      # We start with n copies of our encoded reference bases.
-      rows = [
-          self._encoder.encode_reference(refbases)
-      ] * self.reference_band_height
-      def _update_hap_index(
-          read: reads_pb2.Read, hp_tag_for_assembly_polishing: int
-      ) -> int:
-        default_hap_idx = 0  # By default, reads with no HP is set to 0.
-        if 'HP' not in read.info:
-          return default_hap_idx
-        read_info_hp = read.info.get('HP')
-        if read_info_hp is None or not read_info_hp.values:
-          return default_hap_idx
-        hp_field = next(iter(read_info_hp.values))
-        if not hp_field.HasField('int_value'):
-          return default_hap_idx
-        hp_value = hp_field.int_value
-        if (
-            hp_tag_for_assembly_polishing > 0
-            and hp_value == hp_tag_for_assembly_polishing
-        ):
-          # For the target HP tag, set it to -1 so it will be sorted on
-          # top of the pileup image.
-          return -1
-        elif hp_value < 0:
-          return 0  # For reads with HP < 0, assume it is not tagged.
-        else:
-          return hp_value
-
-      # Returns tuples of the form (haplotype, position, row),
-      # if the read can be encoded as a valid row to be used in the pileup
-      # image.
-      def _row_helper(
-          read: reads_pb2.Read,
-      ) -> Optional[Tuple[int, int, np.ndarray]]:
-        """A function that returns tuples of (haplotype, position, row)."""
-        read_row = self._encoder.encode_read(
-            dv_call, refbases, read, image_start_pos, alt_alleles
-        )
-        if read_row is None:
-          return None
-        hap_idx = 0  # By default, reads with no HP is set to 0.
-        if self._options.sort_by_haplotypes:
-          hap_idx = _update_hap_index(
-              read, self._options.hp_tag_for_assembly_polishing
-          )
-        return hap_idx, read.alignment.position.position, read_row
-
-      # We add a row for each read in order, down-sampling if the number of
-      # reads is greater than the max reads for each sample. Sort the reads by
-      # their alignment position.
-      random_for_image = np.random.RandomState(self._options.random_seed)
-
-      # Use sample height or default to pic height.
-      if sample.options.pileup_height != 0:
-        pileup_height = sample.options.pileup_height
-      else:
-        pileup_height = self.height
-
-      max_reads = pileup_height - self.reference_band_height
-      reads_indices = list(range(len(reads)))
-      if len(reads) > max_reads:
-        # Shuffle the indices instead of the reads, so that we won't change
-        # the order of the reads list.
-        random_for_image.shuffle(reads_indices)
-      pileup_of_reads = []
-      for reads_index in reads_indices:
-        read = reads[reads_index]
-        if len(pileup_of_reads) == max_reads:
-          break
-        row = _row_helper(read)
-        if row is None:
-          continue
-        pileup_of_reads.append(row)
-      pileup_of_reads = sorted(pileup_of_reads, key=lambda x: (x[0], x[1]))
-
-      rows += [read_row for _, _, read_row in pileup_of_reads]
-
-      # Finally, fill in any missing rows to bring our image to pileup_height
-      # rows with empty (all black) pixels.
-      n_missing_rows = pileup_height - len(rows)
-      if n_missing_rows > 0:
-        # Add values to rows to fill it out with zeros.
-        rows += [self._empty_image_row()] * n_missing_rows
-      return rows
-
     sample_sections = []
     if sample_order is None:
       sample_order = range(len(self._samples))
     for i in sample_order:
       sample = self._samples[i]
       sample_sections.extend(
-          build_pileup_for_one_sample(reads_for_samples[i], sample)
+          self._encoder.build_pileup_for_one_sample(
+              dv_call,
+              refbases,
+              reads_for_samples[i],
+              image_start_pos,
+              alt_alleles,
+              sample.options,
+          )
       )
 
     # Vertically stack the image rows to create a single

@@ -41,6 +41,15 @@ from "deepvariant/pileup_image_native.h":
       def `AllChannelsEnum` as all_channels_enum(
           self, alt_aligned_pileup: str) -> list<DeepVariantChannelEnum>
 
+      def `BuildPileupForOneSamplePython` as build_pileup_for_one_sample(
+          self,
+          dv_call: ConstProtoPtr<DeepVariantCall>,
+          ref_bases: str,
+          reads: list<ConstProtoPtr<Read>>,
+          image_start_pos: int,
+          alt_alleles: list<str>,
+          sample_options: SampleOptions) -> list<ImageRow>
+
       def `EncodeReadPython` as encode_read(
           self,
           dv_call: ConstProtoPtr<DeepVariantCall>,
