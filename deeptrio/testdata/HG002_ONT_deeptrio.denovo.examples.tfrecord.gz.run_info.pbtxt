@@ -3614,14 +3614,14 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 48
-  cpu_frequency_mhz: 1999.9990000000025
-  total_memory_mb: 181297
-  wall_time_seconds: 75.6466555595398
-  cpu_user_time_seconds: 83.499003
-  cpu_system_time_seconds: 1.299158
-  memory_peak_rss_mb: 1113
-  write_bytes: 90112
+  physical_core_count: 6
+  cpu_frequency_mhz: 2362.778333333333
+  total_memory_mb: 63891
+  wall_time_seconds: 47.85148239135742
+  cpu_user_time_seconds: 55.576457
+  cpu_system_time_seconds: 1.0771709999999999
+  memory_peak_rss_mb: 1100
+  write_bytes: 28672
 }
 stats {
   num_examples: 167
