@@ -54,9 +54,9 @@ from deepvariant import dv_utils
 from deepvariant import dv_utils_using_clif
 # pylint: disable=g-direct-tensorflow-import
 from tensorflow.python.framework import ops
-from tensorflow.python.tpu import tpu_config
-from tensorflow.python.tpu import tpu_estimator
 from tensorflow.python.tpu import tpu_optimizer
+from tensorflow_estimator.python.estimator.tpu import tpu_config
+from tensorflow_estimator.python.estimator.tpu import tpu_estimator
 # pylint: enable=g-direct-tensorflow-import
 
 tf.compat.v1.disable_eager_execution()
