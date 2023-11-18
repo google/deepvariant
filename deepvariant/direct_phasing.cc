@@ -33,6 +33,8 @@
 
 #include <algorithm>
 #include <array>
+#include <ostream>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -44,11 +46,11 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "boost/graph/graphviz.hpp"
-#include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/core/statusor.h"
-#include "absl/log/log.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 
 namespace learning {
 namespace genomics {
