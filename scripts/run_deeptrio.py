@@ -131,7 +131,6 @@ _VERSION = flags.DEFINE_boolean(
     'Optional. If true, print out version number and exit.',
     allow_hide_cpp=True,
 )
-# TODO: Change to True as default before release.
 _USE_SLIM_MODEL = flags.DEFINE_boolean(
     'use_slim_model',
     False,
@@ -726,9 +725,7 @@ def model_exists(model_prefix: str) -> bool:
   ) or not tf.io.gfile.exists(model_prefix + '.index'):
     return False
   # If it's a Slim model, we also expect a .meta file.
-  if not _USE_SLIM_MODEL.value and not tf.io.gfile.exists(
-      model_prefix + '.meta'
-  ):
+  if _USE_SLIM_MODEL.value and not tf.io.gfile.exists(model_prefix + '.meta'):
     return False
   return True
 
