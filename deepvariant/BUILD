@@ -1610,7 +1610,5 @@ py_binary(
     name = "convert_to_saved_model",
     srcs = ["convert_to_saved_model.py"],
     python_version = "PY3",
-    deps = [
-        ":convert_to_saved_model_lib",
-    ],
+    deps = [":convert_to_saved_model_lib"],
 )

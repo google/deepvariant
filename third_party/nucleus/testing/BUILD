@@ -110,7 +110,6 @@ py_test(
     deps = [
         ":py_test_utils",
         "//third_party/nucleus/protos:cigar_py_pb2",
-        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
     ],
 )
@@ -123,7 +122,6 @@ py_test(
     srcs_version = "PY3",
     deps = [
         "//third_party/nucleus/io:sam",
-        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
         "@com_google_protobuf//:protobuf_python",
     ],

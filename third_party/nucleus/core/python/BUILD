@@ -27,7 +27,6 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":statusor_examples",
-        "//third_party/py/google/protobuf:use_fast_cpp_protos",
         "@absl_py//absl/testing:absltest",
     ],
 )

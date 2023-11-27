@@ -48,7 +48,7 @@ sudo apt-get update && sudo apt-get install -y \
 
 export VERSION=1.15.6 OS=linux ARCH=amd64
 # Downloads the required Go package
-wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz
+wget https://dl.google.com/redacted
 # Extracts the archive
 sudo tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz
 # Deletes the ``tar`` file
@@ -58,7 +58,7 @@ export VERSION=3.7.0
 wget https://github.com/hpcng/singularity/releases/download/v${VERSION}/singularity-${VERSION}.tar.gz
 tar -xzf singularity-${VERSION}.tar.gz
 pushd singularity
-export PATH=/usr/local/go/bin:$PATH
+export PATH=/usr/local/redacted
 
 ./mconfig
 make -C builddir
