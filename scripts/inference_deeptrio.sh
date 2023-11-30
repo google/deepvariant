@@ -91,6 +91,12 @@ MODEL_TYPE=""
 POSTPROCESS_VARIANTS_ARGS=""
 PROPOSED_VARIANTS=""
 REGIONS=""
+TRUTH_BED_CHILD=""
+TRUTH_BED_PARENT1=""
+TRUTH_BED_PARENT2=""
+TRUTH_VCF_CHILD=""
+TRUTH_VCF_PARENT1=""
+TRUTH_VCF_PARENT2=""
 USE_CANDIDATE_PARTITION=false
 
 while (( "$#" )); do
@@ -216,6 +222,36 @@ while (( "$#" )); do
       ;;
     --bam_parent2)
       BAM_PARENT2="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --truth_bed_child)
+      TRUTH_BED_CHILD="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --truth_bed_parent1)
+      TRUTH_BED_PARENT1="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --truth_bed_parent2)
+      TRUTH_BED_PARENT2="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --truth_vcf_child)
+      TRUTH_VCF_CHILD="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --truth_vcf_parent1)
+      TRUTH_VCF_PARENT1="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --truth_vcf_parent2)
+      TRUTH_VCF_PARENT2="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -358,12 +394,12 @@ REF="${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis
 SAMPLE_NAME_CHILD="HG002"
 SAMPLE_NAME_PARENT1="HG003"
 SAMPLE_NAME_PARENT2="HG004"
-TRUTH_VCF_CHILD="${GCS_DATA_DIR}/case-study-testdata/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz"
-TRUTH_BED_CHILD="${GCS_DATA_DIR}/case-study-testdata/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed"
-TRUTH_VCF_PARENT1="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz"
-TRUTH_BED_PARENT1="${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed"
-TRUTH_VCF_PARENT2="${GCS_DATA_DIR}/case-study-testdata/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz"
-TRUTH_BED_PARENT2="${GCS_DATA_DIR}/case-study-testdata/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed"
+TRUTH_VCF_CHILD="${TRUTH_VCF_CHILD:=${GCS_DATA_DIR}/case-study-testdata/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
+TRUTH_BED_CHILD="${TRUTH_BED_CHILD:=${GCS_DATA_DIR}/case-study-testdata/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+TRUTH_VCF_PARENT1="${TRUTH_VCF_PARENT1:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
+TRUTH_BED_PARENT1="${TRUTH_BED_PARENT1:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+TRUTH_VCF_PARENT2="${TRUTH_VCF_PARENT2:=${GCS_DATA_DIR}/case-study-testdata/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
+TRUTH_BED_PARENT2="${TRUTH_BED_PARENT2:=${GCS_DATA_DIR}/case-study-testdata/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
 if [[ "${MODEL_TYPE}" = "WES" ]]; then
@@ -409,6 +445,12 @@ echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
 echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
 echo "REF: ${REF}"
 echo "REGIONS: ${REGIONS}"
+echo "TRUTH_BED_CHILD: ${TRUTH_BED_CHILD}"
+echo "TRUTH_BED_PARENT1: ${TRUTH_BED_PARENT1}"
+echo "TRUTH_BED_PARENT2: ${TRUTH_BED_PARENT2}"
+echo "TRUTH_VCF_CHILD: ${TRUTH_VCF_CHILD}"
+echo "TRUTH_VCF_PARENT1: ${TRUTH_VCF_PARENT1}"
+echo "TRUTH_VCF_PARENT2: ${TRUTH_VCF_PARENT2}"
 echo "========================="
 
 function run() {
