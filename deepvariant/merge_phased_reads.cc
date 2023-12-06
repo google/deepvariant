@@ -36,6 +36,7 @@
 
 #include "deepvariant/merge_phased_reads.h"
 
+#include <array>
 #include <cstddef>
 #include <fstream>
 #include <set>
@@ -98,7 +99,7 @@ std::string generate_sharded_filename(const ShardedFileSpec& spec, int shard) {
   DCHECK_LE(0, num_shards);
   return absl::StrCat(spec.basename, "-",
                       absl::StrFormat("%0*d", shard_with(num_shards), shard),
-                      "-of-", absl::StrFormat("%05d", num_shards), spec.suffix,
+                      "-of-", absl::StrFormat("%05d", num_shards), ".",
                       spec.suffix);
 }
 
@@ -287,6 +288,53 @@ void MergerPeer::SetUnmergedReads(
   } else {
     merger.num_shards_ = 0;
   }
+}
+
+int Merger::CorrectPhasing() {
+  int count_reads_corrected = 0;
+  for (auto& read_info : merged_reads_) {
+    std::array<int, 3> phase_counts;
+    for (int phase : {1, 2}) {
+      auto it = read_info.phase_dist.find(phase);
+      phase_counts[phase] = it == read_info.phase_dist.end()
+                        ? 0
+                        : it->second;
+    }
+    // Correct phasing taking the majority phase. If there are equal number of
+    // phase 1 and phase 2 hits then reads become unphased.
+    int old_phase = read_info.phase;
+    if (phase_counts[1] == phase_counts[2]) {
+      read_info.phase = 0;
+    } else {
+      read_info.phase = phase_counts[1] > phase_counts[2] ? 1 : 2;
+    }
+    if (old_phase != read_info.phase) {
+      count_reads_corrected++;
+    }
+  }
+    return count_reads_corrected;
+}
+
+void Merger::CorrectAndPrintReadStats(const std::string& output_path) {
+  std::ofstream csv_file;
+  csv_file.open(output_path);
+
+  int count_reads_corrected = 0;
+  std::array<int, 3> phase_counts = {0, 0, 0};
+  int n_reads = 0;
+  count_reads_corrected = CorrectPhasing();
+  for (auto& read_info : merged_reads_) {
+    phase_counts[read_info.phase]++;
+    LOG_EVERY_N(INFO, 20000) << "Written " << n_reads << " reads";
+    csv_file << read_info.fragment_name << "\t" << read_info.phase << "\n";
+    n_reads++;
+  }
+  csv_file.close();
+  LOG(INFO) << "Count of reads not phased " << phase_counts[0];
+  LOG(INFO) << "Count of reads with phase 1 " << phase_counts[1];
+  LOG(INFO) << "Count of reads with phase 2 " << phase_counts[2];
+  LOG(INFO) << "Count of corrected reads " << count_reads_corrected;
+  LOG(INFO) << "Total reads processed: " << n_reads;
 }
 
 }  // namespace deepvariant

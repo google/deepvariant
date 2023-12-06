@@ -50,14 +50,14 @@ ABSL_FLAG(std::string, input_path, "", "Sharded input.");
 ABSL_FLAG(std::string, output_path, "", "Output path.");
 
 int main(int argc, char* argv[]) {
-  QCHECK(FLAGS_input_path.CurrentValue().empty() ||
-         FLAGS_output_path.CurrentValue().empty())
+  CHECK(!absl::GetFlag(FLAGS_input_path).empty() &&
+         !absl::GetFlag(FLAGS_output_path).empty())
       << "ERROR: --input_path and --output_path flags must be set.";
 
   learning::genomics::deepvariant::Merger merger;
-  merger.LoadFromFiles(FLAGS_input_path.CurrentValue());
+  merger.LoadFromFiles(absl::GetFlag(FLAGS_input_path));
   merger.MergeReads();
-  // merger.CorrectAndPrintReadStats(FLAGS_output_path.CurrentValue());
+  merger.CorrectAndPrintReadStats(absl::GetFlag(FLAGS_output_path));
 
   return 0;
 }

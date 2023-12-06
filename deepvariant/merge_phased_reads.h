@@ -49,23 +49,21 @@ namespace deepvariant {
 
 // Structure to hold input reads.
 struct UnmergedRead {
-  std::string fragment_name;
-  int phase = 0;
-  int region_order = 0;
-  int shard = 0;
-  int id = 0;  // id in merged_reads_
+  std::string fragment_name;  // Uniquely identifies a read.
+  int phase = 0;              // Phasing {0, 1, 2}.
+  int region_order = 0;       // Each make_examples shard
+                              // runs over a set of regions. This
+                              // field contains an order of a
+                              // region.
+  int shard = 0;              // Shard.
+  int id = 0;                 // id in merged_reads_
   std::vector<int> consensus_phases;
 };
 
 // Structure to hold merged reads with phasing.
 struct MergedPhaseRead {
   std::string fragment_name;                 // Uniquely identifies a read.
-  int phase = 0;                                 // Phasing {0, 1, 2}.
-  int region_order = 0;                          // Each make_examples shard
-                                             // runs over a set of regions. This
-                                             // field contains an order of a
-                                             // region.
-  int shard = 0;                                 // Shard.
+  int phase = 0;                             // Phasing {0, 1, 2}.
   absl::flat_hash_map<int, int> phase_dist;  // Different phases the read was
                                              // assigned after merging. This is
                                              // needed to count number of reads
@@ -112,9 +110,14 @@ class Merger {
   // Main API entry. Call it to merge reads.
   void MergeReads();
 
+  // Corrects phasing of reads that have an inconsistent phasing.
+  // Returns the number of corrected reads. As a result of correction the phase
+  // can be reversed or reset to zero.
+  int CorrectPhasing();
+
   // Scans reads for inconsistent phasing, correct where possible and print out
   // the results.
-  void CorrectAndPrintout(const std::string_view& output_path);
+  void CorrectAndPrintReadStats(const std::string& output_path);
 
  private:
   friend class MergerPeer;

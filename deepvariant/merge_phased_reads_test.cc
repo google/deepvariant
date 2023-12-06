@@ -127,7 +127,6 @@ INSTANTIATE_TEST_SUITE_P(
 
 bool operator==(const MergedPhaseRead& lhs, const MergedPhaseRead& rhs) {
   return lhs.fragment_name == rhs.fragment_name && lhs.phase == rhs.phase &&
-         lhs.region_order == rhs.region_order && lhs.shard == rhs.shard &&
          lhs.phase_dist.size() == rhs.phase_dist.size() &&
          lhs.phase_dist == rhs.phase_dist;
 }
@@ -265,6 +264,40 @@ TEST(MergeReads, EmptyInput) {
   merger.MergeReads();
   EXPECT_THAT(MergerPeer::merged_reads(merger),
               testing::ElementsAreArray(std::vector<MergedPhaseRead>({})));
+}
+
+TEST(MergeReads, CorrectPhasing) {
+  Merger merger;
+  MergerPeer::SetUnmergedReads(merger, {
+      {.fragment_name = "read_1", .phase = 1, .region_order = 1, .shard = 0},
+      {.fragment_name = "read_2", .phase = 1, .region_order = 1, .shard = 0},
+      {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 0},
+      {.fragment_name = "read_4", .phase = 1, .region_order = 1, .shard = 0},
+      {.fragment_name = "read_1", .phase = 1, .region_order = 1, .shard = 1},
+      {.fragment_name = "read_2", .phase = 1, .region_order = 1, .shard = 1},
+      {.fragment_name = "read_3", .phase = 1, .region_order = 1, .shard = 1},
+      {.fragment_name = "read_4", .phase = 2, .region_order = 1, .shard = 1},
+      {.fragment_name = "read_4", .phase = 2, .region_order = 1, .shard = 2},
+  });
+
+  std::vector<MergedPhaseRead> expected_after_phasing = {
+      {.fragment_name = "read_1", .phase = 1, .phase_dist = {{1, 2}}},
+      {.fragment_name = "read_2", .phase = 1, .phase_dist = {{1, 2}}},
+      {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 1}, {2, 1}}},
+      {.fragment_name = "read_4", .phase = 1, .phase_dist = {{1, 1}, {2, 2}}}};
+
+  std::vector<MergedPhaseRead> expected_after_correction = {
+      {.fragment_name = "read_1", .phase = 1, .phase_dist = {{1, 2}}},
+      {.fragment_name = "read_2", .phase = 1, .phase_dist = {{1, 2}}},
+      {.fragment_name = "read_3", .phase = 0, .phase_dist = {{1, 1}, {2, 1}}},
+      {.fragment_name = "read_4", .phase = 2, .phase_dist = {{1, 1}, {2, 2}}}};
+
+  merger.MergeReads();
+  EXPECT_THAT(MergerPeer::merged_reads(merger),
+              testing::ElementsAreArray(expected_after_phasing));
+  EXPECT_EQ(merger.CorrectPhasing(), 2);
+  EXPECT_THAT(MergerPeer::merged_reads(merger),
+              testing::ElementsAreArray(expected_after_correction));
 }
 
 }  // namespace deepvariant
