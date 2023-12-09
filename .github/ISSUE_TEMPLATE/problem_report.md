@@ -23,7 +23,7 @@ assignees: ''
   - Error trace: (if applicable)
 
 **Does the quick start test work on your system?**
-Please test with https://github.com/google/deepvariant/blob/r0.10/docs/deepvariant-quick-start.md.
+Please test with https://github.com/google/deepvariant/blob/r1.6/docs/deepvariant-quick-start.md.
 Is there any way to reproduce the issue by using the quick start?
 
 **Any additional context:**
