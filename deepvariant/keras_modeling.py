@@ -458,14 +458,9 @@ def create_state(
         directory=model_dir,
         max_to_keep=5,
     )
-    # If init_checkpoint or init_backbone_with_imagenet is specified, then we
-    # don't want to re-initialie or restore the checkpoint as this will
-    # overwrite the init_checkpoint weights.
-    if not config.init_checkpoint and not config.init_backbone_with_imagenet:
-      ckpt_manager.restore_or_initialize()
 
     if ckpt_manager.latest_checkpoint:
-      # Report current checkpoint state.
+      ckpt_manager.restore_or_initialize()
       best_checkpoint_metric_idx = [
           f'tune/{x.name}' for x in state.tune_metrics
       ].index(config.best_checkpoint_metric)
