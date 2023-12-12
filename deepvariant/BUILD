@@ -1612,3 +1612,29 @@ py_binary(
     python_version = "PY3",
     deps = [":convert_to_saved_model_lib"],
 )
+
+cc_library(
+    name = "make_examples_native",
+    srcs = ["make_examples_native.cc"],
+    hdrs = ["make_examples_native.h"],
+    deps = [
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "@com_google_absl//absl/log",
+    ],
+)
+
+cc_test(
+    name = "make_examples_native_test",
+    srcs = ["make_examples_native_test.cc"],
+    deps = [
+        ":make_examples_native",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+        "@com_google_protobuf//:protobuf",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
