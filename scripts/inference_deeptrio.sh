@@ -55,7 +55,7 @@ Flags:
 --model_preset Preset case study to run: WGS, WGS_CHR20, WES, ONT, ONT_CHR20, PACBIO, or PACBIO_CHR20.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
-
+--skip_happy (true|false) If True, skip the hap.py evaluation.
 
 If model_preset is not specified, the below flags are required:
 --model_type Type of DeepTrio model to run (WGS, WES, PACBIO, ONT)
@@ -74,6 +74,7 @@ BUILD_DOCKER=false
 DRY_RUN=false
 USE_GPU=false
 SAVE_INTERMEDIATE_RESULTS=false
+SKIP_HAPPY=false
 # Strings; sorted alphabetically.
 BAM_CHILD=""
 BAM_PARENT1=""
@@ -135,6 +136,16 @@ while (( "$#" )); do
       SAVE_INTERMEDIATE_RESULTS="$2"
       if [[ "${SAVE_INTERMEDIATE_RESULTS}" != "true" ]] && [[ "${SAVE_INTERMEDIATE_RESULTS}" != "false" ]]; then
         echo "Error: --save_intermediate_results needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --skip_happy)
+      SKIP_HAPPY="$2"
+      if [[ "${SKIP_HAPPY}" != "true" ]] && [[ "${SKIP_HAPPY}" != "false" ]]; then
+        echo "Error: --SKIP_HAPPY needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -427,6 +438,7 @@ echo "BUILD_DOCKER: ${BUILD_DOCKER}"
 echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
+echo "SKIP_HAPPY: ${SKIP_HAPPY}"
 echo "# Strings; sorted alphabetically."
 echo "BAM_CHILD: ${BAM_CHILD}"
 echo "BAM_PARENT1: ${BAM_PARENT1}"
@@ -846,9 +858,11 @@ function main() {
   run_deeptrio
   run_glnexus
   extract_samples
-  run_happy_reports
-  if [[ -z "${REGIONS}" ]]; then
-    run_happy_reports "chr20"
+  if [[ "${SKIP_HAPPY}" == "false" ]]; then
+    run_happy_reports
+    if [[ -z "${REGIONS}" ]]; then
+      run_happy_reports "chr20"
+    fi
   fi
 }
 

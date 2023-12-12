@@ -51,6 +51,7 @@ Flags:
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
+--skip_happy (true|false) If True, skip the hap.py evaluation.
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
 
 If model_preset is not specified, the below flags are required:
@@ -70,6 +71,7 @@ BUILD_DOCKER=false
 DRY_RUN=false
 USE_GPU=false
 SAVE_INTERMEDIATE_RESULTS=false
+SKIP_HAPPY=false
 # Strings; sorted alphabetically.
 BAM=""
 DOCKER_SOURCE="google/deepvariant"
@@ -126,6 +128,16 @@ while (( "$#" )); do
       SAVE_INTERMEDIATE_RESULTS="$2"
       if [[ "${SAVE_INTERMEDIATE_RESULTS}" != "true" ]] && [[ "${SAVE_INTERMEDIATE_RESULTS}" != "false" ]]; then
         echo "Error: --save_intermediate_results needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --skip_happy)
+      SKIP_HAPPY="$2"
+      if [[ "${SKIP_HAPPY}" != "true" ]] && [[ "${SKIP_HAPPY}" != "false" ]]; then
+        echo "Error: --SKIP_HAPPY needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -331,6 +343,7 @@ echo "BUILD_DOCKER: ${BUILD_DOCKER}"
 echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
+echo "SKIP_HAPPY: ${SKIP_HAPPY}"
 echo "# Strings; sorted alphabetically."
 echo "BAM: ${BAM}"
 echo "DOCKER_SOURCE: ${DOCKER_SOURCE}"
@@ -659,10 +672,12 @@ function main() {
   get_docker_image
   setup_args
   run_deepvariant_with_docker
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    run_happy
-  else
-    run_happy 2>&1 | tee "${LOG_DIR}/happy.log"
+  if [[ "${SKIP_HAPPY}" == "false" ]]; then
+    if [[ "${DRY_RUN}" == "true" ]]; then
+      run_happy
+    else
+      run_happy 2>&1 | tee "${LOG_DIR}/happy.log"
+    fi
   fi
 }
 
