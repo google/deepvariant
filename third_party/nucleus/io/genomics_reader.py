@@ -207,7 +207,7 @@ class DispatchingGenomicsReader(GenomicsReader):
     * _record_proto()
   """
 
-  def __init__(self, input_path, **kwargs):
+  def __init__(self, input_path, enable_logging=True, **kwargs):
     super(DispatchingGenomicsReader, self).__init__()
 
     if '.tfrecord' in input_path:
@@ -219,8 +219,10 @@ class DispatchingGenomicsReader(GenomicsReader):
       # native reader.
       kwargs.pop('compression_type', None)
       self._reader = self._native_reader(input_path, **kwargs)
-    logging.info('Reading %s with %s',
-                 input_path, self._reader.__class__.__name__)
+    if enable_logging:
+      logging.info(
+          'Reading %s with %s', input_path, self._reader.__class__.__name__
+      )
     self.header = getattr(self._reader, 'header', None)
     self._post_init_hook()
 

@@ -179,7 +179,7 @@ class RangeSet(object):
         contigs)
 
   @classmethod
-  def from_bed(cls, source, contigs=None):
+  def from_bed(cls, source, contigs=None, enable_logging=True):
     """Creates a RangeSet containing the intervals from source.
 
     Args:
@@ -190,7 +190,7 @@ class RangeSet(object):
     Returns:
       A RangeSet.
     """
-    return cls(bed_parser(source), contigs)
+    return cls(bed_parser(source, enable_logging), contigs)
 
   def intersection(self, *others: 'RangeSet') -> 'RangeSet':
     """Computes the intersection among this RangeSet and *others RangeSets.
@@ -456,19 +456,20 @@ def bedpe_parser(filename: str) -> Iterable[range_pb2.Range]:
         yield make_range(parts[0], int(parts[1]), int(parts[5]))
 
 
-def bed_parser(filename):
+def bed_parser(filename, enable_logging=True):
   """Parses Range objects from a BED-formatted file object.
 
   See http://bedtools.readthedocs.org/en/latest/content/general-usage.html
   for more information on the BED format.
 
   Args:
-    filename: file name of a BED-formatted file.
+    filename: File name of a BED-formatted file.
+    enable_logging: Enables logging line while reading the file.
 
   Yields:
     nucleus.genomics.v1.Range protobuf objects.
   """
-  with bed.BedReader(filename) as fin:
+  with bed.BedReader(filename, enable_logging) as fin:
     for r in fin.iterate():
       yield make_range(r.reference_name, r.start, r.end)
 

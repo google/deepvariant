@@ -885,7 +885,9 @@ def merge_predictions(
   # Removed par regions from parameter because RangeSet is not pickle-able.
   par_regions = None
   if _PAR_REGIONS.value:
-    par_regions = ranges.RangeSet.from_bed(_PAR_REGIONS.value)
+    par_regions = ranges.RangeSet.from_bed(
+        _PAR_REGIONS.value, enable_logging=False
+    )
 
   if not call_variants_outputs:
     raise ValueError('Expected 1 or more call_variants_outputs.')
