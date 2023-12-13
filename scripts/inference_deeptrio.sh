@@ -53,6 +53,7 @@ Flags:
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 --model_preset Preset case study to run: WGS, WGS_CHR20, WES, ONT, ONT_CHR20, PACBIO, or PACBIO_CHR20.
+--par_regions_bed Path to BED containing Human Pseudoautosomal Region (PAR) regions. This is used in postprocess_variants. We separate it out as a flag because we need to copy data from gs://.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 --skip_happy (true|false) If True, skip the hap.py evaluation.
@@ -72,23 +73,26 @@ Note: All paths to dataset must be of the form "gs://..."
 # Booleans; sorted alphabetically.
 BUILD_DOCKER=false
 DRY_RUN=false
-USE_GPU=false
 SAVE_INTERMEDIATE_RESULTS=false
 SKIP_HAPPY=false
+SKIP_HAPPY=false
+USE_CANDIDATE_PARTITION=false
+USE_GPU=false
+USE_SLIM_MODEL=false
 # Strings; sorted alphabetically.
 BAM_CHILD=""
 BAM_PARENT1=""
 BAM_PARENT2=""
-DOCKER_SOURCE="google/deepvariant"
 BIN_VERSION="1.6.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
-CUSTOMIZED_MODEL_PARENT=""
 CUSTOMIZED_MODEL_CHILD=""
-USE_SLIM_MODEL=false
+CUSTOMIZED_MODEL_PARENT=""
+DOCKER_SOURCE="google/deepvariant"
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
+PAR_REGIONS_BED=""
 POSTPROCESS_VARIANTS_ARGS=""
 PROPOSED_VARIANTS=""
 REGIONS=""
@@ -98,7 +102,6 @@ TRUTH_BED_PARENT2=""
 TRUTH_VCF_CHILD=""
 TRUTH_VCF_PARENT1=""
 TRUTH_VCF_PARENT2=""
-USE_CANDIDATE_PARTITION=false
 
 while (( "$#" )); do
   case "$1" in
@@ -271,6 +274,12 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+
+    --par_regions_bed)
+      PAR_REGIONS_BED="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     --proposed_variants)
       PROPOSED_VARIANTS="$2"
       shift # Remove argument name from processing
@@ -436,23 +445,25 @@ echo "========================="
 echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
 echo "DRY_RUN: ${DRY_RUN}"
-echo "USE_GPU: ${USE_GPU}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
 echo "SKIP_HAPPY: ${SKIP_HAPPY}"
+echo "USE_CANDIDATE_PARTITION: ${USE_CANDIDATE_PARTITION}"
+echo "USE_GPU: ${USE_GPU}"
+echo "USE_SLIM_MODEL: ${USE_SLIM_MODEL}"
 echo "# Strings; sorted alphabetically."
 echo "BAM_CHILD: ${BAM_CHILD}"
 echo "BAM_PARENT1: ${BAM_PARENT1}"
 echo "BAM_PARENT2: ${BAM_PARENT2}"
-echo "DOCKER_SOURCE: ${DOCKER_SOURCE}"
 echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
-echo "USE_CANDIDATE_PARTITION: ${USE_CANDIDATE_PARTITION}"
 echo "CAPTURE_BED: ${CAPTURE_BED}"
 echo "CUSTOMIZED_MODEL_CHILD: ${CUSTOMIZED_MODEL_CHILD}"
 echo "CUSTOMIZED_MODEL_PARENT: ${CUSTOMIZED_MODEL_PARENT}"
+echo "DOCKER_SOURCE: ${DOCKER_SOURCE}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
 echo "MODEL_TYPE: ${MODEL_TYPE}"
+echo "PAR_REGIONS_BED: ${PAR_REGIONS_BED}"
 echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
 echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
 echo "REF: ${REF}"
@@ -540,6 +551,9 @@ function copy_data() {
   copy_gs_or_http_file "${REF}.fai" "${INPUT_DIR}"
   if [[ "${MODEL_TYPE}" = "WES" ]]; then
     copy_gs_or_http_file "${CAPTURE_BED}" "${INPUT_DIR}"
+  fi
+  if [[ -n "${PAR_REGIONS_BED}" ]]; then
+    copy_gs_or_http_file "${PAR_REGIONS_BED}" "${INPUT_DIR}"
   fi
   if [[ -n "${PROPOSED_VARIANTS}" ]]; then
     copy_gs_or_http_file "${PROPOSED_VARIANTS}" "${INPUT_DIR}"
@@ -697,6 +711,9 @@ function setup_args() {
     extra_args+=( --call_variants_extra_args "${CALL_VARIANTS_ARGS}")
   fi
   if [[ -n "${POSTPROCESS_VARIANTS_ARGS}" ]]; then
+    if [[ -n "${PAR_REGIONS_BED}" ]]; then
+      POSTPROCESS_VARIANTS_ARGS="${POSTPROCESS_VARIANTS_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
+    fi
     extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
   fi
   if [[ -n "${REGIONS}" ]]; then

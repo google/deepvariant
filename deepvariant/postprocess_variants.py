@@ -171,12 +171,13 @@ flags.DEFINE_enum(
     ),
 )
 flags.DEFINE_boolean('only_keep_pass', False, 'If True, only keep PASS calls.')
-_HAPLOID_CONTIGS = flags.DEFINE_list(
+_HAPLOID_CONTIGS = flags.DEFINE_string(
     'haploid_contigs',
     None,
     (
         'Optional list of non autosomal chromosomes. For all listed chromosomes'
-        'HET probabilities are not considered.'
+        'HET probabilities are not considered. The list can be either comma '
+        'or space-separated.'
     ),
 )
 
@@ -853,10 +854,12 @@ def correct_nonautosome_probabilities(probabilities, variant):
 
 def is_non_autosome(variant):
   """Returns True if variant is non_autosome."""
-  return (
-      _HAPLOID_CONTIGS.value
-      and variant.reference_name in _HAPLOID_CONTIGS.value
-  )
+  haploid_contigs_str = _HAPLOID_CONTIGS.value or ''
+  parts = haploid_contigs_str.split(',')
+  # pylint: disable=g-complex-comprehension
+  haploid_contigs = [item for part in parts for item in part.split()]
+  # pylint: enable=g-complex-comprehension
+  return haploid_contigs and variant.reference_name in haploid_contigs
 
 
 def is_in_regions(variant, regions):
