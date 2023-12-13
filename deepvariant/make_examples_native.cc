@@ -36,6 +36,8 @@
 #include <vector>
 
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
+#include "third_party/nucleus/io/reference.h"
 
 
 namespace learning {
@@ -43,6 +45,23 @@ namespace genomics {
 namespace deepvariant {
 
 using Variant = nucleus::genomics::v1::Variant;
+
+ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
+                                     bool test_mode)
+    : options_(options) {
+  if (test_mode) {
+    return;
+  }
+  // Initialize reference reader.
+  // We should always have reference name set up, except for some unit tests.
+  // This code will fail if reference is not set up or cannot be loaded.
+  nucleus::genomics::v1::FastaReaderOptions fasta_reader_options;
+  std::string fasta_path = options_.reference_filename();
+  fasta_reader_options.set_keep_true_case(false);
+  std::string fai_path = absl::StrCat(fasta_path, ".fai");
+  ref_reader_ = std::move(
+      nucleus::IndexedFastaReader::FromFile(fasta_path, fai_path).ValueOrDie());
+}
 
 std::vector<std::vector<std::string>> ExamplesGenerator::AltAlleleCombinations(
     const Variant& variant) const {

@@ -1619,8 +1619,10 @@ cc_library(
     hdrs = ["make_examples_native.h"],
     deps = [
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/io:reference",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/strings",
     ],
 )
 

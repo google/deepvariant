@@ -92,7 +92,7 @@ TEST_P(AltAlleleCombinationsTest, AltAlleleCombinationsTestCases) {
   const AltAlleleCombinationsTestData& param = GetParam();
   MakeExamplesOptions options;
   options.mutable_pic_options()->set_multi_allelic_mode(param.mode);
-  ExamplesGenerator generator(options);
+  ExamplesGenerator generator(options, /*test_mode=*/true);
 
   EXPECT_THAT(
       ExamplesGeneratorPeer::CallAltAlleleCombinations(generator,

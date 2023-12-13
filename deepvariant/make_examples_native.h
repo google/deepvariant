@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 
 namespace learning {
@@ -46,8 +47,8 @@ namespace deepvariant {
 // Generates TensorFlow examples from candidates and reads.
 class ExamplesGenerator {
  public:
-  explicit ExamplesGenerator(const MakeExamplesOptions& options)
-      : options_(options) {}
+  explicit ExamplesGenerator(const MakeExamplesOptions& options,
+                             bool test_mode = false);
 
  private:
   friend class ExamplesGeneratorPeer;
@@ -57,7 +58,9 @@ class ExamplesGenerator {
       const nucleus::genomics::v1::Variant& variant) const;
 
   // Make examples config.
-  MakeExamplesOptions options_;
+  const MakeExamplesOptions options_;
+
+  std::unique_ptr<nucleus::IndexedFastaReader> ref_reader_;
 };
 
 // Helper class to allow unit testing of some private methods.
