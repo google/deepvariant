@@ -51,7 +51,9 @@ Flags:
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
---postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
+--postprocess_variants_child_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
+--postprocess_variants_parent1_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
+--postprocess_variants_parent2_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 --model_preset Preset case study to run: WGS, WGS_CHR20, WES, ONT, ONT_CHR20, PACBIO, or PACBIO_CHR20.
 --par_regions_bed Path to BED containing Human Pseudoautosomal Region (PAR) regions. This is used in postprocess_variants. We separate it out as a flag because we need to copy data from gs://.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
@@ -93,7 +95,9 @@ MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
 PAR_REGIONS_BED=""
-POSTPROCESS_VARIANTS_ARGS=""
+POSTPROCESS_VARIANTS_CHILD_ARGS=""
+POSTPROCESS_VARIANTS_PARENT1_ARGS=""
+POSTPROCESS_VARIANTS_PARENT2_ARGS=""
 PROPOSED_VARIANTS=""
 REGIONS=""
 TRUTH_BED_CHILD=""
@@ -199,8 +203,18 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
-    --postprocess_variants_extra_args)
-      POSTPROCESS_VARIANTS_ARGS="$2"
+    --postprocess_variants_child_extra_args)
+      POSTPROCESS_VARIANTS_CHILD_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --postprocess_variants_parent1_extra_args)
+      POSTPROCESS_VARIANTS_PARENT1_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --postprocess_variants_parent2_extra_args)
+      POSTPROCESS_VARIANTS_PARENT2_ARGS="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -464,7 +478,9 @@ echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
 echo "MODEL_TYPE: ${MODEL_TYPE}"
 echo "PAR_REGIONS_BED: ${PAR_REGIONS_BED}"
-echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
+echo "POSTPROCESS_VARIANTS_CHILD_ARGS: ${POSTPROCESS_VARIANTS_CHILD_ARGS}"
+echo "POSTPROCESS_VARIANTS_PARENT1_ARGS: ${POSTPROCESS_VARIANTS_PARENT1_ARGS}"
+echo "POSTPROCESS_VARIANTS_PARENT2_ARGS: ${POSTPROCESS_VARIANTS_PARENT2_ARGS}"
 echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
 echo "REF: ${REF}"
 echo "REGIONS: ${REGIONS}"
@@ -710,11 +726,23 @@ function setup_args() {
   if [[ -n "${CALL_VARIANTS_ARGS}" ]]; then
     extra_args+=( --call_variants_extra_args "${CALL_VARIANTS_ARGS}")
   fi
-  if [[ -n "${POSTPROCESS_VARIANTS_ARGS}" ]]; then
+  if [[ -n "${POSTPROCESS_VARIANTS_CHILD_ARGS}" ]]; then
     if [[ -n "${PAR_REGIONS_BED}" ]]; then
-      POSTPROCESS_VARIANTS_ARGS="${POSTPROCESS_VARIANTS_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
+      POSTPROCESS_VARIANTS_CHILD_ARGS="${POSTPROCESS_VARIANTS_CHILD_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
     fi
-    extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
+    extra_args+=( --postprocess_variants_child_extra_args "${POSTPROCESS_VARIANTS_CHILD_ARGS}")
+  fi
+  if [[ -n "${POSTPROCESS_VARIANTS_PARENT1_ARGS}" ]]; then
+    if [[ -n "${PAR_REGIONS_BED}" ]]; then
+      POSTPROCESS_VARIANTS_PARENT1_ARGS="${POSTPROCESS_VARIANTS_PARENT1_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
+    fi
+    extra_args+=( --postprocess_variants_parent1_extra_args "${POSTPROCESS_VARIANTS_PARENT1_ARGS}")
+  fi
+  if [[ -n "${POSTPROCESS_VARIANTS_PARENT2_ARGS}" ]]; then
+    if [[ -n "${PAR_REGIONS_BED}" ]]; then
+      POSTPROCESS_VARIANTS_PARENT2_ARGS="${POSTPROCESS_VARIANTS_PARENT2_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
+    fi
+    extra_args+=( --postprocess_variants_parent2_extra_args "${POSTPROCESS_VARIANTS_PARENT2_ARGS}")
   fi
   if [[ -n "${REGIONS}" ]]; then
     extra_args+=( --regions "${REGIONS}")
