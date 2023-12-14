@@ -715,8 +715,8 @@ class RunDeeptrioTest(parameterized.TestCase):
       ('qual_filter=3.0', '--qual_filter "3.0"'),
   )
   @flagsaver.flagsaver
-  def test_postprocess_variants_extra_args(
-      self, postprocess_variants_extra_args, expected_args
+  def test_postprocess_variants_child_extra_args(
+      self, postprocess_variants_child_extra_args, expected_args
   ):
     FLAGS.model_type = 'WGS'
     FLAGS.ref = 'your_ref'
@@ -733,7 +733,9 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
     FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.num_shards = 64
-    FLAGS.postprocess_variants_extra_args = postprocess_variants_extra_args
+    FLAGS.postprocess_variants_child_extra_args = (
+        postprocess_variants_child_extra_args
+    )
     _, commands_post_process, _ = self._create_all_commands_and_check_stdout()
 
     self.assertEqual(
@@ -748,6 +750,18 @@ class RunDeeptrioTest(parameterized.TestCase):
         '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
         '--gvcf_outfile "your_gvcf_child" '
         '%s' % expected_args,
+    )
+    self.assertEqual(
+        commands_post_process[1],
+        'time /opt/deepvariant/bin/postprocess_variants '
+        '--ref "your_ref" '
+        '--infile '
+        '"/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz" '
+        '--outfile "your_vcf_parent1" '
+        '--cpus 0 '
+        '--nonvariant_site_tfrecord_path '
+        '"/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz" '
+        '--gvcf_outfile "your_gvcf_parent1"',
     )
 
   def test_all_report_commands(self):

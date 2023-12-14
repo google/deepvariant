@@ -230,6 +230,33 @@ _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
     'postprocess_variants_extra_args',
     None,
     (
+        'This flag is deprecated. '
+        'Please use postprocess_variants_{child,parent1,parent2}_extra_args '
+        'instead.'
+    ),
+)
+_POSTPROCESS_VARIANTS_CHILD_EXTRA_ARGS = flags.DEFINE_string(
+    'postprocess_variants_child_extra_args',
+    None,
+    (
+        'A comma-separated list of flag_name=flag_value. "flag_name" has to be'
+        ' valid flags for postprocess_variants.py. If the flag_value is'
+        ' boolean, it has to be flag_name=true or flag_name=false.'
+    ),
+)
+_POSTPROCESS_VARIANTS_PARENT1_EXTRA_ARGS = flags.DEFINE_string(
+    'postprocess_variants_parent1_extra_args',
+    None,
+    (
+        'A comma-separated list of flag_name=flag_value. "flag_name" has to be'
+        ' valid flags for postprocess_variants.py. If the flag_value is'
+        ' boolean, it has to be flag_name=true or flag_name=false.'
+    ),
+)
+_POSTPROCESS_VARIANTS_PARENT2_EXTRA_ARGS = flags.DEFINE_string(
+    'postprocess_variants_parent2_extra_args',
+    None,
+    (
         'A comma-separated list of flag_name=flag_value. "flag_name" has to be'
         ' valid flags for postprocess_variants.py. If the flag_value is'
         ' boolean, it has to be flag_name=true or flag_name=false.'
@@ -802,7 +829,7 @@ def generate_call_variants_command(
 
 
 def generate_postprocess_variants_command(
-    sample, intermediate_results_dir, output_vcf, output_gvcf
+    sample, intermediate_results_dir, output_vcf, output_gvcf, extra_args=None
 ):
   """Helper function to generate post_process command line."""
   return postprocess_variants_command(
@@ -814,7 +841,7 @@ def generate_postprocess_variants_command(
       ),
       outfile=output_vcf,
       sample=sample,
-      extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+      extra_args=extra_args,
       nonvariant_site_tfrecord_path=NO_VARIANT_TFRECORD_PATTERN.format(
           nonvariant_site_tfrecord_common_suffix(intermediate_results_dir),
           sample,
@@ -934,6 +961,7 @@ def create_all_commands(intermediate_results_dir):
           intermediate_results_dir,
           _OUTPUT_VCF_CHILD.value,
           _OUTPUT_GVCF_CHILD.value,
+          _POSTPROCESS_VARIANTS_CHILD_EXTRA_ARGS.value,
       )
   )
   if _VCF_STATS_REPORT.value:
@@ -948,6 +976,7 @@ def create_all_commands(intermediate_results_dir):
             intermediate_results_dir,
             _OUTPUT_VCF_PARENT1.value,
             _OUTPUT_GVCF_PARENT1.value,
+            _POSTPROCESS_VARIANTS_PARENT1_EXTRA_ARGS.value,
         )
     )
     if _VCF_STATS_REPORT.value:
@@ -962,6 +991,7 @@ def create_all_commands(intermediate_results_dir):
             intermediate_results_dir,
             _OUTPUT_VCF_PARENT2.value,
             _OUTPUT_GVCF_PARENT2.value,
+            _POSTPROCESS_VARIANTS_PARENT2_EXTRA_ARGS.value,
         )
     )
     if _VCF_STATS_REPORT.value:
@@ -1023,6 +1053,14 @@ def run_commands(
 
 
 def main(_):
+  # Exit early if deprecated flags are used.
+  if _POSTPROCESS_VARIANTS_EXTRA_ARGS.value is not None:
+    print(
+        '--postprocess_variants_extra_args is deprecated for run_deeptrio.'
+        'Please use '
+        '--postprocess_variants_{child,parent1,parent2}_extra_args instead.'
+    )
+    sys.exit(1)
   if _VERSION.value:
     print('DeepTrio version {}'.format(DEEP_TRIO_VERSION))
     return
