@@ -31,24 +31,30 @@
 
 #include "deepvariant/make_examples_native.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
-
+#include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/util/utils.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
 using Variant = nucleus::genomics::v1::Variant;
+using Range = nucleus::genomics::v1::Range;
 
 ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
                                      bool test_mode)
     : options_(options) {
+  half_width_ = (options_.pic_options().width() - 1) / 2;
   if (test_mode) {
     return;
   }
@@ -97,6 +103,36 @@ std::vector<std::vector<std::string>> ExamplesGenerator::AltAlleleCombinations(
       LOG(FATAL) << "Unknown value is specified for PileupImageOptions";
   }
   return alt_combinations;
+}
+
+std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
+                                               const std::string& alt,
+                                               int64_t* ref_start_out,
+                                               int64_t* ref_end_out) const {
+  int64_t var_start = variant.start();
+  absl::string_view ref_bases = variant.reference_bases();
+  std::string contig = variant.reference_name();
+  int64_t var_end = var_start + ref_bases.size();
+
+  std::string prefix = "";
+  int64_t ref_start = std::max(var_start - half_width_, 0L);
+  if (ref_start < var_start) {
+    prefix =
+        ref_reader_->GetBases(
+          nucleus::MakeRange(contig, ref_start, var_start)).ValueOrDie();
+  }
+  std::string suffix = "";
+  int64_t ref_end =
+      std::min(ref_reader_->Contig(contig).ValueOrDie()->n_bases(),
+               var_end + half_width_);
+  if (ref_end > var_end) {
+    suffix = ref_reader_->GetBases(
+        nucleus::MakeRange(contig, var_end, ref_end)).ValueOrDie();
+  }
+  *ref_start_out = ref_start;
+  *ref_end_out = ref_end;
+
+  return absl::StrCat(prefix, alt, suffix);
 }
 
 }  // namespace deepvariant

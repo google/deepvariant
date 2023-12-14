@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/testing_utils.h"
 #include "deepvariant/utils.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
@@ -49,6 +50,7 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -56,7 +58,6 @@
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/core/statusor.h"
 
 namespace learning {
 namespace genomics {
@@ -1054,25 +1055,6 @@ TEST_F(AlleleCounterTest, TestAlleleSamplSupport_one_sample_three_reads) {
         alleles.alleles(),
         UnorderedPointwise(EqualsProto(), expected_alleles->second.alleles()));
   }
-}
-
-// Helper method to create a test sequence.
-void CreateTestSeq(
-    const string& name,
-    const int pos_in_fasta, const int range_start,
-    const int range_end, const string& bases,
-    std::vector<ContigInfo>* contigs,
-    std::vector<ReferenceSequence>* seqs) {
-  CHECK(pos_in_fasta >= 0 && pos_in_fasta < contigs->size());
-  ContigInfo* contig = &contigs->at(pos_in_fasta);
-  contig->set_name(name);
-  contig->set_pos_in_fasta(pos_in_fasta);
-  contig->set_n_bases(range_end - range_start);
-  ReferenceSequence* seq = &seqs->at(pos_in_fasta);
-  seq->mutable_region()->set_reference_name(name);
-  seq->mutable_region()->set_start(range_start);
-  seq->mutable_region()->set_end(range_end);
-  seq->set_bases(bases);
 }
 
 // Normal case of non-normalized DEL surrounded by REFs. Read has 12 bases

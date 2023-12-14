@@ -57,10 +57,21 @@ class ExamplesGenerator {
   std::vector<std::vector<std::string>> AltAlleleCombinations(
       const nucleus::genomics::v1::Variant& variant) const;
 
+  // Creates haplotype by concatenating alt bases and reference from both sides.
+  // Haplotype length should be equal pileup image width.
+  // ref_start_out and ref_end_out are haplotype's start and end in reference
+  // coordinates.
+  std::string CreateHaplotype(const nucleus::genomics::v1::Variant& variant,
+                              const std::string& alt, int64_t* ref_start_out,
+                              int64_t* ref_end_out) const;
+
   // Make examples config.
   const MakeExamplesOptions options_;
 
-  std::unique_ptr<nucleus::IndexedFastaReader> ref_reader_;
+  std::unique_ptr<nucleus::GenomeReference> ref_reader_;
+
+  // Half width of pileup image.
+  int half_width_;
 };
 
 // Helper class to allow unit testing of some private methods.
@@ -72,7 +83,23 @@ class ExamplesGeneratorPeer {
       const nucleus::genomics::v1::Variant& variant) {
     return generator.AltAlleleCombinations(variant);
   }
+
+  static std::string CallCreateHaplotype(
+      const ExamplesGenerator& generator,
+      const nucleus::genomics::v1::Variant& variant, const std::string& alt,
+      int64_t* ref_start_out, int64_t* ref_end_out) {
+    return generator.CreateHaplotype(variant, alt, ref_start_out, ref_end_out);
+  }
+
+  static void SetRefReader(
+      ExamplesGenerator& generator,
+      std::unique_ptr<nucleus::GenomeReference> ref_reader) {
+    generator.ref_reader_ = std::move(ref_reader);
+  }
 };
+
+nucleus::genomics::v1::Range MakeRange(const std::string& ref_name,
+                                       int64_t start, int64_t end);
 
 }  // namespace deepvariant
 }  // namespace genomics

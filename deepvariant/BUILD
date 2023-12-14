@@ -97,6 +97,7 @@ cc_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":allelecounter",
+        ":testing_utils",
         ":utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/core:statusor",
@@ -1620,7 +1621,9 @@ cc_library(
     deps = [
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",
+        "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
     ],
@@ -1631,12 +1634,26 @@ cc_test(
     srcs = ["make_examples_native_test.cc"],
     deps = [
         ":make_examples_native",
+        ":testing_utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/io:reference",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
         "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
+    name = "testing_utils",
+    srcs = ["testing_utils.cc"],
+    hdrs = ["testing_utils.h"],
+    deps = [
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reference_cc_pb2",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
