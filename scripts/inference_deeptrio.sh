@@ -785,7 +785,6 @@ function run_deeptrio() {
     --sample_name_parent1 "${SAMPLE_NAME_PARENT1}" \
     --sample_name_parent2 "${SAMPLE_NAME_PARENT2}" \
     --num_shards "$(nproc)" \
-    --intermediate_results_dir /output/intermediate_results_dir \
     --output_gvcf_child "/output/${OUTPUT_GVCF_CHILD}" \
     --output_gvcf_parent1 "/output/${OUTPUT_GVCF_PARENT1}" \
     --output_gvcf_parent2 "/output/${OUTPUT_GVCF_PARENT2}" \
