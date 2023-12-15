@@ -495,3 +495,24 @@ def get_model_preprocess_fn(
     return dv_utils.preprocess_images
   else:
     raise ValueError('Unsupported model type.')
+
+
+def get_activations_model(
+    model: tf.keras.Model, layer_name: str = 'mixed5'
+) -> tf.keras.Model:
+  """Creates a Model that gets activations from a layer in an InceptionV3 model.
+
+  Args:
+    model: A DeepVariant InceptionV3 model, which is a
+      keras.applications.InceptionV3 model (i.e., the backbone model from which
+      activations will be extracted).
+    layer_name: The name of the InceptionV3 layer from which to extract
+      activations. Defaults to the 'mixed5' layer
+
+  Returns:
+    A model that takes the same inputs as the model and outputs the model's
+    activations from the specified layer in the wrapped
+    keras.applications.InceptionV3 model.
+  """
+  layer = model.get_layer(layer_name)
+  return tf.keras.Model(inputs=model.input, outputs=layer.output)

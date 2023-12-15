@@ -229,6 +229,25 @@ class GetModelTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, 'Unsupported model type'):
       keras_modeling.get_model_preprocess_fn(config)
 
+  def test_get_activations_model(self):
+    # If you need to run with DeepVariant WGS v1.6.0 checkpoint, it can be found
+    # in gs://deepvariant/models/DeepVariant/1.6.0/checkpoints/wgs/.
+    # Here, for a unit test, I'll just hardcode the shape, initialize the model,
+    # but not actually loading the weights.
+    example_shape = [100, 221, 7]
+    model = keras_modeling.inceptionv3(
+        example_shape, init_backbone_with_imagenet=False
+    )
+    # Usually, here we would call something like:
+    #     model.load_weights(checkpoint_path).expect_partial()
+    # to load the weights. But here we're just testing the architecture, so
+    # we skip loading specific weights.
+    activation_model = keras_modeling.get_activations_model(model)
+    input_image = np.zeros(example_shape, dtype=np.float32)
+    input_image = tf.expand_dims(input_image, axis=0)
+    output_layer = activation_model(input_image)
+    self.assertEqual(list(output_layer.shape), [1, 4, 12, 768])
+
 
 if __name__ == '__main__':
   absltest.main()
