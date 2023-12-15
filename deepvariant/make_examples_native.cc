@@ -33,10 +33,12 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "deepvariant/pileup_image_native.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -68,6 +70,7 @@ ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
   ref_reader_ = std::move(
       nucleus::IndexedFastaReader::FromFile(fasta_path, fai_path).ValueOrDie());
 }
+
 
 std::vector<std::vector<std::string>> ExamplesGenerator::AltAlleleCombinations(
     const Variant& variant) const {
@@ -105,6 +108,7 @@ std::vector<std::vector<std::string>> ExamplesGenerator::AltAlleleCombinations(
   return alt_combinations;
 }
 
+
 std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
                                                const std::string& alt,
                                                int64_t* ref_start_out,
@@ -133,6 +137,41 @@ std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
   *ref_end_out = ref_end;
 
   return absl::StrCat(prefix, alt, suffix);
+}
+
+
+// TODO There is an ongoing work to re-implement pileup channels.
+// As a result this code will be obsolete once new channels code is submitted.
+// This functionality is ported from deepvariant/python/clif_converters.cc.
+int FillPileupArray(const std::vector<std::unique_ptr<ImageRow>>& image,
+                     std::vector<unsigned char>* data) {
+  int num_channels = 6;
+  for (const std::unique_ptr<ImageRow>& row : image) {
+    for (int i = 0; i < row->Width(); i++) {
+      data->push_back(row->base[i]);
+      data->push_back(row->base_quality[i]);
+      data->push_back(row->mapping_quality[i]);
+      data->push_back(row->on_positive_strand[i]);
+      data->push_back(row->supports_alt[i]);
+      data->push_back(row->matches_ref[i]);
+      if (row->use_allele_frequency) {
+        data->push_back(row->allele_frequency[i]);
+        num_channels += 1;
+      }
+      if (row->add_hp_channel) {
+        data->push_back(row->hp_value[i]);
+        num_channels += 1;
+      }
+      if (!row->channels.empty()) {
+        // Iterate over channels here and fill data...
+        for (int j = 0; j < row->channels.size(); j++) {
+          data->push_back(row->channel_data[j][i]);
+          num_channels += 1;
+        }
+      }
+    }  // for row->Width
+  }  // for row
+  return num_channels;
 }
 
 }  // namespace deepvariant
