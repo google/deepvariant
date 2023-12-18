@@ -445,7 +445,7 @@ def postprocess_variants_command(
 ) -> Tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   cpus = _POSTPROCESS_CPUS.value
-  if not cpus:
+  if cpus is None:
     cpus = _NUM_SHARDS.value
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
