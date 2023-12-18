@@ -35,6 +35,7 @@ from absl.testing import parameterized
 import tensorflow as tf
 
 from deepvariant import dv_utils
+from deepvariant.protos import deepvariant_pb2
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
@@ -107,8 +108,8 @@ class TFUtilsTest(parameterized.TestCase):
           3, dv_utils.model_num_classes(save_path, class_variable_name)
       )
       # If the class variable name doesn't existin the checkpoint, return None.
-      self.assertEqual(
-          None, dv_utils.model_num_classes(save_path, 'non-existent-var')
+      self.assertIsNone(
+          dv_utils.model_num_classes(save_path, 'non-existent-var')
       )
       # If the checkpoint doesn't exist, return none.
       self.assertIsNone(dv_utils.model_num_classes(None, class_variable_name))
@@ -212,6 +213,30 @@ class TFUtilsTest(parameterized.TestCase):
         'GZIP', dv_utils.compression_type_of_files(['/tmp/foo.tfrecord.gz'])
     )
     self.assertIsNone(dv_utils.compression_type_of_files(['/tmp/foo.tfrecord']))
+
+  def test_tfexample_conversion(self):
+    # This tests the partial conversion of a CallVariantsOutput proto.
+    input_callvariant = (
+        b'\nm2\x01G:\x01AR\x19\n\tBAM_FNAME\x12\x0c\n\n\x1a\x08test.bamZ;\x12'
+        b'\x12\n\x03VAF\x12\x0b\n\t\x11\x00\x00\x00\x00\x00\x00\xf0?\x12\n\n'
+        b'\x02DP\x12\x04\n\x028\x13\x12\x0e\n\x02AD\x12\x08\n\x028\x00\n\x028'
+        b'\x13:\x02\x01\x01J\x05HG003h\xae\xea0r\x04chr1\x80\x01\xad\xea0\x12'
+        b'\x03\n\x01\x00\x1a\x18\xcc\xe7~\xc5\x98?\xf8>\x00\x00\x00\xc0\x0cZ"?'
+        b'\x00\x00\x00\xe0\xa9\xfe\xef?"\x0e\x08\x02 \x01(\x02B\x06d\xfe\xfeF'
+        b'\x982'
+    )
+    expected_example = (
+        b'\n\x84\x01\n\x17\n\x0bimage/shape\x12\x08\x1a\x06\n\x04d\xdd\x01\x07'
+        b'\n\x0e\n\x05label\x12\x05\x1a\x03\n\x01\x02\n\x1f\n\x05locus\x12\x16'
+        b'\n\x14\n\x12chr1:800045-800046\n\x1b\n\rimage/encoded\x12\n\n\x08\n'
+        b'\x06d\xfe\xfeF\x982\n\x1b\n\x12alt_allele_indices\x12\x05\x1a\x03\n'
+        b'\x01\x00'
+    )
+    a_cvo = deepvariant_pb2.CallVariantsOutput.FromString(input_callvariant)
+
+    output_example = dv_utils.call_variant_to_tfexample(a_cvo, [100, 221, 7])
+    expected = example_pb2.Example.FromString(expected_example)
+    self.assertEqual(output_example, expected)
 
 
 if __name__ == '__main__':

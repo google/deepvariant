@@ -33,7 +33,7 @@ file includes broader utilities we use in DeepVariant.
 """
 
 import json
-from typing import Optional
+from typing import Optional, Tuple
 
 
 
@@ -398,3 +398,52 @@ def preprocess_images(images):
   images = tf.subtract(images, 128.0)
   images = tf.math.divide(images, 128.0)
   return images
+
+
+def call_variant_to_tfexample(
+    cvo: deepvariant_pb2.CallVariantsOutput,
+    image_shape: Tuple[int, int, int] = (100, 221, 7),
+) -> tf.train.Example:
+  """Converts CallVariantsOutput to tf.train.Example if possible.
+
+  This function is for specific debugging purpose, so it will only
+  work on CallVariantsOutput with debug_info.image_encoded.
+
+  Note: Not all values are transferred as there isn't a 1:1 mapping. No mapping
+  exists for 'variant/encoded' or 'sequencing_type' for example.
+
+  Args:
+    cvo: A CallVariantsOutput to convert to a TF.Example.
+    image_shape: The shape of the image contained within cvo.
+
+  Returns:
+    A Tf.Example created from the given CallVariantsOutput.
+
+  Raises:
+    ValueError if the input data lacks the needed fields.
+  """
+  tfexample = tf.train.Example()
+  features = tfexample.features.feature
+  features['image/shape'].int64_list.value[:] = list(image_shape)
+  if cvo.debug_info and cvo.debug_info.image_encoded:
+    features['image/encoded'].bytes_list.value[:] = [
+        cvo.debug_info.image_encoded
+    ]
+  else:
+    raise ValueError('CallVariantsOutput does not contain an image.')
+
+  features['label'].int64_list.value[:] = [cvo.debug_info.true_label]
+
+  if cvo.alt_allele_indices:
+    features['alt_allele_indices'].int64_list.value[
+        :
+    ] = cvo.alt_allele_indices.indices
+
+  # Create and assign locus
+  features['locus'].bytes_list.value[:] = [
+      bytes(
+          f'{cvo.variant.reference_name}:{cvo.variant.start}-{cvo.variant.end}',
+          'utf-8',
+      )
+  ]
+  return tfexample
