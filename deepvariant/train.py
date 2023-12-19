@@ -29,6 +29,7 @@
 r"""Train a DeepVariant Keras Model.
 """
 
+import math
 import os
 import sys
 import warnings
@@ -233,20 +234,20 @@ def train(config: ml_collections.ConfigDict):
     else:
       raise ValueError(f'Unknown optimizer: {config.optimizer}')
 
-  # ================= #
-  # Setup Checkpoint  #
-  # ================= #
+    # ================= #
+    # Setup Checkpoint  #
+    # ================= #
 
-  # The state object allows checkpointing of the model and associated variables
-  # for the optimizer, step, and train/tune metrics.
-  ckpt_manager = keras_modeling.create_state(
-      config,
-      model_dir,
-      model,
-      optimizer,
-      strategy,
-  )
-  state = ckpt_manager.checkpoint
+    # The state object allows checkpointing of the model and associated
+    # variables for the optimizer, step, and train/tune metrics.
+    ckpt_manager = keras_modeling.create_state(
+        config,
+        model_dir,
+        model,
+        optimizer,
+        strategy,
+    )
+    state = ckpt_manager.checkpoint
 
   @tf.function
   def run_train_step(inputs):
@@ -285,19 +286,15 @@ def train(config: ml_collections.ConfigDict):
     return tune_loss
 
   @tf.function
-  def distributed_train_step(iterator):
-    per_replica_losses = strategy.run(run_train_step, args=(next(iterator),))
-    state.global_step.assign_add(1)
-    return strategy.reduce(
-        tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None
-    )
+  def distributed_train_step(iterator, num_steps):
+    for _ in tf.range(num_steps):
+      strategy.run(run_train_step, args=(next(iterator),))
+    state.global_step.assign_add(num_steps)
 
   @tf.function
-  def distributed_tune_step(iterator):
-    per_replica_losses = strategy.run(run_tune_step, args=(next(iterator),))
-    return strategy.reduce(
-        tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None
-    )
+  def distributed_tune_step(iterator, num_steps):
+    for _ in tf.range(num_steps):
+      strategy.run(run_tune_step, args=(next(iterator),))
 
   # ============== #
   # Setup Datasets #
@@ -315,28 +312,43 @@ def train(config: ml_collections.ConfigDict):
       mode='tune',
       strategy=strategy,
       config=config,
-      limit=steps_per_tune,
   )
-  train_iter, tune_iter = iter(train_ds), iter(tune_ds)
+  train_ds, tune_ds = iter(train_ds), iter(tune_ds)
   num_train_steps = steps_per_epoch * config.num_epochs
+  num_train_iterations = math.ceil(num_train_steps / config.steps_per_iter)
+  num_train_iterations_per_epoch = math.ceil(
+      steps_per_epoch / config.steps_per_iter
+  )
+  num_tune_iterations = math.ceil(steps_per_tune / config.steps_per_iter)
+  first_train_iteration = state.global_step.numpy() // config.steps_per_iter
 
   logging.info(
       (
           '\n\n'
           'Training Examples: %s\n'
+          'Tune Examples: %s\n'
           'Batch Size: %s\n'
           'Epochs: %s\n'
           'Steps per epoch: %s\n'
           'Steps per tune: %s\n'
           'Num train steps: %s\n'
+          'Steps per iter: %s\n'
+          'Num iter per epoch: %s\n'
+          'Num train iter: %s\n'
+          'Num tune iter: %s\n'
           '\n'
       ),
       train_dataset_config.num_examples,
+      tune_dataset_config.num_examples,
       config.batch_size,
       config.num_epochs,
       steps_per_epoch,
       steps_per_tune,
       num_train_steps,
+      config.steps_per_iter,
+      num_train_iterations_per_epoch,
+      num_train_iterations,
+      num_tune_iterations,
   )
 
   # ============= #
@@ -347,8 +359,7 @@ def train(config: ml_collections.ConfigDict):
   report_progress = periodic_actions.ReportProgress(
       num_train_steps=num_train_steps,
       writer=metric_writer,
-      every_secs=300,
-      on_steps=[0, num_train_steps - 1],
+      every_secs=30,
   )
 
   with strategy.scope():
@@ -366,25 +377,33 @@ def train(config: ml_collections.ConfigDict):
 
       def run_tune(train_step, epoch, steps_per_tune):
         logging.info('Running tune at step=%d epoch=%d', train_step, epoch)
-        for loop_tune_step in range(steps_per_tune):
-          tune_step = loop_tune_step + (epoch * steps_per_tune)
-          with tf.profiler.experimental.Trace('tune', step_num=tune_step, _r=1):
-            if loop_tune_step % config.log_every_steps == 0:
-              logging.info(
-                  'Tune step %s / %s (%s%%)',
-                  loop_tune_step,
-                  steps_per_tune,
-                  round(float(loop_tune_step) / float(steps_per_tune), 1)
-                  * 100.0,
-              )
-            distributed_tune_step(tune_iter)
+        for loop_tune_iter in range(num_tune_iterations):
+          with report_progress.timed('tune'):
+            with tf.profiler.experimental.Trace(
+                'tune', step_num=loop_tune_iter, _r=1
+            ):
+              if loop_tune_iter % config.log_every_iter // 10 == 0:
+                logging.info(
+                    'Tune iter %s / %s (%s%%)',
+                    loop_tune_iter,
+                    num_tune_iterations,
+                    round(float(loop_tune_iter) / float(num_tune_iterations), 1)
+                    * 100.0,
+                )
+              # On last iter, use remainder steps.
+              if loop_tune_iter == num_tune_iterations - 1:
+                n_steps_tune = steps_per_tune % config.steps_per_iter
+              else:
+                n_steps_tune = config.steps_per_iter
+              distributed_tune_step(tune_ds, n_steps_tune)
 
         metric_writer.write_scalars(
             train_step,
             {f'tune/{x.name}': x.result() for x in state.tune_metrics},
         )
 
-      for train_step in range(state.global_step.numpy(), num_train_steps):
+      for train_iter in range(first_train_iteration, num_train_iterations):
+        train_step = train_iter * config.steps_per_iter
         # Calculate current epoch
         epoch = train_step // steps_per_epoch
         if train_step % steps_per_epoch == 0:
@@ -411,20 +430,30 @@ def train(config: ml_collections.ConfigDict):
         # train #
         # ===== #
         # Calculate full train step.
-        is_last_step = train_step == (num_train_steps - 1)
+        is_last_iter = train_iter == (num_train_iterations - 1)
+        if is_last_iter:
+          train_steps_per_iter = train_step % num_train_steps
+          logging.info('Last iteration running %d steps.', train_steps_per_iter)
+        else:
+          train_steps_per_iter = config.steps_per_iter
 
         with tf.profiler.experimental.Trace('train', step_num=train_step, _r=1):
-          distributed_train_step(train_iter)
+          distributed_train_step(train_ds, train_steps_per_iter)
+          train_step += train_steps_per_iter
 
           # Quick indication that training is happening.
           logging.log_first_n(
-              logging.INFO, 'Finished training step %d.', 5, train_step
+              logging.INFO,
+              'Finished training iteration. train_iter=%d; train_step=%d',
+              5,
+              train_iter,
+              train_step,
           )
 
-        # Log metrics
+        # Report training progress.
         report_progress(train_step)
 
-        if (train_step % config.log_every_steps == 0) or is_last_step:
+        if (train_iter % config.log_every_iter == 0) or is_last_iter:
           metrics_to_write = {
               f'train/{x.name}': x.result() for x in state.train_metrics
           }
@@ -449,9 +478,12 @@ def train(config: ml_collections.ConfigDict):
         # ==== #
         # Run tune at every epoch, periodically, and at final step.
         if (
-            (train_step > 0 and train_step % steps_per_epoch == 0)
-            or (train_step > 0 and train_step % config.tune_every_steps == 0)
-            or is_last_step
+            (
+                train_iter > 0
+                and train_iter % num_train_iterations_per_epoch == 0
+            )
+            or (train_iter > 0 and train_iter % config.tune_every_iter == 0)
+            or is_last_iter
         ):
           run_tune(train_step, epoch, steps_per_tune)
 

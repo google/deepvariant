@@ -50,7 +50,7 @@ def get_exome_config(
   config.momentum = 0.9848544529312561
   config.epsilon = 0.8696723762650027
   config.warmup_steps = 718
-  config.weight_decay = 0.1
+  config.weight_decay = 0.00004
   config.backbone_dropout_rate = 0.22517227651098964
 
   config.init_checkpoint = ''
@@ -104,15 +104,18 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Stop training when this many consecutive evaluations yield no improvement.
   config.early_stopping_patience = 10
 
+  # An 'iter' refers to a group of train/tune steps run in succession.
+  config.steps_per_iter = 128
+
   # TensorBoard Options
-  config.log_every_steps = 100
+  config.log_every_iter = 10
   # Tuning happens at every epoch. The frequency can be increased here.
-  config.tune_every_steps = 100_000
+  config.tune_every_iter = 100
 
   # Data Pipeline Options
   config.prefetch_buffer_bytes = 16 * 1000 * 1000
-  config.shuffle_buffer_elements = 10_000
-  config.input_read_threads = 32
+  config.shuffle_buffer_elements = 50_000
+  config.input_read_threads = 64
 
   # Placeholder value for limiting training examples. 0=No limit.
   config.limit = 0

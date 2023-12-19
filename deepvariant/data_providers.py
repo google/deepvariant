@@ -156,6 +156,8 @@ def input_fn(
 
   if is_training and n_epochs > 0:
     ds = ds.repeat(n_epochs)
+  elif n_epochs == -1:
+    ds = ds.repeat()
 
   if is_training:
     ds = ds.shuffle(
