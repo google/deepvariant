@@ -112,14 +112,12 @@ class CreateExamplesTest(absltest.TestCase):
           path=testdata.GOLDEN_TRAINING_EXAMPLES,
           config=self.config,
           mode='invalid_mode',
-          n_epochs=1,
       )
 
   def test_create_input_dataset(self):
     ds = data_providers.input_fn(
         path=testdata.GOLDEN_TRAINING_EXAMPLES,
         config=self.config,
-        n_epochs=1,
         mode='train',
     )
     item = ds.take(1).get_single_element()

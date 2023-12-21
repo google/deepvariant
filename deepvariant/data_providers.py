@@ -105,7 +105,6 @@ def input_fn(
     config: ml_collections.ConfigDict,
     mode: str = 'train',
     strategy: tf.distribute.Strategy = tf.distribute.get_strategy(),
-    n_epochs: int = -1,
     limit: Optional[int] = None,
 ) -> tf.data.Dataset:
   """tf.data.Dataset loading function.
@@ -116,7 +115,6 @@ def input_fn(
     config: A configuration file.
     mode: One of ['train', 'tune', 'predict']
     strategy: A tf.distribute.Strategy.
-    n_epochs: Number of epochs.
     limit: Limit the number of batches for testing purposes.
 
   Returns:
@@ -125,7 +123,7 @@ def input_fn(
 
   if mode not in ['train', 'tune', 'predict']:
     raise ValueError('Mode must be set to one of "train", "tune", or "predict"')
-  is_training = mode in ['train', 'tune']
+  is_training = mode == 'train'
 
   # Get input shape from input path.
   input_shape = dv_utils.get_shape_from_examples_path(path)
@@ -154,10 +152,7 @@ def input_fn(
       deterministic=False,
   )
 
-  if is_training and n_epochs > 0:
-    ds = ds.repeat(n_epochs)
-  elif n_epochs == -1:
-    ds = ds.repeat()
+  ds = ds.repeat()
 
   if is_training:
     ds = ds.shuffle(

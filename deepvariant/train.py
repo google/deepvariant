@@ -303,7 +303,6 @@ def train(config: ml_collections.ConfigDict):
       train_dataset_config.tfrecord_path,
       mode='train',
       strategy=strategy,
-      n_epochs=config.num_epochs,
       config=config,
       limit=_LIMIT.value,
   )

@@ -31,6 +31,20 @@
 import ml_collections
 
 
+def get_test_config(config: ml_collections.ConfigDict):
+  """Config parameters for test training."""
+
+  # Config values to reduce the size and time for training
+  config.batch_size = 4
+  config.num_epochs = 2
+  config.num_validation_examples = 1
+  config.warmup_steps = 0
+  config.limit = 50
+  config.steps_per_iter = 4
+  config.tune_every_iter = 16
+  config.shuffle_buffer_elements = 50
+
+
 def get_exome_config(
     config: ml_collections.ConfigDict,
 ) -> ml_collections.ConfigDict:
@@ -56,17 +70,6 @@ def get_exome_config(
   config.init_checkpoint = ''
 
   return config
-
-
-def test_options(config: ml_collections.ConfigDict):
-  """Config parameters for test training."""
-
-  # Config values to reduce the size and time for training
-  config.batch_size = 49
-  config.num_epochs = 2
-  config.num_validation_examples = 1
-  config.warmup_steps = 0
-  config.limit = 3
 
 
 def get_config(config_name: str) -> ml_collections.ConfigDict:
@@ -136,6 +139,6 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     raise ValueError(f'Unknown config_name: {config_name}')
 
   if alt_mode == 'test':
-    test_options(config)
+    get_test_config(config)
 
   return config
