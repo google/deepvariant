@@ -32,7 +32,9 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_MAKE_EXAMPLES_NATIVE_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_MAKE_EXAMPLES_NATIVE_H_
 
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
