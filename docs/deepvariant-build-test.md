@@ -26,6 +26,10 @@ like "Executed 55 out of 55 tests: 55 tests pass." along with the message
 "Target //deepvariant:binaries up-to-date:" followed by a list of the just-built
 deepvariant binaries.
 
+If you want to rebuild the binaries on the same machine, here are the steps
+you can follow:
+https://github.com/google/deepvariant/issues/756#issuecomment-1865388872
+
 ## Preparing a machine to run DeepVariant
 
 The following command should be run on any machine on which you wish run
