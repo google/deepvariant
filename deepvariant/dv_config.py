@@ -45,6 +45,30 @@ def get_test_config(config: ml_collections.ConfigDict):
   config.shuffle_buffer_elements = 50
 
 
+def get_wgs_config(
+    config: ml_collections.ConfigDict,
+) -> ml_collections.ConfigDict:
+  """Config parameters for wgs training."""
+
+  # Exome Dataset
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = ''
+  # If set to 0, use full validation dataset.
+  config.num_validation_examples = 0
+
+  config.early_stopping_patience = 10
+  config.num_epochs = 10
+  config.learning_rate = 0.05
+  config.learning_rate_num_epochs_per_decay = 2.25
+  config.learning_rate_decay_rate = 0.7797961894591596
+  config.warmup_steps = 0
+
+  config.backbone_dropout_rate = 0.2
+
+  return config
+
+
 def get_exome_config(
     config: ml_collections.ConfigDict,
 ) -> ml_collections.ConfigDict:
@@ -57,15 +81,17 @@ def get_exome_config(
   config.num_validation_examples = 0
 
   config.num_epochs = 80
-  config.learning_rate = 0.01
-  config.learning_rate_num_epochs_per_decay = 2.0
-  config.learning_rate_decay_rate = 0.9999
+  config.learning_rate = 0.05
+  config.learning_rate_num_epochs_per_decay = 28.9949
+  config.learning_rate_decay_rate = 0.8348574046107808
   config.rho = 0.9763046740422171
   config.momentum = 0.9848544529312561
   config.epsilon = 0.8696723762650027
   config.warmup_steps = 718
   config.weight_decay = 0.00004
   config.backbone_dropout_rate = 0.22517227651098964
+  config.backbone_dropout_rate = 0.2
+  config.best_checkpoint_metric = 'tune/categorical_accuracy'
 
   config.init_checkpoint = ''
 
@@ -89,6 +115,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.num_validation_examples = 1500000
   config.optimizer = 'rmsprop'
 
+  config.use_ema = True
+
   # Training hyperparameters
   config.learning_rate = 0.001
   config.learning_rate_num_epochs_per_decay = 2.0
@@ -105,7 +133,10 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.weight_decay = 0.00004
   config.backbone_dropout_rate = 0.2
   # Stop training when this many consecutive evaluations yield no improvement.
-  config.early_stopping_patience = 10
+  config.early_stopping_patience = 250
+
+  # Weight decay of optimizer
+  config.optimizer_weight_decay = 0.001
 
   # An 'iter' refers to a group of train/tune steps run in succession.
   config.steps_per_iter = 128
@@ -132,6 +163,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
 
   if config_name == 'exome':
     config = get_exome_config(config)
+  elif config_name == 'wgs':
+    config = get_wgs_config(config)
   elif config_name == 'base':
     # Use the base config.
     pass

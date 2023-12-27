@@ -230,6 +230,8 @@ def train(config: ml_collections.ConfigDict):
           rho=config.rho,
           momentum=config.momentum,
           epsilon=config.epsilon,
+          use_ema=config.use_ema,
+          weight_decay=config.optimizer_weight_decay,
       )
     else:
       raise ValueError(f'Unknown optimizer: {config.optimizer}')
@@ -431,7 +433,7 @@ def train(config: ml_collections.ConfigDict):
         # Calculate full train step.
         is_last_iter = train_iter == (num_train_iterations - 1)
         if is_last_iter:
-          train_steps_per_iter = train_step % num_train_steps
+          train_steps_per_iter = num_train_steps % config.steps_per_iter
           logging.info('Last iteration running %d steps.', train_steps_per_iter)
         else:
           train_steps_per_iter = config.steps_per_iter
