@@ -153,11 +153,12 @@ void Merger::LoadFromFiles(absl::string_view input_path) {
   LOG(INFO) << "Total records loaded: " << merged_reads_.size();
 }
 
-int Merger::UpdateReadsMap(const std::string& fragment_name) {
+int Merger::UpdateReadsMap(absl::string_view fragment_name) {
   auto it = merged_reads_map_.find(fragment_name);
   if (it == merged_reads_map_.end()) {
-    merged_reads_.push_back(
-        {.fragment_name = fragment_name, .phase = 0, .phase_dist = {}});
+    merged_reads_.push_back({.fragment_name = std::string(fragment_name),
+                             .phase = 0,
+                             .phase_dist = {}});
     merged_reads_map_[fragment_name] = merged_reads_.size() - 1;
   }
   return merged_reads_map_[fragment_name];

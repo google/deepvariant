@@ -130,7 +130,7 @@ class Merger {
                      const ShardRegion& group_2) const;
   void ReversePhasing(const ShardRegion& group);
   void MergeGroup(const ShardRegion& group);
-  int UpdateReadsMap(const std::string& fragment_name);
+  int UpdateReadsMap(absl::string_view fragment_name);
 
   std::vector<UnmergedRead> unmerged_reads_;
   // Merged reads with phasing data.
