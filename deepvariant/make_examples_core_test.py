@@ -1299,7 +1299,11 @@ class RegionProcessorTest(parameterized.TestCase):
 
   def _example_for_variant(self, variant):
     return dv_utils_using_clif.make_example(
-        variant, list(variant.alternate_bases), b'foo', self.default_shape
+        variant,
+        list(variant.alternate_bases),
+        b'foo',
+        self.default_shape,
+        deterministic=True,
     )
 
   @parameterized.parameters('sort_by_haplotypes', 'use_original_quality_scores')

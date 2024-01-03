@@ -2363,6 +2363,7 @@ class RegionProcessor:
               encoded_tensor,
               shape=shape,
               sequencing_type=self.options.pic_options.sequencing_type,
+              deterministic=self.options.deterministic_serialization,
           )
       )
     return examples
