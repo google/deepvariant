@@ -105,7 +105,6 @@ def input_fn(
     config: ml_collections.ConfigDict,
     mode: str = 'train',
     strategy: tf.distribute.Strategy = tf.distribute.get_strategy(),
-    limit: Optional[int] = None,
 ) -> tf.data.Dataset:
   """tf.data.Dataset loading function.
 
@@ -115,7 +114,6 @@ def input_fn(
     config: A configuration file.
     mode: One of ['train', 'tune', 'predict']
     strategy: A tf.distribute.Strategy.
-    limit: Limit the number of batches for testing purposes.
 
   Returns:
     tf.data.Dataset
@@ -168,10 +166,6 @@ def input_fn(
       deterministic=False,
   )
   ds = ds.batch(batch_size=config.batch_size, drop_remainder=True)
-
-  # Limit the number of batches.
-  if limit:
-    ds = ds.take(limit)
 
   # Prefetch overlaps in-feed with training
   ds = ds.prefetch(tf.data.AUTOTUNE)

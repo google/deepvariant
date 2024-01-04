@@ -41,7 +41,6 @@ def get_test_config(config: ml_collections.ConfigDict):
   config.warmup_steps = 0
   config.limit = 50
   config.steps_per_iter = 4
-  config.tune_every_iter = 16
   config.shuffle_buffer_elements = 50
 
 
@@ -142,9 +141,9 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.steps_per_iter = 128
 
   # TensorBoard Options
-  config.log_every_iter = 10
+  config.log_every_steps = 1_280
   # Tuning happens at every epoch. The frequency can be increased here.
-  config.tune_every_iter = 100
+  config.tune_every_steps = 12_800
 
   # Data Pipeline Options
   config.prefetch_buffer_bytes = 16 * 1000 * 1000
