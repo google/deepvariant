@@ -414,7 +414,7 @@ TEST_F(AlleleCounterTest, TestDiffInsertionSizes) {
   for (int size = 1; size < 10; ++size) {
     const string bases(size, 'A');
     AddAndCheckReads(
-        MakeRead(chr_, start_, absl::StrCat("TC", bases, {"CGT"}),
+        MakeRead(chr_, start_, absl::StrCat("TC", bases, "CGT"),
                  {"2M", absl::StrCat(size, "I"), "3M"}),
         {
             {MakeAllele("T", AlleleType::REFERENCE, 1)},
