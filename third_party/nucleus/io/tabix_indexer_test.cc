@@ -69,6 +69,7 @@ TEST(TabixIndexerTest, IndexBuildsCorrectly) {
   for (const auto& v : variants) {
     NUCLEUS_CHECK_OK(writer->Write(v));
   }
+  writer.reset();
 
   EXPECT_THAT(TbxIndexBuild(output_filename), IsOK());
   EXPECT_THAT(reader->Query(MakeRange("chr3", 14318, 14319)), IsOK());
@@ -93,6 +94,7 @@ TEST(CSIIndexerTest, IndexBuildsCorrectly) {
   for (const auto& v : variants) {
     NUCLEUS_CHECK_OK(writer->Write(v));
   }
+  writer.reset();
 
   EXPECT_THAT(CSIIndexBuild(output_filename, 14), IsOK());
   EXPECT_THAT(tensorflow::Env::Default()->FileExists(output_csi_index), IsOK());

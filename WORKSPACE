@@ -18,16 +18,14 @@ http_archive(
     urls = ["https://github.com/google/cctz/archive/master.zip"],
 )
 
-# This is the 1.13 release of htslib.
-# https://github.com/samtools/htslib/archive/1.13.zip doesn't work because
-# it does not have files like htscodecs/*
+# This is the 1.18 release of htslib.
 http_archive(
     name = "htslib",
     build_file = "//:third_party/htslib.BUILD",
-    sha256 = "f2407df9f97f0bb6b07656579e41a1ca5100464067b6b21bf962a2ea4b0efd65",
-    strip_prefix = "htslib-1.13",
+    sha256 = "f1ab53a593a2320a1bfadf4ef915dae784006c5b5c922c8a8174d7530a9af18f",
+    strip_prefix = "htslib-1.18",
     urls = [
-        "https://github.com/samtools/htslib/releases/download/1.13/htslib-1.13.tar.bz2",
+        "https://github.com/samtools/htslib/releases/download/1.18/htslib-1.18.tar.bz2",
     ],
 )
 

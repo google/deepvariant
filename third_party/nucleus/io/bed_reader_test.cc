@@ -144,7 +144,7 @@ TEST_F(BedReaderTest, FiveColBedRecord) {
   auto status = BedReader::FromFile(GetTestData(k5ColumnBedFileName),
                                     nucleus::genomics::v1::BedReaderOptions());
   // See https://github.com/google/deepvariant/issues/374#issuecomment-723752207
-  EXPECT_FALSE(status.ok());
+  EXPECT_TRUE(status.ok());
 }
 
 }  // namespace nucleus

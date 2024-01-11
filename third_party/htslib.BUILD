@@ -14,9 +14,9 @@ package(
     ],
 )
 
-version = "1.13"
+version = "1.18"
 
-version_dir = "htslib_1_13"
+version_dir = "htslib_1_18"
 
 include_htslib = "htslib/" + version_dir
 
@@ -51,9 +51,11 @@ htslib_srcs = [
 ] + [
     "bcf_sr_sort.h",
     "header.h",
+    "hts_time_funcs.h",
     "hfile_internal.h",
     "hts_internal.h",
     "sam_internal.h",
+    "sam_mods.c",
     "textutils_internal.h",
     "thread_pool_internal.h",
     "config_vars.h",
@@ -72,6 +74,7 @@ htslib_srcs = [
     "hts.c",
     "hts_expr.c",
     "hts_os.c",
+    "htslib/sam.h",
     "kfunc.c",
     "kstring.c",
     "md5.c",
@@ -114,14 +117,18 @@ htslib_srcs = [
     "htscodecs/htscodecs/htscodecs_endian.h",
     "htscodecs/htscodecs/htscodecs.h",
     "htscodecs/htscodecs/pack.h",
+    "htscodecs/htscodecs/permute.h",
     "htscodecs/htscodecs/pooled_alloc.h",
     "htscodecs/htscodecs/rANS_byte.h",
     "htscodecs/htscodecs/rANS_static4x16.h",
     "htscodecs/htscodecs/rANS_static.h",
+    "htscodecs/htscodecs/rANS_static16_int.h",
+    "htscodecs/htscodecs/rANS_static32x16pr.h",
     "htscodecs/htscodecs/rANS_word.h",
     "htscodecs/htscodecs/rle.h",
     "htscodecs/htscodecs/tokenise_name3.h",
     "htscodecs/htscodecs/utils.h",
+    "htscodecs/htscodecs/utils.c",
     "htscodecs/htscodecs/varint2.h",
     "htscodecs/htscodecs/varint.h",
     "htscodecs/htscodecs/version.h",
@@ -131,6 +138,11 @@ htslib_srcs = [
     "htscodecs/htscodecs/pack.c",
     "htscodecs/htscodecs/rANS_static4x16pr.c",
     "htscodecs/htscodecs/rANS_static.c",
+    "htscodecs/htscodecs/rANS_static32x16pr.c",
+    "htscodecs/htscodecs/rANS_static32x16pr_avx2.c",
+    "htscodecs/htscodecs/rANS_static32x16pr_neon.c",
+    "htscodecs/htscodecs/rANS_static32x16pr_avx512.c",
+    "htscodecs/htscodecs/rANS_static32x16pr_sse4.c",
     "htscodecs/htscodecs/rle.c",
     "htscodecs/htscodecs/tokenise_name3.c",
 ]
@@ -145,6 +157,7 @@ textual_hdrs = [
     "cram/cram_stats.h",
     "cram/cram_codecs.h",
     "cram/cram_index.h",
+    "vcf.c",
 ]
 
 # These become the exported API, c.f. ../BUILD.
@@ -208,6 +221,9 @@ genrule(
         echo '#define HAVE_LIBZ 1'
         echo '#define HAVE_MEMORY_H 1'
         echo '#define HAVE_MMAP 1'
+        echo '#define HAVE_POPCNT 1'
+        echo '#define HAVE_SSE4_1 1'
+        echo '#define HAVE_SSSE3 1'
         echo '#define HAVE_STDINT_H 1'
         echo '#define HAVE_STDLIB_H 1'
         echo '#define HAVE_STRING_H 1'
@@ -216,6 +232,8 @@ genrule(
         echo '#define HAVE_SYS_STAT_H 1'
         echo '#define HAVE_SYS_TYPES_H 1'
         echo '#define HAVE_UNISTD_H 1'
+        echo '#define _XOPEN_SOURCE 600'
+        echo '#define UBSAN 1'
         echo '#define PACKAGE_BUGREPORT "samtools-help@lists.sourceforge.net"'
         echo '#define PACKAGE_NAME "HTSlib"'
         echo '#define PACKAGE_STRING "HTSlib %s"'
@@ -465,6 +483,17 @@ cc_binary(
 cc_binary(
     name = "test_bcf_translate",
     srcs = ["test/test-bcf-translate.c"],
+    copts = ["-w"],
+    includes = [include_htslib],
+    linkopts = extra_libs,
+    deps = [":htslib"],
+)
+
+cc_binary(
+    name = "test_bcf_set_variant_type",
+    srcs = [
+        "test/test-bcf-set-variant-type.c",
+    ],
     copts = ["-w"],
     includes = [include_htslib],
     linkopts = extra_libs,

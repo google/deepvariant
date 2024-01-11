@@ -46,13 +46,11 @@ _VALID_NUM_BED_FIELDS = [3, 4, 5, 6, 8, 9, 12]
 class BedReaderTests(parameterized.TestCase):
 
   @parameterized.parameters(['5col.bed'])
-  def test_bed_reader_on_5_columns_because_mistaken_as_fai(self, bed_filename):
+  def test_bed_reader_on_5_columns_succeeds(self, bed_filename):
     bed_path = test_utils.genomics_core_testdata(bed_filename)
-    with self.assertRaisesRegex(ValueError,
-                                'Could not open .*5col.bed. The file might not '
-                                'exist, or the format detected by htslib might '
-                                'be incorrect.'):
-      _ = bed_reader.BedReader.from_file(bed_path, bed_pb2.BedReaderOptions())
+    with bed.BedReader(bed_path) as reader:
+      records = list(reader.iterate())
+    self.assertLen(records, 1)
 
   @parameterized.parameters('test_regions.bed', 'test_regions.bed.gz',
                             'test_regions.bed.tfrecord',
