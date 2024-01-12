@@ -32,12 +32,12 @@
 #include "deepvariant/python/clif_converters.h"
 
 #include <memory>
+#include <string>
 #include <mutex>
 
 // This has to go before numpy
-#include <Python.h>
-
 #include "deepvariant/pileup_image_native.h"
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "numpy/arrayobject.h"
 #include "numpy/ndarrayobject.h"
 #include "absl/log/check.h"
@@ -76,21 +76,9 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
   unsigned char* data = reinterpret_cast<unsigned char*> PyArray_DATA(res);
   unsigned char* cur = data;
   for (int i = 0; i < img_row->Width(); i++) {
-    *cur++ = img_row->base[i];
-    *cur++ = img_row->base_quality[i];
-    *cur++ = img_row->mapping_quality[i];
-    *cur++ = img_row->on_positive_strand[i];
-    *cur++ = img_row->supports_alt[i];
-    *cur++ = img_row->matches_ref[i];
-    if (img_row->use_allele_frequency) {
-      *cur++ = img_row->allele_frequency[i];
-    }
-    if (img_row->add_hp_channel) {
-      *cur++ = img_row->hp_value[i];
-    }
-    if (!img_row->channels.empty()) {
+    if (!img_row->channel_data.empty()) {
       // Iterate over channels here and fill data...
-      for (int j = 0; j < img_row->channels.size(); j++) {
+      for (int j = 0; j < img_row->channel_data.size(); j++) {
         *cur++ = img_row->channel_data[j][i];
       }
     }

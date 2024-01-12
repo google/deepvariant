@@ -97,7 +97,7 @@ def _make_encoder(read_requirements=None, **kwargs):
 def _make_encoder_with_channels(channel_set):
   options = pileup_image.default_options()
   for channel in channel_set:
-    assert channel in dv_constants.OPT_CHANNELS
+    assert channel in dv_constants.CHANNELS
     options.channels.append(channel)
     options.num_channels += 1
   return pileup_image_native.PileupImageEncoderNative(options)

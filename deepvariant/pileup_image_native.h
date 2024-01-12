@@ -56,28 +56,20 @@ std::vector<T> ToVector(const google::protobuf::RepeatedPtrField<T> container) {
 }
 
 struct ImageRow {
-  std::vector<unsigned char> base;
-  std::vector<unsigned char> base_quality;
-  std::vector<unsigned char> mapping_quality;
-  std::vector<unsigned char> on_positive_strand;
-  std::vector<unsigned char> supports_alt;
-  std::vector<unsigned char> matches_ref;
-  std::vector<unsigned char> sequencing_type;
-  std::vector<unsigned char> allele_frequency;
-  std::vector<unsigned char> hp_value;
+  int width;
   int num_channels;
-  bool use_allele_frequency;
-  bool add_hp_channel;
-  std::vector<string> channels;
+  std::vector<DeepVariantChannelEnum> channel_enums;
   std::vector<std::vector<unsigned char>> channel_data;
 
   int Width() const;
-  explicit ImageRow(int width, int num_channels, bool use_allele_frequency,
-                    bool add_hp_channel, const std::vector<string>& channels);
+  explicit ImageRow(int width, int num_channels);
 };
 
 class PileupImageEncoderNative {
  public:
+  // All channel enums that will be processed by this PileupImageEncoder
+  std::vector<DeepVariantChannelEnum> channel_enums_;
+
   // Essential API methods.
   explicit PileupImageEncoderNative(const PileupImageOptions& options);
 

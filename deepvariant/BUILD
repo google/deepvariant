@@ -1005,7 +1005,6 @@ cc_library(
         "//third_party/nucleus/util:proto_ptr",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -1019,7 +1018,6 @@ cc_library(
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
-        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
     ],
@@ -1036,6 +1034,7 @@ cc_test(
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
+        "@com_google_absl//absl/log",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
     ],
@@ -1619,7 +1618,7 @@ cc_library(
     srcs = ["make_examples_native.cc"],
     hdrs = ["make_examples_native.h"],
     deps = [
-        "//deepvariant:pileup_image_native",
+        ":pileup_image_native",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",
         "//third_party/nucleus/protos:range_cc_pb2",

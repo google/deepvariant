@@ -146,25 +146,12 @@ std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
 int FillPileupArray(const std::vector<std::unique_ptr<ImageRow>>& image,
                      std::vector<unsigned char>* data) {
   int num_channels = 6;
+
   for (const std::unique_ptr<ImageRow>& row : image) {
     for (int i = 0; i < row->Width(); i++) {
-      data->push_back(row->base[i]);
-      data->push_back(row->base_quality[i]);
-      data->push_back(row->mapping_quality[i]);
-      data->push_back(row->on_positive_strand[i]);
-      data->push_back(row->supports_alt[i]);
-      data->push_back(row->matches_ref[i]);
-      if (row->use_allele_frequency) {
-        data->push_back(row->allele_frequency[i]);
-        num_channels += 1;
-      }
-      if (row->add_hp_channel) {
-        data->push_back(row->hp_value[i]);
-        num_channels += 1;
-      }
-      if (!row->channels.empty()) {
+      if (!row->channel_data.empty()) {
         // Iterate over channels here and fill data...
-        for (int j = 0; j < row->channels.size(); j++) {
+        for (int j = 0; j < row->channel_data.size(); j++) {
           data->push_back(row->channel_data[j][i]);
           num_channels += 1;
         }

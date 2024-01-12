@@ -481,7 +481,7 @@ flags.DEFINE_string(
     'channels',
     None,
     'Comma or space-delimited list of optional channels to add. '
-    'Available channels: {}'.format(','.join(dv_constants.OPT_CHANNELS)),
+    'Available channels: {}'.format(','.join(dv_constants.CHANNELS)),
 )
 flags.DEFINE_bool(
     'add_supporting_other_alt_color',
@@ -685,10 +685,10 @@ def shared_flags_to_options(
     if flags_obj.channels:
       channel_set = re.split('[, ]+', flags_obj.channels)
       for channel in channel_set:
-        if channel and channel not in dv_constants.OPT_CHANNELS:
+        if channel and channel not in dv_constants.CHANNELS:
           err_msg = (
               'Channel "{}" is not one of the available opt channels: {}'
-              .format(channel, ', '.join(dv_constants.OPT_CHANNELS))
+              .format(channel, ', '.join(dv_constants.CHANNELS))
           )
           errors.log_and_raise(err_msg, errors.CommandLineError)
       options.pic_options.channels[:] = channel_set

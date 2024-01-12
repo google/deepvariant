@@ -57,8 +57,8 @@ NUM_DENOVO_CLASSES = 2
 # Default sample name if no sample name is found from the BAM header.
 DEFAULT_SAMPLE_NAME = 'default'
 
-# Define available OptChannels (optional extra channels).
-OPT_CHANNELS = [
+# Define all available channels, some of which are enabled by default.
+CHANNELS = [
     'read_base',
     'base_quality',
     'mapping_quality',
@@ -74,6 +74,8 @@ OPT_CHANNELS = [
     'homopolymer_weighted',
     'blank',
     'insert_size',
+    'allele_frequency',
+    'hp_value',
 ]
 
 # Used only when phasing is on (phase_reads=true). It allows to set the

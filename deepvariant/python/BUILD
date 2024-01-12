@@ -1,5 +1,5 @@
-# Placeholder: load py_test
 load("//third_party:clif.bzl", "py_clif_cc")
+# Placeholder: load py_test
 
 package(
     default_visibility = [
@@ -122,12 +122,10 @@ cc_library(
     hdrs = ["clif_converters.h"],
     deps = [
         "//deepvariant:pileup_image_native",
+        "//deepvariant/protos:deepvariant_cc_pb2",
         "@clif//:cpp_runtime",
-        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@local_config_python//:numpy_headers",
-        "@local_config_python//:python_headers",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 

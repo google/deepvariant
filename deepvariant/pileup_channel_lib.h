@@ -32,17 +32,14 @@
 #define LEARNING_GENOMICS_DEEPVARIANT_PILEUP_CHANNEL_LIB_H_
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <map>
-#include <set>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "absl/container/btree_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
@@ -81,6 +78,8 @@ static const auto& ch_is_homopolymer = "is_homopolymer";
 static const auto& ch_homopolymer_weighted = "homopolymer_weighted";
 static const auto& ch_blank = "blank";
 static const auto& ch_insert_size = "insert_size";
+static const auto& ch_allele_frequency = "allele_frequency";
+static const auto& ch_hp_value = "hp_value";
 
 //-------//
 // Utils //
@@ -372,6 +371,89 @@ inline std::vector<std::uint8_t> Blank(const Read& read) {
   return blank;
 }
 
+// Get the allele frequency of the alt allele that is carried by a read.
+inline float ReadAlleleFrequency_(const DeepVariantCall& dv_call,
+                                  const Read& read,
+                                  const std::vector<std::string>& alt_alleles) {
+  std::string key =
+      (read.fragment_name() + "/" + std::to_string(read.read_number()));
+
+  // Iterate over all alts, not just alt_alleles.
+  for (const std::string& alt_allele : dv_call.variant().alternate_bases()) {
+    const auto& allele_support = dv_call.allele_support();
+    auto it_read = allele_support.find(alt_allele);
+
+    if (it_read != allele_support.end()) {
+      const auto& supp_read_names = it_read->second.read_names();
+      for (const std::string& read_name : supp_read_names) {
+        const bool alt_in_alt_alleles =
+            std::find(alt_alleles.begin(), alt_alleles.end(), alt_allele) !=
+            alt_alleles.end();
+        // If the read supports an alt we are currently considering, return the
+        // associated allele frequency.
+        if (read_name == key && alt_in_alt_alleles) {
+          auto it = dv_call.allele_frequency().find(alt_allele);
+          if (it != dv_call.allele_frequency().end())
+            return it->second;
+          else
+            return 0;
+        }
+      }
+    }
+  }
+  // If cannot find the matching variant, set the frequency to 0.
+  return 0;
+}
+
+// Get allele frequency color for a read.
+// Convert a frequency value in float to color intensity (int) and normalize.
+inline unsigned char AlleleFrequencyColor_(float allele_frequency,
+                                           const PileupImageOptions& options) {
+  if (allele_frequency <= options.min_non_zero_allele_frequency()) {
+    return 0;
+  } else {
+    float log10_af = log10(allele_frequency);
+    float log10_min = log10(options.min_non_zero_allele_frequency());
+    return ((log10_min - log10_af) / log10_min) *
+           static_cast<int>(kMaxPixelValueAsFloat);
+  }
+}
+
+inline int GetHPValueForHPChannel_(const Read& read,
+                                   int hp_tag_for_assembly_polishing) {
+  if (!read.info().contains("HP")) {
+    return 0;
+  }
+  const auto& hp_values = read.info().at("HP").values();
+  if (hp_values.empty()) {
+    return 0;
+  }
+  if (hp_values.size() > 1) {
+    LOG(WARNING) << "Unexpected: Read contains more than one HP tag. Return 0";
+    return 0;
+  }
+  int hp_value = hp_values[0].int_value();
+  // See the description of --add_hp_channel flag in make_examples.py: Currently
+  // we only support value of 1, 2, or 0.
+  if (hp_value != 0 && hp_value != 1 && hp_value != 2) {
+    LOG(FATAL)
+        << "This function is currently used when --add_hp_channel is set. "
+        << "HP value has to be either 1, 2, or 0. Found a read with HP="
+        << hp_value << ", read=" << read.fragment_name();
+  }
+  // If hp_tag_for_assembly_polishing is set to 2, this is a special case
+  // assembly polishing:
+  // If we're calling HP=2, when displayed with --add_hp_channel, we want to
+  // swap the color of reads with HP=2 and HP=1.
+  if (hp_tag_for_assembly_polishing == 2) {
+    if (hp_value == 1) return 2;
+    if (hp_value == 2) return 1;
+  }
+
+  // Otherwise, keep the default behavior.
+  return hp_value;
+}
+
 inline bool channel_exists(std::vector<std::string>& channels,
                            const std::string& channel_name) {
   if (std::find(channels.begin(), channels.end(), channel_name) !=
@@ -424,8 +506,22 @@ inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
     return DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED;
   if (channel == ch_blank) return DeepVariantChannelEnum::CH_BLANK;
   if (channel == ch_insert_size) return DeepVariantChannelEnum::CH_INSERT_SIZE;
+  if (channel == ch_allele_frequency)
+    return DeepVariantChannelEnum::CH_ALLELE_FREQUENCY;
+  if (channel == ch_hp_value) return DeepVariantChannelEnum::CH_HAPLOTYPE_TAG;
   CHECK(false) << "Channel '" << channel << "' should have a corresponding "
                << "enum in DeepVariantChannelEnum.";
+}
+
+inline constexpr bool isBaseLevelChannel(DeepVariantChannelEnum channelEnum) {
+  switch (channelEnum) {
+    case DeepVariantChannelEnum::CH_READ_BASE:
+    case DeepVariantChannelEnum::CH_BASE_QUALITY:
+    case DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF:
+      return true;
+    default:
+      return false;
+  }
 }
 
 //-------------------//
@@ -441,44 +537,44 @@ const int MaxGcContent = 100;
 const int MaxIsHomoPolymer = 1;
 const int MaxHomoPolymerWeighted = 30;
 
-class OptChannels {
+class Channels {
  public:
   const PileupImageOptions& options_;
-  std::map<std::string, std::vector<unsigned char>> ref_data_;
+  std::vector<std::vector<unsigned char>> ref_data_;
 
-  std::map<std::string, std::vector<unsigned char>> read_level_data_;
-  std::map<std::string, std::vector<unsigned char>> data_;
-  const std::set<std::string> base_level_channels_set_ = {
-      ch_read_base,
-      ch_base_quality,
-      ch_base_differs_from_ref,
-  };
+  std::vector<std::vector<unsigned char>> read_level_data_;
+  std::vector<std::vector<unsigned char>> data_;
+  std::vector<int> channel_enum_to_index_;
 
-  bool CalculateChannels(const std::vector<std::string>& channels,
-                         const Read& read, const std::string& ref_bases,
-                         const DeepVariantCall& dv_call,
-                         const std::vector<std::string>& alt_alleles,
-                         int image_start_pos) {
-    absl::btree_set<std::string> included_base_level_channels;
+  bool CalculateChannels(
+      const std::vector<DeepVariantChannelEnum>& channel_enums,
+      const Read& read, const std::string& ref_bases,
+      const DeepVariantCall& dv_call,
+      const std::vector<std::string>& alt_alleles, int image_start_pos) {
+    int maxEnumValue = getMaxEnumValue(channel_enums);
+    channel_enum_to_index_ = std::vector<int>(maxEnumValue + 1);
+    int currIndex = 0;
+    for (const DeepVariantChannelEnum channel_enum : channel_enums) {
+      channel_enum_to_index_[channel_enum] = currIndex;
+      currIndex++;
+    }
 
     /*--------------------------------------
     Calculate read-level channels
     ---------------------------------------*/
-    for (const std::string& channel : channels) {
-      // Instantiate each channel data row
-      data_[channel] = std::vector<unsigned char>(ref_bases.size(), 0);
+    data_ = std::vector<std::vector<unsigned char>>(channel_enums.size());
+    read_level_data_ =
+        std::vector<std::vector<unsigned char>>(channel_enums.size());
 
-      // If we are looking at a base level channel we will fill that data out
-      // later. For read level channels we can calculate values now
-      if (base_level_channels_set_.find(channel) !=
-          base_level_channels_set_.end()) {
-        included_base_level_channels.insert(channel);
-      } else {
-        bool ok = CalculateReadLevelData(channel, read, dv_call, alt_alleles);
+    for (const DeepVariantChannelEnum channel_enum : channel_enums) {
+      int index = channel_enum_to_index_[channel_enum];
+      data_[index] = std::vector<unsigned char>(ref_bases.size(), 0);
+      if (!isBaseLevelChannel(channel_enum)) {
+        bool ok =
+            CalculateReadLevelData(channel_enum, read, dv_call, alt_alleles);
         if (!ok) return false;
       }
     }
-
     /*--------------------------------------
     Calculate base-level channels
     ---------------------------------------*/
@@ -516,43 +612,50 @@ class OptChannels {
             }
 
             // Calculate base level values for channels
-            for (const std::string& channel : included_base_level_channels) {
-              if (channel == ch_read_base) {
-                data_[channel][col] = BaseColor(read_base, options_);
-              } else if (channel == ch_base_quality) {
-                data_[channel][col] =
-                    ScaleColor(base_quality, options_.base_quality_cap());
-              } else if (channel == ch_base_differs_from_ref) {
-                bool matches_ref = (read_base == ref_bases[col]);
-                data_[channel][col] = MatchesRefColor(matches_ref, options_);
+            for (int i = 0; i < channel_enums.size(); ++i) {
+              DeepVariantChannelEnum channel_enum = channel_enums[i];
+              int index = channel_enum_to_index_[channel_enum];
+              if (isBaseLevelChannel(channel_enum)) {
+                if (channel_enum == DeepVariantChannelEnum::CH_READ_BASE) {
+                  data_[index][col] = BaseColor(read_base, options_);
+                } else if (channel_enum ==
+                           DeepVariantChannelEnum::CH_BASE_QUALITY) {
+                  data_[index][col] =
+                      ScaleColor(base_quality, options_.base_quality_cap());
+                } else if (channel_enum ==
+                           DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF) {
+                  bool matches_ref = (read_base == ref_bases[col]);
+                  data_[index][col] = MatchesRefColor(matches_ref, options_);
+                }
               }
             }
 
             // Fill in base level value for read level channels from
             // previously calculated read level values
-            for (std::map<std::string, std::vector<unsigned char>>::iterator
-                     iter = read_level_data_.begin();
-                 iter != read_level_data_.end(); ++iter) {
-              std::string channel = iter->first;
-              if (iter->second.size() == 1) {
-                data_[channel][col] = iter->second[0];
-              } else {
-                data_[channel][col] = iter->second[read_i];
+            for (int i = 0; i < channel_enums.size(); ++i) {
+              DeepVariantChannelEnum channel_enum = channel_enums[i];
+              int index = channel_enum_to_index_[channel_enum];
+              if (!isBaseLevelChannel(channel_enum)) {
+                if (read_level_data_[index].size() == 1) {
+                  data_[index][col] = read_level_data_[index][0];
+                } else {
+                  data_[index][col] = read_level_data_[index][read_i];
+                }
               }
             }
           }
           return true;
         };
-
     return CalculateBaseLevelData(read, action_per_cigar_unit);
   }
 
   // Calculate values for channels that only depend on information at the
   // granularity of an entire read.
-  bool CalculateReadLevelData(const std::string& channel, const Read& read,
-                              const DeepVariantCall& dv_call,
+  bool CalculateReadLevelData(const DeepVariantChannelEnum channel_enum,
+                              const Read& read, const DeepVariantCall& dv_call,
                               const std::vector<std::string>& alt_alleles) {
-    if (channel == ch_mapping_quality) {
+    int index = channel_enum_to_index_[channel_enum];
+    if (channel_enum == DeepVariantChannelEnum::CH_MAPPING_QUALITY) {
       const int mapping_quality = read.alignment().mapping_quality();
       const int min_mapping_quality =
           options_.read_requirements().min_mapping_quality();
@@ -560,45 +663,57 @@ class OptChannels {
       if (mapping_quality < min_mapping_quality) {
         return false;
       }
-      read_level_data_[channel].assign(
+      read_level_data_[index].assign(
           {ScaleColor(mapping_quality, options_.mapping_quality_cap())});
-    } else if (channel == ch_strand) {
+    } else if (channel_enum == DeepVariantChannelEnum::CH_STRAND) {
       const bool is_forward_strand =
           !read.alignment().position().reverse_strand();
-      read_level_data_[channel].assign({static_cast<std::uint8_t>(
+      read_level_data_[index].assign({static_cast<std::uint8_t>(
           StrandColor(is_forward_strand, options_))});
-    } else if (channel == ch_read_supports_variant) {
+    } else if (channel_enum ==
+               DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT) {
       int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
-      read_level_data_[channel].assign({static_cast<std::uint8_t>(
+      read_level_data_[index].assign({static_cast<std::uint8_t>(
           SupportsAltColor(supports_alt, options_))});
-    } else if (channel == ch_read_mapping_percent) {
-      read_level_data_[channel].assign(
+    } else if (channel_enum ==
+               DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT) {
+      read_level_data_[index].assign(
           {ScaleColor(ReadMappingPercent(read), MaxMappingPercent)});
-    } else if (channel == ch_avg_base_quality) {
-      read_level_data_[channel].assign(
+    } else if (channel_enum == DeepVariantChannelEnum::CH_AVG_BASE_QUALITY) {
+      read_level_data_[index].assign(
           {ScaleColor(AvgBaseQuality(read), MaxAvgBaseQuality)});
-    } else if (channel == ch_identity) {
-      read_level_data_[channel].assign(
-          {ScaleColor(Identity(read), MaxIdentity)});
-    } else if (channel == ch_gap_compressed_identity) {
-      read_level_data_[channel].assign(
+    } else if (channel_enum == DeepVariantChannelEnum::CH_IDENTITY) {
+      read_level_data_[index].assign({ScaleColor(Identity(read), MaxIdentity)});
+    } else if (channel_enum ==
+               DeepVariantChannelEnum::CH_GAP_COMPRESSED_IDENTITY) {
+      read_level_data_[index].assign(
           {ScaleColor(GapCompressedIdentity(read), MaxIdentity)});
-    } else if (channel == ch_gc_content) {
-      read_level_data_[channel].assign(
+    } else if (channel_enum == DeepVariantChannelEnum::CH_GC_CONTENT) {
+      read_level_data_[index].assign(
           {ScaleColor(GcContent(read), MaxGcContent)});
-    } else if (channel == ch_is_homopolymer) {
+    } else if (channel_enum == DeepVariantChannelEnum::CH_IS_HOMOPOLYMER) {
       std::vector<std::uint8_t> is_homopolymer = IsHomoPolymer(read);
-      read_level_data_[channel] =
+      read_level_data_[index] =
           ScaleColorVector(is_homopolymer, MaxIsHomoPolymer);
-    } else if (channel == ch_homopolymer_weighted) {
+    } else if (channel_enum ==
+               DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED) {
       std::vector<std::uint8_t> homopolymer_weighted =
           HomoPolymerWeighted(read);
-      read_level_data_[channel] =
+      read_level_data_[index] =
           ScaleColorVector(homopolymer_weighted, MaxHomoPolymerWeighted);
-    } else if (channel == ch_blank) {
-      read_level_data_[channel] = Blank(read);
-    } else if (channel == ch_insert_size) {
-      read_level_data_[channel] = ReadInsertSize(read);
+    } else if (channel_enum == DeepVariantChannelEnum::CH_BLANK) {
+      read_level_data_[index] = Blank(read);
+    } else if (channel_enum == DeepVariantChannelEnum::CH_INSERT_SIZE) {
+      read_level_data_[index] = ReadInsertSize(read);
+    } else if (channel_enum == DeepVariantChannelEnum::CH_ALLELE_FREQUENCY) {
+      const float allele_frequency =
+          ReadAlleleFrequency_(dv_call, read, alt_alleles);
+      read_level_data_[index].assign(
+          {AlleleFrequencyColor_(allele_frequency, options_)});
+    } else if (channel_enum == DeepVariantChannelEnum::CH_HAPLOTYPE_TAG) {
+      const int hp_value = GetHPValueForHPChannel_(
+          read, options_.hp_tag_for_assembly_polishing());
+      read_level_data_[index].assign({ScaleColor(hp_value, 2)});
     }
 
     return true;
@@ -652,7 +767,6 @@ class OptChannels {
     int ref_i = read.alignment().position().position();
     int read_i = 0;
     bool ok = true;
-
     for (const auto& cigar_elt : read.alignment().cigar()) {
       const CigarUnit::Operation& op = cigar_elt.operation();
       int op_len = cigar_elt.operation_length();
@@ -697,77 +811,114 @@ class OptChannels {
   }
 
   inline std::uint8_t GetChannelData(const std::string& channel, int col) {
-    return data_[channel][col];
+    DeepVariantChannelEnum channel_enum = ChannelStrToEnum(channel);
+    int index = channel_enum_to_index_[channel_enum];
+    return data_[index][col];
   }
 
-  void CalculateRefRows(const std::vector<std::string>& channels,
-                        const std::string& ref_bases) {
+  void CalculateRefRows(
+      const std::vector<DeepVariantChannelEnum>& channel_enums,
+      const std::string& ref_bases) {
+    int maxEnumValue = getMaxEnumValue(channel_enums);
+    channel_enum_to_index_ = std::vector<int>(maxEnumValue + 1);
+    int currIndex = 0;
+    for (const DeepVariantChannelEnum channel_enum : channel_enums) {
+      channel_enum_to_index_[channel_enum] = currIndex;
+      currIndex++;
+    }
+    ref_data_ = std::vector<std::vector<unsigned char>>(channel_enums.size());
     // Calculates reference row values for each channel
     // Create a fake read to represent reference bases.
     Read refRead;
-    for (const std::string& channel : channels) {
-      if (channel == ch_read_base) {
-        ref_data_[channel] = BaseColorVector(ref_bases, options_);
-      } else if (channel == ch_base_quality) {
+    for (const DeepVariantChannelEnum channel_enum : channel_enums) {
+      int index = channel_enum_to_index_[channel_enum];
+      if (channel_enum == DeepVariantChannelEnum::CH_READ_BASE) {
+        ref_data_[index] = BaseColorVector(ref_bases, options_);
+      } else if (channel_enum == DeepVariantChannelEnum::CH_BASE_QUALITY) {
         int ref_qual = options_.reference_base_quality();
-        ref_data_[channel].assign(
-            {ScaleColor(ref_qual, options_.base_quality_cap())});
-      } else if (channel == ch_mapping_quality) {
+        ref_data_[index].assign(
+            ref_bases.size(),
+            ScaleColor(ref_qual, options_.base_quality_cap()));
+      } else if (channel_enum == DeepVariantChannelEnum::CH_MAPPING_QUALITY) {
         int ref_qual = options_.reference_base_quality();
-        ref_data_[channel].assign(
-            {ScaleColor(ref_qual, options_.base_quality_cap())});
-      } else if (channel == ch_strand) {
+        ref_data_[index].assign(
+            ref_bases.size(),
+            ScaleColor(ref_qual, options_.base_quality_cap()));
+      } else if (channel_enum == DeepVariantChannelEnum::CH_STRAND) {
         int strand = StrandColor(true, options_);
-        ref_data_[channel].assign({static_cast<std::uint8_t>(strand)});
-      } else if (channel == ch_read_supports_variant) {
+        ref_data_[index].assign(ref_bases.size(),
+                                static_cast<std::uint8_t>(strand));
+      } else if (channel_enum ==
+                 DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT) {
         int alt = SupportsAltColor(0, options_);
-        ref_data_[channel].assign({static_cast<std::uint8_t>(alt)});
-      } else if (channel == ch_base_differs_from_ref) {
+        ref_data_[index].assign(ref_bases.size(),
+                                static_cast<std::uint8_t>(alt));
+      } else if (channel_enum ==
+                 DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF) {
         int ref = MatchesRefColor(true, options_);
-        ref_data_[channel].assign({static_cast<std::uint8_t>(ref)});
-      } else if (channel == ch_read_mapping_percent) {
-        ref_data_[channel].assign(
+        ref_data_[index].assign(ref_bases.size(),
+                                static_cast<std::uint8_t>(ref));
+      } else if (channel_enum ==
+                 DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT) {
+        ref_data_[index].assign(
+            ref_bases.size(), static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+      } else if (channel_enum == DeepVariantChannelEnum::CH_AVG_BASE_QUALITY) {
+        ref_data_[index].assign(
             {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
-      } else if (channel == ch_avg_base_quality) {
-        ref_data_[channel].assign(
-            {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
-      } else if (channel == ch_identity) {
-        ref_data_[channel].assign(
-            {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
-      } else if (channel == ch_gap_compressed_identity) {
-        ref_data_[channel].assign(
-            {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
-      } else if (channel == ch_insert_size) {
-        ref_data_[channel].assign(
-            {static_cast<std::uint8_t>(kMaxPixelValueAsFloat)});
-      } else if (channel == ch_gc_content) {
+      } else if (channel_enum == DeepVariantChannelEnum::CH_IDENTITY) {
+        ref_data_[index].assign(
+            ref_bases.size(), static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+      } else if (channel_enum ==
+                 DeepVariantChannelEnum::CH_GAP_COMPRESSED_IDENTITY) {
+        ref_data_[index].assign(
+            ref_bases.size(), static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+      } else if (channel_enum == DeepVariantChannelEnum::CH_INSERT_SIZE) {
+        ref_data_[index].assign(
+            ref_bases.size(), static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+      } else if (channel_enum == DeepVariantChannelEnum::CH_GC_CONTENT) {
         refRead.set_aligned_sequence(ref_bases);
-        ref_data_[channel].assign(
-            {ScaleColor(GcContent(refRead), MaxGcContent)});
-      } else if (channel == ch_is_homopolymer) {
+        ref_data_[index].assign(ref_bases.size(),
+                                ScaleColor(GcContent(refRead), MaxGcContent));
+      } else if (channel_enum == DeepVariantChannelEnum::CH_IS_HOMOPOLYMER) {
         refRead.set_aligned_sequence(ref_bases);
         std::vector<std::uint8_t> is_homopolymer = IsHomoPolymer(refRead);
-        ref_data_[channel] = ScaleColorVector(is_homopolymer, MaxIsHomoPolymer);
-      } else if (channel == ch_homopolymer_weighted) {
+        ref_data_[index] = ScaleColorVector(is_homopolymer, MaxIsHomoPolymer);
+      } else if (channel_enum ==
+                 DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED) {
         refRead.set_aligned_sequence(ref_bases);
         std::vector<std::uint8_t> homopolymer_weighted =
             HomoPolymerWeighted(refRead);
-        ref_data_[channel] =
+        ref_data_[index] =
             ScaleColorVector(homopolymer_weighted, MaxHomoPolymerWeighted);
       } else {
-        ref_data_[channel].assign({0});
+        ref_data_[index].assign(ref_bases.size(), 0);
       }
     }
   }
 
-  inline std::uint8_t GetRefRows(const std::string& channel, int col) {
+  inline std::uint8_t GetRefRows(DeepVariantChannelEnum channel_enum, int col) {
     // Returns first value if size 1 else return specific column.
     // Note that ref_data is indexed by col and not pos.
-    if (ref_data_[channel].size() == 1) {
-      return ref_data_[channel][0];
+    int index = channel_enum_to_index_[channel_enum];
+    if (ref_data_[index].size() == 1) {
+      return ref_data_[index][0];
     } else {
-      return ref_data_[channel][col];
+      return ref_data_[index][col];
     }
+  }
+
+ private:
+  inline int getMaxEnumValue(
+      const std::vector<DeepVariantChannelEnum>& channel_enums) {
+    // Get the max channel enum value we need to support, used to size vectors
+    // returns -1 if channel_enums is empty
+    int maxEnumValue = -1;
+    for (int i = 0; i < channel_enums.size(); ++i) {
+      if (channel_enums[i] > maxEnumValue) {
+        maxEnumValue = channel_enums[i];
+      }
+    }
+    return maxEnumValue;
   }
 };
 
