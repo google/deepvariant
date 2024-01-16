@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~428m
-call_variants for HG002          | ~351m
-call_variants for HG003          | ~357m
-call_variants for HG004          | ~354m
-postprocess_variants (parallel)  | ~55m
-total                            | ~1545m = ~25.75 hours
+make_examples                    | ~440m
+call_variants for HG002          | ~364m
+call_variants for HG003          | ~371m
+call_variants for HG004          | ~374m
+postprocess_variants (parallel)  | ~66m
+total                            | ~1615m = ~26.92 hours
 
 ### Accuracy
 
@@ -57,12 +57,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~53+1091m
-call_variants for HG002          | ~377m
-call_variants for HG003          | ~382m
-call_variants for HG004          | ~391m
-postprocess_variants (parallel)  | ~92m
-total                            | ~2386m = ~39.77 hours
+make_examples                    | ~53+878m
+call_variants for HG002          | ~374m
+call_variants for HG003          | ~385m
+call_variants for HG004          | ~397m
+postprocess_variants (parallel)  | ~96m
+total                            | ~2183m = ~36.38 hours
 
 * See VCF stats report (for all chromosomes)
   - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/PACBIO/HG002.output.visual_report.html)
