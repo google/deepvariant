@@ -48,6 +48,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+// #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -575,8 +576,8 @@ TEST(DirectPhasingTest, PhaseReadChangedOrderOfAlleles) {
           105, 106,
           {{"C", {"read1/0", "read2/0", "read3/0", "read4/0", "read5/0"}}}),
       MakeCandidate(110, 111,
-                    {{"T", {"read1/0", "read2/0"}},             // SUB allele
-                     {"G", {"read3/0", "read4/0", "read5/0"}}}  // SUB allele
+                    {{"T", {"read4/0", "read5/0"}},             // SUB allele
+                     {"G", {"read1/0", "read2/0", "read3/0"}}}  // SUB allele
                     ),
       MakeCandidate(120, 121,
                     {
@@ -697,6 +698,120 @@ TEST(DirectPhasingTest, PhaseReadBrokenPath) {
           .is_first_allele = false
         }
       }));
+
+  // Release memory.
+  for (auto read : reads) {
+    delete read.p_;
+  }
+}
+
+TEST(DirectPhasingTest, PhaseReadBrokenPathNoConnection) {
+  DirectPhasing direct_phasing;
+
+  // Create test candidates.
+  // No edge between C at 105 and G at 110, and not edges between G at 105 and
+  // C at 110. There is no connection between subragphs, so we should restart
+  // phasing from position 110.
+  // 100     105   110    120
+  // A ---- C      G ----- T   Phase 1
+  //
+  // C ---- G      C ----- G   Phase 2
+  // In this example reads 1,2,3 can be assigned any phase 1 or no phase, but
+  // algorithm favors assigning phase1.
+  std::vector<DeepVariantCall> candidates = {
+      MakeCandidate(100, 101,
+                    {{"A", {"read1/0", "read2/0", "read3/0"}},
+                     {"C", {"read4/0", "read5/0"}}}),
+      MakeCandidate(105, 106,
+                    {{"C", {"read1/0", "read2/0", "read3/0"}},
+                     {"G", {"read4/0", "read5/0"}}}),
+      MakeCandidate(
+          110, 111,
+          {{"C", {"read6/0", "read7/0"}}, {"G", {"read8/0", "read9/0"}}}),
+      MakeCandidate(
+          120, 121,
+          {{"T", {"read6/0", "read7/0"}}, {"G", {"read8/0", "read9/0"}}})};
+
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
+      CreateTestReads(9);
+
+  nucleus::StatusOr<std::vector<int>> phases =
+      direct_phasing.PhaseReads(candidates, reads);
+  EXPECT_TRUE(phases.ok());
+  EXPECT_THAT(phases.ValueOrDie(),
+              ElementsAreArray({1, 1, 1, 2, 2, 1, 1, 2, 2}));
+  DirectPhasing::Vertex v_110_g = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 110, "G", {}});
+  DirectPhasing::Vertex v_110_c = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 110, "C", {}});
+  DirectPhasing::Score score_110_C_G =
+      DirectPhasingPeer::FindScore(direct_phasing, v_110_c, v_110_g);
+
+  EXPECT_EQ(score_110_C_G.score, 4);
+
+  // Release memory.
+  for (auto read : reads) {
+    delete read.p_;
+  }
+}
+
+TEST(DirectPhasingTest, NotPhasablePosition) {
+  DirectPhasing direct_phasing;
+
+  // Create test candidates.
+  // At position 110 all possible partitions yield the same score. In this case
+  // we cannot phase this position.
+  // 100     105   110    120    125
+  // A ---- C ---- G      T ---- A  Phase 1
+  //          \ /
+  //          / \
+  // C ---- G ---- C      G ---- T   Phase 2
+  // In this example reads 1,2,3 can be assigned any phase 1 or no phase, but
+  // algorithm favors assigning phase1.
+  std::vector<DeepVariantCall> candidates = {
+      MakeCandidate(100, 101,
+                    {{"A", {"read1/0", "read2/0", "read3/0", "read10/0"}},
+                     {"C", {"read4/0", "read5/0"}}}),
+      MakeCandidate(
+          105, 106,
+          {{"C", {"read1/0", "read2/0", "read3/0", "read10/0", "read11/0"}},
+           {"G", {"read4/0", "read5/0", "read12/0", "read13/0"}}}),
+      MakeCandidate(
+          110, 111,
+          {{"C", {"read10/0", "read13/0"}}, {"G", {"read11/0", "read12/0"}}}),
+      MakeCandidate(
+          120, 121,
+          {{"T", {"read6/0", "read7/0"}}, {"G", {"read8/0", "read9/0"}}}),
+      MakeCandidate(
+          125, 126,
+          {{"A", {"read6/0", "read7/0"}}, {"T", {"read8/0", "read9/0"}}})};
+
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
+      CreateTestReads(13);
+
+  nucleus::StatusOr<std::vector<int>> phases =
+      direct_phasing.PhaseReads(candidates, reads);
+  EXPECT_TRUE(phases.ok());
+  // EXPECT_THAT(phases.ValueOrDie(),
+  //             ElementsAreArray({1, 1, 1, 2, 2, 2, 2, 1, 1, 0, 0, 0, 0}));
+  DirectPhasing::Vertex v_110_g = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 110, "G", {}});
+  DirectPhasing::Vertex v_110_c = *FindVertex(
+      direct_phasing.graph_, {AlleleType::SUBSTITUTION, 110, "C", {}});
+
+  DirectPhasing::Score score_110_C_G =
+      DirectPhasingPeer::FindScore(direct_phasing, v_110_c, v_110_g);
+  DirectPhasing::Score score_110_C_C =
+      DirectPhasingPeer::FindScore(direct_phasing, v_110_c, v_110_c);
+  DirectPhasing::Score score_110_G_G =
+      DirectPhasingPeer::FindScore(direct_phasing, v_110_g, v_110_g);
+
+  // All scores at 110 should be equal.
+  EXPECT_EQ(score_110_C_G.score, score_110_C_C.score);
+  EXPECT_EQ(score_110_C_C.score, score_110_G_G.score);
+  // Candidate at 110 should be unphased.
+  EXPECT_EQ(direct_phasing.graph_[v_110_g].allele_info.phase, 0);
+  EXPECT_EQ(direct_phasing.graph_[v_110_c].allele_info.phase, 0);
 
   // Release memory.
   for (auto read : reads) {

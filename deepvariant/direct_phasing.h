@@ -44,14 +44,15 @@ friend class test_case_name##_##test_name##_Test
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/btree_map.h"
 #include "absl/hash/hash.h"
 #include "absl/strings/string_view.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
+#include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
-#include "third_party/nucleus/core/statusor.h"
 
 namespace learning {
 namespace genomics {
@@ -184,6 +185,8 @@ class DirectPhasing {
   std::vector<PhasedVariant> GetPhasedVariants() const;
 
  private:
+  friend class DirectPhasingPeer;
+
   // Dynamic score for the partition. This score defines the best phasing up to
   // a certain position.
 
@@ -251,6 +254,15 @@ class DirectPhasing {
   // score path.
   void AssignPhasesToVertices();
 
+  // Iterate all scores at position and find the maximum. If all scores are the
+  // same then scores_.end() is returned.
+  absl::flat_hash_map<VertexPair, Score>::const_iterator MaxScore(
+      int position) const;
+
+  bool AllScoresAreTheSame(
+      const absl::btree_map<std::pair<std::string, std::string>, Edge>&
+          keyed_edges) const;
+
   // Assign phase to each read. Return a vector containing phases (0, 1, 2)
   // for each read in the same order as input <reads>. Read objects are large
   // therefore phases are returned in a separate vector instead of modifying
@@ -262,6 +274,8 @@ class DirectPhasing {
 
   bool CompareVertexPairByBases(const Vertex& v1_1, const Vertex& v1_2,
     const Vertex& v2_1, const Vertex& v2_2) const;
+
+  bool HasAtLeastOneIncomingEdge(const std::vector<Vertex>& vertecies) const;
 
  private:
   BoostGraph graph_;
@@ -312,6 +326,8 @@ class DirectPhasing {
   FRIEND_TEST(DirectPhasingTest, PhaseReadBrokenPath);
   FRIEND_TEST(DirectPhasingTest, FilterOneAlleleCandidate);
   FRIEND_TEST(DirectPhasingTest, FilterCandidateWithIndel);
+  FRIEND_TEST(DirectPhasingTest, PhaseReadBrokenPathNoConnection);
+  FRIEND_TEST(DirectPhasingTest, NotPhasablePosition);
 };
 
 // Helper functions.
@@ -329,6 +345,33 @@ int NumOfIndelAlleles(const DeepVariantCall& candidate);
 // Calculate the depth of all SUB alt alleles. This is done by enumerating all
 // supporting reads for all SUB alleles.
 int SubstitutionAllelesDepth(const DeepVariantCall& candidate);
+
+class DirectPhasingPeer {
+ public:
+  static DirectPhasing::Score FindScore(const DirectPhasing& direct_phasing,
+                                        const DirectPhasing::Vertex& v1,
+                                        const DirectPhasing::Vertex& v2) {
+    // Uncomment for debugging unit tests.
+    // for (const auto& [vv, score] : direct_phasing.scores_) {
+    //   LOG(INFO) << "v1: "
+    //       << direct_phasing.graph_[vv.phase_1_vertex].allele_info.bases
+    //       << " "
+    //       << direct_phasing.graph_[vv.phase_1_vertex].allele_info.position
+    //       << ", "
+    //       << " v2: "
+    //       << direct_phasing.graph_[vv.phase_2_vertex].allele_info.bases
+    //       << " "
+    //       << direct_phasing.graph_[vv.phase_2_vertex].allele_info.position
+    //       << " score: " << score.score;
+    // }
+    auto it = direct_phasing.scores_.find({v1, v2});
+    if (it != direct_phasing.scores_.end()) {
+      return it->second;
+    }
+    return DirectPhasing::Score();
+  }
+};
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
