@@ -58,10 +58,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~129m
-call_variants                    | ~241m
-postprocess_variants (with gVCF) | ~34m
-total                            | ~404m = ~6.73 hours
+make_examples                    | ~131m
+call_variants                    | ~236m
+postprocess_variants (with gVCF) | ~33m
+total                            | ~400m = ~6.67 hours
 
 ### Accuracy
 
@@ -73,8 +73,8 @@ to run DeepVariant once.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501493   | 3008     | 2794     | 0.994038      | 0.99468          | 0.994359        |
-| SNP   | 3324302  | 3193     | 1498     | 0.99904       | 0.99955          | 0.999295        |
+| INDEL | 501502   | 2999     | 2781     | 0.994056      | 0.994704         | 0.99438         |
+| SNP   | 3324311  | 3184     | 1497     | 0.999043      | 0.99955          | 0.999297        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.6.0/PACBIO/deepvariant.output.visual_report.html)
 
@@ -86,10 +86,10 @@ Runtime is on HG003 reads (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | ~245m
-call_variants                    | ~283m
-postprocess_variants (with gVCF) | ~37m
-total                            | ~565m = ~9.42 hours
+make_examples                    | ~248m
+call_variants                    | ~300m
+postprocess_variants (with gVCF) | ~38m
+total                            | ~586m = ~9.77 hours
 
 ### Accuracy
 
@@ -98,8 +98,8 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 438830   | 65671    | 40689    | 0.86983       | 0.918059         | 0.893294        |
-| SNP   | 3314144  | 13351    | 8136     | 0.995988      | 0.997552         | 0.996769        |
+| INDEL | 438790   | 65711    | 40704    | 0.869751      | 0.918025         | 0.893236        |
+| SNP   | 3314049  | 13446    | 8147     | 0.995959      | 0.997549         | 0.996753        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.6.0/ONT_R104/deepvariant.output.visual_report.html)
 
@@ -113,8 +113,8 @@ Stage                            | Time (minutes)
 -------------------------------- | -------------------
 make_examples                    | ~153m
 call_variants                    | ~207m
-postprocess_variants (with gVCF) | ~23m
-total                            | ~383m = ~6.38 hours
+postprocess_variants (with gVCF) | ~24m
+total                            | ~384m = ~6.4 hours
 
 ### Accuracy
 
