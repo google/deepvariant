@@ -48,6 +48,7 @@ Flags:
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 --model_preset Preset case study to run: WGS, WES, PACBIO, ONT_R104, ONT_R104_DUPLEX_CHR20, or HYBRID_PACBIO_ILLUMINA. ONT_R104_DUPLEX_CHR20 will use the ONT_R104 model_type.
+--par_regions_bed Path to BED containing Human Pseudoautosomal Region (PAR) regions. This is used in postprocess_variants. We separate it out as a flag because we need to copy data from gs://.
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
@@ -83,6 +84,7 @@ USE_SLIM_MODEL=false  # TODO: Change this to true before release.
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
+PAR_REGIONS_BED=""
 POPULATION_VCFS=""
 POSTPROCESS_VARIANTS_ARGS=""
 PROPOSED_VARIANTS=""
@@ -224,6 +226,11 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --par_regions_bed)
+      PAR_REGIONS_BED="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     --population_vcfs)
       POPULATION_VCFS="$2"
       shift # Remove argument name from processing
@@ -354,6 +361,7 @@ echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
 echo "MODEL_TYPE: ${MODEL_TYPE}"
+echo "PAR_REGIONS_BED: ${PAR_REGIONS_BED}"
 echo "POPULATION_VCFS: ${POPULATION_VCFS}"
 echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
 echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
@@ -435,6 +443,9 @@ function copy_data() {
     if [[ "${REGIONS}" = http* ]] || [[ "${REGIONS}" = gs://* ]]; then
       copy_gs_or_http_file "${REGIONS}" "${INPUT_DIR}"
     fi
+  fi
+  if [[ -n "${PAR_REGIONS_BED}" ]]; then
+    copy_gs_or_http_file "${PAR_REGIONS_BED}" "${INPUT_DIR}"
   fi
   if [[ -n "${POPULATION_VCFS}" ]]; then
     copy_gs_or_http_file "${POPULATION_VCFS}" "${INPUT_DIR}"
@@ -571,6 +582,14 @@ function setup_args() {
     extra_args+=( --call_variants_extra_args "${CALL_VARIANTS_ARGS}")
   fi
   if [[ -n "${POSTPROCESS_VARIANTS_ARGS}" ]]; then
+    if [[ -n "${PAR_REGIONS_BED}" ]]; then
+      # Note: currently this following line won't be run if
+      # POSTPROCESS_VARIANTS_ARGS is empty, which means `par_regions_bed` won't
+      # be set if POSTPROCESS_VARIANTS_ARGS is empty. That is the intended
+      # behavior because --par_regions_bed isn't useful unless --haploid_contigs
+      # is set.
+      POSTPROCESS_VARIANTS_ARGS="${POSTPROCESS_VARIANTS_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
+    fi
     extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
   fi
   if [[ -n "${REPORT_TITLE}" ]]; then

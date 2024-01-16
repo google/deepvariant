@@ -726,6 +726,9 @@ function setup_args() {
   if [[ -n "${CALL_VARIANTS_ARGS}" ]]; then
     extra_args+=( --call_variants_extra_args "${CALL_VARIANTS_ARGS}")
   fi
+  # Note: par_regions_bed won't be added if the corresponding
+  # POSTPROCESS_VARIANTS_*_ARGS is empty. That is the intended behavior
+  # because --par_regions_bed isn't useful unless --haploid_contigs is set.
   if [[ -n "${POSTPROCESS_VARIANTS_CHILD_ARGS}" ]]; then
     if [[ -n "${PAR_REGIONS_BED}" ]]; then
       POSTPROCESS_VARIANTS_CHILD_ARGS="${POSTPROCESS_VARIANTS_CHILD_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
