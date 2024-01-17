@@ -32,6 +32,7 @@
 #include "deepvariant/make_examples_native.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -39,12 +40,15 @@
 #include <vector>
 
 #include "deepvariant/pileup_image_native.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/util/utils.h"
+#include "tensorflow/core/example/example.pb.h"
+#include "tensorflow/core/example/feature.pb.h"
 
 namespace learning {
 namespace genomics {
@@ -139,10 +143,10 @@ std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
   return absl::StrCat(prefix, alt, suffix);
 }
 
-
 // TODO There is an ongoing work to re-implement pileup channels.
 // As a result this code will be obsolete once new channels code is submitted.
 // This functionality is ported from deepvariant/python/clif_converters.cc.
+// Returns a number of channels.
 int FillPileupArray(const std::vector<std::unique_ptr<ImageRow>>& image,
                      std::vector<unsigned char>* data) {
   int num_channels = 6;
@@ -159,6 +163,101 @@ int FillPileupArray(const std::vector<std::unique_ptr<ImageRow>>& image,
     }  // for row->Width
   }  // for row
   return num_channels;
+}
+
+// Calculates the variant type to be encoded in a TensorFlow example.
+EncodedVariantType EncodedVariantType(const Variant& variant) {
+  if (variant.reference_bases().size() == 1 &&
+      variant.alternate_bases_size() >= 1) {
+    bool all_alts_are_size_1 = true;
+    for (const std::string& alt : variant.alternate_bases()) {
+      all_alts_are_size_1 = all_alts_are_size_1 && alt.size() == 1;
+    }
+    if (all_alts_are_size_1) {
+      return EncodedVariantType::kSnp;
+    }
+  }
+  if (variant.reference_bases().size() > 1) {
+    return EncodedVariantType::kIndel;
+  }
+  for (const std::string& alt : variant.alternate_bases()) {
+    if (alt.size() > 1) {
+      return EncodedVariantType::kIndel;
+    }
+  }
+  return EncodedVariantType::kUnknown;
+}
+
+std::string ExamplesGenerator::EncodeExample(
+    const std::vector<std::unique_ptr<ImageRow>>& image, const Variant& variant,
+    const std::vector<std::string>& alt_combination) const {
+  // TODO Once we know the number of channels in advance we should
+  // allocate data with the correct size to avoid vector resizing when data is
+  // filled.
+  std::vector<unsigned char> data;
+  std::array<int, 3> image_shape;
+  image_shape[0] = image.size();                   // Number of rows.
+  image_shape[1] = image[0]->Width();              // Width of the pileup.
+  image_shape[2] = FillPileupArray(image, &data);  // Number of channels.
+
+  // Encode alt allele indices.
+  absl::flat_hash_map<std::string, int> alt_indices;
+  int i = 0;
+  for (const std::string& alt : variant.alternate_bases()) {
+    alt_indices[alt] = i;
+  }
+  std::vector<int> indices;
+  indices.reserve(alt_combination.size());
+  for (const std::string& alt : alt_combination) {
+    indices.push_back(alt_indices[alt]);
+  }
+  std::string alt_indices_encoded;
+  CallVariantsOutput::AltAlleleIndices alt_indices_proto;
+  for (const auto& idx : indices) {
+    alt_indices_proto.mutable_indices()->Add(idx);
+  }
+  alt_indices_proto.SerializeToString(&alt_indices_encoded);
+
+  // Encode variant range.
+  Range variant_range;
+  std::string variant_range_encoded;
+  variant_range.set_reference_name(variant.reference_name());
+  variant_range.set_start(variant.start());
+  variant_range.set_end(variant.end());
+  variant_range.SerializeToString(&variant_range_encoded);
+
+  // Ecode features of the example.
+  tensorflow::Example example;
+  std::string ecoded_variant;
+  variant.SerializeToString(&ecoded_variant);
+  (*example.mutable_features()->mutable_feature())["locus"]
+      .mutable_bytes_list()
+      ->add_value(variant_range_encoded);
+  (*example.mutable_features()->mutable_feature())["variant/encoded"]
+      .mutable_bytes_list()
+      ->add_value(ecoded_variant);
+  (*example.mutable_features()->mutable_feature())["variant_type"]
+      .mutable_int64_list()
+      ->add_value(static_cast<int64_t>(EncodedVariantType(variant)));
+  (*example.mutable_features()->mutable_feature())["alt_allele_indices/encoded"]
+      .mutable_bytes_list()
+      ->add_value(alt_indices_encoded);
+  (*example.mutable_features()->mutable_feature())["image/encoded"]
+      .mutable_bytes_list()
+      ->add_value(data.data(), data.size());
+  for (auto dim : image_shape) {
+    (*example.mutable_features()->mutable_feature())["image/shape"]
+        .mutable_int64_list()
+        ->add_value(dim);
+  }
+  (*example.mutable_features()->mutable_feature())["sequencing_type"]
+      .mutable_int64_list()
+      ->add_value(options_.pic_options().sequencing_type());
+  std::string encoded_example;
+
+  // Example is serialized to a string before it is written to a TFRecord.
+  example.SerializeToString(&encoded_example);
+  return encoded_example;
 }
 
 }  // namespace deepvariant

@@ -37,6 +37,7 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -45,6 +46,13 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
+// This enum matches the Python enum in
+// dv_utils_using_clif.py
+enum class EncodedVariantType {
+  kUnknown = 0,
+  kSnp = 1,
+  kIndel = 2,
+};
 
 // Generates TensorFlow examples from candidates and reads.
 class ExamplesGenerator {
@@ -66,6 +74,12 @@ class ExamplesGenerator {
   std::string CreateHaplotype(const nucleus::genomics::v1::Variant& variant,
                               const std::string& alt, int64_t* ref_start_out,
                               int64_t* ref_end_out) const;
+
+  // Encodes a variant into a pileup example.
+  std::string EncodeExample(
+      const std::vector<std::unique_ptr<ImageRow>>& image,
+      const nucleus::genomics::v1::Variant& variant,
+      const std::vector<std::string>& alt_combination) const;
 
   // Make examples config.
   const MakeExamplesOptions options_;
