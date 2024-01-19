@@ -195,7 +195,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       # functions to check lots of properties of the output.
       candidates = sorted(
           tfrecord.read_tfrecords(
-              FLAGS.candidates, proto=deepvariant_pb2.DeepVariantCall
+              FLAGS.candidates,
+              proto=deepvariant_pb2.DeepVariantCall,
           ),
           key=lambda c: variant_utils.variant_range_tuple(c.variant),
       )
@@ -466,8 +467,15 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       golden_file = _sharded(testdata.GOLDEN_CALLING_EXAMPLES, num_shards)
     else:
       golden_file = _sharded(testdata.GOLDEN_TRAINING_EXAMPLES, num_shards)
+
+    compression_type = 'GZIP' if 'tfrecord.gz' in golden_file else None
     self.assertDeepVariantExamplesEqual(
-        examples, list(tfrecord.read_tfrecords(golden_file))
+        examples,
+        list(
+            tfrecord.read_tfrecords(
+                golden_file, compression_type=compression_type
+            )
+        ),
     )
 
     if mode == 'calling':
@@ -484,8 +492,13 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       gvcf_golden_file = _sharded(
           testdata.GOLDEN_POSTPROCESS_GVCF_INPUT, num_shards
       )
+      compression_type = 'GZIP' if 'tfrecord.gz' in gvcf_golden_file else None
       expected_gvcfs = list(
-          tfrecord.read_tfrecords(gvcf_golden_file, proto=variants_pb2.Variant)
+          tfrecord.read_tfrecords(
+              gvcf_golden_file,
+              proto=variants_pb2.Variant,
+              compression_type=compression_type,
+          )
       )
       # Despite the name, assertCountEqual checks that all elements match.
       self.assertCountEqual(gvcfs, expected_gvcfs)
@@ -1110,7 +1123,14 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     if verify_labels:
       expected_features += ['label']
 
-    examples = list(tfrecord.read_tfrecords(examples_filename))
+    compression_type = 'GZIP' if 'tfrecord.gz' in examples_filename else None
+
+    examples = list(
+        tfrecord.read_tfrecords(
+            examples_filename,
+            compression_type=compression_type,
+        )
+    )
     for example in examples:
       for label_feature in expected_features:
         self.assertIn(label_feature, example.features.feature)

@@ -126,7 +126,12 @@ def examples_to_variants(examples_path, max_records=None):
   Raises:
     ValueError: if we find a Variant in any example that doesn't have genotypes.
   """
-  examples = tfrecord.read_tfrecords(examples_path, max_records=max_records)
+  compression_type = 'GZIP' if 'tfrecord.gz' in examples_path else None
+  examples = tfrecord.read_tfrecords(
+      examples_path,
+      max_records=max_records,
+      compression_type=compression_type,
+  )
   variants_and_labels = sorted(
       (
           (dv_utils.example_variant(example), dv_utils.example_label(example))

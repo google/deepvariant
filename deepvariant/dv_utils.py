@@ -374,7 +374,7 @@ def get_shape_and_channels_from_json(example_info_json):
 
 def get_tf_record_writer(output_filename: str) -> tf.io.TFRecordWriter:
   tf_options = None
-  if output_filename.endswith('.gz'):
+  if 'tfrecord.gz' in output_filename or output_filename.endswith('.gz'):
     tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
   return tf.io.TFRecordWriter(output_filename, options=tf_options)
 
