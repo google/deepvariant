@@ -50,6 +50,7 @@ Flags:
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
+--skip_sompy (true|false) If True, skip the som.py evaluation.
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
 
 If model_preset is not specified, the below flags are required:
@@ -70,6 +71,7 @@ BUILD_DOCKER=false
 DRY_RUN=false
 USE_GPU=false
 SAVE_INTERMEDIATE_RESULTS=false
+SKIP_SOMPY=false
 # Strings; sorted alphabetically.
 BAM_NORMAL=""
 BAM_TUMOR=""
@@ -126,6 +128,16 @@ while (( "$#" )); do
       SAVE_INTERMEDIATE_RESULTS="$2"
       if [[ "${SAVE_INTERMEDIATE_RESULTS}" != "true" ]] && [[ "${SAVE_INTERMEDIATE_RESULTS}" != "false" ]]; then
         echo "Error: --save_intermediate_results needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --skip_sompy)
+      SKIP_SOMPY="$2"
+      if [[ "${SKIP_SOMPY}" != "true" ]] && [[ "${SKIP_SOMPY}" != "false" ]]; then
+        echo "Error: --SKIP_SOMPY needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -305,6 +317,7 @@ echo "BUILD_DOCKER: ${BUILD_DOCKER}"
 echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
+echo "SKIP_SOMPY: ${SKIP_SOMPY}"
 echo "# Strings; sorted alphabetically."
 echo "BAM_NORMAL: ${BAM_NORMAL}"
 echo "BAM_TUMOR: ${BAM_TUMOR}"
@@ -631,10 +644,12 @@ function main() {
   copy_data
   setup_args
   run_deepsomatic_with_docker
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    run_sompy
-  else
-    run_sompy 2>&1 | tee "${LOG_DIR}/sompy.log"
+  if [[ "${SKIP_SOMPY}" == "false" ]]; then
+    if [[ "${DRY_RUN}" == "true" ]]; then
+      run_sompy
+    else
+      run_sompy 2>&1 | tee "${LOG_DIR}/sompy.log"
+    fi
   fi
 }
 
