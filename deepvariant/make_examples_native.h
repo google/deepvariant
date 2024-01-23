@@ -39,7 +39,9 @@
 
 #include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/flat_hash_map.h"
 #include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/io/tfrecord_writer.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 
 namespace learning {
@@ -54,11 +56,21 @@ enum class EncodedVariantType {
   kIndel = 2,
 };
 
+struct Sample {
+  Sample() = default;
+  explicit Sample(const SampleOptions& options) : sample_options(options){};
+
+  SampleOptions sample_options;
+  std::unique_ptr<nucleus::TFRecordWriter> writer;
+};
+
 // Generates TensorFlow examples from candidates and reads.
 class ExamplesGenerator {
  public:
   explicit ExamplesGenerator(const MakeExamplesOptions& options,
                              bool test_mode = false);
+
+  ~ExamplesGenerator();
 
  private:
   friend class ExamplesGeneratorPeer;
@@ -88,6 +100,9 @@ class ExamplesGenerator {
 
   // Half width of pileup image.
   int half_width_;
+
+  // Samples keyed by role.
+  absl::flat_hash_map<std::string, Sample> samples_;
 };
 
 // Helper class to allow unit testing of some private methods.
@@ -117,6 +132,8 @@ class ExamplesGeneratorPeer {
 nucleus::genomics::v1::Range MakeRange(const std::string& ref_name,
                                        int64_t start, int64_t end);
 
+std::string GetExamplesFilename(const MakeExamplesOptions& options,
+                                const Sample& sample);
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

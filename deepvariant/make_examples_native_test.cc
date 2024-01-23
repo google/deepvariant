@@ -196,6 +196,48 @@ INSTANTIATE_TEST_SUITE_P(
          .expected_haplotype = "GTGGGGGGGGTGGGGGT"},
     })));
 
+TEST(GetExamplesFilename, MultiSample) {
+  MakeExamplesOptions options;
+  options.set_examples_filename("/some/path/to/examples.tfrecord.gz");
+  auto make_examples_sample_options = options.mutable_sample_options();
+  auto child_sample_options = make_examples_sample_options->Add();
+  child_sample_options->set_role("child");
+  auto sample_options_parent = make_examples_sample_options->Add();
+  sample_options_parent->set_role("parent");
+  Sample sample;
+  SampleOptions sample_options;
+  sample_options.set_role("child");
+  sample.sample_options = sample_options;
+  // Training mode.
+  options.set_mode(MakeExamplesOptions::TRAINING);
+  EXPECT_EQ(GetExamplesFilename(options, sample),
+            "/some/path/to/examples.tfrecord.gz");
+  // Calling mode.
+  options.set_mode(MakeExamplesOptions::CALLING);
+  EXPECT_EQ(GetExamplesFilename(options, sample),
+            "/some/path/to/examples_child.tfrecord.gz");
+}
+
+TEST(GetExamplesFilename, SingleSample) {
+  MakeExamplesOptions options;
+  options.set_examples_filename("/some/path/to/examples.tfrecord.gz");
+  auto make_examples_sample_options = options.mutable_sample_options();
+  auto main_sample_options = make_examples_sample_options->Add();
+  main_sample_options->set_role("main_sample");
+  Sample sample;
+  SampleOptions sample_options;
+  sample_options.set_role("main_sample");
+  sample.sample_options = sample_options;
+  // Training mode.
+  options.set_mode(MakeExamplesOptions::TRAINING);
+  EXPECT_EQ(GetExamplesFilename(options, sample),
+            "/some/path/to/examples.tfrecord.gz");
+  // Calling mode.
+  options.set_mode(MakeExamplesOptions::CALLING);
+  EXPECT_EQ(GetExamplesFilename(options, sample),
+            "/some/path/to/examples.tfrecord.gz");
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

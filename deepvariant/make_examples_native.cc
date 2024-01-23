@@ -45,10 +45,12 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/io/tfrecord_writer.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/example/example.pb.h"
 #include "tensorflow/core/example/feature.pb.h"
+#include "re2/re2.h"
 
 namespace learning {
 namespace genomics {
@@ -60,6 +62,11 @@ using Range = nucleus::genomics::v1::Range;
 ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
                                      bool test_mode)
     : options_(options) {
+  // Initialize samples.
+  for (const auto& sample_options_for_one_sample : options_.sample_options()) {
+    samples_[sample_options_for_one_sample.role()] =
+        Sample(sample_options_for_one_sample);
+  }
   half_width_ = (options_.pic_options().width() - 1) / 2;
   if (test_mode) {
     return;
@@ -73,8 +80,44 @@ ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
   std::string fai_path = absl::StrCat(fasta_path, ".fai");
   ref_reader_ = std::move(
       nucleus::IndexedFastaReader::FromFile(fasta_path, fai_path).ValueOrDie());
+
+  // Initialize TFRecord writers for each sample.
+  for (auto& [role, sample] : samples_) {
+    if (sample.sample_options.skip_output_generation()) {
+      continue;
+    }
+    // TFRecrd examples are always compressed as it is also in call_variants.
+    sample.writer = nucleus::TFRecordWriter::New(
+        GetExamplesFilename(options_, sample), "GZIP");
+  }
 }
 
+ExamplesGenerator::~ExamplesGenerator() {
+  for (auto& [role, sample] : samples_) {
+    if (sample.sample_options.skip_output_generation()) {
+      continue;
+    }
+    sample.writer->Close();
+  }
+}
+
+std::string GetExamplesFilename(const MakeExamplesOptions& options,
+                                const Sample& sample) {
+  // If make_examples is run on a single sample or in training mode then suffix
+  // is not added to the output file name.
+  if (options.mode() == deepvariant::MakeExamplesOptions::TRAINING ||
+      options.sample_options().size() == 1) {
+    return options.examples_filename();
+  } else {
+    // Add suffix to the filename.
+    std::string suffix = sample.sample_options.role();
+    std::string file_name_with_suffix = options.examples_filename();
+    RE2::Replace(
+        &file_name_with_suffix, ".tfrecord",
+        absl::StrCat("_", suffix, ".tfrecord"));
+    return file_name_with_suffix;
+  }
+}
 
 std::vector<std::vector<std::string>> ExamplesGenerator::AltAlleleCombinations(
     const Variant& variant) const {
