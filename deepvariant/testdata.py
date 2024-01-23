@@ -67,6 +67,7 @@ GOLDEN_TRAINING_EXAMPLES = None
 GOLDEN_CALLING_CANDIDATES = None
 GOLDEN_CANDIDATE_POSITIONS = None
 GOLDEN_CALLING_EXAMPLES = None
+GOLDEN_CALLING_EXAMPLES_SHARDED = None
 CONFIDENT_REGIONS_BED = None
 TRUTH_VARIANTS_VCF = None
 TRUTH_VARIANTS_VCF_WITH_TYPES = None
@@ -126,6 +127,7 @@ def init():
   global GOLDEN_CALLING_CANDIDATES
   global GOLDEN_CANDIDATE_POSITIONS
   global GOLDEN_CALLING_EXAMPLES
+  global GOLDEN_CALLING_EXAMPLES_SHARDED
   global CONFIDENT_REGIONS_BED
   global TRUTH_VARIANTS_VCF
   global TRUTH_VARIANTS_VCF_WITH_TYPES
@@ -188,6 +190,9 @@ def init():
   )
   GOLDEN_CALLING_EXAMPLES = deepvariant_testdata(
       'golden.calling_examples.tfrecord.gz'
+  )
+  GOLDEN_CALLING_EXAMPLES_SHARDED = deepvariant_testdata(
+      'golden.calling_examples.tfrecord.gz@3'
   )
   CONFIDENT_REGIONS_BED = deepvariant_testdata(
       'input/test_nist.b37_chr20_100kbp_at_10mb.bed'
