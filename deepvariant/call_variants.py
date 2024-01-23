@@ -121,6 +121,12 @@ flags.DEFINE_boolean(
     'If true, include extra debug info in the output, including the original '
     'image_encoded.',
 )
+flags.DEFINE_list(
+    'activation_layers',
+    [],
+    'A list of activation layer names which we add to the debug info output.'
+    ' Needs include_debug_info flag to be True.',
+)
 flags.DEFINE_boolean(
     'debugging_true_label_mode',
     False,
@@ -615,6 +621,15 @@ def main(argv=()):
         FLAGS.outfile
     ) and not FLAGS.outfile.endswith('.tfrecord.gz'):
       raise ValueError('Output filename must end with .tfrecord.gz')
+
+    if FLAGS.activation_layers:
+      if not FLAGS.include_debug_info:
+        logging.warning(
+            '"--include_debug_info" need to be set True to have the input'
+            ' activation_layers: %s included in CVO.',
+            ','.join(FLAGS.activation_layers),
+        )
+
     call_variants(
         examples_filename=FLAGS.examples,
         checkpoint_path=FLAGS.checkpoint,
