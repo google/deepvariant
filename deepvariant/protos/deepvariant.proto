@@ -340,6 +340,9 @@ message CallVariantsOutput {
     repeated double prelogits = 7;
     // The encoded image used for inference.
     bytes image_encoded = 8;
+    // Key-value pairs of layer names of call variant models and the encoded
+    // layers' outputs.
+    map<string, bytes> layer_output_encoded = 9;
   }
   DebugInfo debug_info = 4;
 }
