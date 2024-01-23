@@ -51,6 +51,7 @@ py_library(
     srcs = [],
     deps = [
         ":allele_frequency",
+        ":call_variants_lib",
         ":call_variants_slim_lib",
         ":data_providers",
         ":dv_utils",
@@ -885,6 +886,7 @@ py_library(
         ":keras_modeling",
         ":logging_level",
         "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/util:errors",
@@ -892,6 +894,26 @@ py_library(
         "//third_party/nucleus/util:variant_utils",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
+    ],
+)
+
+py_test(
+    name = "call_variants_test",
+    size = "large",
+    srcs = ["call_variants_test.py"],
+    data = [":testdata"],
+    deps = [
+        ":call_variants_lib",
+        ":dv_utils",
+        ":keras_modeling",
+        ":py_testdata",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:sharded_file_utils",
+        "//third_party/nucleus/io:tfrecord",
+        "@absl_py//absl/flags",
+        "@absl_py//absl/testing:absltest",  # buildcleaner: keep
+        "@absl_py//absl/testing:flagsaver",
+        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -1251,6 +1273,7 @@ py_library(
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:variants_py_pb2",
+        "@absl_py//absl/logging",
     ],
 )
 

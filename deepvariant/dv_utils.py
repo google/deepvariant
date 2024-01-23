@@ -199,7 +199,12 @@ def get_one_example_from_examples_path(source, proto=None):
     )
   for f in files:
     try:
-      return next(tfrecord.read_tfrecords(f, proto=proto))
+      compression_type = 'GZIP' if 'tfrecord.gz' in f else None
+      return next(
+          tfrecord.read_tfrecords(
+              f, proto=proto, compression_type=compression_type
+          )
+      )
     except StopIteration:
       # Getting a StopIteration from one next() means source_path is empty.
       # Move on to the next one to try to get one example.
