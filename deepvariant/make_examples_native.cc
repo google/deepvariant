@@ -248,6 +248,7 @@ std::string ExamplesGenerator::EncodeExample(
   int i = 0;
   for (const std::string& alt : variant.alternate_bases()) {
     alt_indices[alt] = i;
+    i++;
   }
   std::vector<int> indices;
   indices.reserve(alt_combination.size());
