@@ -80,9 +80,7 @@ class PileupImageEncoderNative {
   // Create read pileup image section for one sample.
   std::vector<std::unique_ptr<ImageRow>> BuildPileupForOneSample(
       const DeepVariantCall& dv_call, const string& ref_bases,
-      const std::vector<
-          nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>>&
-          wrapped_reads,
+      const std::vector<const ::nucleus::genomics::v1::Read *>& reads,
       int image_start_pos, const std::vector<std::string>& alt_alleles,
       const SampleOptions& sample_options);
 
@@ -99,8 +97,13 @@ class PileupImageEncoderNative {
           wrapped_reads,
       int image_start_pos, const std::vector<std::string>& alt_alleles,
       const SampleOptions& sample_options) {
+    std::vector<const nucleus::genomics::v1::Read *> reads;
+    reads.reserve(wrapped_reads.size());
+    for (const auto& wrapped_read : wrapped_reads) {
+      reads.emplace_back(wrapped_read.p_);
+    }
     return BuildPileupForOneSample(*(wrapped_dv_call.p_), ref_bases,
-                                   wrapped_reads, image_start_pos, alt_alleles,
+                                   reads, image_start_pos, alt_alleles,
                                    sample_options);
   }
 

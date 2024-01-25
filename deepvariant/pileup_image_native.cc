@@ -218,11 +218,13 @@ vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
 std::vector<std::unique_ptr<ImageRow>>
 PileupImageEncoderNative::BuildPileupForOneSample(
     const DeepVariantCall& dv_call, const string& ref_bases,
-    const std::vector<
-          nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>>&
-          wrapped_reads, int image_start_pos,
+    const std::vector<const ::nucleus::genomics::v1::Read *>& reads,
+    int image_start_pos,
     const vector<std::string>& alt_alleles,
     const SampleOptions& sample_options) {
+  // The width of a pileup is defined by the length of ref_bases. ref_bases must
+  // have the correct length.
+  CHECK_EQ(ref_bases.size(), options_.width());
   int pileup_height = sample_options.pileup_height();
   if (pileup_height == 0) {
     pileup_height = options_.height();
@@ -238,9 +240,9 @@ PileupImageEncoderNative::BuildPileupForOneSample(
   }
 
   // Create vector of read indices.
-  std::vector<int> read_indices(wrapped_reads.size());
+  std::vector<int> read_indices(reads.size());
   std::iota(read_indices.begin(), read_indices.end(), 0);
-  if (wrapped_reads.size() > max_reads) {
+  if (reads.size() > max_reads) {
     // Shuffle the indices instead of the reads, so that we won't change the
     // order of the reads list.
     std::shuffle(read_indices.begin(), read_indices.end(),
@@ -254,7 +256,7 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     if (pileup_of_reads.size() >= max_reads) {
       break;
     }
-    const Read& read = *wrapped_reads[index].p_;
+    const Read& read = *reads[index];
     std::unique_ptr<ImageRow> image_row =
         EncodeRead(dv_call, ref_bases, read, image_start_pos, alt_alleles);
     if (image_row == nullptr) {
