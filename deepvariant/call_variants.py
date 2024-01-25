@@ -250,7 +250,9 @@ def round_gls(gls, precision=None):
   return rounded_gls
 
 
-def write_variant_call(writer, prediction):
+def write_variant_call(
+    writer, prediction, include_debug_info, debugging_true_label_mode
+):
   """Write the variant call based on prediction.
 
   Args:
@@ -259,6 +261,8 @@ def write_variant_call(writer, prediction):
     prediction: A [3] tensor of floats. These are the predicted genotype
       likelihoods (p00, p0x, pxx) for some alt allele x, in the same order as
       encoded_variants.
+    include_debug_info: If true, include debug information.
+    debugging_true_label_mode: If true, include true label from the example.
 
   Returns:
     The return status from writer.
@@ -268,15 +272,13 @@ def write_variant_call(writer, prediction):
   rounded_gls = round_gls(prediction['probabilities'], precision=_GL_PRECISION)
 
   # Write it out.
-  true_labels = prediction['label'] if FLAGS.debugging_true_label_mode else None
-  if FLAGS.debugging_true_label_mode:
+  true_labels = prediction['label'] if debugging_true_label_mode else None
+  if debugging_true_label_mode:
     if 'label' not in prediction:
       logging.warning('No label is available for debugging_true_label_mode.')
     else:
       true_labels = prediction['label']
-  image_encoded = (
-      prediction['image_encoded'] if FLAGS.include_debug_info else None
-  )
+  image_encoded = prediction['image_encoded'] if include_debug_info else None
   cvo = _create_cvo_proto(
       encoded_variant,
       rounded_gls,
@@ -285,6 +287,8 @@ def write_variant_call(writer, prediction):
       logits=prediction.get('logits'),
       prelogits=prediction.get('prelogits'),
       image_encoded=image_encoded,
+      include_debug_info=include_debug_info,
+      debugging_true_label_mode=debugging_true_label_mode,
   )
   return writer.write(cvo)
 
@@ -297,6 +301,8 @@ def _create_cvo_proto(
     logits=None,
     prelogits=None,
     image_encoded=None,
+    include_debug_info=False,
+    debugging_true_label_mode=False,
 ):
   """Returns a CallVariantsOutput proto from the relevant input information."""
   variant = variants_pb2.Variant.FromString(encoded_variant)
@@ -306,7 +312,7 @@ def _create_cvo_proto(
       )
   )
   debug_info = None
-  if FLAGS.include_debug_info or FLAGS.debugging_true_label_mode:
+  if include_debug_info or debugging_true_label_mode:
     if prelogits is not None:
       assert prelogits.shape == (1, 1, 2048)
       prelogits = prelogits[0][0]
@@ -331,7 +337,13 @@ def _create_cvo_proto(
 
 # TODO: Consider creating one data loading function to re-use simliar
 #                code with training in train_inceptionv3.py.
-def get_dataset(path, example_shape):
+def get_dataset(
+    path,
+    example_shape,
+    batch_size,
+    include_debug_info,
+    debugging_true_label_mode,
+):
   """Parse TFRecords, do image preprocessing, and return the image dataset for inference and the variant/alt-allele dataset for writing the variant calls."""
 
   proto_features = {
@@ -339,7 +351,7 @@ def get_dataset(path, example_shape):
       'variant/encoded': tf.io.FixedLenFeature((), tf.string),
       'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string),
   }
-  if FLAGS.debugging_true_label_mode:
+  if debugging_true_label_mode:
     proto_features['label'] = tf.io.FixedLenFeature((1), tf.int64)
 
   def _parse_example(example):
@@ -348,7 +360,7 @@ def get_dataset(path, example_shape):
         serialized=example, features=proto_features
     )
     image_encoded = (
-        parsed_features['image/encoded'] if FLAGS.include_debug_info else b''
+        parsed_features['image/encoded'] if include_debug_info else b''
     )
     image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
     image = tf.reshape(image, example_shape)
@@ -357,7 +369,7 @@ def get_dataset(path, example_shape):
     variant = parsed_features['variant/encoded']
     alt_allele_indices = parsed_features['alt_allele_indices/encoded']
     optional_label = None
-    if FLAGS.debugging_true_label_mode:
+    if debugging_true_label_mode:
       optional_label = parsed_features['label']
     return image_encoded, image, variant, alt_allele_indices, optional_label
 
@@ -386,17 +398,24 @@ def get_dataset(path, example_shape):
   )
 
   enc_image_variant_alt_allele_ds = enc_image_variant_alt_allele_ds.batch(
-      batch_size=FLAGS.batch_size
+      batch_size=batch_size
   ).prefetch(tf.data.AUTOTUNE)
   return enc_image_variant_alt_allele_ds
 
 
-def post_processing(output_file: str, output_queue: Any) -> None:
+def post_processing(
+    output_file: str,
+    output_queue: Any,
+    include_debug_info: bool,
+    debugging_true_label_mode: bool,
+) -> None:
   """Post processing of called variants.
 
   Args:
     output_file: Path to output file where outputs will be written.
     output_queue: Multiprocessing queue to fetch predictions from.
+    include_debug_info: If true, include debug information.
+    debugging_true_label_mode: If true, include true label from the example.
   """
   writer = tfrecord.Writer(output_file)
   n_examples = 0
@@ -423,14 +442,23 @@ def post_processing(output_file: str, output_queue: Any) -> None:
       }
       if FLAGS.debugging_true_label_mode and optional_label_list is not None:
         pred['label'] = optional_label_list[i][0]
-      write_variant_call(writer, pred)
+      write_variant_call(
+          writer, pred, include_debug_info, debugging_true_label_mode
+      )
       n_examples += 1
     n_batches += 1
   writer.close()
 
 
 def call_variants(
-    examples_filename: str, checkpoint_path: str, output_file: str
+    examples_filename: str,
+    checkpoint_path: str,
+    output_file: str,
+    writer_threads: int,
+    kmp_blocktime: str,
+    batch_size: int,
+    include_debug_info: bool,
+    debugging_true_label_mode: bool,
 ):
   """Main driver of call_variants."""
   output_queue = multiprocessing.Queue()
@@ -439,13 +467,13 @@ def call_variants(
   is_gpu_available = True if tf.config.list_physical_devices('GPU') else False
 
   # This means we are in autodetect mode.
-  if FLAGS.writer_threads == 0:
+  if writer_threads == 0:
     # If GPU is available then use all CPUs for writing.
     total_writer_process = (
         multiprocessing.cpu_count() if is_gpu_available else 1
     )
   else:
-    total_writer_process = FLAGS.writer_threads
+    total_writer_process = writer_threads
 
   # If output file is already sharded then don't dynamically shard.
   if sharded_file_utils.is_sharded_filename(output_file):
@@ -469,6 +497,8 @@ def call_variants(
         args=(
             paths[process_id],
             output_queue,
+            include_debug_info,
+            debugging_true_label_mode,
         ),
     )
     all_processes.append(post_processing_process)
@@ -476,8 +506,8 @@ def call_variants(
 
   logging.info('Total %d writing processes started.', len(all_processes))
 
-  if FLAGS.kmp_blocktime:
-    os.environ['KMP_BLOCKTIME'] = FLAGS.kmp_blocktime
+  if kmp_blocktime:
+    os.environ['KMP_BLOCKTIME'] = kmp_blocktime
     logging.vlog(
         3, 'Set KMP_BLOCKTIME to {}'.format(os.environ['KMP_BLOCKTIME'])
     )
@@ -564,7 +594,11 @@ def call_variants(
       model.load_weights(checkpoint_path).expect_partial()
 
     enc_image_variant_alt_allele_ds = get_dataset(
-        examples_filename, example_shape
+        examples_filename,
+        example_shape,
+        batch_size,
+        include_debug_info,
+        debugging_true_label_mode,
     )
 
     batch_no = 0
@@ -634,6 +668,11 @@ def main(argv=()):
         examples_filename=FLAGS.examples,
         checkpoint_path=FLAGS.checkpoint,
         output_file=FLAGS.outfile,
+        writer_threads=FLAGS.writer_threads,
+        kmp_blocktime=FLAGS.kmp_blocktime,
+        batch_size=FLAGS.batch_size,
+        include_debug_info=FLAGS.include_debug_info,
+        debugging_true_label_mode=FLAGS.debugging_true_label_mode,
     )
     logging.info('Complete: call_variants.')
 
