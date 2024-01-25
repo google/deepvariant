@@ -59,23 +59,31 @@ class CallVariantsTest(parameterized.TestCase):
           testcase_name="end2end_default",
           model="inception_v3",
           shard_input=False,
-          include_debug_info=True,
       ),
       dict(
           testcase_name="end2end_shard_input",
           model="inception_v3",
           shard_input=True,
-          include_debug_info=True,
       ),
       dict(
           testcase_name="end2end_no_debug_info_no_shard",
           model="inception_v3",
           shard_input=False,
-          include_debug_info=False,
+      ),
+      dict(
+          testcase_name="end2end_shard_input_with_debug",
+          model="inception_v3",
+          shard_input=True,
+          include_debug_info=True,
       ),
   )
   @flagsaver.flagsaver
-  def test_call_variants_end2end(self, model, shard_input, include_debug_info):
+  def test_call_variants_end2end(
+      self,
+      model,
+      shard_input,
+      include_debug_info=False,
+  ):
     # Load in test data and get input shape
     calling_testdata_path = testdata.GOLDEN_CALLING_EXAMPLES
     example_info_json_path = dv_utils.get_example_info_json_filename(
@@ -154,6 +162,8 @@ class CallVariantsTest(parameterized.TestCase):
     else:
       num_examples = len(list(tfrecord.read_tfrecords(calling_testdata_path)))
     self.assertLen(call_variants_outputs, num_examples)
+    if include_debug_info:
+      self.assertNotEmpty(call_variants_outputs[0].debug_info.image_encoded)
 
   @parameterized.named_parameters(
       dict(
