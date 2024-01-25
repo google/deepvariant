@@ -47,6 +47,7 @@
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/tfrecord_writer.h"
 #include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 #include "third_party/nucleus/util/utils.h"
 #include "tensorflow/core/example/example.pb.h"
 #include "tensorflow/core/example/feature.pb.h"
@@ -58,6 +59,7 @@ namespace deepvariant {
 
 using Variant = nucleus::genomics::v1::Variant;
 using Range = nucleus::genomics::v1::Range;
+using Read = nucleus::genomics::v1::Read;
 
 ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
                                      bool test_mode)
@@ -302,6 +304,53 @@ std::string ExamplesGenerator::EncodeExample(
   // Example is serialized to a string before it is written to a TFRecord.
   example.SerializeToString(&encoded_example);
   return encoded_example;
+}
+
+void ExamplesGenerator::CreateAndWritePileupExamples(
+    const DeepVariantCall& candidate, const Sample& sample,
+    const std::vector<int>& sample_order,
+    const std::vector<InMemoryReader>& readers) {
+  LOG(FATAL) << "CreateAndWritePileupExamples not implemented";
+}
+
+// Examples are generated using reads from all samples, the order of reads
+// depends on the role.
+// reads_per_sample contain reads for each sample. In a multisample mode reads
+// are stacked according to the reads_per_sample order.
+void ExamplesGenerator::WriteExamplesInRegion(
+    const std::vector<nucleus::ConstProtoPtr<DeepVariantCall>>& candidates,
+    const std::vector<std::vector<nucleus::ConstProtoPtr<Read>>>&
+        reads_per_sample,
+    const std::vector<int>& sample_order, const std::string& role) {
+  // Load reads.
+  std::vector<InMemoryReader> readers;
+  // Cache reads passed from Python. The order of samples is preserved as passed
+  // from the caller.
+  readers.reserve(reads_per_sample.size());
+  for (const auto& reads : reads_per_sample) {
+    readers.push_back(InMemoryReader(InMemoryReader(reads)));
+  }
+  for (const auto& candidate : candidates) {
+    CreateAndWritePileupExamples(*candidate.p_, samples_[role], sample_order,
+                                 readers);
+  }
+}
+
+InMemoryReader::InMemoryReader(
+    const std::vector<nucleus::ConstProtoPtr<Read>>& reads)
+    : reads_cache_(reads) {}
+
+// Iterate reads_cache_ and return reads that overlap the range. In order to
+// avoid copying Read protos raw pointers are returned. Since all the reads are
+// allocated in Python we don't need to worry about the memory management.
+std::vector<const Read*> InMemoryReader::Query(const Range& range) const {
+  std::vector<const Read*> out;
+  for (auto& read : reads_cache_) {
+    if (nucleus::ReadOverlapsRegion(*read.p_, range)) {
+      out.emplace_back(read.p_);
+    }
+  }
+  return out;
 }
 
 }  // namespace deepvariant

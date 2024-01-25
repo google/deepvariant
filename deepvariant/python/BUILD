@@ -166,3 +166,19 @@ py_test(
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
+
+py_clif_cc(
+    name = "make_examples_native",
+    srcs = ["make_examples_native.clif"],
+    clif_deps = [
+    ],
+    pyclif_deps = [
+        "//third_party/nucleus/protos:range_pyclif",
+        "//deepvariant/protos:deepvariant_pyclif",
+    ],
+    deps = [
+        "//deepvariant:make_examples_native",
+        "//third_party/nucleus/protos:reads_pyclif",
+        "//third_party/nucleus/util:proto_clif_converter",
+    ],
+)

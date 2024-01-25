@@ -35,7 +35,9 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/testing/test_utils.h"
 
 namespace learning {
 namespace genomics {
@@ -59,6 +61,17 @@ void CreateTestSeq(const std::string& name, const int pos_in_fasta,
   seq->mutable_region()->set_start(range_start);
   seq->mutable_region()->set_end(range_end);
   seq->set_bases(bases);
+}
+
+nucleus::genomics::v1::Read MakeRead(
+    const absl::string_view chr, const int start, const std::string& bases,
+    const std::vector<std::string>& cigar_elements,
+    const absl::string_view read_name) {
+  nucleus::genomics::v1::Read read = nucleus::MakeRead(
+      std::string(chr), start, bases,
+      std::vector<std::string>(cigar_elements.begin(), cigar_elements.end()));
+  read.set_fragment_name(std::string(read_name));
+  return read;
 }
 
 }  // namespace deepvariant

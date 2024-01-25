@@ -64,6 +64,24 @@ struct Sample {
   std::unique_ptr<nucleus::TFRecordWriter> writer;
 };
 
+// Cache of reads. Reads are passed from Python wrapped in ConstProtoPtr.
+// InMemoryReader serves as a container of Read pointers passed from Python.
+// Query returns a vector of pointers to avoid copying.
+class InMemoryReader {
+ public:
+  explicit InMemoryReader(
+      const std::vector<nucleus::ConstProtoPtr<nucleus::genomics::v1::Read>>&
+          reads);
+
+  // Returns reads overlapping the range.
+  std::vector<const nucleus::genomics::v1::Read*> Query(
+      const nucleus::genomics::v1::Range& range) const;
+
+ private:
+  const std::vector<nucleus::ConstProtoPtr<nucleus::genomics::v1::Read>>&
+      reads_cache_;
+};
+
 // Generates TensorFlow examples from candidates and reads.
 class ExamplesGenerator {
  public:
@@ -71,6 +89,18 @@ class ExamplesGenerator {
                              bool test_mode = false);
 
   ~ExamplesGenerator();
+
+  // Encodes candidates into TensorFlow examples containing pileup images
+  // and writes them to TFRecord.
+  void WriteExamplesInRegion(
+      const std::vector<nucleus::ConstProtoPtr<DeepVariantCall>>& candidates,
+      const std::vector<
+          std::vector<nucleus::ConstProtoPtr<nucleus::genomics::v1::Read>>>&
+          reads_per_sample,
+      const std::vector<int>& sample_order,
+      // std::string has to be used here instead of absl::string view due to the
+      // PyClif restrictions.
+      const std::string& role);
 
  private:
   friend class ExamplesGeneratorPeer;
@@ -92,6 +122,11 @@ class ExamplesGenerator {
       const std::vector<std::unique_ptr<ImageRow>>& image,
       const nucleus::genomics::v1::Variant& variant,
       const std::vector<std::string>& alt_combination) const;
+
+  void CreateAndWritePileupExamples(const DeepVariantCall& candidate,
+                                    const Sample& sample,
+                                    const std::vector<int>& sample_order,
+                                    const std::vector<InMemoryReader>& readers);
 
   // Make examples config.
   const MakeExamplesOptions options_;

@@ -47,6 +47,7 @@
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 #include "google/protobuf/text_format.h"
 
 namespace learning {
@@ -54,6 +55,8 @@ namespace genomics {
 namespace deepvariant {
 
 using Variant = nucleus::genomics::v1::Variant;
+using Read = nucleus::genomics::v1::Read;
+using Range = nucleus::genomics::v1::Range;
 using VariantCall = nucleus::genomics::v1::VariantCall;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
@@ -236,6 +239,38 @@ TEST(GetExamplesFilename, SingleSample) {
   options.set_mode(MakeExamplesOptions::CALLING);
   EXPECT_EQ(GetExamplesFilename(options, sample),
             "/some/path/to/examples.tfrecord.gz");
+}
+
+TEST(InMemoryReader, Sanity) {
+  std::vector<nucleus::ConstProtoPtr<Read>> input_read_ptrs({{
+      nucleus::ConstProtoPtr<Read>(
+          new Read(MakeRead("chr1", 100, "AACCTTGGAACCTTGG", {"16M"},
+                            "read_1"))),
+      nucleus::ConstProtoPtr<Read>(
+          new Read(MakeRead("chr1", 110, "AACCTTGGAACCTTGG", {"16M"},
+                            "read_2"))),
+      nucleus::ConstProtoPtr<Read>(
+          new Read(MakeRead("chr1", 120, "AACCTTGGAACCTTGG", {"16M"},
+                            "read_3"))),
+  }});
+
+  InMemoryReader reader(input_read_ptrs);
+  Range range;
+  range.set_start(110);
+  range.set_end(115);
+  range.set_reference_name("chr1");
+  std::vector<const Read*> output_reads = reader.Query(range);
+  EXPECT_THAT(output_reads, UnorderedElementsAreArray({input_read_ptrs[0].p_,
+                                                       input_read_ptrs[1].p_}));
+
+  range.set_start(99);
+  range.set_end(100);
+  output_reads = reader.Query(range);
+  EXPECT_THAT(output_reads,
+              UnorderedElementsAreArray(std::vector<const Read*>()));
+  for (nucleus::ConstProtoPtr<Read> read : input_read_ptrs) {
+    delete read.p_;
+  }
 }
 
 }  // namespace deepvariant

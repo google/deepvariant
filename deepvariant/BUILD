@@ -1650,6 +1650,7 @@ cc_library(
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/util:proto_ptr",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
@@ -1667,6 +1668,7 @@ cc_test(
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",
         "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/util:proto_ptr",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
@@ -1677,12 +1679,15 @@ cc_test(
 
 cc_library(
     name = "testing_utils",
+    testonly = True,
     srcs = ["testing_utils.cc"],
     hdrs = ["testing_utils.h"],
     deps = [
         "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
-        "@com_google_absl//absl/log",
+        "//third_party/nucleus/testing:cpp_test_utils",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
     ],
 )

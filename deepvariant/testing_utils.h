@@ -32,12 +32,15 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_TESTING_UTILS_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_TESTING_UTILS_H_
 
+#include "absl/strings/string_view.h"
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_TESTING_UTILS_H_
 
 #include <string>
 #include <vector>
 
+#include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
+#include "third_party/nucleus/testing/test_utils.h"
 
 namespace learning {
 namespace genomics {
@@ -50,6 +53,12 @@ void CreateTestSeq(const std::string& name, int pos_in_fasta,
                    const std::string& bases,
                    std::vector<nucleus::genomics::v1::ContigInfo>* contigs,
                    std::vector<nucleus::genomics::v1::ReferenceSequence>* seqs);
+
+// Creates Read proto.
+nucleus::genomics::v1::Read MakeRead(
+    absl::string_view chromosome, int start, const std::string& bases,
+    const std::vector<std::string>& cigar_elements,
+    absl::string_view read_name);
 
 }  // namespace deepvariant
 }  // namespace genomics
