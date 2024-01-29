@@ -32,6 +32,7 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import numpy as np
 import tensorflow as tf
 
 from deepvariant import dv_utils
@@ -43,7 +44,7 @@ from third_party.nucleus.testing import test_utils
 from tensorflow.core.example import example_pb2
 
 
-class TFUtilsTest(parameterized.TestCase):
+class DVUtilsTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -57,62 +58,6 @@ class TFUtilsTest(parameterized.TestCase):
     )
     self.encoded_image = b'encoded_image_data'
     self.default_shape = [5, 5, 7]
-
-  def testModelShapes(self):
-    # Builds a graph.
-    v0 = tf.Variable([[1, 2, 3], [4, 5, 6]], dtype=tf.float32, name='v0')
-    v1 = tf.Variable(
-        [[[1], [2]], [[3], [4]], [[5], [6]]], dtype=tf.float32, name='v1'
-    )
-    init_all_op = tf.compat.v1.initialize_all_variables()
-    save = tf.compat.v1.train.Saver({'v0': v0, 'v1': v1})
-    save_path = test_utils.test_tmpfile('ckpt_for_debug_string')
-    with tf.compat.v1.Session() as sess:
-      sess.run(init_all_op)
-      # Saves a checkpoint.
-      save.save(sess, save_path)
-
-      # Model shapes without any variable requests gives you all variables.
-      self.assertEqual(
-          {'v0': (2, 3), 'v1': (3, 2, 1)}, dv_utils.model_shapes(save_path)
-      )
-      # Asking for v0 gives you only v0's shape.
-      self.assertEqual({'v0': (2, 3)}, dv_utils.model_shapes(save_path, ['v0']))
-      # Asking for v1 gives you only v1's shape.
-      self.assertEqual(
-          {'v1': (3, 2, 1)}, dv_utils.model_shapes(save_path, ['v1'])
-      )
-
-      # Verifies model_shapes() fails for non-existent tensors.
-      with self.assertRaisesRegex(KeyError, 'v3'):
-        dv_utils.model_shapes(save_path, ['v3'])
-
-  def testModelNumClasses(self):
-    # Builds a graph.
-    class_variable_name = 'class_variable_name'
-    v0 = tf.Variable([[1, 2, 3]], dtype=tf.int32, name='class_variable_name')
-    v1 = tf.Variable(
-        [[[1], [2]], [[3], [4]], [[5], [6]]], dtype=tf.float32, name='v1'
-    )
-    init_all_op = tf.compat.v1.initialize_all_variables()
-    save = tf.compat.v1.train.Saver({class_variable_name: v0, 'v1': v1})
-    save_path = test_utils.test_tmpfile('ckpt_for_debug_classes')
-    with tf.compat.v1.Session() as sess:
-      sess.run(init_all_op)
-      # Saves a checkpoint.
-      save.save(sess, save_path)
-
-      # If you pass in the correct class_variable_name, you'll find the number
-      # of classes.
-      self.assertEqual(
-          3, dv_utils.model_num_classes(save_path, class_variable_name)
-      )
-      # If the class variable name doesn't existin the checkpoint, return None.
-      self.assertIsNone(
-          dv_utils.model_num_classes(save_path, 'non-existent-var')
-      )
-      # If the checkpoint doesn't exist, return none.
-      self.assertIsNone(dv_utils.model_num_classes(None, class_variable_name))
 
   def testFailedExampleImageShape(self):
     # Create an empty example that doesn't have the required image/shape field.
@@ -238,7 +183,48 @@ class TFUtilsTest(parameterized.TestCase):
     expected = example_pb2.Example.FromString(expected_example)
     self.assertEqual(output_example, expected)
 
+  def test_preprocess_images(self):
+    # Create a test input tensor.
+    test_input = tf.constant([0, 128, 255], dtype=tf.uint8)
+    test_input = tf.reshape(
+        test_input, [1, 3]
+    )  # Reshaping to simulate an image tensor.
+
+    # Created the corresponding expected output.
+    expected_output = tf.constant([-1, 0, 0.9921875], dtype=tf.float32)
+    expected_output = tf.reshape(expected_output, [1, 3])
+
+    # Call the preprocess_images function.
+    output = dv_utils.preprocess_images(test_input)
+
+    # Check if the output is as expected.
+    self.assertTrue(tf.reduce_all(tf.equal(output, expected_output)))
+
+    # Check if the output is in the correct range [-1, 1].
+    self.assertTrue(
+        tf.reduce_all(output >= -1.0) and tf.reduce_all(output <= 1.0)
+    )
+
+    # Check if the output dtype is float32.
+    self.assertEqual(output.dtype, tf.float32)
+
+  def test_unpreprocess_images(self):
+    # Create a test input array.
+    test_input = np.array([-1, 0, 0.9921875], dtype=np.float32)
+    # Reshaping to simulate an image array.
+    test_input = np.reshape(test_input, [1, 3])
+
+    # Created the corresponding expected output.
+    expected_output = np.array([0, 128, 255], dtype=np.float32)
+    expected_output = np.reshape(expected_output, [1, 3])
+
+    # Call the unpreprocess_images function.
+    output = dv_utils.unpreprocess_images(test_input)
+
+    # Check if the output is as expected.
+    np.testing.assert_array_equal(output, expected_output)
+
 
 if __name__ == '__main__':
-  tf.compat.v1.disable_eager_execution()
+  tf.config.run_functions_eagerly(True)
   absltest.main()

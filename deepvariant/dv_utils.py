@@ -391,17 +391,31 @@ def preprocess_images(images):
   that efficiently execute there.
 
   Args:
-    images: A Tensor of shape [batch_size height, width, channel] with uint8
-      values.
+    images: A Tensor of with uint8 values.
 
   Returns:
-    A tensor of images of shape [batch_size height, width, channel]
-    containing floating point values, with all points rescaled between
-    -1 and 1 and possibly resized.
+    A tensor of images the same shape, containing floating point values, with
+    all points rescaled between -1 and 1 and possibly resized.
   """
   images = tf.cast(images, dtype=tf.float32)
   images = tf.subtract(images, 128.0)
   images = tf.math.divide(images, 128.0)
+  return images
+
+
+def unpreprocess_images(images: np.ndarray) -> np.ndarray:
+  """Reverses preprocess_images in numpy format.
+
+  Args:
+    images: A numpy array with floating point values.
+
+  Returns:
+    A numpy array of images the same shape.
+  """
+  images *= 128.0
+  images += 128.0
+  # We can optionally convert it to uint8 by .astype(np.uint8).
+  # But for now we'll just return it as floating points.
   return images
 
 
