@@ -63,7 +63,7 @@ using Read = nucleus::genomics::v1::Read;
 
 ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
                                      bool test_mode)
-    : options_(options) {
+    : options_(options), pileup_image_(options_.pic_options()) {
   // Initialize samples.
   for (const auto& sample_options_for_one_sample : options_.sample_options()) {
     samples_[sample_options_for_one_sample.role()] =
@@ -241,9 +241,10 @@ std::string ExamplesGenerator::EncodeExample(
   // filled.
   std::vector<unsigned char> data;
   std::array<int, 3> image_shape;
+  FillPileupArray(image, &data);
   image_shape[0] = image.size();                   // Number of rows.
   image_shape[1] = image[0]->Width();              // Width of the pileup.
-  image_shape[2] = FillPileupArray(image, &data);  // Number of channels.
+  image_shape[2] = pileup_image_.channel_enums_.size();  // Number of channels.
 
   // Encode alt allele indices.
   absl::flat_hash_map<std::string, int> alt_indices;
@@ -306,11 +307,87 @@ std::string ExamplesGenerator::EncodeExample(
   return encoded_example;
 }
 
-void ExamplesGenerator::CreateAndWritePileupExamples(
+namespace {
+  bool HasAtLeastOneNonSingleBaseAllele(const Variant& variant) {
+    for (const std::string& alt : variant.alternate_bases()) {
+      if (alt.size() > 1) return true;
+    }
+    return false;
+  }
+}
+
+bool ExamplesGenerator::NeedAltAlignment(const Variant& variant) const {
+  if (options_.pic_options().alt_aligned_pileup() == "none") {
+    return false;
+  }
+  if (options_.pic_options().types_to_alt_align() == "all") {
+    return true;
+  }
+  if (options_.pic_options().types_to_alt_align() == "indels") {
+    return variant.reference_bases().size() > 1 ||
+            HasAtLeastOneNonSingleBaseAllele(variant);
+  }
+  return false;
+  }
+
+std::string ExamplesGenerator::GetReferenceBasesForPileup(
+    const Variant& variant) const {
+  int start = variant.start() - half_width_;
+  int end = start + options_.pic_options().width();
+  Range region;
+  region.set_reference_name(variant.reference_name());
+  region.set_start(start);
+  region.set_end(end);
+  return GetReferenceBases(region);
+}
+
+std::string ExamplesGenerator::GetReferenceBases(const Range& region) const {
+  if (ref_reader_->IsValidInterval(region)) {
+    return ref_reader_->GetBases(region).ValueOrDie();
+  }
+  return "";
+}
+
+// This function is tested by integration test in make_examples_test using the
+// real data.
+// For multisample cases image is created for each sample separately and all
+// images are stacked into one.
+void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     const DeepVariantCall& candidate, const Sample& sample,
     const std::vector<int>& sample_order,
     const std::vector<InMemoryReader>& readers) {
-  LOG(FATAL) << "CreateAndWritePileupExamples not implemented";
+  const auto& variant = candidate.variant();
+  int image_start_pos = variant.start() - half_width_;
+  // Pileup range.
+  Range region;
+  region.set_reference_name(candidate.variant().reference_name());
+  region.set_start(candidate.variant().start() -
+                    options_.pic_options().read_overlap_buffer_bp());
+  region.set_end(candidate.variant().end() +
+                  options_.pic_options().read_overlap_buffer_bp());
+  // Alt Alignment.
+  if (NeedAltAlignment(variant)) {
+    LOG(FATAL) << "Not implemented";
+  }
+  for (const std::vector<std::string>& alt_combination :
+        AltAlleleCombinations(variant)) {
+    std::vector<std::unique_ptr<ImageRow>> ref_images;
+    for (int sample_order : sample_order) {
+      auto ref_image = pileup_image_.BuildPileupForOneSample(
+          candidate, GetReferenceBasesForPileup(variant),
+          readers[sample_order].Query(region), image_start_pos,
+          alt_combination, options_.sample_options(sample_order));
+      // TODO It would be more efficient to allocate pileup image here
+      // and have BuildPileupForOneSample fill it.
+      for (auto& row : ref_image) {
+        ref_images.push_back(std::move(row));
+      }
+    }
+    // TODO Write TFRecord in a background thread can potentially
+    // improve a runtime of make_examples.
+    sample.writer->WriteRecord(
+        EncodeExample(ref_images, variant, alt_combination));
+  }
 }
 
 // Examples are generated using reads from all samples, the order of reads
@@ -324,15 +401,15 @@ void ExamplesGenerator::WriteExamplesInRegion(
     const std::vector<int>& sample_order, const std::string& role) {
   // Load reads.
   std::vector<InMemoryReader> readers;
-  // Cache reads passed from Python. The order of samples is preserved as passed
-  // from the caller.
+  // Cache reads passed from Python. The order of samples is preserved as
+  // passed from the caller.
   readers.reserve(reads_per_sample.size());
   for (const auto& reads : reads_per_sample) {
     readers.push_back(InMemoryReader(InMemoryReader(reads)));
   }
   for (const auto& candidate : candidates) {
-    CreateAndWritePileupExamples(*candidate.p_, samples_[role], sample_order,
-                                 readers);
+    CreateAndWriteExamplesForCandidate(*candidate.p_, samples_[role],
+                                        sample_order, readers);
   }
 }
 
@@ -341,8 +418,8 @@ InMemoryReader::InMemoryReader(
     : reads_cache_(reads) {}
 
 // Iterate reads_cache_ and return reads that overlap the range. In order to
-// avoid copying Read protos raw pointers are returned. Since all the reads are
-// allocated in Python we don't need to worry about the memory management.
+// avoid copying Read protos raw pointers are returned. Since all the reads
+// are allocated in Python we don't need to worry about the memory management.
 std::vector<const Read*> InMemoryReader::Query(const Range& range) const {
   std::vector<const Read*> out;
   for (auto& read : reads_cache_) {

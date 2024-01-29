@@ -123,11 +123,21 @@ class ExamplesGenerator {
       const nucleus::genomics::v1::Variant& variant,
       const std::vector<std::string>& alt_combination) const;
 
-  void CreateAndWritePileupExamples(const DeepVariantCall& candidate,
-                                    const Sample& sample,
-                                    const std::vector<int>& sample_order,
-                                    const std::vector<InMemoryReader>& readers);
+  // Generates one or more examples from a given candidate. Example(s) are
+  // written to TFRecord.
+  void CreateAndWriteExamplesForCandidate(
+      const DeepVariantCall& candidate, const Sample& sample,
+      const std::vector<int>& sample_order,
+      const std::vector<InMemoryReader>& readers);
 
+  // Returns true if the variant needs alt alignment.
+  bool NeedAltAlignment(const nucleus::genomics::v1::Variant& variant) const;
+
+  // Helper methods to extract reference bases for a given range.
+  std::string GetReferenceBasesForPileup(
+      const nucleus::genomics::v1::Variant& variant) const;
+  std::string GetReferenceBases(
+      const nucleus::genomics::v1::Range& region) const;
   // Make examples config.
   const MakeExamplesOptions options_;
 
@@ -135,6 +145,9 @@ class ExamplesGenerator {
 
   // Half width of pileup image.
   int half_width_;
+
+  // PileupImageEncoderNative instance.
+  PileupImageEncoderNative pileup_image_;
 
   // Samples keyed by role.
   absl::flat_hash_map<std::string, Sample> samples_;
@@ -161,6 +174,11 @@ class ExamplesGeneratorPeer {
       ExamplesGenerator& generator,
       std::unique_ptr<nucleus::GenomeReference> ref_reader) {
     generator.ref_reader_ = std::move(ref_reader);
+  }
+
+  static bool NeedAltAlignment(const ExamplesGenerator& generator,
+                               const nucleus::genomics::v1::Variant& variant) {
+    return generator.NeedAltAlignment(variant);
   }
 };
 

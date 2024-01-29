@@ -101,6 +101,8 @@ TEST_P(AltAlleleCombinationsTest, AltAlleleCombinationsTestCases) {
   const AltAlleleCombinationsTestData& param = GetParam();
   MakeExamplesOptions options;
   options.mutable_pic_options()->set_multi_allelic_mode(param.mode);
+  options.mutable_pic_options()->set_width(21);
+  options.mutable_pic_options()->set_num_channels(6);
   ExamplesGenerator generator(options, /*test_mode=*/true);
 
   EXPECT_THAT(
@@ -143,13 +145,14 @@ class CreateHaplotypeTest
 TEST_P(CreateHaplotypeTest, CreateHaplotypeTestCases) {
   const CreateHaplotypeTestData& param = GetParam();
   MakeExamplesOptions options;
-  options.mutable_pic_options()->set_width(20);
+  options.mutable_pic_options()->set_width(21);
+  options.mutable_pic_options()->set_num_channels(6);
   ExamplesGenerator generator(options, /*test_mode=*/true);
   // Create InMemory reference.
   int kNum = 1;
   std::vector<ContigInfo> contigs(kNum);
   std::vector<ReferenceSequence> seqs(kNum);
-  CreateTestSeq("chr1", 0, 0, 20, "AGTGGGGGGGGGATGGGGGT", &contigs, &seqs);
+  CreateTestSeq("chr1", 0, 0, 21, "AGTGGGGGGGGGATGGGGGTG", &contigs, &seqs);
   ExamplesGeneratorPeer::SetRefReader(
       generator,
       std::move(
@@ -170,33 +173,33 @@ INSTANTIATE_TEST_SUITE_P(
         {// Variant is in the middle of reference.
          .variant = MakeVariant("G", {"T"}, 10),
          .alt = "T",
-         .expeted_ref_start = 1,
-         .expeted_ref_end = 20,
-         .expected_haplotype = "GTGGGGGGGTGATGGGGGT"},
+         .expeted_ref_start = 0,
+         .expeted_ref_end = 21,
+         .expected_haplotype = "AGTGGGGGGGTGATGGGGGTG"},
         {// Variant is at the start of the reference.
          .variant = MakeVariant("A", {"T"}, 0),
          .alt = "T",
          .expeted_ref_start = 0,
-         .expeted_ref_end = 10,
-         .expected_haplotype = "TGTGGGGGGG"},
+         .expeted_ref_end = 11,
+         .expected_haplotype = "TGTGGGGGGGG"},
         {// Variant is at the end of the reference.
          .variant = MakeVariant("T", {"A"}, 19),
          .alt = "A",
-         .expeted_ref_start = 10,
-         .expeted_ref_end = 20,
-         .expected_haplotype = "GGATGGGGGA"},
+         .expeted_ref_start = 9,
+         .expeted_ref_end = 21,
+         .expected_haplotype = "GGGATGGGGGAG"},
         {// Variant exceeds half of the window.
          .variant = MakeVariant("A", {"ATATATATATAT"}, 10),
          .alt = "ATATATATATAT",
-         .expeted_ref_start = 1,
-         .expeted_ref_end = 20,
-         .expected_haplotype = "GTGGGGGGGATATATATATATGATGGGGGT"},
+         .expeted_ref_start = 0,
+         .expeted_ref_end = 21,
+         .expected_haplotype = "AGTGGGGGGGATATATATATATGATGGGGGTG"},
         {// Variant is DEL.
          .variant = MakeVariant("GAT", {"G"}, 10),
          .alt = "G",
-         .expeted_ref_start = 1,
-         .expeted_ref_end = 20,
-         .expected_haplotype = "GTGGGGGGGGTGGGGGT"},
+         .expeted_ref_start = 0,
+         .expeted_ref_end = 21,
+         .expected_haplotype = "AGTGGGGGGGGTGGGGGTG"},
     })));
 
 TEST(GetExamplesFilename, MultiSample) {
@@ -271,6 +274,71 @@ TEST(InMemoryReader, Sanity) {
   for (nucleus::ConstProtoPtr<Read> read : input_read_ptrs) {
     delete read.p_;
   }
+}
+
+TEST(ExamplesGenerator, NeedAlignmentAltAlignedIndels) {
+  MakeExamplesOptions options;
+  options.mutable_pic_options()->set_width(21);
+  options.mutable_pic_options()->set_num_channels(6);
+  options.mutable_pic_options()->set_alt_aligned_pileup("diff_channels");
+  options.mutable_pic_options()->set_types_to_alt_align("indels");
+  ExamplesGenerator generator(options, /*test_mode=*/true);
+
+  // SNP - not alt alignment.
+  EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("A", {"T"}, 10)));
+  // INS - need alt alignement.
+  EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("A", {"AT"}, 10)));
+  // DEL - need alt alignement.
+  EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("AC", {"A"}, 10)));
+  // SNP and INS - need alt alignment.
+  EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("A", {"C", "AT"}, 10)));
+}
+
+TEST(ExamplesGenerator, NeedAlignmentAltAlignedAll) {
+  MakeExamplesOptions options;
+  options.mutable_pic_options()->set_width(21);
+  options.mutable_pic_options()->set_num_channels(6);
+  options.mutable_pic_options()->set_alt_aligned_pileup("diff_channels");
+  options.mutable_pic_options()->set_types_to_alt_align("all");
+  ExamplesGenerator generator(options, /*test_mode=*/true);
+
+  // SNP - need alt alignment.
+  EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("A", {"T"}, 10)));
+  // INS - need alt alignement.
+  EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("A", {"AT"}, 10)));
+  // DEL - need alt alignement.
+  EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("AC", {"A"}, 10)));
+  // SNP and INS - need alt alignment.
+  EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("A", {"C", "AT"}, 10)));
+}
+
+TEST(ExamplesGenerator, NeedAlignmentAltAlignedNone) {
+  MakeExamplesOptions options;
+  options.mutable_pic_options()->set_width(21);
+  options.mutable_pic_options()->set_num_channels(6);
+  options.mutable_pic_options()->set_alt_aligned_pileup("none");
+  ExamplesGenerator generator(options, /*test_mode=*/true);
+
+  // SNP - need alt alignment.
+  EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("A", {"T"}, 10)));
+  // INS - need alt alignement.
+  EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("A", {"AT"}, 10)));
+  // DEL - need alt alignement.
+  EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("AC", {"A"}, 10)));
+  // SNP and INS - need alt alignment.
+  EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
+      generator, MakeVariant("A", {"C", "AT"}, 10)));
 }
 
 }  // namespace deepvariant
