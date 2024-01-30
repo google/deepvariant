@@ -47,7 +47,6 @@ Flags:
 --bin_version Version of DeepTrio model to use.
 --customized_model_child Path to checkpoint directory containing child model checkpoint.
 --customized_model_parent Path to checkpoint directory containing parent model checkpoint.
---use_slim_model (true|false) If true, the model provided is Slim model.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
@@ -80,7 +79,6 @@ SKIP_HAPPY=false
 SKIP_HAPPY=false
 USE_CANDIDATE_PARTITION=false
 USE_GPU=false
-USE_SLIM_MODEL=false
 # Strings; sorted alphabetically.
 BAM_CHILD=""
 BAM_PARENT1=""
@@ -185,11 +183,6 @@ while (( "$#" )); do
       ;;
     --customized_model_child)
       CUSTOMIZED_MODEL_CHILD="$2"
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
-    --use_slim_model)
-      USE_SLIM_MODEL="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -463,7 +456,6 @@ echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
 echo "SKIP_HAPPY: ${SKIP_HAPPY}"
 echo "USE_CANDIDATE_PARTITION: ${USE_CANDIDATE_PARTITION}"
 echo "USE_GPU: ${USE_GPU}"
-echo "USE_SLIM_MODEL: ${USE_SLIM_MODEL}"
 echo "# Strings; sorted alphabetically."
 echo "BAM_CHILD: ${BAM_CHILD}"
 echo "BAM_PARENT1: ${BAM_PARENT1}"
@@ -681,9 +673,6 @@ function setup_args() {
       echo "Using checkpoint"
       run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".data-00000-of-00001 "${INPUT_DIR}/child_model/model.ckpt.data-00000-of-00001"
       run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".index "${INPUT_DIR}/child_model/model.ckpt.index"
-      if [[ "${USE_SLIM_MODEL}" = true ]]; then
-        run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".meta "${INPUT_DIR}/child_model/model.ckpt.meta"
-      fi
       CUSTOMIZED_MODEL_CHILD_DIR="$(dirname "${CUSTOMIZED_MODEL_CHILD}")"
       run "gcloud storage cp ${CUSTOMIZED_MODEL_CHILD_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
       extra_args+=( --customized_model_child "/input/child_model/model.ckpt")
@@ -703,9 +692,6 @@ function setup_args() {
       run echo "Copy from gs:// path ${CUSTOMIZED_MODEL_PARENT} to ${INPUT_DIR}/parent_model"
       run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".data-00000-of-00001 "${INPUT_DIR}/parent_model/model.ckpt.data-00000-of-00001"
       run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".index "${INPUT_DIR}/parent_model/model.ckpt.index"
-      if [[ "${USE_SLIM_MODEL}" = true ]]; then
-        run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".meta "${INPUT_DIR}/parent_model/model.ckpt.meta"
-      fi
       CUSTOMIZED_MODEL_PARENT_DIR="$(dirname "${CUSTOMIZED_MODEL_PARENT}")"
       run "gcloud storage cp ${CUSTOMIZED_MODEL_PARENT_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
       extra_args+=( --customized_model_parent "/input/parent_model/model.ckpt")
@@ -753,12 +739,6 @@ function setup_args() {
   fi
   if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" =~ ^1\.[2-9]\.0$ ]]; then
     extra_args+=( --runtime_report )
-  fi
-  # --use_slim_model is introduced only after 1.6.0.
-  if [[ "${BUILD_DOCKER}" = true ]] || [[ ! "${BIN_VERSION}" =~ ^1\.[0-5]\.0$ ]]; then
-    if [[ "${USE_SLIM_MODEL}" = true ]]; then
-      extra_args+=( --use_slim_model )
-    fi
   fi
 }
 

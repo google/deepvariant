@@ -131,11 +131,6 @@ _VERSION = flags.DEFINE_boolean(
     'Optional. If true, print out version number and exit.',
     allow_hide_cpp=True,
 )
-_USE_SLIM_MODEL = flags.DEFINE_boolean(
-    'use_slim_model',
-    False,
-    'Default to False. If True, the model provided has to be a Slim model.',
-)
 
 _LOGGING_DIR = flags.DEFINE_string(
     'logging_dir', None, 'Required. Directory where we should write log files.'
@@ -630,12 +625,9 @@ def call_variants_command(
     model_ckpt: str,
     sample: str,
     extra_args: str,
-    use_slim_model: bool = False,
 ) -> str:
   """Returns a call_variants command for subprocess.check_call."""
   binary_name = 'call_variants'
-  if use_slim_model:
-    binary_name = 'call_variants_slim'
   command = ['time', f'/opt/deepvariant/bin/{binary_name}']
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
@@ -751,9 +743,6 @@ def model_exists(model_prefix: str) -> bool:
       model_prefix + '.data-00000-of-00001'
   ) or not tf.io.gfile.exists(model_prefix + '.index'):
     return False
-  # If it's a Slim model, we also expect a .meta file.
-  if _USE_SLIM_MODEL.value and not tf.io.gfile.exists(model_prefix + '.meta'):
-    return False
   return True
 
 
@@ -824,7 +813,6 @@ def generate_call_variants_command(
       model_ckpt,
       sample,
       _CALL_VARIANTS_EXTRA_ARGS.value,
-      use_slim_model=_USE_SLIM_MODEL.value,
   )
 
 

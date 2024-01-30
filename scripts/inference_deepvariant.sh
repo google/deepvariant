@@ -42,7 +42,6 @@ Flags:
 --docker_source Where to pull the Docker image from. Default: google/deepvariant.
 --bin_version Version of DeepVariant model to use
 --customized_model Path to checkpoint directory containing model checkpoint.
---use_slim_model (true|false) If true, the model provided is Slim model.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
@@ -80,7 +79,6 @@ BIN_VERSION="1.6.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
-USE_SLIM_MODEL=false  # TODO: Change this to true before release.
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
@@ -153,11 +151,6 @@ while (( "$#" )); do
       ;;
     --customized_model)
       CUSTOMIZED_MODEL="$2"
-      shift # Remove argument name from processing
-      shift # Remove argument value from processing
-      ;;
-    --use_slim_model)
-      USE_SLIM_MODEL="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -552,9 +545,6 @@ function setup_args() {
       echo "Using checkpoint"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
-      if [[ "${USE_SLIM_MODEL}" = true ]]; then
-        run gcloud storage cp "${CUSTOMIZED_MODEL}".meta "${INPUT_DIR}/model.ckpt.meta"
-      fi
       # Starting from v1.4.0, model.ckpt.example_info.json is used to provide more
       # information about the model.
       CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
@@ -606,12 +596,6 @@ function setup_args() {
   fi
   if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" =~ ^1\.[2-9]\.0$ ]]; then
     extra_args+=( --runtime_report )
-  fi
-  # --use_slim_model is introduced only after 1.6.0.
-  if [[ "${BUILD_DOCKER}" = true ]] || [[ ! "${BIN_VERSION}" =~ ^1\.[0-5]\.0$ ]]; then
-    if [[ "${USE_SLIM_MODEL}" = true ]]; then
-      extra_args+=( --use_slim_model )
-    fi
   fi
 }
 

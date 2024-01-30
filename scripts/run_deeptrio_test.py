@@ -169,15 +169,11 @@ class RunDeeptrioTest(parameterized.TestCase):
 
   # pylint: disable=g-complex-comprehension
   @parameterized.parameters(
-      (model_type, use_slim_model)
-      for model_type in ['WGS', 'WES', 'PACBIO']
-      for use_slim_model in [False, True]
+      model_type for model_type in ['WGS', 'WES', 'PACBIO']
   )
   # pylint: enable=g-complex-comprehension
   @flagsaver.flagsaver
-  def test_duo_call_variants_postprocess_variants_commands(
-      self, model_type, use_slim_model
-  ):
+  def test_duo_call_variants_postprocess_variants_commands(self, model_type):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
     FLAGS.reads_child = 'your_bam_child'
@@ -188,15 +184,12 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
     FLAGS.output_gvcf_child = 'your_gvcf_child'
     FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
-    FLAGS.use_slim_model = use_slim_model
     FLAGS.num_shards = 64
     commands, postprocess_cmds, report_commands = (
         self._create_all_commands_and_check_stdout()
     )
 
-    call_variants_bin = (
-        'call_variants_slim' if use_slim_model else 'call_variants'
-    )
+    call_variants_bin = 'call_variants'
     # Because PACBIO model will always have use_candidate_partition on,
     # so there will be one extra make_examples command.
     call_variants_commands_start_index = 1

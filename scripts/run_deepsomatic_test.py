@@ -42,12 +42,9 @@ FLAGS = flags.FLAGS
 
 class RunDeepSomaticTest(parameterized.TestCase):
 
-  @parameterized.parameters(
-      ('WGS', True),
-      ('WGS', False),
-  )
+  @parameterized.parameters(('WGS',))
   @flagsaver.flagsaver
-  def test_basic_commands(self, model_type, use_slim_model):
+  def test_basic_commands(self, model_type):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
@@ -56,7 +53,6 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.output_gvcf = 'your_gvcf'
     FLAGS.num_shards = 64
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
-    FLAGS.use_slim_model = use_slim_model
     commands = run_deepsomatic.create_all_commands_and_logfiles(
         '/tmp/deepsomatic_tmp_output', used_in_test=True
     )
@@ -79,9 +75,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
         ' --task {}' % (extra_args_plus_gvcf),
     )
-    call_variants_bin = (
-        'call_variants_slim' if use_slim_model else 'call_variants'
-    )
+    call_variants_bin = 'call_variants'
     self.assertEqual(
         commands[1][0],
         'time /opt/deepvariant/bin/{} --outfile'
@@ -109,11 +103,11 @@ class RunDeepSomaticTest(parameterized.TestCase):
     )
 
   @parameterized.parameters(
-      ('WGS', True, True),
-      ('WGS', False, False),
+      ('WGS', True),
+      ('WGS', False),
   )
   @flagsaver.flagsaver
-  def test_process_somatic(self, model_type, use_slim_model, process_somatic):
+  def test_process_somatic(self, model_type, process_somatic):
     FLAGS.model_type = model_type
     FLAGS.ref = 'your_ref'
     FLAGS.reads_tumor = 'your_tumor_bam'
@@ -122,7 +116,6 @@ class RunDeepSomaticTest(parameterized.TestCase):
     FLAGS.output_gvcf = 'your_gvcf'
     FLAGS.num_shards = 64
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
-    FLAGS.use_slim_model = use_slim_model
     FLAGS.process_somatic = process_somatic
     commands = run_deepsomatic.create_all_commands_and_logfiles(
         '/tmp/deepsomatic_tmp_output', used_in_test=True
@@ -146,9 +139,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
         ' --task {}' % (extra_args_plus_gvcf),
     )
-    call_variants_bin = (
-        'call_variants_slim' if use_slim_model else 'call_variants'
-    )
+    call_variants_bin = 'call_variants'
     self.assertEqual(
         commands[1][0],
         'time /opt/deepvariant/bin/{} --outfile'
