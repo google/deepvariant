@@ -126,66 +126,6 @@ class CreateExamplesTest(absltest.TestCase):
 
 class DataProviderTest(parameterized.TestCase):
 
-  def test_get_dataset(self):
-    dataset_config_pbtext_filename = _test_dataset_config(
-        'golden.dataset_config.pbtxt',
-        name='some_dataset_name',
-        tfrecord_path='/dev/null',
-        num_examples=1000,
-    )
-    ds = data_providers.get_input_fn_from_dataset(
-        dataset_config_pbtext_filename,
-        mode=tf_estimator.ModeKeys.EVAL,
-        tensor_shape=[3, 4, dv_constants.PILEUP_NUM_CHANNELS],
-    )
-
-    self.assertEqual('some_dataset_name', ds.name)
-    self.assertEqual('/dev/null', ds.input_file_spec)
-    self.assertEqual(1000, ds.num_examples)
-    self.assertEqual([3, 4, dv_constants.PILEUP_NUM_CHANNELS], ds.tensor_shape)
-
-  def test_get_dataset_raises_error_for_empty_name(self):
-    dataset_config_pbtext_filename = _test_dataset_config(
-        'test_get_dataset_raises_error_for_empty_name.pbtxt'
-    )
-    with self.assertRaisesRegex(
-        ValueError, 'dataset_config needs to have a name'
-    ):
-      data_providers.get_input_fn_from_dataset(
-          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL
-      )
-
-  def test_get_dataset_raises_error_for_empty_data_split(self):
-    dataset_config_pbtext_filename = _test_dataset_config(
-        'test_get_dataset_raises_error_for_empty_data_split.pbtxt',
-        name='some_dataset_name',
-    )
-    expected_exception_message = (
-        'The dataset in the config {} does not have a tfrecord_path.'.format(
-            dataset_config_pbtext_filename
-        )
-    )
-    with self.assertRaisesRegex(ValueError, expected_exception_message):
-      data_providers.get_input_fn_from_dataset(
-          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL
-      )
-
-  def test_get_dataset_raises_error_for_empty_num_examples(self):
-    dataset_config_pbtext_filename = _test_dataset_config(
-        'test_get_dataset_raises_error_for_empty_num_examples.pbtxt',
-        name='some_dataset_name',
-        tfrecord_path='/path/to/dataset',
-    )
-    expected_exception_message = (
-        'The dataset in the config {} does not have a num_examples.'.format(
-            dataset_config_pbtext_filename
-        )
-    )
-    with self.assertRaisesRegex(ValueError, expected_exception_message):
-      data_providers.get_input_fn_from_dataset(
-          dataset_config_pbtext_filename, mode=tf_estimator.ModeKeys.EVAL
-      )
-
   def test_dataset_definition(self):
     ds = data_providers.DeepVariantInput(
         mode=tf_estimator.ModeKeys.PREDICT,
@@ -269,45 +209,6 @@ class DataProviderTest(parameterized.TestCase):
         input_fn=golden_dataset,
         expected_dataset=golden_dataset,
         use_tpu=use_tpu,
-    )
-
-  # It looks like tf.data.Dataset.list_files is potentially nondeterministic.
-  # There's no guaranteed way to get around that (yet, internal).
-  # A list_files() flag I want is only available in tf 1.7,
-  # so for the short term, work around the problem by asking
-  # self.assertTfDataSetExamplesMatchExpected to sort the
-  # loci it sees.  That doesn't generalize well, but we should
-  # be able to fix this soon.
-  # pylint: disable=g-complex-comprehension
-  @parameterized.parameters(
-      dict(compressed_inputs=compressed_inputs, use_tpu=use_tpu)
-      for compressed_inputs in [True, False]
-      for use_tpu in [True, False]
-  )
-  # pylint: enable=g-complex-comprehension
-  def test_reading_sharded_dataset(self, compressed_inputs, use_tpu):
-    golden_dataset = make_golden_dataset(compressed_inputs, use_tpu=use_tpu)
-    n_shards = 3
-    sharded_path = test_utils.test_tmpfile('sharded@{}'.format(n_shards))
-    tfrecord.write_tfrecords(
-        tfrecord.read_tfrecords(golden_dataset.input_file_spec), sharded_path
-    )
-
-    config_file = _test_dataset_config(
-        'test_sharded.pbtxt',
-        name='sharded_test',
-        tfrecord_path=sharded_path,
-        num_examples=golden_dataset.num_examples,
-    )
-
-    self.assertTfDataSetExamplesMatchExpected(
-        data_providers.get_input_fn_from_dataset(
-            config_file, mode=tf_estimator.ModeKeys.EVAL
-        ),
-        golden_dataset,
-        # workaround_list_files is needed because wildcards, and so sharded
-        # files, are nondeterministicly ordered (for now).
-        workaround_list_files=True,
     )
 
   @parameterized.parameters(

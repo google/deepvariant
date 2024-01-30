@@ -517,34 +517,6 @@ class DeepVariantInput(object):
 
 
 # This is the entry point to get a DeepVariantInput when you start with
-# a dataset configuration file name.
-def get_input_fn_from_dataset(dataset_config_filename, mode, **kwargs):
-  """Creates an input_fn from the dataset config file.
-
-  Args:
-    dataset_config_filename: str. Path to the dataset config pbtxt file.
-    mode: one of tf.estimator.ModeKeys.{TRAIN,EVAL,PREDICT}
-    **kwargs: Additional keyword arguments for DeepVariantInput.
-
-  Returns:
-    An input_fn from the specified split in the dataset_config file.
-
-  Raises:
-    ValueError: if the dataset config doesn't have the necessary information.
-  """
-  # Get the metadata.
-  dataset_config = read_dataset_config(dataset_config_filename)
-  # Return a reader for the data.
-  return get_input_fn_from_filespec(
-      input_file_spec=dataset_config.tfrecord_path,
-      mode=mode,
-      num_examples=dataset_config.num_examples,
-      name=dataset_config.name,
-      **kwargs,
-  )
-
-
-# This is the entry point to get a DeepVariantInput when you start with
 # a tf.example file specification, and associated metadata.
 def get_input_fn_from_filespec(input_file_spec, mode, **kwargs):
   """Create a DeepVariantInput function object from a file spec.
