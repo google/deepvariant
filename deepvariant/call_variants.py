@@ -31,7 +31,7 @@
 import multiprocessing
 import os
 import time
-from typing import Any
+from typing import Any, Sequence
 
 
 
@@ -279,6 +279,9 @@ def write_variant_call(
     else:
       true_labels = prediction['label']
   image_encoded = prediction['image_encoded'] if include_debug_info else None
+  layer_outputs_encoded = (
+      prediction['layer_outputs_encoded'] if include_debug_info else None
+  )
   cvo = _create_cvo_proto(
       encoded_variant,
       rounded_gls,
@@ -289,6 +292,7 @@ def write_variant_call(
       image_encoded=image_encoded,
       include_debug_info=include_debug_info,
       debugging_true_label_mode=debugging_true_label_mode,
+      layer_outputs_encoded=layer_outputs_encoded,
   )
   return writer.write(cvo)
 
@@ -303,6 +307,7 @@ def _create_cvo_proto(
     image_encoded=None,
     include_debug_info=False,
     debugging_true_label_mode=False,
+    layer_outputs_encoded=None,
 ):
   """Returns a CallVariantsOutput proto from the relevant input information."""
   variant = variants_pb2.Variant.FromString(encoded_variant)
@@ -325,6 +330,7 @@ def _create_cvo_proto(
         logits=logits,
         prelogits=prelogits,
         image_encoded=image_encoded,
+        layer_output_encoded=layer_outputs_encoded,
     )
   call_variants_output = deepvariant_pb2.CallVariantsOutput(
       variant=variant,
@@ -430,6 +436,7 @@ def post_processing(
         variants,
         alt_allele_indices_list,
         optional_label_list,
+        layer_outputs_encoded,
     ) = item
     if optional_label_list is not None:
       optional_label_list = optional_label_list.numpy()
@@ -439,8 +446,9 @@ def post_processing(
           'variant': variants[i].numpy(),
           'image_encoded': image_encodes[i].numpy(),
           'alt_allele_indices': alt_allele_indices_list[i].numpy(),
+          'layer_outputs_encoded': layer_outputs_encoded,
       }
-      if FLAGS.debugging_true_label_mode and optional_label_list is not None:
+      if debugging_true_label_mode and optional_label_list is not None:
         pred['label'] = optional_label_list[i][0]
       write_variant_call(
           writer, pred, include_debug_info, debugging_true_label_mode
@@ -459,6 +467,7 @@ def call_variants(
     batch_size: int,
     include_debug_info: bool,
     debugging_true_label_mode: bool,
+    activation_layers: Sequence[str],
 ):
   """Main driver of call_variants."""
   output_queue = multiprocessing.Queue()
@@ -616,6 +625,36 @@ def call_variants(
         else:
           # This is faster on GPU but slower on CPU.
           predictions = model(batch[1], training=False).numpy()
+
+      layer_outputs_encoded = None
+      if include_debug_info and activation_layers:
+        if not use_saved_model:
+          activation_models = {
+              layer_name: modeling.get_activations_model(model, layer_name)
+              for layer_name in activation_layers
+          }
+
+          if not is_gpu_available:
+            # This is faster on CPU but slower on GPU.
+            layer_outputs_encoded = {
+                layer: activation_model.predict_on_batch(batch[1]).tobytes()
+                for layer, activation_model in activation_models.items()
+            }
+          else:
+            # This is faster on GPU but slower on CPU.
+            layer_outputs_encoded = {
+                layer: (
+                    activation_model(batch[1], training=False).numpy().tobytes()
+                )
+                for layer, activation_model in activation_models.items()
+            }
+        else:
+          logging.warning(
+              'Activation layers: %s are not saved in CVO. Change to ckpt'
+              'model file to get activation layers outputs.',
+              ','.join(activation_layers),
+          )
+
       batch_no += 1
       duration = time.time() - start_time
       n_examples += len(predictions)
@@ -628,7 +667,14 @@ def call_variants(
           n_batches,
           (100 * duration) / n_examples,
       )
-      output_queue.put((predictions, batch[0], batch[2], batch[3], batch[4]))
+      output_queue.put((
+          predictions,
+          batch[0],
+          batch[2],
+          batch[3],
+          batch[4],
+          layer_outputs_encoded,
+      ))
 
     # Put none values in the queue so the running processes can terminate.
     for _ in range(0, total_writer_process):
@@ -673,6 +719,7 @@ def main(argv=()):
         batch_size=FLAGS.batch_size,
         include_debug_info=FLAGS.include_debug_info,
         debugging_true_label_mode=FLAGS.debugging_true_label_mode,
+        activation_layers=FLAGS.activation_layers,
     )
     logging.info('Complete: call_variants.')
 
