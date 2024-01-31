@@ -57,6 +57,7 @@ cc_library(
     deps = [
         "//deepvariant/python:allelecounter_cclib",
         "//deepvariant/python:direct_phasing_cclib",
+        "//deepvariant/python:make_examples_native_cclib",
         "//deepvariant/python:pileup_image_native_cclib",
         "//deepvariant/python:postprocess_variants_cclib",
         "//deepvariant/python:variant_calling_cclib",
