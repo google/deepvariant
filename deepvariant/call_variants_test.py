@@ -163,7 +163,20 @@ class CallVariantsTest(parameterized.TestCase):
       num_examples = len(list(tfrecord.read_tfrecords(calling_testdata_path)))
     self.assertLen(call_variants_outputs, num_examples)
     if include_debug_info:
-      self.assertNotEmpty(call_variants_outputs[0].debug_info.image_encoded)
+      # Let's just check the first record.
+      one_cvo = call_variants_outputs[0]
+      self.assertNotEmpty(one_cvo.debug_info.image_encoded)
+      # Make sure all the pileup_curation_* fields are filled.
+      # Because all the meaningful values are > 0, we'll check that they are >0.
+      for (
+          field
+      ) in (
+          deepvariant_pb2.CallVariantsOutput.DebugInfo.PileupCuration.DESCRIPTOR.fields
+      ):
+        self.assertTrue(hasattr(one_cvo.debug_info.pileup_curation, field.name))
+        self.assertGreater(
+            getattr(one_cvo.debug_info.pileup_curation, field.name), 0
+        )
 
   @parameterized.named_parameters(
       dict(

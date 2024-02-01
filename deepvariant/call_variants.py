@@ -52,6 +52,7 @@ from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import vis
 
 
 _ALLOW_EXECUTION_HARDWARE = [
@@ -293,8 +294,26 @@ def write_variant_call(
       include_debug_info=include_debug_info,
       debugging_true_label_mode=debugging_true_label_mode,
       layer_outputs_encoded=layer_outputs_encoded,
+      pileup_curation=prediction.get('pileup_curation'),
   )
   return writer.write(cvo)
+
+
+def add_pileup_curation_to_debug_info(
+    debug_info: deepvariant_pb2.CallVariantsOutput.DebugInfo,
+    pileup_curation: vis.PileupCuration,
+) -> deepvariant_pb2.CallVariantsOutput.DebugInfo:
+  """Adds pileup curation to debug_info."""
+  if pileup_curation is None:
+    return debug_info
+  debug_info.pileup_curation.diff_category = pileup_curation.diff_category.value
+  debug_info.pileup_curation.base_quality = pileup_curation.base_quality.value
+  debug_info.pileup_curation.mapping_quality = (
+      pileup_curation.mapping_quality.value
+  )
+  debug_info.pileup_curation.strand_bias = pileup_curation.strand_bias.value
+  debug_info.pileup_curation.read_support = pileup_curation.read_support.value
+  return debug_info
 
 
 def _create_cvo_proto(
@@ -308,6 +327,7 @@ def _create_cvo_proto(
     include_debug_info=False,
     debugging_true_label_mode=False,
     layer_outputs_encoded=None,
+    pileup_curation=None,
 ):
   """Returns a CallVariantsOutput proto from the relevant input information."""
   variant = variants_pb2.Variant.FromString(encoded_variant)
@@ -332,6 +352,8 @@ def _create_cvo_proto(
         image_encoded=image_encoded,
         layer_output_encoded=layer_outputs_encoded,
     )
+    debug_info = add_pileup_curation_to_debug_info(debug_info, pileup_curation)
+
   call_variants_output = deepvariant_pb2.CallVariantsOutput(
       variant=variant,
       alt_allele_indices=alt_allele_indices,
@@ -437,6 +459,7 @@ def post_processing(
         alt_allele_indices_list,
         optional_label_list,
         layer_outputs_encoded,
+        optional_pileup_curation_list,
     ) = item
     if optional_label_list is not None:
       optional_label_list = optional_label_list.numpy()
@@ -448,8 +471,11 @@ def post_processing(
           'alt_allele_indices': alt_allele_indices_list[i].numpy(),
           'layer_outputs_encoded': layer_outputs_encoded,
       }
-      if debugging_true_label_mode and optional_label_list is not None:
-        pred['label'] = optional_label_list[i][0]
+      if include_debug_info:
+        if optional_pileup_curation_list is not None:
+          pred['pileup_curation'] = optional_pileup_curation_list[i]
+        if debugging_true_label_mode and optional_label_list is not None:
+          pred['label'] = optional_label_list[i][0]
       write_variant_call(
           writer, pred, include_debug_info, debugging_true_label_mode
       )
@@ -615,16 +641,17 @@ def call_variants(
     n_batches = 0
     start_time = time.time()
     for batch in enc_image_variant_alt_allele_ds:
+      images_in_batch = batch[1]
       if use_saved_model:
-        predictions = model.signatures['serving_default'](batch[1])
+        predictions = model.signatures['serving_default'](images_in_batch)
         predictions = predictions['classification'].numpy()
       else:
         if not is_gpu_available:
           # This is faster on CPU but slower on GPU.
-          predictions = model.predict_on_batch(batch[1])
+          predictions = model.predict_on_batch(images_in_batch)
         else:
           # This is faster on GPU but slower on CPU.
-          predictions = model(batch[1], training=False).numpy()
+          predictions = model(images_in_batch, training=False).numpy()
 
       layer_outputs_encoded = None
       if include_debug_info and activation_layers:
@@ -637,14 +664,18 @@ def call_variants(
           if not is_gpu_available:
             # This is faster on CPU but slower on GPU.
             layer_outputs_encoded = {
-                layer: activation_model.predict_on_batch(batch[1]).tobytes()
+                layer: activation_model.predict_on_batch(
+                    images_in_batch
+                ).tobytes()
                 for layer, activation_model in activation_models.items()
             }
           else:
             # This is faster on GPU but slower on CPU.
             layer_outputs_encoded = {
                 layer: (
-                    activation_model(batch[1], training=False).numpy().tobytes()
+                    activation_model(images_in_batch, training=False)
+                    .numpy()
+                    .tobytes()
                 )
                 for layer, activation_model in activation_models.items()
             }
@@ -655,6 +686,16 @@ def call_variants(
               ','.join(activation_layers),
           )
 
+      pileup_curation_in_batch = None
+      if include_debug_info:
+        pileup_curation_in_batch = [
+            vis.curate_pileup(
+                vis.split_3d_array_into_channels(
+                    dv_utils.unpreprocess_images(image.numpy())
+                )
+            )
+            for image in images_in_batch
+        ]
       batch_no += 1
       duration = time.time() - start_time
       n_examples += len(predictions)
@@ -674,6 +715,7 @@ def call_variants(
           batch[3],
           batch[4],
           layer_outputs_encoded,
+          pileup_curation_in_batch,
       ))
 
     # Put none values in the queue so the running processes can terminate.

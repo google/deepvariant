@@ -892,6 +892,7 @@ py_library(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:vis",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
     ],

@@ -330,6 +330,7 @@ message CallVariantsOutput {
 
   repeated double genotype_probabilities = 3;
 
+  // Next ID: 11
   message DebugInfo {
     int32 predicted_label = 1;
     bool has_insertion = 2;
@@ -343,6 +344,16 @@ message CallVariantsOutput {
     // Key-value pairs of layer names of call variant models and the encoded
     // layers' outputs.
     map<string, bytes> layer_output_encoded = 9;
+
+    message PileupCuration {
+      // The following enums are defined in nucleus/util/vis.py.
+      int32 diff_category = 1;
+      int32 base_quality = 2;
+      int32 mapping_quality = 3;
+      int32 strand_bias = 4;
+      int32 read_support = 5;
+    }
+    PileupCuration pileup_curation = 10;
   }
   DebugInfo debug_info = 4;
 }
