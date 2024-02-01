@@ -61,22 +61,3 @@ from "deepvariant/pileup_image_native.h":
       def `EncodeReference` as encode_reference(
           self, ref_bases: str) -> ImageRow
 
-      def `BaseColor` as base_color(self, base: str) -> int
-
-      def `StrandColor` as strand_color(
-          self, on_positive_strand: bool) -> int
-
-      def `SupportsAltColor` as supports_alt_color(
-          self, read_supports_alt: int) -> int
-
-      def `MatchesRefColor` as matches_ref_color(
-          self, base_matches_ref: bool) -> int
-
-      def `BaseQualityColor` as base_quality_color(
-          self, base_qual: int) -> int
-
-      def `MappingQualityColor` as mapping_quality_color(
-          self, mapping_qual: int) -> int
-
-      def `AlleleFrequencyColor` as allele_frequency_color(
-          self, allele_frequency: float) -> int

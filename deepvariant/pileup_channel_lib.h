@@ -31,6 +31,8 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_PILEUP_CHANNEL_LIB_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_PILEUP_CHANNEL_LIB_H_
 
+#include <math.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -69,6 +71,12 @@ static const auto& ch_base_differs_from_ref = "base_differs_from_ref";
 // Opt Channels Names //
 //--------------------//
 
+static const auto& ch_haplotype_tag = "haplotype";
+static const auto& ch_allele_frequency = "allele_frequency";
+static const auto& ch_diff_channels_alternate_allele_1 =
+    "diff_channels_alternate_allele_1";
+static const auto& ch_diff_channels_alternate_allele_2 =
+    "diff_channels_alternate_allele_2";
 static const auto& ch_read_mapping_percent = "read_mapping_percent";
 static const auto& ch_avg_base_quality = "avg_base_quality";
 static const auto& ch_identity = "identity";
@@ -78,8 +86,10 @@ static const auto& ch_is_homopolymer = "is_homopolymer";
 static const auto& ch_homopolymer_weighted = "homopolymer_weighted";
 static const auto& ch_blank = "blank";
 static const auto& ch_insert_size = "insert_size";
-static const auto& ch_allele_frequency = "allele_frequency";
-static const auto& ch_hp_value = "hp_value";
+static const auto& ch_base_channels_alternate_allele_1 =
+    "base_channels_alternate_allele_1";
+static const auto& ch_base_channels_alternate_allele_2 =
+    "base_channels_alternate_allele_2";
 
 //-------//
 // Utils //
@@ -215,6 +225,89 @@ inline int MatchesRefColor(bool base_matches_ref,
 //-----------------------//
 // Experimental Channels //
 //-----------------------//
+
+// Get the allele frequency of the alt allele that is carried by a read.
+inline float ReadAlleleFrequency(const DeepVariantCall& dv_call,
+                                 const Read& read,
+                                 const std::vector<std::string>& alt_alleles) {
+  std::string key =
+      (read.fragment_name() + "/" + std::to_string(read.read_number()));
+
+  // Iterate over all alts, not just alt_alleles.
+  for (const std::string& alt_allele : dv_call.variant().alternate_bases()) {
+    const auto& allele_support = dv_call.allele_support();
+    auto it_read = allele_support.find(alt_allele);
+
+    if (it_read != allele_support.end()) {
+      const auto& supp_read_names = it_read->second.read_names();
+      for (const std::string& read_name : supp_read_names) {
+        const bool alt_in_alt_alleles =
+            std::find(alt_alleles.begin(), alt_alleles.end(), alt_allele) !=
+            alt_alleles.end();
+        // If the read supports an alt we are currently considering, return the
+        // associated allele frequency.
+        if (read_name == key && alt_in_alt_alleles) {
+          auto it = dv_call.allele_frequency().find(alt_allele);
+          if (it != dv_call.allele_frequency().end())
+            return it->second;
+          else
+            return 0;
+        }
+      }
+    }
+  }
+  // If cannot find the matching variant, set the frequency to 0.
+  return 0;
+}
+
+// Get allele frequency color for a read.
+// Convert a frequency value in float to color intensity (int) and normalize.
+inline int AlleleFrequencyColor(
+    float allele_frequency, const PileupImageOptions& options) {
+  if (allele_frequency <= options.min_non_zero_allele_frequency()) {
+    return 0;
+  } else {
+    float log10_af = log10(allele_frequency);
+    float log10_min = log10(options.min_non_zero_allele_frequency());
+    return ((log10_min - log10_af) / log10_min) *
+           static_cast<int>(kMaxPixelValueAsFloat);
+  }
+}
+
+inline int GetHPValueForHPChannel(const Read& read,
+                           int hp_tag_for_assembly_polishing) {
+  if (!read.info().contains("HP")) {
+    return 0;
+  }
+  const auto& hp_values = read.info().at("HP").values();
+  if (hp_values.empty()) {
+    return 0;
+  }
+  if (hp_values.size() > 1) {
+    LOG(WARNING) << "Unexpected: Read contains more than one HP tag. Return 0";
+    return 0;
+  }
+  int hp_value = hp_values[0].int_value();
+  // See the description of --add_hp_channel flag in make_examples.py: Currently
+  // we only support value of 1, 2, or 0.
+  if (hp_value != 0 && hp_value != 1 && hp_value != 2) {
+    LOG(FATAL)
+        << "This function is currently used when --add_hp_channel is set. "
+        << "HP value has to be either 1, 2, or 0. Found a read with HP="
+        << hp_value << ", read=" << read.fragment_name();
+  }
+  // If hp_tag_for_assembly_polishing is set to 2, this is a special case
+  // assembly polishing:
+  // If we're calling HP=2, when displayed with --add_hp_channel, we want to
+  // swap the color of reads with HP=2 and HP=1.
+  if (hp_tag_for_assembly_polishing == 2) {
+    if (hp_value == 1) return 2;
+    if (hp_value == 2) return 1;
+  }
+
+  // Otherwise, keep the default behavior.
+  return hp_value;
+}
 
 // Read Mapping Percent: Calculates percentage of bases mapped to reference.
 inline int ReadMappingPercent(const Read& read) {
@@ -371,89 +464,6 @@ inline std::vector<std::uint8_t> Blank(const Read& read) {
   return blank;
 }
 
-// Get the allele frequency of the alt allele that is carried by a read.
-inline float ReadAlleleFrequency_(const DeepVariantCall& dv_call,
-                                  const Read& read,
-                                  const std::vector<std::string>& alt_alleles) {
-  std::string key =
-      (read.fragment_name() + "/" + std::to_string(read.read_number()));
-
-  // Iterate over all alts, not just alt_alleles.
-  for (const std::string& alt_allele : dv_call.variant().alternate_bases()) {
-    const auto& allele_support = dv_call.allele_support();
-    auto it_read = allele_support.find(alt_allele);
-
-    if (it_read != allele_support.end()) {
-      const auto& supp_read_names = it_read->second.read_names();
-      for (const std::string& read_name : supp_read_names) {
-        const bool alt_in_alt_alleles =
-            std::find(alt_alleles.begin(), alt_alleles.end(), alt_allele) !=
-            alt_alleles.end();
-        // If the read supports an alt we are currently considering, return the
-        // associated allele frequency.
-        if (read_name == key && alt_in_alt_alleles) {
-          auto it = dv_call.allele_frequency().find(alt_allele);
-          if (it != dv_call.allele_frequency().end())
-            return it->second;
-          else
-            return 0;
-        }
-      }
-    }
-  }
-  // If cannot find the matching variant, set the frequency to 0.
-  return 0;
-}
-
-// Get allele frequency color for a read.
-// Convert a frequency value in float to color intensity (int) and normalize.
-inline unsigned char AlleleFrequencyColor_(float allele_frequency,
-                                           const PileupImageOptions& options) {
-  if (allele_frequency <= options.min_non_zero_allele_frequency()) {
-    return 0;
-  } else {
-    float log10_af = log10(allele_frequency);
-    float log10_min = log10(options.min_non_zero_allele_frequency());
-    return ((log10_min - log10_af) / log10_min) *
-           static_cast<int>(kMaxPixelValueAsFloat);
-  }
-}
-
-inline int GetHPValueForHPChannel_(const Read& read,
-                                   int hp_tag_for_assembly_polishing) {
-  if (!read.info().contains("HP")) {
-    return 0;
-  }
-  const auto& hp_values = read.info().at("HP").values();
-  if (hp_values.empty()) {
-    return 0;
-  }
-  if (hp_values.size() > 1) {
-    LOG(WARNING) << "Unexpected: Read contains more than one HP tag. Return 0";
-    return 0;
-  }
-  int hp_value = hp_values[0].int_value();
-  // See the description of --add_hp_channel flag in make_examples.py: Currently
-  // we only support value of 1, 2, or 0.
-  if (hp_value != 0 && hp_value != 1 && hp_value != 2) {
-    LOG(FATAL)
-        << "This function is currently used when --add_hp_channel is set. "
-        << "HP value has to be either 1, 2, or 0. Found a read with HP="
-        << hp_value << ", read=" << read.fragment_name();
-  }
-  // If hp_tag_for_assembly_polishing is set to 2, this is a special case
-  // assembly polishing:
-  // If we're calling HP=2, when displayed with --add_hp_channel, we want to
-  // swap the color of reads with HP=2 and HP=1.
-  if (hp_tag_for_assembly_polishing == 2) {
-    if (hp_value == 1) return 2;
-    if (hp_value == 2) return 1;
-  }
-
-  // Otherwise, keep the default behavior.
-  return hp_value;
-}
-
 inline bool channel_exists(std::vector<std::string>& channels,
                            const std::string& channel_name) {
   if (std::find(channels.begin(), channels.end(), channel_name) !=
@@ -494,6 +504,14 @@ inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
     return DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF;
   if (channel == ch_read_mapping_percent)
     return DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT;
+  if (channel == ch_haplotype_tag)
+    return DeepVariantChannelEnum::CH_HAPLOTYPE_TAG;
+  if (channel == ch_allele_frequency)
+    return DeepVariantChannelEnum::CH_ALLELE_FREQUENCY;
+  if (channel == ch_diff_channels_alternate_allele_1)
+    return DeepVariantChannelEnum::CH_UNSPECIFIED;
+  if (channel == ch_diff_channels_alternate_allele_2)
+    return DeepVariantChannelEnum::CH_UNSPECIFIED;
   if (channel == ch_avg_base_quality)
     return DeepVariantChannelEnum::CH_AVG_BASE_QUALITY;
   if (channel == ch_identity) return DeepVariantChannelEnum::CH_IDENTITY;
@@ -506,9 +524,10 @@ inline DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel) {
     return DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED;
   if (channel == ch_blank) return DeepVariantChannelEnum::CH_BLANK;
   if (channel == ch_insert_size) return DeepVariantChannelEnum::CH_INSERT_SIZE;
-  if (channel == ch_allele_frequency)
-    return DeepVariantChannelEnum::CH_ALLELE_FREQUENCY;
-  if (channel == ch_hp_value) return DeepVariantChannelEnum::CH_HAPLOTYPE_TAG;
+  if (channel == ch_base_channels_alternate_allele_1)
+    return DeepVariantChannelEnum::CH_UNSPECIFIED;
+  if (channel == ch_base_channels_alternate_allele_2)
+    return DeepVariantChannelEnum::CH_UNSPECIFIED;
   CHECK(false) << "Channel '" << channel << "' should have a corresponding "
                << "enum in DeepVariantChannelEnum.";
 }
@@ -655,7 +674,19 @@ class Channels {
                               const Read& read, const DeepVariantCall& dv_call,
                               const std::vector<std::string>& alt_alleles) {
     int index = channel_enum_to_index_[channel_enum];
-    if (channel_enum == DeepVariantChannelEnum::CH_MAPPING_QUALITY) {
+
+    if (channel_enum == DeepVariantChannelEnum::CH_HAPLOTYPE_TAG) {
+      const int hp_value = GetHPValueForHPChannel(
+          read, options_.hp_tag_for_assembly_polishing());
+      read_level_data_[index].assign(
+          {ScaleColor(hp_value, 2)});
+    } else if (channel_enum == DeepVariantChannelEnum::CH_ALLELE_FREQUENCY) {
+        const float allele_frequency = ReadAlleleFrequency(
+            dv_call, read, alt_alleles);
+      read_level_data_[index].assign(
+          {static_cast<std::uint8_t>(
+            AlleleFrequencyColor(allele_frequency, options_))});
+    } else if (channel_enum == DeepVariantChannelEnum::CH_MAPPING_QUALITY) {
       const int mapping_quality = read.alignment().mapping_quality();
       const int min_mapping_quality =
           options_.read_requirements().min_mapping_quality();
@@ -705,15 +736,6 @@ class Channels {
       read_level_data_[index] = Blank(read);
     } else if (channel_enum == DeepVariantChannelEnum::CH_INSERT_SIZE) {
       read_level_data_[index] = ReadInsertSize(read);
-    } else if (channel_enum == DeepVariantChannelEnum::CH_ALLELE_FREQUENCY) {
-      const float allele_frequency =
-          ReadAlleleFrequency_(dv_call, read, alt_alleles);
-      read_level_data_[index].assign(
-          {AlleleFrequencyColor_(allele_frequency, options_)});
-    } else if (channel_enum == DeepVariantChannelEnum::CH_HAPLOTYPE_TAG) {
-      const int hp_value = GetHPValueForHPChannel_(
-          read, options_.hp_tag_for_assembly_polishing());
-      read_level_data_[index].assign({ScaleColor(hp_value, 2)});
     }
 
     return true;
@@ -858,7 +880,14 @@ class Channels {
         int ref = MatchesRefColor(true, options_);
         ref_data_[index].assign(ref_bases.size(),
                                 static_cast<std::uint8_t>(ref));
-      } else if (channel_enum ==
+      } else if (channel_enum == DeepVariantChannelEnum::CH_HAPLOTYPE_TAG) {
+        ref_data_[index].assign(ref_bases.size(),
+            {ScaleColor(0, 2)});
+      } else if (channel_enum == DeepVariantChannelEnum::CH_ALLELE_FREQUENCY) {
+        int allele_frequency_color = AlleleFrequencyColor(0, options_);
+        ref_data_[index].assign(ref_bases.size(),
+            {static_cast<std::uint8_t>(allele_frequency_color)});
+       } else if (channel_enum ==
                  DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT) {
         ref_data_[index].assign(
             ref_bases.size(), static_cast<std::uint8_t>(kMaxPixelValueAsFloat));

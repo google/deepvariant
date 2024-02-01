@@ -75,7 +75,6 @@ def default_options(read_requirements=None):
       mapping_quality_cap=60,
       height=dv_constants.PILEUP_DEFAULT_HEIGHT,
       width=dv_constants.PILEUP_DEFAULT_WIDTH,
-      num_channels=dv_constants.PILEUP_NUM_CHANNELS,
       read_overlap_buffer_bp=5,
       read_requirements=read_requirements,
       multi_allelic_mode=deepvariant_pb2.PileupImageOptions.ADD_HET_ALT_IMAGES,
@@ -113,10 +112,14 @@ def _represent_alt_aligned_pileups(representation, ref_image, alt_images):
   if len(alt_images) != 2:
     raise ValueError('alt_images must contain exactly one or two arrays.')
 
-  # Ensure that all three pileups have the same shape.
-  if not ref_image.shape == alt_images[0].shape == alt_images[1].shape:
+  # Ensure that all three pileups have the same width and height.
+  if (
+      not ref_image.shape[:2]
+      == alt_images[0].shape[:2]
+      == alt_images[1].shape[:2]
+  ):
     raise ValueError(
-        'Pileup images must be the same shape to be combined. '
+        'Pileup images must have the same width and height to be combined. '
         'ref_image.shape is {}. alt_images[0].shape is {}. '
         'alt_images[1].shape is {}.'.format(
             ref_image.shape, alt_images[0].shape, alt_images[1].shape
@@ -124,20 +127,33 @@ def _represent_alt_aligned_pileups(representation, ref_image, alt_images):
     )
 
   if representation == 'rows':
+    # For row representation, additionally check that all three pileups have the
+    # same number of channels
+    if (
+        not ref_image.shape[2]
+        == alt_images[0].shape[2]
+        == alt_images[1].shape[2]
+    ):
+      raise ValueError(
+          'Pileup images must have the number of channels to be combined. '
+          'ref_image.shape is {}. alt_images[0].shape is {}. '
+          'alt_images[1].shape is {}.'.format(
+              ref_image.shape, alt_images[0].shape, alt_images[1].shape
+          )
+      )
+
     # Combine all images: [ref, alt1, alt2].
     return np.concatenate([ref_image] + alt_images, axis=0)
   elif representation == 'base_channels':
-    channels = [ref_image[:, :, c] for c in range(ref_image.shape[2])]
     # Add channel 0 (bases ATCG) of both alts as channels.
-    channels.append(alt_images[0][:, :, 0])
-    channels.append(alt_images[1][:, :, 0])
-    return np.stack(channels, axis=2)
+    alt_base_1 = np.expand_dims(alt_images[0][:, :, 0], axis=2)
+    alt_base_2 = np.expand_dims(alt_images[1][:, :, 0], axis=2)
+    return np.concatenate((ref_image, alt_base_1, alt_base_2), axis=2)
   elif representation == 'diff_channels':
-    channels = [ref_image[:, :, c] for c in range(ref_image.shape[2])]
-    # Add channel 5 (base differs from ref) of both alts as channels.
-    channels.append(alt_images[0][:, :, 5])
-    channels.append(alt_images[1][:, :, 5])
-    return np.stack(channels, axis=2)
+    # Add channel 5 (base differs from ref) of both alts as channels.s
+    alt_diff_1 = np.expand_dims(alt_images[0][:, :, 5], axis=2)
+    alt_diff_2 = np.expand_dims(alt_images[1][:, :, 5], axis=2)
+    return np.concatenate((ref_image, alt_diff_1, alt_diff_2), axis=2)
   else:
     raise ValueError(
         '_represent_alt_aligned_pileups received invalid value for '
@@ -413,7 +429,7 @@ class PileupImageCreator(object):
 
   def _empty_image_row(self) -> np.ndarray:
     """Creates an empty image row as an uint8 np.array."""
-    return np.zeros((1, self.width, self.num_channels), dtype=np.uint8)
+    return np.zeros((1, self.width, len(self.get_channels())), dtype=np.uint8)
 
   def create_pileup_images(
       self,
@@ -479,9 +495,9 @@ class PileupImageCreator(object):
             pileup_height = sum(sample_heights)
           else:
             pileup_height = self.height
-          pileup_shape = (pileup_height, self.width, self.num_channels)
+          pileup_shape = (pileup_height, self.width, len(self.get_channels()))
           alt_images = [
-              np.zeros(pileup_shape, dtype=np.uint8) for alt in alt_alleles
+              np.zeros(pileup_shape, dtype=np.uint8) for _ in alt_alleles
           ]
         else:
           alt_images = []

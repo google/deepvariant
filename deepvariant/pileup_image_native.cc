@@ -63,28 +63,15 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-namespace {
 
-// Get the allele frequency of the alt allele that is carried by a read.
-inline float ReadAlleleFrequency(const DeepVariantCall& dv_call,
-                                 const Read& read,
-                                 const std::vector<std::string>& alt_alleles) {
-  return ReadAlleleFrequency_(dv_call, read, alt_alleles);
-}
-
-int GetHPValueForHPChannel(const Read& read,
-                           int hp_tag_for_assembly_polishing) {
-  return GetHPValueForHPChannel_(read, hp_tag_for_assembly_polishing);
-}
 
 bool SortByAlignment(std::tuple<int, int, std::unique_ptr<ImageRow>>& a,
                      std::tuple<int, int, std::unique_ptr<ImageRow>>& b) {
   // Sort tuples by making tuples with just the ints.
   return std::tuple<int, int>(std::get<0>(a), std::get<1>(a)) <
          std::tuple<int, int>(std::get<0>(b), std::get<1>(b));
-}
+                     }
 
-}  // namespace
 
 ImageRow::ImageRow(int width, int num_channels)
     : width(width),
@@ -107,98 +94,19 @@ PileupImageEncoderNative::PileupImageEncoderNative(
   CHECK_LE(channel_enums_.size(), options_.num_channels());
 }
 
-// Gets the pixel color (int) for a base.
-int PileupImageEncoderNative::BaseColor(char base) const {
-  switch (base) {
-    case 'A':
-      return (options_.base_color_offset_a_and_g() +
-              options_.base_color_stride() * 3);
-    case 'G':
-      return (options_.base_color_offset_a_and_g() +
-              options_.base_color_stride() * 2);
-    case 'T':
-      return (options_.base_color_offset_t_and_c() +
-              options_.base_color_stride() * 1);
-    case 'C':
-      return (options_.base_color_offset_t_and_c() +
-              options_.base_color_stride() * 0);
-    default:
-      return 0;
-  }
-}
-
-int PileupImageEncoderNative::BaseColor(const string& base) const {
-  CHECK_EQ(base.size(), 1) << "'base' string should be a single character";
-  return BaseColor(base[0]);
-}
-
-int PileupImageEncoderNative::MatchesRefColor(bool base_matches_ref) const {
-  float alpha =
-      (base_matches_ref ? options_.reference_matching_read_alpha()
-                        : options_.reference_mismatching_read_alpha());
-  return static_cast<int>(kMaxPixelValueAsFloat * alpha);
-}
-
-// Get allele frequency color for a read.
-// Convert a frequency value in float to color intensity (int) and normalize.
-int PileupImageEncoderNative::AlleleFrequencyColor(
-    float allele_frequency) const {
-  return AlleleFrequencyColor_(allele_frequency, options_);
-}
-
-int PileupImageEncoderNative::SupportsAltColor(int read_supports_alt) const {
-  float alpha;
-  if (read_supports_alt == 0) {
-    alpha = options_.allele_unsupporting_read_alpha();
-  } else if (read_supports_alt == 1) {
-    alpha = options_.allele_supporting_read_alpha();
-  } else {
-    CHECK_EQ(read_supports_alt, 2) << "read_supports_alt can only be 0/1/2.";
-    alpha = options_.other_allele_supporting_read_alpha();
-  }
-  return static_cast<int>(kMaxPixelValueAsFloat * alpha);
-}
-
-int PileupImageEncoderNative::BaseQualityColor(int base_qual) const {
-  float capped =
-      static_cast<float>(std::min(options_.base_quality_cap(), base_qual));
-  return static_cast<int>(kMaxPixelValueAsFloat *
-                          (capped / options_.base_quality_cap()));
-}
-
-int PileupImageEncoderNative::MappingQualityColor(int mapping_qual) const {
-  float capped = static_cast<float>(
-      std::min(options_.mapping_quality_cap(), mapping_qual));
-  return static_cast<int>(kMaxPixelValueAsFloat *
-                          (capped / options_.mapping_quality_cap()));
-}
-
-int PileupImageEncoderNative::StrandColor(bool on_positive_strand) const {
-  return (on_positive_strand ? options_.positive_strand_color()
-                             : options_.negative_strand_color());
-}
-
 vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
     const std::string& alt_aligned_representation) {
   std::vector<DeepVariantChannelEnum> channels_list;
-  // The list here corresponds to the order in EncodeRead.
-  channels_list.push_back(DeepVariantChannelEnum::CH_READ_BASE);
-  channels_list.push_back(DeepVariantChannelEnum::CH_BASE_QUALITY);
-  channels_list.push_back(DeepVariantChannelEnum::CH_MAPPING_QUALITY);
-  channels_list.push_back(DeepVariantChannelEnum::CH_STRAND);
-  channels_list.push_back(DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT);
-  channels_list.push_back(DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF);
-  if (options_.use_allele_frequency()) {
-    channels_list.push_back(DeepVariantChannelEnum::CH_ALLELE_FREQUENCY);
-  }
-  if (options_.add_hp_channel()) {
-    channels_list.push_back(DeepVariantChannelEnum::CH_HAPLOTYPE_TAG);
-  }
-  // Fill OptChannel set.
+
+  // Fill "default" channels from OptChannel set
   const std::vector<std::string> opt_channels = ToVector(options_.channels());
   for (int j = 0; j < opt_channels.size(); j++) {
-    channels_list.push_back(ChannelStrToEnum(opt_channels[j]));
+    DeepVariantChannelEnum channel = ChannelStrToEnum(opt_channels[j]);
+    if (channel != DeepVariantChannelEnum::CH_UNSPECIFIED) {
+      channels_list.push_back(channel);
+    }
   }
+
   // Then, in pileup_image.py, _represent_alt_aligned_pileups can potentially
   // add two more channels.
   if (alt_aligned_representation == "diff_channels") {
@@ -276,10 +184,11 @@ PileupImageEncoderNative::BuildPileupForOneSample(
   // Finally, fill in any missing rows to bring our image to pileup_height rows
   // with empty (all black) pixels.
   int empty_rows = pileup_height - rows.size();
+  int num_channels = AllChannelsEnum("").size();
   if (empty_rows > 0) {
     for (int i = 0; i < empty_rows; i++) {
       rows.push_back(std::make_unique<ImageRow>(
-          ImageRow(ref_bases.size(), options_.num_channels())));
+          ImageRow(ref_bases.size(), num_channels)));
     }
   }
 
@@ -317,15 +226,17 @@ int PileupImageEncoderNative::GetHapIndex(const Read& read) {
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
     const DeepVariantCall& dv_call, const string& ref_bases, const Read& read,
     int image_start_pos, const vector<std::string>& alt_alleles) {
-  ImageRow img_row(ref_bases.size(), options_.num_channels());
+  int num_channels = AllChannelsEnum("").size();
+  ImageRow img_row(ref_bases.size(), num_channels);
 
   const int mapping_quality = read.alignment().mapping_quality();
   const int min_mapping_quality =
       options_.read_requirements().min_mapping_quality();
-  // Bail early if this read's mapping quality is too low.
   if (mapping_quality < min_mapping_quality) {
+    // Bail early if this read's mapping quality is too low.
     return nullptr;
   }
+
   // Calculate Channels
   Channels channel_set{options_};
   bool ok = channel_set.CalculateChannels(
@@ -343,8 +254,8 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
 
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeReference(
     const string& ref_bases) {
-  ImageRow img_row(ref_bases.size(), options_.num_channels());
-
+  int num_channels = AllChannelsEnum("").size();
+  ImageRow img_row(ref_bases.size(), num_channels);
   // Calculate reference rows at the top of each channel image.
   // These are retrieved for each position in the loop below.
   Channels channel_set{options_};

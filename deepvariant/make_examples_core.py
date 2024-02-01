@@ -236,22 +236,22 @@ def parse_proto_enum_flag(
     ) from exception
 
 
-def resolve_sam_aux_fields(flags_obj: flags.FlagValues):
+def resolve_sam_aux_fields(
+    flags_obj: flags.FlagValues, provided_channels: List[str]
+):
   """Decide value of parse_sam_aux_fields based on other flags."""
   flags_requiring_sam_aux_fields = [
       'sort_by_haplotypes',
       'use_original_quality_scores',
   ]
-  flags_using_sam_aux_fields_optionally = ['add_hp_channel']
+  channels_using_same_aux_fields_optionally = ['haplotype']
 
   parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
   if parse_sam_aux_fields is None:
     # User didn't set the 'parse_sam_aux_fields' flag, so default to False
     # unless a flag is on that would use it.
     parse_sam_aux_fields = False
-    for flag_name in (
-        flags_requiring_sam_aux_fields + flags_using_sam_aux_fields_optionally
-    ):
+    for flag_name in flags_requiring_sam_aux_fields:
       if flags_obj[flag_name].value:
         logging.info(
             (
@@ -259,6 +259,17 @@ def resolve_sam_aux_fields(flags_obj: flags.FlagValues):
                 'true to enable reading auxiliary fields from reads.'
             ),
             flag_name,
+        )
+      parse_sam_aux_fields = True
+
+    for channel in channels_using_same_aux_fields_optionally:
+      if channel in provided_channels:
+        logging.info(
+            (
+                'Because %s channel is present, --parse_sam_aux_fields is set '
+                'to true to enable reading auxiliary fields from reads.'
+            ),
+            channel,
         )
       parse_sam_aux_fields = True
 
@@ -270,16 +281,17 @@ def resolve_sam_aux_fields(flags_obj: flags.FlagValues):
             'set then --parse_sam_aux_fields must be set too.'
         )
 
-    for flag_name in flags_using_sam_aux_fields_optionally:
-      if flags_obj[flag_name].value:
+    for channel in channels_using_same_aux_fields_optionally:
+      if channel in provided_channels:
         logging.info(
             (
-                'Note that --%s is set but --parse_sam_aux_fields is not set.'
+                'Note that %s channel is present but --parse_sam_aux_fields is '
+                'not set.'
                 ' This is fine unless you are expecting to use aux fields from'
                 ' the alignments file, such as haplotype tags from phasing. If'
                 ' you do need to use aux fields, enable --parse_sam_aux_fields.'
             ),
-            flag_name,
+            channel,
         )
   return parse_sam_aux_fields
 
@@ -308,6 +320,10 @@ def logging_with_options(
 
 def in_training_mode(options):
   return options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING
+
+
+def in_calling_mode(options):
+  return options.mode == deepvariant_pb2.MakeExamplesOptions.CALLING
 
 
 def in_candidate_sweep_mode(options):
@@ -1364,7 +1380,7 @@ class RegionProcessor:
           sample.options.proposed_variants_filename,
       )
 
-    if self.options.use_allele_frequency:
+    if 'allele_frequency' in self.options.pic_options.channels:
       population_vcf_readers = allele_frequency.make_population_vcf_readers(
           self.options.population_vcf_filenames
       )
@@ -1763,7 +1779,7 @@ class RegionProcessor:
       before_make_pileup_images = time.time()
 
       # Get allele frequencies for candidates.
-      if self.options.use_allele_frequency:
+      if 'allele_frequency' in self.options.pic_options.channels:
         candidates = list(
             allele_frequency.add_allele_frequencies_to_candidates(
                 candidates=candidates,

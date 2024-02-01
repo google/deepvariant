@@ -313,6 +313,7 @@ def make_examples_somatic_command(
     reads_tumor,
     reads_normal,
     examples,
+    model_ckpt,
     extra_args,
     runtime_by_region_path=None,
     **kwargs,
@@ -324,6 +325,7 @@ def make_examples_somatic_command(
     reads_tumor: Input tumor BAM file.
     reads_normal: Input normal BAM file.
     examples: Output tfrecord file containing tensorflow.Example files.
+    model_ckpt: Path to the TensorFlow model checkpoint.
     extra_args: Comma-separated list of flag_name=flag_value.
     runtime_by_region_path: Output path for runtime by region metrics.
     **kwargs: Additional arguments to pass in for make_examples_somatic.
@@ -342,6 +344,7 @@ def make_examples_somatic_command(
   command.extend(['--reads_tumor', '"{}"'.format(reads_tumor)])
   command.extend(['--reads_normal', '"{}"'.format(reads_normal)])
   command.extend(['--examples', '"{}"'.format(examples)])
+  command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
 
   if runtime_by_region_path is not None:
     command.extend(
@@ -355,11 +358,9 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_snps'] = 0.029
     special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
     special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
-    special_args['channels'] = 'insert_size'
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'PACBIO':
     special_args = {}
-    special_args['add_hp_channel'] = True
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['min_mapping_quality'] = 5
     special_args['parse_sam_aux_fields'] = True
@@ -377,7 +378,6 @@ def make_examples_somatic_command(
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'ONT_R104':
     special_args = {}
-    special_args['add_hp_channel'] = True
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['min_mapping_quality'] = 5
     special_args['parse_sam_aux_fields'] = True
@@ -591,12 +591,14 @@ def create_all_commands_and_logfiles(
   else:
     runtime_by_region_path = None
 
+  model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
   commands.append(
       make_examples_somatic_command(
           ref=_REF.value,
           reads_tumor=_READS_TUMOR.value,
           reads_normal=_READS_NORMAL.value,
           examples=examples,
+          model_ckpt=model_ckpt,
           runtime_by_region_path=runtime_by_region_path,
           extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
           # kwargs:
@@ -611,7 +613,6 @@ def create_all_commands_and_logfiles(
   call_variants_output = os.path.join(
       intermediate_results_dir, 'call_variants_output.tfrecord.gz'
   )
-  model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
   commands.append(
       call_variants_command(
           outfile=call_variants_output,

@@ -327,7 +327,13 @@ def _update_kwargs_with_warning(kwargs, extra_args):
 
 
 def make_examples_command(
-    ref, reads, examples, extra_args, runtime_by_region_path=None, **kwargs
+    ref,
+    reads,
+    examples,
+    model_ckpt,
+    extra_args,
+    runtime_by_region_path=None,
+    **kwargs,
 ):
   """Returns a make_examples (command, logfile) for subprocess.
 
@@ -335,6 +341,7 @@ def make_examples_command(
     ref: Input FASTA file.
     reads: Input BAM file.
     examples: Output tfrecord file containing tensorflow.Example files.
+    model_ckpt: Path to the TensorFlow model checkpoint.
     extra_args: Comma-separated list of flag_name=flag_value.
     runtime_by_region_path: Output path for runtime by region metrics.
     **kwargs: Additional arguments to pass in for make_examples.
@@ -352,19 +359,15 @@ def make_examples_command(
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--reads', '"{}"'.format(reads)])
   command.extend(['--examples', '"{}"'.format(examples)])
+  command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
 
   if runtime_by_region_path is not None:
     command.extend(
         ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)]
     )
 
-  if _MODEL_TYPE.value == 'WGS' or _MODEL_TYPE.value == 'WES':
-    special_args = {}
-    special_args['channels'] = 'insert_size'
-    kwargs = _update_kwargs_with_warning(kwargs, special_args)
-  elif _MODEL_TYPE.value == 'PACBIO':
-    special_args = {}
-    special_args['add_hp_channel'] = True
+  special_args = {}
+  if _MODEL_TYPE.value == 'PACBIO':
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['max_reads_per_partition'] = 600
     special_args['min_mapping_quality'] = 1
@@ -376,10 +379,7 @@ def make_examples_command(
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
     special_args['vsc_min_fraction_indels'] = 0.12
-    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'ONT_R104':
-    special_args = {}
-    special_args['add_hp_channel'] = True
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['max_reads_per_partition'] = 600
     special_args['min_mapping_quality'] = 5
@@ -392,7 +392,8 @@ def make_examples_command(
     special_args['track_ref_reads'] = True
     special_args['vsc_min_fraction_snps'] = 0.08
     special_args['vsc_min_fraction_indels'] = 0.12
-    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+
+  kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
@@ -589,11 +590,13 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
   else:
     runtime_by_region_path = None
 
+  model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
   commands.append(
       make_examples_command(
           ref=_REF.value,
           reads=_READS.value,
           examples=examples,
+          model_ckpt=model_ckpt,
           runtime_by_region_path=runtime_by_region_path,
           extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
           # kwargs:
@@ -607,7 +610,6 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
   call_variants_output = os.path.join(
       intermediate_results_dir, 'call_variants_output.tfrecord.gz'
   )
-  model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
   commands.append(
       call_variants_command(
           outfile=call_variants_output,

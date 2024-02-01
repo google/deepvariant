@@ -537,6 +537,7 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":dv_constants",
+        ":dv_utils",
         ":exclude_contigs",
         ":make_examples_core",
         ":pileup_image",
@@ -727,6 +728,7 @@ py_test(
     shard_count = 2,
     srcs_version = "PY3",
     deps = [
+        ":dv_constants",
         ":dv_utils",
         ":make_examples_core",
         ":make_examples_lib",
@@ -1349,6 +1351,9 @@ py_library(
     name = "dv_constants",
     srcs = ["dv_constants.py"],
     srcs_version = "PY3",
+    deps = [
+        "//deepvariant/protos:deepvariant_py_pb2",
+    ],
 )
 
 py_library(

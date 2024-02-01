@@ -209,6 +209,19 @@ TEST(MatchesRefColor, BaseMistmatch) {
   EXPECT_EQ(match, kMaxPixelValueAsFloat);
 }
 
+TEST(AlleleFrequencyColor, FrequencyColors) {
+  PileupImageOptions options{};
+  options.set_min_non_zero_allele_frequency(0.00001);
+  EXPECT_EQ(AlleleFrequencyColor(1, options), 254);
+  EXPECT_EQ(AlleleFrequencyColor(0.2, options), 218);
+  EXPECT_EQ(AlleleFrequencyColor(0.1, options), 203);
+  EXPECT_EQ(AlleleFrequencyColor(0.01, options), 152);
+  EXPECT_EQ(AlleleFrequencyColor(0.001, options), 101);
+  EXPECT_EQ(AlleleFrequencyColor(0.00031415, options), 76);
+  EXPECT_EQ(AlleleFrequencyColor(0.00001, options), 0);
+  EXPECT_EQ(AlleleFrequencyColor(0, options), 0);
+}
+
 TEST(SupportsAltColor, AlleleSupporting) {
   PileupImageOptions options{};
   options.set_allele_unsupporting_read_alpha(1.0);

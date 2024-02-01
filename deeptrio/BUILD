@@ -1,6 +1,6 @@
+# Placeholder: load py_binary
 # Placeholder: load py_library
 # Placeholder: load py_test
-# Placeholder: load py_binary
 
 package(
     default_visibility = [
@@ -89,6 +89,7 @@ py_test(
     deps = [
         ":make_examples_lib",
         ":py_testdata",
+        "//deepvariant:dv_constants",
         "//deepvariant:dv_utils",
         "//deepvariant:make_examples_core",
         "//deepvariant/labeler:variant_labeler",

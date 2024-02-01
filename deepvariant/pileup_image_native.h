@@ -131,24 +131,6 @@ class PileupImageEncoderNative {
   // Encode the reference bases into a single row of pixels.
   std::unique_ptr<ImageRow> EncodeReference(const string& ref_bases);
 
- public:
-  // Get the pixel color (int) for a base.
-  int BaseColor(char base) const;
-  // Overload of the above provided for CLIF.
-  int BaseColor(const string& base) const;
-  // Get the strand pixel color (int) for a positive strand observation.
-  int StrandColor(bool on_positive_strand) const;
-  // Get the pixel color (int) for a read that supports an alt allele.
-  int SupportsAltColor(int read_supports_alt) const;
-  // Get the pixel color (int) for a read with an allele frequency.
-  int AlleleFrequencyColor(float allele_frequency) const;
-  // Get the pixel color (int) for a read that matches ref.
-  int MatchesRefColor(bool base_matches_ref) const;
-  // Get the pixel color (int) for a base read quality.
-  int BaseQualityColor(int base_qual) const;
-  // Get the pixel color (int) for a base mapping quality.
-  int MappingQualityColor(int mapping_qual) const;
-
  private:
   int GetHapIndex(const nucleus::genomics::v1::Read& read);
 

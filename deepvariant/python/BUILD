@@ -121,6 +121,7 @@ cc_library(
     srcs = ["clif_converters.cc"],
     hdrs = ["clif_converters.h"],
     deps = [
+        "//deepvariant:pileup_channel_lib",
         "//deepvariant:pileup_image_native",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "@clif//:cpp_runtime",

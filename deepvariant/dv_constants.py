@@ -33,14 +33,26 @@ accessed in a variety of places, often in live code as well as throughout the
 code in tests.
 """
 
+from deepvariant.protos import deepvariant_pb2
+
 # Default width [in basepairs] for our DeepVariant data tensor.
 PILEUP_DEFAULT_WIDTH = 221
 
 # Default height [in rows] for our DeepVariant data tensor.
 PILEUP_DEFAULT_HEIGHT = 100
 
+# Default channels if none are provided
+PILEUP_DEFAULT_CHANNELS = [
+    'read_base',
+    'base_quality',
+    'mapping_quality',
+    'strand',
+    'read_supports_variant',
+    'base_differs_from_ref',
+]
+
 # Not a default because it's hard-coded into the code.
-PILEUP_NUM_CHANNELS = 6
+PILEUP_NUM_CHANNELS = len(PILEUP_DEFAULT_CHANNELS)
 
 # The dimensions of a pileup image tensor as height x width x rank.
 PILEUP_DEFAULT_DIMS = [
@@ -65,6 +77,10 @@ CHANNELS = [
     'strand',
     'read_supports_variant',
     'base_differs_from_ref',
+    'haplotype',
+    'allele_frequency',
+    'diff_channels_alternate_allele_1',
+    'diff_channels_alternate_allele_2',
     'read_mapping_percent',
     'avg_base_quality',
     'identity',
@@ -74,9 +90,41 @@ CHANNELS = [
     'homopolymer_weighted',
     'blank',
     'insert_size',
-    'allele_frequency',
-    'hp_value',
+    'base_channels_alternate_allele_1',
+    'base_channels_alternate_allele_2',
 ]
+
+CHANNEL_ENUM_TO_STRING = {
+    deepvariant_pb2.CH_READ_BASE: 'read_base',
+    deepvariant_pb2.CH_BASE_QUALITY: 'base_quality',
+    deepvariant_pb2.CH_MAPPING_QUALITY: 'mapping_quality',
+    deepvariant_pb2.CH_STRAND: 'strand',
+    deepvariant_pb2.CH_READ_SUPPORTS_VARIANT: 'read_supports_variant',
+    deepvariant_pb2.CH_BASE_DIFFERS_FROM_REF: 'base_differs_from_ref',
+    deepvariant_pb2.CH_HAPLOTYPE_TAG: 'haplotype',
+    deepvariant_pb2.CH_ALLELE_FREQUENCY: 'allele_frequency',
+    deepvariant_pb2.CH_DIFF_CHANNELS_ALTERNATE_ALLELE_1: (
+        'diff_channels_alternate_allele_1'
+    ),
+    deepvariant_pb2.CH_DIFF_CHANNELS_ALTERNATE_ALLELE_2: (
+        'diff_channels_alternate_allele_2'
+    ),
+    deepvariant_pb2.CH_READ_MAPPING_PERCENT: 'read_mapping_percent',
+    deepvariant_pb2.CH_AVG_BASE_QUALITY: 'avg_base_quality',
+    deepvariant_pb2.CH_IDENTITY: 'identity',
+    deepvariant_pb2.CH_GAP_COMPRESSED_IDENTITY: 'gap_compressed_identity',
+    deepvariant_pb2.CH_GC_CONTENT: 'gc_content',
+    deepvariant_pb2.CH_IS_HOMOPOLYMER: 'is_homopolymer',
+    deepvariant_pb2.CH_HOMOPOLYMER_WEIGHTED: 'homopolymer_weighted',
+    deepvariant_pb2.CH_BLANK: 'blank',
+    deepvariant_pb2.CH_INSERT_SIZE: 'insert_size',
+    deepvariant_pb2.CH_BASE_CHANNELS_ALTERNATE_ALLELE_1: (
+        'base_channels_alternate_allele_1'
+    ),
+    deepvariant_pb2.CH_BASE_CHANNELS_ALTERNATE_ALLELE_2: (
+        'base_channels_alternate_allele_2'
+    ),
+}
 
 # Used only when phasing is on (phase_reads=true). It allows to set the
 # region padding as a percantage over the region length. candidates are

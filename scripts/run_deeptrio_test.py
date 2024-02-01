@@ -255,16 +255,14 @@ class RunDeeptrioTest(parameterized.TestCase):
       (
           'WGS',
           False,
-          '--channels "insert_size" '
-          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--pileup_image_height_child "60" '
           + '--pileup_image_height_parent "40" ',
       ),
       (
           'WES',
           False,
-          '--channels "insert_size" '
-          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--pileup_image_height_child "100" '
           + '--pileup_image_height_parent "100" ',
       ),
@@ -273,7 +271,7 @@ class RunDeeptrioTest(parameterized.TestCase):
           # Currently, there is no way to disable it.
           'PACBIO',
           True,
-          '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+          '--alt_aligned_pileup "diff_channels" '
           + '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
           + '--discard_non_dna_regions '
@@ -292,7 +290,6 @@ class RunDeeptrioTest(parameterized.TestCase):
           True,
           '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
-          + '--channels "insert_size" '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--pileup_image_height_child "60" --pileup_image_height_parent'
           ' "40" ',
@@ -302,7 +299,6 @@ class RunDeeptrioTest(parameterized.TestCase):
           True,
           '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
-          + '--channels "insert_size" '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--pileup_image_height_child "100" --pileup_image_height_parent'
           ' "100" ',
@@ -334,20 +330,15 @@ class RunDeeptrioTest(parameterized.TestCase):
     commands, _, _ = self._create_all_commands_and_check_stdout()
     self.assertEqual(
         commands[make_examples_command_index],
-        'time seq 0 63 '
-        '| parallel -q --halt 2 --line-buffer '
-        '/opt/deepvariant/bin/deeptrio/make_examples '
-        '--mode calling '
-        '--ref "your_ref" '
-        '--reads_parent1 "your_bam_parent1" '
-        '--reads_parent2 "your_bam_parent2" '
-        '--reads "your_bam_child" '
-        '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
-        '--sample_name "your_sample_child" '
-        '--sample_name_parent1 "your_sample_parent1" '
-        '--sample_name_parent2 "your_sample_parent2" '
-        '%s'
-        '--task {}' % extra_args_plus_gvcf,
+        'time seq 0 63 | parallel -q --halt 2 --line-buffer'
+        ' /opt/deepvariant/bin/deeptrio/make_examples --mode calling --ref'
+        ' "your_ref" --reads_parent1 "your_bam_parent1" --reads_parent2'
+        ' "your_bam_parent2" --reads "your_bam_child" --examples'
+        ' "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" --checkpoint'
+        ' "/opt/models/deeptrio/%s/child" --sample_name "your_sample_child"'
+        ' --sample_name_parent1 "your_sample_parent1" --sample_name_parent2'
+        ' "your_sample_parent2" %s--task {}'
+        % (model_type.lower(), extra_args_plus_gvcf),
     )
 
   @parameterized.parameters((
@@ -362,10 +353,11 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--reads_parent2 "your_bam_parent2" '
       + '--reads "your_bam_child" '
       + '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
+      + '--checkpoint "/opt/models/deeptrio/pacbio/child" '
       + '--sample_name "your_sample_child" '
       + '--sample_name_parent1 "your_sample_parent1" '
       + '--sample_name_parent2 "your_sample_parent2" '
-      + '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+      + '--alt_aligned_pileup "diff_channels" '
       + '--candidate_positions '
       + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
       + '--discard_non_dna_regions '
@@ -390,10 +382,11 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--reads_parent2 "your_bam_parent2" '
       + '--reads "your_bam_child" '
       + '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
+      + '--checkpoint "/opt/models/deeptrio/pacbio/child" '
       + '--sample_name "your_sample_child" '
       + '--sample_name_parent1 "your_sample_parent1" '
       + '--sample_name_parent2 "your_sample_parent2" '
-      + '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+      + '--alt_aligned_pileup "diff_channels" '
       + '--candidate_positions '
       + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
       + '--discard_non_dna_regions '
@@ -435,21 +428,19 @@ class RunDeeptrioTest(parameterized.TestCase):
   @parameterized.parameters(
       (
           'WGS',
-          '--channels "insert_size" '
-          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--pileup_image_height_child "60" '
           + '--pileup_image_height_parent "40" ',
       ),
       (
           'WES',
-          '--channels "insert_size" '
-          + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
+          '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--pileup_image_height_child "100" '
           + '--pileup_image_height_parent "100" ',
       ),
       (
           'PACBIO',
-          '--add_hp_channel --alt_aligned_pileup "diff_channels" '
+          '--alt_aligned_pileup "diff_channels" '
           + '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
           + '--discard_non_dna_regions '
@@ -486,25 +477,22 @@ class RunDeeptrioTest(parameterized.TestCase):
     make_examples_command_index = 1 if use_candidate_partition else 0
     self.assertEqual(
         commands[make_examples_command_index],
-        'time seq 0 63 '
-        '| parallel -q --halt 2 --line-buffer '
-        '/opt/deepvariant/bin/deeptrio/make_examples '
-        '--mode calling '
-        '--ref "your_ref" '
-        '--reads_parent1 "your_bam_parent1" '
-        '--reads "your_bam_child" '
-        '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
-        '--sample_name "your_sample_child" '
-        '--sample_name_parent1 "your_sample_parent1" '
-        '%s'
-        '--task {}' % extra_args_plus_gvcf,
+        'time seq 0 63 | parallel -q --halt 2 --line-buffer'
+        ' /opt/deepvariant/bin/deeptrio/make_examples --mode calling --ref'
+        ' "your_ref" --reads_parent1 "your_bam_parent1" --reads'
+        ' "your_bam_child" --examples'
+        ' "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz"'
+        ' --checkpoint "/opt/models/deeptrio/%s/child"'
+        ' --sample_name "your_sample_child" --sample_name_parent1'
+        ' "your_sample_parent1" %s--task {}'
+        % (model_type.lower(), extra_args_plus_gvcf),
     )
 
   @parameterized.parameters(
       (
           None,
           (
-              '--add_hp_channel --alt_aligned_pileup "diff_channels"'
+              '--alt_aligned_pileup "diff_channels"'
               ' --candidate_positions'
               ' "/tmp/deeptrio_tmp_output/candidate_positions@64"'
               ' --discard_non_dna_regions --gvcf'
@@ -522,7 +510,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       (
           'alt_aligned_pileup="rows",vsc_min_fraction_indels=0.03',
           (
-              '--add_hp_channel --alt_aligned_pileup "rows"'
+              '--alt_aligned_pileup "rows"'
               ' --candidate_positions'
               ' "/tmp/deeptrio_tmp_output/candidate_positions@64"'
               ' --discard_non_dna_regions --gvcf'
@@ -579,6 +567,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--reads_parent2 "your_bam_parent2" '
         '--reads "your_bam_child" '
         '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
+        '--checkpoint "/opt/models/deeptrio/pacbio/child" '
         '--sample_name "your_sample_child" '
         '--sample_name_parent1 "your_sample_parent1" '
         '--sample_name_parent2 "your_sample_parent2" '
@@ -589,22 +578,18 @@ class RunDeeptrioTest(parameterized.TestCase):
   @parameterized.parameters(
       (
           'chr1:20-30',
-          '--channels "insert_size" --pileup_image_height_child "60" '
+          '--pileup_image_height_child "60" '
           + '--pileup_image_height_parent "40" '
           + '--regions "chr1:20-30"',
       ),
       (
           'chr1:20-30 chr2:100-200',
-          '--channels "insert_size" '
-          + '--pileup_image_height_child "60" --pileup_image_height_parent'
-          ' "40" '
+          '--pileup_image_height_child "60" --pileup_image_height_parent "40" '
           + '--regions "chr1:20-30 chr2:100-200"',
       ),
       (
           "'chr1:20-30 chr2:100-200'",
-          '--channels "insert_size" '
-          + '--pileup_image_height_child "60" --pileup_image_height_parent'
-          ' "40" '
+          '--pileup_image_height_child "60" --pileup_image_height_parent "40" '
           + "--regions 'chr1:20-30 chr2:100-200'",
       ),
   )
@@ -632,6 +617,7 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--reads_parent2 "your_bam_parent2" '
         '--reads "your_bam_child" '
         '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
+        '--checkpoint "/opt/models/deeptrio/wgs/child" '
         '--sample_name "your_sample_child" '
         '--sample_name_parent1 "your_sample_parent1" '
         '--sample_name_parent2 "your_sample_parent2" '

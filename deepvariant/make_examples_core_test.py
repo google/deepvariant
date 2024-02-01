@@ -206,6 +206,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
 
     options = make_examples.default_options(add_flags=True)
     confident_regions = make_examples_core.read_confident_regions(options)
@@ -234,6 +235,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.reads = ''
     FLAGS.ref = ''
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertFalse(make_examples_core.gvcf_output_enabled(options))
 
@@ -244,6 +246,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.reads = ''
     FLAGS.ref = ''
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertTrue(make_examples_core.gvcf_output_enabled(options))
 
@@ -863,6 +866,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.regions = 'chr20:10,000,000-11,000,000'
     FLAGS.examples = 'examples.tfrecord'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.exclude_regions = 'chr20:10,010,000-10,100,000'
 
     options = make_examples.default_options(add_flags=True)
@@ -882,6 +886,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.examples = 'examples.tfrecord'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     # NOTE: This is equivalent as when we write "chr20:10,010,001-10,100,000"
     bed_path = test_utils.test_tmpfile(
         'test_mixed_exclude_regions_flags.bed',
@@ -912,6 +917,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.examples = 'examples.tfrecord'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.discard_non_dna_regions = True
 
     options = make_examples.default_options(add_flags=True)
@@ -933,6 +939,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     # Deliberately incorrect contig name.
     FLAGS.regions = '20:10,000,000-11,000,000'
     FLAGS.examples = 'examples.tfrecord'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
 
     options = make_examples.default_options(add_flags=True)
     with self.assertRaisesRegex(ValueError, 'The regions to call is empty.'):
@@ -1314,6 +1321,7 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.examples = 'examples.tfrecord'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS[flags_strictly_needs_sam_aux_fields].value = True
     FLAGS.parse_sam_aux_fields = False
 
@@ -1331,6 +1339,7 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.regions = 'chr20:10006000-10007612'
     FLAGS.examples = os.path.join(self.create_tempdir(), 'examples.tfrecord.gz')
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.output_sitelist = True
     options = make_examples.default_options(add_flags=True)
     make_examples_core.make_examples_runner(options)
@@ -1353,6 +1362,7 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.examples = os.path.join(self.create_tempdir(), 'examples.tfrecord.gz')
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.output_sitelist = True
     options = make_examples.default_options(add_flags=True)
     make_examples_core.make_examples_runner(options)
@@ -1368,24 +1378,27 @@ class RegionProcessorTest(parameterized.TestCase):
     )
 
   @parameterized.parameters(
-      ('add_hp_channel', True, None),
+      ('haplotype', True, None),
       (
-          'add_hp_channel',
+          'haplotype',
           False,
-          'Note that --{} is set but --parse_sam_aux_fields is not set.',
+          (
+              'Note that {} channel is present but --parse_sam_aux_fields is '
+              'not set.'
+          ),
       ),
       (
-          'add_hp_channel',
+          'haplotype',
           None,
           (
-              'Because --{}=true, --parse_sam_aux_fields is set to true to'
-              ' enable reading auxiliary fields from reads.'
+              'Because {} channel is present, --parse_sam_aux_fields is set to'
+              ' true to enable reading auxiliary fields from reads.'
           ),
       ),
   )
   def test_flag_optionally_needs_sam_aux_fields_with_different_parse_sam_aux_fields(
       self,
-      flag_optionally_needs_sam_aux_fields,
+      channel_optionally_needs_sam_aux_fields,
       parse_sam_aux_fields,
       expected_message,
   ):
@@ -1393,7 +1406,10 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.examples = 'examples.tfrecord'
-    FLAGS[flag_optionally_needs_sam_aux_fields].value = True
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS
+        + [channel_optionally_needs_sam_aux_fields]
+    )
     FLAGS.parse_sam_aux_fields = parse_sam_aux_fields
 
     with self.assertLogs() as logs:
@@ -1404,7 +1420,7 @@ class RegionProcessorTest(parameterized.TestCase):
     if aux_fields_log_messages:
       self.assertRegex(
           aux_fields_log_messages[0],
-          expected_message.format(flag_optionally_needs_sam_aux_fields),
+          expected_message.format(channel_optionally_needs_sam_aux_fields),
       )
     else:
       self.assertEmpty(aux_fields_log_messages)

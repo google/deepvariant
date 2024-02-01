@@ -34,6 +34,7 @@ from absl import flags
 from absl import logging
 
 from deepvariant import dv_constants
+from deepvariant import dv_utils
 from deepvariant import exclude_contigs
 from deepvariant import make_examples_core
 from deepvariant import pileup_image
@@ -90,6 +91,11 @@ flags.DEFINE_string(
     'examples',
     None,
     'Required. Path to write tf.Example protos in TFRecord format.',
+)
+flags.DEFINE_string(
+    'checkpoint',
+    None,
+    'Path to the TensorFlow model checkpoint.',
 )
 flags.DEFINE_string(
     'candidates',
@@ -475,13 +481,22 @@ flags.DEFINE_integer(
 flags.DEFINE_bool(
     'add_hp_channel',
     False,
+    '(DEPRECATED) Use `channel_list` to add this channel. \n\n'
     'If true, add another channel to represent HP tags per read.',
 )
+
 flags.DEFINE_string(
     'channels',
     None,
-    'Comma or space-delimited list of optional channels to add. '
-    'Available channels: {}'.format(','.join(dv_constants.CHANNELS)),
+    '(DEPRECATED) Use `channel_list` flag instaed',
+)
+
+flags.DEFINE_string(
+    'channel_list',
+    None,
+    'Comma or space-delimited list of channels to create examples for. '
+    'Channels are created in the order specified by this flag. Available '
+    'channels: {}'.format(','.join(dv_constants.CHANNELS)),
 )
 flags.DEFINE_bool(
     'add_supporting_other_alt_color',
@@ -505,6 +520,7 @@ flags.DEFINE_bool(
     'use_allele_frequency',
     False,
     (
+        '(DEPRECATED) Use `channel_list` to add this channel. \n\n'
         'If True, add another channel for pileup images to represent allele '
         'frequency information gathered from population callsets.'
     ),
@@ -683,16 +699,51 @@ def shared_flags_to_options(
       )
 
     if flags_obj.channels:
-      channel_set = re.split('[, ]+', flags_obj.channels)
-      for channel in channel_set:
-        if channel and channel not in dv_constants.CHANNELS:
-          err_msg = (
-              'Channel "{}" is not one of the available opt channels: {}'
-              .format(channel, ', '.join(dv_constants.CHANNELS))
+      errors.log_and_raise(
+          '--channels is no longer supported. Use the'
+          ' `--channel_list` flag instead. A good default value to use is'
+          ' `--channel_list=read_base,base_quality,mapping_quality,strand,read_supports_variant,base_differs_from_ref`.',
+          errors.CommandLineError,
+      )
+
+    channel_set = []
+    channels_enum = None
+    if make_examples_core.in_calling_mode(options) and flags_obj.checkpoint:
+      model_example_info_json = f'{flags_obj.checkpoint}/example_info.json'
+      _, channels_enum = dv_utils.get_shape_and_channels_from_json(
+          model_example_info_json
+      )
+
+    if channels_enum is not None:
+      for c_enum in channels_enum:
+        if c_enum not in dv_constants.CHANNEL_ENUM_TO_STRING:
+          errors.log_and_raise(
+              'Channel "{}" does not map to an available opt channel: {}'
+              .format(
+                  c_enum,
+                  f'{list(dv_constants.CHANNEL_ENUM_TO_STRING.keys())}',
+              ),
+              errors.CommandLineError,
           )
-          errors.log_and_raise(err_msg, errors.CommandLineError)
-      options.pic_options.channels[:] = channel_set
-      options.pic_options.num_channels += len(channel_set)
+        channel_set.append(dv_constants.CHANNEL_ENUM_TO_STRING[c_enum])
+    elif flags_obj.channel_list:
+      for channel in re.split('[, ]+', flags_obj.channel_list):
+        if channel and channel not in dv_constants.CHANNELS:
+          errors.log_and_raise(
+              'Channel "{}" is not one of the available opt channels: {}'
+              .format(channel, ', '.join(dv_constants.CHANNELS)),
+              errors.CommandLineError,
+          )
+        channel_set.append(channel)
+    elif not make_examples_core.in_candidate_sweep_mode(options):
+      errors.log_and_raise(
+          '--channel_list is required. A good default value to use is'
+          ' `--channel_list=read_base,base_quality,mapping_quality,strand,read_supports_variant,base_differs_from_ref`.',
+          errors.CommandLineError,
+      )
+
+    options.pic_options.channels[:] = channel_set
+    options.pic_options.num_channels += len(channel_set)
 
     if flags_obj.multi_allelic_mode:
       multi_allelic_enum = {
@@ -761,7 +812,8 @@ def shared_flags_to_options(
     options.read_phases_output = read_phases_output
 
     options.parse_sam_aux_fields = make_examples_core.resolve_sam_aux_fields(
-        flags_obj=flags_obj
+        flags_obj=flags_obj,
+        provided_channels=channel_set,
     )
     if flags_obj.aux_fields_to_keep:
       options.aux_fields_to_keep[:] = flags_obj.aux_fields_to_keep.split(',')
@@ -770,8 +822,11 @@ def shared_flags_to_options(
     options.use_original_quality_scores = flags_obj.use_original_quality_scores
 
     if flags_obj.add_hp_channel:
-      options.pic_options.num_channels += 1
-      options.pic_options.add_hp_channel = True
+      errors.log_and_raise(
+          '--add_hp_channel is no longer supported. Add `haplotype_tag` to the'
+          ' `--channel_list` flag instead.',
+          errors.CommandLineError,
+      )
 
     if flags_obj.hp_tag_for_assembly_polishing < 0:
       errors.log_and_raise(
@@ -820,18 +875,20 @@ def shared_flags_to_options(
           flags_obj.training_random_emit_ref_sites
       )
 
-    if flags_obj.use_allele_frequency and not flags_obj.population_vcfs:
+    if flags_obj.use_allele_frequency:
+      errors.log_and_raise(
+          '--use_allele_frequency is no longer supported. Add'
+          ' `allele_frequency` to the `--channel_list` flag instead.',
+          errors.CommandLineError,
+      )
+    if 'allele_frequency' in channel_set and not flags_obj.population_vcfs:
       errors.log_and_raise(
           (
-              'If use_allele_frequency is set then population_vcfs '
+              'If the allele_frequency channel is set then population_vcfs '
               'must be provided.'
           ),
           errors.CommandLineError,
       )
-    if flags_obj.use_allele_frequency:
-      options.use_allele_frequency = flags_obj.use_allele_frequency
-      options.pic_options.num_channels += 1
-      options.pic_options.use_allele_frequency = True
     if flags_obj.population_vcfs:
       for path in re.split(',| ', flags_obj.population_vcfs):
         options.population_vcf_filenames.extend(gfile.Glob(path))

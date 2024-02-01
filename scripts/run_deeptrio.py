@@ -453,6 +453,7 @@ def _make_examples_command(
     reads_parent1,
     reads_parent2,
     examples,
+    model_ckpt,
     sample_name_child,
     sample_name_parent1,
     sample_name_parent2,
@@ -470,6 +471,7 @@ def _make_examples_command(
     reads_parent1: Input BAM file for parent1.
     reads_parent2: Input BAM file for parent2.
     examples: Output tfrecord files suffix.
+    model_ckpt: Path to the TensorFlow model checkpoint.
     sample_name_child: Sample name to use for child.
     sample_name_parent1: Sample name for parent1.
     sample_name_parent2: Sample name for parent2.
@@ -508,6 +510,7 @@ def _make_examples_command(
     command.extend(['--reads_parent2', '"{}"'.format(reads_parent2)])
   command.extend(['--reads', '"{}"'.format(reads_child)])
   command.extend(['--examples', '"{}"'.format(examples)])
+  command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
   command.extend(['--sample_name', '"{}"'.format(sample_name_child)])
   if _SAMPLE_NAME_PARENT1.value is not None:
     command.extend(
@@ -533,7 +536,6 @@ def _make_examples_command(
     special_args['realign_reads'] = False
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
-    special_args['add_hp_channel'] = True
     special_args['min_mapping_quality'] = 1
     special_args['track_ref_reads'] = True
     special_args['pileup_image_height_child'] = (
@@ -556,7 +558,6 @@ def _make_examples_command(
     special_args['realign_reads'] = False
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['alt_aligned_pileup'] = 'diff_channels'
-    special_args['add_hp_channel'] = True
     special_args['min_mapping_quality'] = 5
     special_args['track_ref_reads'] = True
     special_args['pileup_image_height_child'] = (
@@ -582,10 +583,6 @@ def _make_examples_command(
     special_args['pileup_image_height_parent'] = (
         DEEP_TRIO_WES_PILEUP_HEIGHT_PARENT
     )
-    special_args['channels'] = 'insert_size'
-
-  if _MODEL_TYPE.value == 'WGS':
-    special_args['channels'] = 'insert_size'
 
   if candidate_partition_mode == CandidatePartitionCommand.SWEEP:
     special_args['partition_size'] = 10000  # Should be approximately read
@@ -890,6 +887,10 @@ def create_all_commands(intermediate_results_dir):
         CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE,
     ]
 
+  model_ckpt = get_model_ckpt(
+      _MODEL_TYPE.value + '_child', _CUSTOMIZED_MODEL_CHILD.value
+  )
+
   for candidate_partition_mode in candidate_partition_modes:
     commands.append(
         _make_examples_command(
@@ -898,6 +899,7 @@ def create_all_commands(intermediate_results_dir):
             _READS_PARENT1.value,
             _READS_PARENT2.value,
             examples_common_name(intermediate_results_dir, _NUM_SHARDS.value),
+            model_ckpt,
             _SAMPLE_NAME_CHILD.value,
             _SAMPLE_NAME_PARENT1.value,
             _SAMPLE_NAME_PARENT2.value,
@@ -916,9 +918,6 @@ def create_all_commands(intermediate_results_dir):
     )
 
   # Calling variants for child sample
-  model_ckpt = get_model_ckpt(
-      _MODEL_TYPE.value + '_child', _CUSTOMIZED_MODEL_CHILD.value
-  )
   commands.append(
       generate_call_variants_command(
           CHILD, model_ckpt, intermediate_results_dir

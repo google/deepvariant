@@ -31,12 +31,14 @@
 import os
 
 
+
 from absl import flags
 from absl import logging
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
 
+from deepvariant import dv_constants
 from deepvariant import make_examples_core
 from deepvariant import make_examples_somatic
 from deepvariant import testdata
@@ -62,6 +64,7 @@ class MakeExamplesSomaticEnd2EndTest(parameterized.TestCase):
     FLAGS.sample_name_tumor = 'TUMOR'
     FLAGS.mode = 'calling'
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples_somatic.default_options(add_flags=True)
     self.assertLen(options.sample_options, 2)
     normal_sample_options = options.sample_options[
@@ -82,6 +85,7 @@ class MakeExamplesSomaticEnd2EndTest(parameterized.TestCase):
     FLAGS.sample_name_tumor = 'TUMOR'
     FLAGS.mode = 'calling'
     FLAGS.examples = test_utils.test_tmpfile('TEST_SUFFIX.tfrecord.gz')
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     with_normal_suffix = test_utils.test_tmpfile(
         'TEST_SUFFIX_normal.tfrecord.gz'
     )

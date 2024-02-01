@@ -90,6 +90,9 @@ def _make_dv_call_with_allele_frequency(
 def _make_encoder(read_requirements=None, **kwargs):
   """Make a PileupImageEncoderNative with overrideable default options."""
   options = pileup_image.default_options(read_requirements)
+  for channel in dv_constants.PILEUP_DEFAULT_CHANNELS:
+    options.channels.append(channel)
+    options.num_channels += 1
   options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
   return pileup_image_native.PileupImageEncoderNative(options)
 
@@ -106,7 +109,10 @@ def _make_encoder_with_channels(channel_set):
 def _make_encoder_with_allele_frequency(read_requirements=None, **kwargs):
   """Make a PileupImageEncoderNative with overrideable default options."""
   options = pileup_image.default_options(read_requirements)
-  options.use_allele_frequency = True
+  for channel in dv_constants.PILEUP_DEFAULT_CHANNELS:
+    options.channels.append(channel)
+    options.num_channels += 1
+  options.channels.append('allele_frequency')
   options.num_channels += 1
   options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
   return pileup_image_native.PileupImageEncoderNative(options)
@@ -117,10 +123,13 @@ def _make_encoder_with_hp_channel(
 ):
   """Make a PileupImageEncoderNative with overrideable default options."""
   options = pileup_image.default_options(read_requirements)
-  options.add_hp_channel = True
+  for channel in dv_constants.PILEUP_DEFAULT_CHANNELS:
+    options.channels.append(channel)
+    options.num_channels += 1
+  options.channels.append('haplotype')
+  options.num_channels += 1
   if hp_tag_for_assembly_polishing is not None:
     options.hp_tag_for_assembly_polishing = hp_tag_for_assembly_polishing
-  options.num_channels += 1
   options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
   return pileup_image_native.PileupImageEncoderNative(options)
 
@@ -138,82 +147,9 @@ class PileupImageEncoderTest(parameterized.TestCase):
   def setUp(self):
     super(PileupImageEncoderTest, self).setUp()
     self.options = pileup_image.default_options()
-
-  @parameterized.parameters(
-      ('A', 250), ('G', 180), ('T', 100), ('C', 30), ('N', 0), ('X', 0)
-  )
-  def test_base_color(self, base, expected_color):
-    pie = _make_encoder(
-        base_color_offset_a_and_g=40,
-        base_color_offset_t_and_c=30,
-        base_color_stride=70,
-    )
-    self.assertAlmostEqual(pie.base_color(base), expected_color)
-
-  @parameterized.parameters(
-      (0, 0),
-      (5, int(254 * 0.25)),
-      (10, int(254 * 0.5)),
-      (15, int(254 * 0.75)),
-      (19, int(254 * 0.95)),
-      (20, 254),
-      (21, 254),
-      (25, 254),
-      (40, 254),
-  )
-  def test_base_quality_color(self, base_qual, expected_color):
-    pie = _make_encoder(base_quality_cap=20)
-    self.assertAlmostEqual(pie.base_quality_color(base_qual), expected_color)
-
-  @parameterized.parameters(
-      (0, 0),
-      (5, int(254 * 0.25)),
-      (10, int(254 * 0.5)),
-      (15, int(254 * 0.75)),
-      (19, int(254 * 0.95)),
-      (20, 254),
-      (21, 254),
-      (25, 254),
-      (40, 254),
-  )
-  def test_mapping_quality_color(self, mapping_qual, expected_color):
-    pie = _make_encoder(mapping_quality_cap=20)
-    self.assertAlmostEqual(
-        pie.mapping_quality_color(mapping_qual), expected_color
-    )
-
-  @parameterized.parameters((True, 1), (False, 2))
-  def test_strand_color(self, on_positive_strand, expected_color):
-    pie = _make_encoder(positive_strand_color=1, negative_strand_color=2)
-    self.assertAlmostEqual(pie.strand_color(on_positive_strand), expected_color)
-
-  @parameterized.parameters(
-      (0, int(254.0 * 0.2), 0.6),
-      (1, int(254.0 * 0.1), 0.6),
-      (2, int(254.0 * 0.6), 0.6),
-      (0, int(254.0 * 0.2), 0.3),
-      (1, int(254.0 * 0.1), 0.3),
-      (2, int(254.0 * 0.3), 0.3),
-  )
-  def test_supports_alt_color(
-      self, supports_alt, expected_color, other_allele_supporting_read_alpha
-  ):
-    pie = _make_encoder(
-        allele_supporting_read_alpha=0.1,
-        allele_unsupporting_read_alpha=0.2,
-        other_allele_supporting_read_alpha=other_allele_supporting_read_alpha,
-    )
-    self.assertAlmostEqual(pie.supports_alt_color(supports_alt), expected_color)
-
-  @parameterized.parameters(
-      (False, int(254.0 * 0.4)),
-      (True, int(254.0 * 0.3)),
-  )
-  def test_matches_ref_color(self, matches_ref, expected_color):
-    pie = _make_encoder(
-        reference_matching_read_alpha=0.3, reference_mismatching_read_alpha=0.4
-    )
-    self.assertAlmostEqual(pie.matches_ref_color(matches_ref), expected_color)
+    for channel in dv_constants.PILEUP_DEFAULT_CHANNELS:
+      self.options.channels.append(channel)
+      self.options.num_channels += 1
 
   def test_reference_encoding(self):
     self.assertImageRowEquals(
@@ -289,6 +225,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
     read = test_utils.make_read(
         'ACCGT', start=start, cigar='5M', quals=range(10, 15), name='read1'
     )
+
     if hp_value is not None:
       read.info['HP'].values.add().int_value = hp_value
 
@@ -737,22 +674,6 @@ class PileupImageEncoderTest(parameterized.TestCase):
         dv_call, 'TAT', read, dv_call.variant.start - 1, [alt_allele]
     )
     self.assertEqual(actual[0, 1, 4], expected_color)
-
-  @parameterized.parameters(
-      (1, 254),
-      (0.2, 218),
-      (0.1, 203),
-      (0.01, 152),
-      (0.001, 101),
-      (0.00031415, 76),
-      (0.00001, 0),
-      (0, 0),
-  )
-  def test_allele_frequency_color(self, allele_frequency, expected_color):
-    pie = _make_encoder()
-    self.assertAlmostEqual(
-        pie.allele_frequency_color(allele_frequency), expected_color
-    )
 
 
 class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
@@ -1221,41 +1142,41 @@ class PileupCustomChannels(absltest.TestCase):
 
   def test_read_mapping_percent(self):
     result = self.get_encoded_read(['read_mapping_percent'])
-    ch7 = result[:, :, 6]
-    self.assertSetEqual(set(np.unique(ch7)), set([0, 203]))
+    ch1 = result[:, :, 0]
+    self.assertSetEqual(set(np.unique(ch1)), set([0, 203]))
 
   def test_avg_mapping_quality(self):
     result = self.get_encoded_read(['avg_base_quality'])
-    ch7 = result[:, :, 6]
-    self.assertSetEqual(set(np.unique(ch7)), set([0, 68]))
+    ch1 = result[:, :, 0]
+    self.assertSetEqual(set(np.unique(ch1)), set([0, 68]))
 
   def test_identity(self):
     result = self.get_encoded_read(['identity'], cigar='5M20D20M5S')
-    ch7 = result[:, :, 6]
-    self.assertSetEqual(set(np.unique(ch7)), set([0, 127]))
+    ch1 = result[:, :, 0]
+    self.assertSetEqual(set(np.unique(ch1)), set([0, 127]))
 
   def test_gap_compressed_identity(self):
     result = self.get_encoded_read(
         ['gap_compressed_identity'], cigar='5M20D20M5S'
     )
-    ch7 = result[:, :, 6]
-    self.assertSetEqual(set(np.unique(ch7)), set([0, 243]))
+    ch1 = result[:, :, 0]
+    self.assertSetEqual(set(np.unique(ch1)), set([0, 243]))
 
   def test_blank(self):
     result = self.get_encoded_read(['blank'])
-    ch7 = result[:, :, 6]
-    self.assertSetEqual(set(np.unique(ch7)), set([0]))
+    ch1 = result[:, :, 0]
+    self.assertSetEqual(set(np.unique(ch1)), set([0]))
+
+  def test_insert_size(self):
+    result = self.get_encoded_read(['insert_size'], fragment_length=22)
+    ch1 = result[:, :, 0]
+    self.assertSetEqual(set(np.unique(ch1)), set([0, 5]))
 
   def test_multi(self):
     result = self.get_encoded_read(
         ['read_mapping_percent', 'gap_compressed_identity', 'blank']
     )
-    self.assertEqual(result.shape, (1, 50, 9))
-
-  def test_insert_size(self):
-    result = self.get_encoded_read(['insert_size'], fragment_length=22)
-    ch7 = result[:, :, 6]
-    self.assertSetEqual(set(np.unique(ch7)), set([0, 5]))
+    self.assertEqual(result.shape, (1, 50, 3))
 
 
 class PileupCustomChannelsParam(parameterized.TestCase):
@@ -1285,7 +1206,7 @@ class PileupCustomChannelsParam(parameterized.TestCase):
   )
   def test_gc_content(self, seq, exp_gc_content):
     result = self.make_pileup(seq, ['gc_content'])
-    ch7 = result[:, :, 6][0]
+    ch7 = result[:, :, 0][0]
     gc_content = ch7.max() / MAX_PIXEL_FLOAT
     self.assertAlmostEqual(gc_content, exp_gc_content, 2)
 
@@ -1299,7 +1220,7 @@ class PileupCustomChannelsParam(parameterized.TestCase):
   )
   def test_is_homopolymer(self, seq, expected_result):
     result = self.make_pileup(seq, ['is_homopolymer'])
-    ch7 = (result[:, :, 6][0] / MAX_PIXEL_FLOAT).astype(int)
+    ch7 = (result[:, :, 0][0] / MAX_PIXEL_FLOAT).astype(int)
     self.assertTrue((ch7 == expected_result).all())
 
   @parameterized.parameters(
@@ -1310,7 +1231,7 @@ class PileupCustomChannelsParam(parameterized.TestCase):
   def test_weighted_homopolymer(self, seq, expected_result):
     result = self.make_pileup(seq, ['homopolymer_weighted'])
     ch7 = np.round(
-        (result[:, :, 6][0] / MAX_PIXEL_FLOAT) * MAX_HOMOPOLYMER_WEIGHTED
+        (result[:, :, 0][0] / MAX_PIXEL_FLOAT) * MAX_HOMOPOLYMER_WEIGHTED
     ).astype(int)
     self.assertTrue((ch7 == expected_result).all())
 

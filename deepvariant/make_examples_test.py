@@ -36,7 +36,6 @@ import sys
 from unittest import mock
 
 
-
 from absl import flags
 from absl import logging
 from absl.testing import absltest
@@ -141,7 +140,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     )
     FLAGS.examples = test_utils.test_tmpfile('check_pb_channels.ex.tfrecord.gz')
     FLAGS.regions = [ranges.to_literal(region)]
-    FLAGS.add_hp_channel = True
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS + ['haplotype']
+    )
     FLAGS.alt_aligned_pileup = 'diff_channels'
     FLAGS.max_reads_per_partition = 600
     FLAGS.min_mapping_quality = 1
@@ -176,6 +177,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       FLAGS.examples = test_utils.test_tmpfile(
           _sharded(f'jr-{enable_joint_realignment}.ex.tfrecord', num_shards)
       )
+      FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
       FLAGS.regions = [ranges.to_literal(region)]
       FLAGS.partition_size = 1000
       FLAGS.mode = 'calling'
@@ -267,6 +269,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
             'test_max_reads_per_partition_and_bases.ex.tfrecord.gz', num_shards
         )
     )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = mode
@@ -377,6 +380,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('examples.tfrecord', num_shards)
     )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     if mode == 'candidate_sweep':
       FLAGS.candidate_positions = test_utils.test_tmpfile(
           _sharded('candidate_positions', num_shards)
@@ -530,6 +534,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('mismatched_multi_bam.examples.tfrecord')
     )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = 'calling'
@@ -558,6 +563,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('failed.examples.tfrecord')
     )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = 'calling'
@@ -578,6 +584,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
@@ -611,6 +618,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.mode = 'calling'
     examples1 = _get_examples()
     examples2 = _get_examples(0.01)
@@ -626,6 +634,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('confirm_vsc_min.examples.tfrecord')
     )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.mode = 'calling'
     # Setting min_fractions to larger than 100% to confirm that this will end
     # up removing all examples.
@@ -654,6 +663,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('vcf_candidate_importer.examples.{}.tfrecord'.format(mode))
     )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.mode = mode
 
     if mode == 'calling':
@@ -704,6 +714,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       FLAGS.examples = test_utils.test_tmpfile(
           _sharded('vcf_candidate_importer.tfrecord')
       )
+      FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
       FLAGS.mode = 'training'
       FLAGS.reads = testdata.CHR20_BAM
       FLAGS.ref = testdata.CHR20_FASTA
@@ -746,6 +757,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
@@ -788,6 +800,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('examples.tfrecord', num_shards)
     )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     # Use same number of shards for profiling files as examples.
     output_prefix = test_utils.test_tmpfile('runtime_profile')
     FLAGS.runtime_by_region = output_prefix + '@{}'.format(num_shards)
@@ -854,6 +867,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.partition_size = 1000
     FLAGS.mode = 'calling'
     FLAGS.keep_legacy_allele_counter_behavior = keep_legacy_behavior
@@ -873,7 +887,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         _sharded('examples.tfrecord', num_shards)
     )
     region = ranges.parse_literal('chr20:61001-62000')
-    FLAGS.use_allele_frequency = True
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS + ['allele_frequency']
+    )
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.population_vcfs = ' '.join(
         [testdata.AF_VCF_CHR20_21_WILDCARD, testdata.AF_VCF_CHR20]
@@ -900,7 +916,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         _sharded('examples.tfrecord', num_shards)
     )
     region = ranges.parse_literal('chr20:61001-62000')
-    FLAGS.use_allele_frequency = True
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS + ['allele_frequency']
+    )
     FLAGS.regions = [ranges.to_literal(region)]
     if mode == 'one vcf':
       FLAGS.population_vcfs = testdata.AF_VCF_CHR20_AND_21
@@ -1159,6 +1177,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
         options.pic_options.read_requirements.keep_duplicates, True
@@ -1173,6 +1192,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
         options.pic_options.read_requirements.keep_supplementary_alignments,
@@ -1188,6 +1208,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
         options.pic_options.read_requirements.keep_secondary_alignments, True
@@ -1202,7 +1223,9 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
+
     self.assertEqual(options.pic_options.read_requirements.min_base_quality, 5)
 
   @flagsaver.flagsaver
@@ -1214,6 +1237,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
         options.pic_options.read_requirements.min_mapping_quality, 15
@@ -1227,6 +1251,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
 
     FLAGS.training_random_emit_ref_sites = 0.3
     options = make_examples.default_options(add_flags=True)
@@ -1245,6 +1270,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
 
     options = make_examples.default_options(add_flags=True)
     # In proto3, there is no way to check presence of scalar field:
@@ -1293,6 +1319,7 @@ class DefaultOptionsTest(parameterized.TestCase):
       setattr(FLAGS, name, flag_val)
 
     FLAGS.mode = 'training'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.reads = ''
     FLAGS.ref = ''
     options = make_examples.default_options(add_flags=True)
@@ -1313,6 +1340,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.reads = ''
     FLAGS.ref = ''
     FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.add_supporting_other_alt_color = True
     options = make_examples.default_options(add_flags=True)
     self.assertAlmostEqual(
@@ -1346,6 +1374,7 @@ class MainTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile('vsc.tfrecord')
     FLAGS.examples = test_utils.test_tmpfile('examples.tfrecord')
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
