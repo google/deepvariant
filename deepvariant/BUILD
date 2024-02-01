@@ -1697,3 +1697,26 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "alt_aligned_pileup_lib",
+    srcs = ["alt_aligned_pileup_lib.cc"],
+    hdrs = ["alt_aligned_pileup_lib.h"],
+    deps = [
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "@com_google_absl//absl/container:flat_hash_set",
+    ],
+)
+
+cc_test(
+    name = "alt_aligned_pileup_lib_test",
+    srcs = ["alt_aligned_pileup_lib_test.cc"],
+    deps = [
+        ":alt_aligned_pileup_lib",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "//third_party/nucleus/testing:gunit_extras",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
