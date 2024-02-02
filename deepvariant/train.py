@@ -76,7 +76,7 @@ _EXPERIMENT_DIR = flags.DEFINE_string(
 )
 
 _LIMIT = flags.DEFINE_integer(
-    'limit', None, 'Limit the number of steps used for train/eval.'
+    'limit', None, 'Limit the number of steps per epoch used for train/eval.'
 )
 
 _DEBUG = flags.DEFINE_bool(
@@ -154,7 +154,7 @@ def train(config: ml_collections.ConfigDict):
 
   steps_per_epoch = train_dataset_config.num_examples // config.batch_size
   steps_per_tune = (
-      config.num_validation_examples
+      config.num_validation_examples // config.batch_size
       or tune_dataset_config.num_examples // config.batch_size
   )
 
@@ -440,7 +440,7 @@ def train(config: ml_collections.ConfigDict):
         # ===== #
         # Calculate full train step.
         is_last_step = (
-            roundup(train_step, config.steps_per_iter) >= num_train_steps
+            roundup(train_step + 1, config.steps_per_iter) >= num_train_steps
         )
         if is_last_step:
           n_steps_iter = train_step % config.steps_per_iter
