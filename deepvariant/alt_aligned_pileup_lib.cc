@@ -31,16 +31,24 @@
 
 #include "deepvariant/alt_aligned_pileup_lib.h"
 
+#include <algorithm>
 #include <cstdint>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
+#include "third_party/nucleus/protos/position.pb.h"
+#include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/protos/struct.pb.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
 using CigarUnit = nucleus::genomics::v1::CigarUnit;
+using Read = nucleus::genomics::v1::Read;
+using Range = nucleus::genomics::v1::Range;
 
 namespace {
 bool IsOperationRefAdvancing(const CigarUnit& unit) {
@@ -121,6 +129,74 @@ void TrimCigar(const ::google::protobuf::RepeatedPtrField<CigarUnit>& cigar,
       }
     }
   }
+}
+
+Read TrimRead(const Read& read, const Range& region) {
+  int64_t read_start = read.alignment().position().position();
+  // Ref position where trimmed read should start.
+  int64_t trim_left = std::max(region.start() - read_start, 0L);
+  // Ref length of the trimmed read.
+  int64_t ref_length = region.end() - std::max(region.start(), read_start);
+  CHECK_GT(ref_length, 0);
+
+  // Calculated read relative position after trimming.
+  int64_t read_trim = 0;
+  // Calculated read length after trimming.
+  int64_t new_read_length = 0;
+  // Manually copy the read proto to avoid copying some large fields that we
+  // don't  need.
+  Read new_read;
+  auto new_cigar = new_read.mutable_alignment()->mutable_cigar();
+  TrimCigar(read.alignment().cigar(), trim_left, ref_length, new_cigar,
+            read_trim, new_read_length);
+  new_read.set_fragment_name(read.fragment_name());
+  new_read.set_id(read.id());
+  new_read.set_read_group_id(read.read_group_id());
+  new_read.set_read_group_set_id(read.read_group_set_id());
+  new_read.set_read_number(read.read_number());
+  new_read.set_fragment_length(read.fragment_length());
+  new_read.set_number_reads(read.number_reads());
+  for (const auto& [each_info_key, value] : read.info()) {
+    (*new_read.mutable_info())[each_info_key] = value;
+  }
+  *new_read.mutable_alignment()->mutable_position() =
+      read.alignment().position();
+  new_read.mutable_alignment()->set_mapping_quality(
+      read.alignment().mapping_quality());
+  // Following fields are not needed but we copy them for consistency:
+  if (read.has_next_mate_position()) {
+    *new_read.mutable_next_mate_position() = read.next_mate_position();
+  }
+  new_read.set_proper_placement(read.proper_placement());
+  new_read.set_duplicate_fragment(read.duplicate_fragment());
+  new_read.set_failed_vendor_quality_checks(
+      read.failed_vendor_quality_checks());
+  new_read.set_secondary_alignment(read.secondary_alignment());
+  new_read.set_supplementary_alignment(read.supplementary_alignment());
+
+  // Set new read's alignment position.
+  if (trim_left != 0) {
+    new_read.mutable_alignment()->mutable_position()->set_position(
+        region.start());
+  }
+  // Set aligned_sequence. Aligned string is trimmed starting from read_trim
+  // and ending at read_trim + new_read_length.
+  CHECK(read_trim >= 0 &&
+        read_trim + new_read_length <= read.aligned_sequence().size());
+  new_read.set_aligned_sequence(
+      read.aligned_sequence().substr(read_trim, new_read_length));
+  // Set aligned_quality, a repeated integer:
+  CHECK(read_trim >= 0 &&
+        read_trim + new_read_length <= read.aligned_quality().size());
+  int64_t pos = 0;
+  for (const auto& quality : read.aligned_quality()) {
+    if (pos >= read_trim) {
+      new_read.mutable_aligned_quality()->Add(quality);
+    }
+    if (pos == read_trim + new_read_length - 1) break;
+    pos++;
+  }
+  return new_read;
 }
 
 }  // namespace deepvariant

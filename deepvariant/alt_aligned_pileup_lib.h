@@ -35,6 +35,8 @@
 #include <cstdint>
 
 #include "third_party/nucleus/protos/cigar.pb.h"
+#include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
 
 namespace learning {
 namespace genomics {
@@ -50,6 +52,11 @@ void TrimCigar(
     int64_t ref_start, int64_t ref_length,
     google::protobuf::RepeatedPtrField<nucleus::genomics::v1::CigarUnit>* new_cigar,
     int64_t& read_start, int64_t& new_read_length);
+
+// Trim long read to region.
+nucleus::genomics::v1::Read TrimRead(
+    const nucleus::genomics::v1::Read& read,
+    const nucleus::genomics::v1::Range& region);
 
 }  // namespace deepvariant
 }  // namespace genomics

@@ -1704,7 +1704,12 @@ cc_library(
     hdrs = ["alt_aligned_pileup_lib.h"],
     deps = [
         "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -1714,6 +1719,7 @@ cc_test(
     deps = [
         ":alt_aligned_pileup_lib",
         "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",
         "@com_google_googletest//:gtest_main",
