@@ -257,7 +257,7 @@ def init():
       'golden.vcf_candidate_importer.training_examples.tfrecord.gz'
   )
   GOLDEN_VCF_CANDIDATE_IMPORTER_CALLING_EXAMPLES = deepvariant_testdata(
-      'golden.vcf_candidate_importer_calling_examples.tfrecord'
+      'golden.vcf_candidate_importer_calling_examples.tfrecord.gz'
   )
   VCF_CANDIDATE_IMPORTER_VARIANTS = deepvariant_testdata(
       'input/vcf_candidate_importer.indels.chr20.vcf.gz'

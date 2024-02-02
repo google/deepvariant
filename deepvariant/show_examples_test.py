@@ -234,7 +234,7 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
       show_examples.run()
 
     # With 6 channel names, it should run without error:
-    FLAGS.column_labels = '1,2,3,4,5,6'
+    FLAGS.column_labels = '1,2,3,4,5,6,19'
     show_examples.run()
 
 

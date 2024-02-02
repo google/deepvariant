@@ -49,6 +49,12 @@ from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import variant_utils
 from tensorflow.core.example import example_pb2
 
+WGS_PILEUP_DEFAULT_DIMS = [
+    dv_constants.PILEUP_DEFAULT_HEIGHT,
+    dv_constants.PILEUP_DEFAULT_WIDTH,
+    dv_constants.PILEUP_NUM_CHANNELS + 1,  # insert_size
+]
+
 
 def setUpModule():
   testdata.init()
@@ -192,9 +198,7 @@ class DataProviderTest(parameterized.TestCase):
     self.assertEqual(expected_loci, seen)
     # Note that this expected shape comes from the golden dataset. If the data
     # is remade in the future, the values might need to be modified accordingly.
-    self.assertEqual(
-        dv_constants.PILEUP_DEFAULT_DIMS, expected_dataset.tensor_shape
-    )
+    self.assertEqual(WGS_PILEUP_DEFAULT_DIMS, expected_dataset.tensor_shape)
 
   # pylint: disable=g-complex-comprehension
   @parameterized.parameters(
@@ -242,7 +246,7 @@ class DataProviderTest(parameterized.TestCase):
       # Note that the shape is 100, not 107, because we only adjust the image
       # in the model_fn now, where previously it was done in the input_fn.
       self.assertEqual(
-          [batch_size] + dv_constants.PILEUP_DEFAULT_DIMS, list(images.shape)
+          [batch_size] + WGS_PILEUP_DEFAULT_DIMS, list(images.shape)
       )
       self.assertEqual((batch_size,), labels.shape)
       for label in labels:
@@ -436,7 +440,7 @@ class InputTest(
         self.assertLessEqual(current_batch_size, expected_batch_size)
         self.assertEqual(
             list(a.shape),
-            [current_batch_size] + dv_constants.PILEUP_DEFAULT_DIMS,
+            [current_batch_size] + WGS_PILEUP_DEFAULT_DIMS,
         )
         n_valid_entries += current_batch_size
 
@@ -510,7 +514,7 @@ class InputTest(
         # Compare against the parsed batch feed.
 
         a = features['image'][0]  # np.ndarray
-        self.assertEqual(list(a.shape), dv_constants.PILEUP_DEFAULT_DIMS)
+        self.assertEqual(list(a.shape), WGS_PILEUP_DEFAULT_DIMS)
         self.assertIsNotNone(a)
         if use_tpu:
           self.assertEqual(a.dtype, np.dtype('int32'))

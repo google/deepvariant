@@ -380,7 +380,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('examples.tfrecord', num_shards)
     )
-    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
+    )
     if mode == 'candidate_sweep':
       FLAGS.candidate_positions = test_utils.test_tmpfile(
           _sharded('candidate_positions', num_shards)
@@ -583,13 +585,16 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
-    FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
+    FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord.gz'))
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF_WITH_TYPES
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
+    )
     options = make_examples.default_options(add_flags=True)
     make_examples_core.make_examples_runner(options)
     golden_file = _sharded(testdata.CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES)
@@ -663,7 +668,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('vcf_candidate_importer.examples.{}.tfrecord'.format(mode))
     )
-    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
+    )
     FLAGS.mode = mode
 
     if mode == 'calling':
@@ -690,7 +697,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     )
     self.assertEqual(
         decode_example(examples[0])['image/shape'],
-        [100, 221, dv_constants.PILEUP_NUM_CHANNELS],
+        # Add one for insert_size.
+        [100, 221, dv_constants.PILEUP_NUM_CHANNELS + 1],
     )
 
   @flagsaver.flagsaver
@@ -888,7 +896,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     )
     region = ranges.parse_literal('chr20:61001-62000')
     FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['allele_frequency']
+        dv_constants.PILEUP_DEFAULT_CHANNELS
+        + ['insert_size', 'allele_frequency']
     )
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.population_vcfs = ' '.join(
@@ -917,7 +926,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     )
     region = ranges.parse_literal('chr20:61001-62000')
     FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['allele_frequency']
+        dv_constants.PILEUP_DEFAULT_CHANNELS
+        + ['insert_size', 'allele_frequency']
     )
     FLAGS.regions = [ranges.to_literal(region)]
     if mode == 'one vcf':
@@ -939,9 +949,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, region, options, verify_labels=False
     )
 
-    # Pileup images should have one extra channel.
+    # Pileup images should have one extra channel than WGS.
     self.assertEqual(
-        [100, 221, dv_constants.PILEUP_NUM_CHANNELS + 1],
+        [100, 221, dv_constants.PILEUP_NUM_CHANNELS + 2],
         decode_example(examples[0])['image/shape'],
     )
 
