@@ -365,6 +365,11 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
                     options_.pic_options().read_overlap_buffer_bp());
   region.set_end(candidate.variant().end() +
                   options_.pic_options().read_overlap_buffer_bp());
+  std::string reference_bases = GetReferenceBasesForPileup(variant);
+  if (reference_bases.empty()) {
+    // We are at the edge of the contig, example cannot be created.
+    return;
+  }
   // Alt Alignment.
   if (NeedAltAlignment(variant)) {
     LOG(FATAL) << "Not implemented";
@@ -374,7 +379,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     std::vector<std::unique_ptr<ImageRow>> ref_images;
     for (int sample_order : sample_order) {
       auto ref_image = pileup_image_.BuildPileupForOneSample(
-          candidate, GetReferenceBasesForPileup(variant),
+          candidate, reference_bases,
           readers[sample_order].Query(region), image_start_pos,
           alt_combination, options_.sample_options(sample_order));
       // TODO It would be more efficient to allocate pileup image here
