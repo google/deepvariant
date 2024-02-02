@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | ~107m
+make_examples                    | ~100m
 call_variants                    | ~206m
 postprocess_variants (with gVCF) | ~28m
-total                            | ~341m = ~5.68 hours
+total                            | ~334m = ~5.57 hours
 
 ### Accuracy
 
@@ -58,10 +58,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~131m
-call_variants                    | ~236m
-postprocess_variants (with gVCF) | ~33m
-total                            | ~400m = ~6.67 hours
+make_examples                    | ~127m
+call_variants                    | ~238m
+postprocess_variants (with gVCF) | ~36m
+total                            | ~401m = ~6.67 hours
 
 ### Accuracy
 
@@ -86,10 +86,10 @@ Runtime is on HG003 reads (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | ~248m
-call_variants                    | ~300m
-postprocess_variants (with gVCF) | ~38m
-total                            | ~586m = ~9.77 hours
+make_examples                    | ~242m
+call_variants                    | ~289m
+postprocess_variants (with gVCF) | ~35m
+total                            | ~566m = ~9.43 hours
 
 ### Accuracy
 
@@ -111,10 +111,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~153m
-call_variants                    | ~207m
-postprocess_variants (with gVCF) | ~24m
-total                            | ~384m = ~6.4 hours
+make_examples                    | ~148m
+call_variants                    | ~213m
+postprocess_variants (with gVCF) | ~25m
+total                            | ~386m = ~6.43 hours
 
 ### Accuracy
 
