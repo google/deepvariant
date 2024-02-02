@@ -823,7 +823,7 @@ def shared_flags_to_options(
 
     if flags_obj.add_hp_channel:
       errors.log_and_raise(
-          '--add_hp_channel is no longer supported. Add `haplotype_tag` to the'
+          '--add_hp_channel is no longer supported. Add `haplotype` to the'
           ' `--channel_list` flag instead.',
           errors.CommandLineError,
       )

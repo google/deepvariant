@@ -69,7 +69,7 @@ NUM_DENOVO_CLASSES = 2
 # Default sample name if no sample name is found from the BAM header.
 DEFAULT_SAMPLE_NAME = 'default'
 
-# Define all available channels, some of which are enabled by default.
+# Define all available channels, configured using --channel_list
 CHANNELS = [
     'read_base',
     'base_quality',
