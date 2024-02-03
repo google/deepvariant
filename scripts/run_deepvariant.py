@@ -42,7 +42,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from absl import app
 from absl import flags
@@ -281,7 +281,7 @@ def trim_suffix(string: str, suffix: str) -> str:
     return string
 
 
-def split_extra_args(input_string: str) -> list[str]:
+def split_extra_args(input_string: str) -> List[str]:
   """Splits into strs that do not contain commas or are enclosed in quotes."""
   pattern = r"[^,]+=[\"'][^\"']*[\"']|[^,]+"
   return re.findall(pattern, input_string)
