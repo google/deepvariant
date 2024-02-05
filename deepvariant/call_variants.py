@@ -273,7 +273,7 @@ def write_variant_call(
   rounded_gls = round_gls(prediction['probabilities'], precision=_GL_PRECISION)
 
   # Write it out.
-  true_labels = prediction['label'] if debugging_true_label_mode else None
+  true_labels = None
   if debugging_true_label_mode:
     if 'label' not in prediction:
       logging.warning('No label is available for debugging_true_label_mode.')
@@ -636,6 +636,13 @@ def call_variants(
         debugging_true_label_mode,
     )
 
+    activation_models = {}
+    if include_debug_info and activation_layers and not use_saved_model:
+      activation_models = {
+          layer_name: modeling.get_activations_model(model, layer_name)
+          for layer_name in activation_layers
+      }
+
     batch_no = 0
     n_examples = 0
     n_batches = 0
@@ -656,11 +663,6 @@ def call_variants(
       layer_outputs_encoded = None
       if include_debug_info and activation_layers:
         if not use_saved_model:
-          activation_models = {
-              layer_name: modeling.get_activations_model(model, layer_name)
-              for layer_name in activation_layers
-          }
-
           if not is_gpu_available:
             # This is faster on CPU but slower on GPU.
             layer_outputs_encoded = {
