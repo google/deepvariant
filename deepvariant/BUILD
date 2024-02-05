@@ -1037,6 +1037,7 @@ cc_library(
 
 cc_library(
     name = "pileup_channel_lib",
+    srcs = ["pileup_channel_lib.cc"],
     hdrs = ["pileup_channel_lib.h"],
     deps = [
         "//deepvariant/protos:deepvariant_cc_pb2",

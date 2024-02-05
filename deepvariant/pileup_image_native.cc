@@ -70,8 +70,7 @@ bool SortByAlignment(std::tuple<int, int, std::unique_ptr<ImageRow>>& a,
   // Sort tuples by making tuples with just the ints.
   return std::tuple<int, int>(std::get<0>(a), std::get<1>(a)) <
          std::tuple<int, int>(std::get<0>(b), std::get<1>(b));
-                     }
-
+}
 
 ImageRow::ImageRow(int width, int num_channels)
     : width(width),
@@ -101,7 +100,8 @@ vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
   // Fill "default" channels from OptChannel set
   const std::vector<std::string> opt_channels = ToVector(options_.channels());
   for (int j = 0; j < opt_channels.size(); j++) {
-    DeepVariantChannelEnum channel = ChannelStrToEnum(opt_channels[j]);
+    DeepVariantChannelEnum channel =
+        Channels::ChannelStrToEnum(opt_channels[j]);
     if (channel != DeepVariantChannelEnum::CH_UNSPECIFIED) {
       channels_list.push_back(channel);
     }
