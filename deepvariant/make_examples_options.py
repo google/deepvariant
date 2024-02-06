@@ -29,6 +29,7 @@
 """Shared flags and option handling for DeepVariant and DeepTrio."""
 
 import re
+import textwrap
 
 from absl import flags
 from absl import logging
@@ -495,8 +496,13 @@ flags.DEFINE_string(
     'channel_list',
     None,
     'Comma or space-delimited list of channels to create examples for. '
-    'Channels are created in the order specified by this flag. Available '
-    'channels: {}'.format(','.join(dv_constants.CHANNELS)),
+    'Channels are created in the order specified by this flag. '
+    'You can use BASE_CHANNELS which will be substituted for six commonly '
+    'used channels:\n\n{}\n\nAll available '
+    'channels:\n {}\n\n'.format(
+        ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS),
+        textwrap.indent('\n'.join(dv_constants.USER_SET_CHANNELS), '- '),
+    ),
 )
 flags.DEFINE_bool(
     'add_supporting_other_alt_color',
@@ -727,7 +733,13 @@ def shared_flags_to_options(
           )
         channel_set.append(dv_constants.CHANNEL_ENUM_TO_STRING[c_enum])
     elif flags_obj.channel_list:
-      for channel in re.split('[, ]+', flags_obj.channel_list):
+      if 'BASE_CHANNELS' in flags_obj.channel_list:
+        channel_list = flags_obj.channel_list.replace(
+            'BASE_CHANNELS', ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+        )
+      else:
+        channel_list = flags_obj.channel_list
+      for channel in re.split('[, ]+', channel_list):
         if channel and channel not in dv_constants.CHANNELS:
           errors.log_and_raise(
               'Channel "{}" is not one of the available opt channels: {}'
@@ -823,7 +835,7 @@ def shared_flags_to_options(
 
     if flags_obj.add_hp_channel:
       errors.log_and_raise(
-          '--add_hp_channel is no longer supported. Add `haplotype` to the'
+          '--add_hp_channel is no longer supported. Add `haplotype_tag` to the'
           ' `--channel_list` flag instead.',
           errors.CommandLineError,
       )

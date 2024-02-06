@@ -133,8 +133,10 @@ In this tutorial, we will split the genome up into the following datasets:
 | chrom | Name                  | Description                                  |
 | ----- | --------------------- | -------------------------------------------- |
 | chr1  | Training Set          | Examples used to train our model.            |
-| chr21 | Validation / Tune Set | Examples used to evaluate the performance of our model during training.|
-| chr20 | Test Set              | Examples reserved for testing performance of our trained model. |
+| chr21 | Validation / Tune Set | Examples used to evaluate the performance of |
+:       :                       : our model during training.                   :
+| chr20 | Test Set              | Examples reserved for testing performance of |
+:       :                       : our trained model.                           :
 
 Note that normally, the training dataset will be much larger (e.g. chr1-19),
 rather than just a single chromosome. We use just chr1 here to demonstrate how
@@ -171,15 +173,17 @@ image.
       --confident_regions "${TRUTH_BED}" \
       --task {} \
       --regions "'chr1'" \
-      --channels "insert_size" \
+      --channel_list "BASE_CHANNELS,insert_size" \
 ) 2>&1 | tee "${LOG_DIR}/training_set.with_label.make_examples.log"
 ```
 
 This took `20m14s`.
 
-Starting in v1.4.0, we added an extra channel in our WGS setting using the
-`--channels "insert_size"` flag. And, the make_examples step creates
-`*.example_info.json` files. For example, you can see it here:
+Starting in v1.4.0, we added an extra channel in our WGS setting. The
+`--channel_list` sets the channels that our model will use. You can use
+`BASE_CHANNELS` as a shorthand for specifying six commonly used channels, and
+append additional channels to this list (e.g. `insert_size`). The make_examples
+step creates `*.example_info.json` files. For example, you can see it here:
 
 ```
 cat "${OUTPUT_DIR}/training_set.with_label.tfrecord-00000-of-00016.gz.example_info.json"
@@ -226,7 +230,7 @@ https://github.com/google/deepvariant/issues/360#issuecomment-1019990366
       --confident_regions "${TRUTH_BED}" \
       --task {} \
       --regions "'chr21'" \
-      --channels "insert_size" \
+      --channel_list "BASE_CHANNELS,insert_size" \
 ) 2>&1 | tee "${LOG_DIR}/validation_set.with_label.make_examples.log"
 ```
 
@@ -463,9 +467,8 @@ step is optional.
 
 You'll want to let `train` run for a while before you start a TensorBoard. (You
 can start a TensorBoard immediately, but you just won't see the metrics summary
-until later.)
-We did this through a Google Cloud Shell from https://console.cloud.google.com,
-on the top right:
+until later.) We did this through a Google Cloud Shell from
+https://console.cloud.google.com, on the top right:
 
 ![Shell](images/ActivateShell.png?raw=true "Activate Google Cloud Shell")
 
@@ -567,11 +570,10 @@ INDEL   PASS        10023      9811       212        19366       155       9002 
 
 To summarize, the accuracy is:
 
-| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
-| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 9811     | 212      | 155      | 0.978849      | 0.985044         | 0.981937        |
-| SNP   | 66180    | 57       | 70       | 0.999139      | 0.998944         | 0.999042        |
-
+Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score
+----- | -------- | -------- | -------- | ------------- | ---------------- | ---------------
+INDEL | 9811     | 212      | 155      | 0.978849      | 0.985044         | 0.981937
+SNP   | 66180    | 57       | 70       | 0.999139      | 0.998944         | 0.999042
 
 The baseline we're comparing to is to directly use the WGS model to make the
 calls, using this command:
@@ -591,11 +593,10 @@ sudo docker run --gpus all \
 
 Baseline:
 
-| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
-| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 9620     | 403      | 823      | 0.959792      | 0.924112         | 0.941615        |
-| SNP   | 66159    | 78       | 83       | 0.998822      | 0.998748         | 0.998785        |
-
+Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score
+----- | -------- | -------- | -------- | ------------- | ---------------- | ---------------
+INDEL | 9620     | 403      | 823      | 0.959792      | 0.924112         | 0.941615
+SNP   | 66159    | 78       | 83       | 0.998822      | 0.998748         | 0.998785
 
 ### Additional things to try
 

@@ -94,6 +94,19 @@ CHANNELS = [
     'base_channels_alternate_allele_2',
 ]
 
+ALT_ALIGNED_PILEUP_CHANNELS = [
+    'base_channels_alternate_allele_1',
+    'base_channels_alternate_allele_2',
+    'diff_channels_alternate_allele_1',
+    'diff_channels_alternate_allele_2',
+]
+
+# Create list of channels that can be used with --channel_list by removing
+# channels specified using --alt_aligned_pileup.
+USER_SET_CHANNELS = [
+    x for x in CHANNELS if x not in ALT_ALIGNED_PILEUP_CHANNELS
+]
+
 CHANNEL_ENUM_TO_STRING = {
     deepvariant_pb2.CH_READ_BASE: 'read_base',
     deepvariant_pb2.CH_BASE_QUALITY: 'base_quality',
