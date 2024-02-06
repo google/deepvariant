@@ -39,7 +39,6 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 
 from deepvariant import dv_constants
-from deepvariant import dv_utils
 
 _DEFAULT_WEIGHT_DECAY = 0.00004
 _DEFAULT_BACKBONE_DROPOUT_RATE = 0.2
@@ -482,17 +481,6 @@ def get_model(
 ) -> Union[tf.keras.Model, Callable[..., tf.keras.Model]]:
   if config.model_type == 'inception_v3':
     return inceptionv3
-  else:
-    raise ValueError('Unsupported model type.')
-
-
-def get_model_preprocess_fn(
-    config: ml_collections.ConfigDict,
-) -> Callable[[tf.train.Example], tf.train.Example]:
-  """Returns the preprocess function for the model type."""
-
-  if config.model_type == 'inception_v3':
-    return dv_utils.preprocess_images
   else:
     raise ValueError('Unsupported model type.')
 

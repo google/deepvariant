@@ -116,6 +116,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
 
   config.use_ema = True
 
+  config.denovo_enabled = False
+
   # Training hyperparameters
   config.learning_rate = 0.001
   config.learning_rate_num_epochs_per_decay = 2.0

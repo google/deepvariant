@@ -215,7 +215,6 @@ class GetModelTest(parameterized.TestCase):
     # This test should not throw any errors when retrieving the model
     # and it's corresponding preprocess function.
     keras_modeling.get_model(config)
-    keras_modeling.get_model_preprocess_fn(config)
 
   def test_get_model_error(self):
     config = dv_config.get_config('exome')
@@ -225,9 +224,6 @@ class GetModelTest(parameterized.TestCase):
 
     with self.assertRaisesRegex(ValueError, 'Unsupported model type'):
       keras_modeling.get_model(config)
-
-    with self.assertRaisesRegex(ValueError, 'Unsupported model type'):
-      keras_modeling.get_model_preprocess_fn(config)
 
   def test_get_activations_model(self):
     # If you need to run with DeepVariant WGS v1.6.0 checkpoint, it can be found

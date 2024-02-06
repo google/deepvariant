@@ -174,25 +174,9 @@ def train(config: ml_collections.ConfigDict):
         config=config,
     )
 
-    # Define Loss Function.
-    # TODO: Add function for retrieving custom loss fn.
-    loss_function = tf.keras.losses.CategoricalCrossentropy(
-        label_smoothing=config.label_smoothing,
-        reduction=tf.keras.losses.Reduction.NONE,
-    )
-
-    def compute_loss(probabilities, labels):
-      per_example_loss = loss_function(y_pred=probabilities, y_true=labels)
-      # We divide per-replica losses by global batch size and sum this value
-      # across all replicas to compute average loss scaled by global batch size.
-      return tf.nn.compute_average_loss(
-          per_example_loss, global_batch_size=config.batch_size
-      )
-
     decay_steps = int(
         steps_per_epoch * config.learning_rate_num_epochs_per_decay
     )
-
     # TODO: Define learning rate via config.
     learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(
         initial_learning_rate=config.learning_rate,
@@ -241,6 +225,84 @@ def train(config: ml_collections.ConfigDict):
     else:
       raise ValueError(f'Unknown optimizer: {config.optimizer}')
 
+    # Define Loss Function.
+    # TODO: Add function for retrieving custom loss fn.
+    loss_function = tf.keras.losses.CategoricalCrossentropy(
+        label_smoothing=config.label_smoothing,
+        reduction=tf.keras.losses.Reduction.NONE,
+    )
+
+    def compute_loss(probabilities, labels, sample_weight, model_losses):
+      per_example_loss = loss_function(
+          y_pred=probabilities, y_true=labels, sample_weight=sample_weight
+      )
+      # We divide per-replica losses by global batch size and sum this value
+      # across all replicas to compute average loss scaled by global batch size.
+      loss = tf.nn.compute_average_loss(
+          per_example_loss, sample_weight=sample_weight
+      )
+      if model_losses:
+        loss += tf.nn.scale_regularization_loss(tf.add_n(model_losses))
+      return loss
+
+  @tf.function
+  def distributed_train_step(iterator, num_steps):
+    def run_train_step(inputs):
+      model_input, labels, sample_weight = inputs
+      with tf.GradientTape() as tape:
+        logits = model(model_input, training=True)
+        probabilities = tf.nn.softmax(logits)
+        loss = compute_loss(
+            probabilities=probabilities,
+            labels=labels,
+            sample_weight=sample_weight,
+            model_losses=model.losses,
+        )
+
+      gradients = tape.gradient(loss, model.trainable_variables)
+      optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+      train_loss = loss * strategy.num_replicas_in_sync
+
+      for metric in state.train_metrics[:-1]:
+        metric.update_state(
+            y_pred=probabilities,
+            y_true=labels,
+            sample_weight=sample_weight,
+        )
+      state.train_metrics[-1].update_state(train_loss)
+      return train_loss
+
+    for _ in tf.range(num_steps):
+      strategy.run(run_train_step, args=(next(iterator),))
+    state.global_step.assign_add(num_steps)
+
+  @tf.function
+  def distributed_tune_step(iterator, num_steps):
+    def run_tune_step(tune_inputs):
+      """Single non-distributed tune step."""
+      model_input, labels, sample_weight = tune_inputs
+      logits = model(model_input, training=False)
+      probabilities = tf.nn.softmax(logits)
+      loss = compute_loss(
+          probabilities=probabilities,
+          labels=labels,
+          sample_weight=sample_weight,
+          model_losses=model.losses,
+      )
+      tune_loss = loss * strategy.num_replicas_in_sync
+
+      for metric in state.tune_metrics[:-1]:
+        metric.update_state(
+            y_pred=probabilities,
+            y_true=labels,
+            sample_weight=sample_weight,
+        )
+        state.tune_metrics[-1].update_state(tune_loss)
+      return tune_loss
+
+    for _ in tf.range(num_steps):
+      strategy.run(run_tune_step, args=(next(iterator),))
+
   # ================= #
   # Setup Checkpoint  #
   # ================= #
@@ -255,53 +317,6 @@ def train(config: ml_collections.ConfigDict):
       strategy,
   )
   state = ckpt_manager.checkpoint
-
-  @tf.function
-  def run_train_step(inputs):
-    model_inputs, labels = inputs
-
-    with tf.GradientTape() as tape:
-      logits = model(model_inputs, training=True)
-      probabilities = tf.nn.softmax(logits)
-      train_loss = compute_loss(probabilities=probabilities, labels=labels)
-
-    gradients = tape.gradient(train_loss, model.trainable_variables)
-    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
-    for metric in state.train_metrics[:-1]:
-      metric.update_state(
-          y_pred=probabilities,
-          y_true=labels,
-      )
-    state.train_metrics[-1].update_state(train_loss)
-    return train_loss
-
-  @tf.function
-  def run_tune_step(tune_inputs):
-    """Single non-distributed tune step."""
-    model_inputs, labels = tune_inputs
-    logits = model(model_inputs, training=False)
-    probabilities = tf.nn.softmax(logits)
-    tune_loss = compute_loss(probabilities=probabilities, labels=labels)
-
-    for metric in state.tune_metrics[:-1]:
-      metric.update_state(
-          y_pred=probabilities,
-          y_true=labels,
-      )
-      state.tune_metrics[-1].update_state(tune_loss)
-    return tune_loss
-
-  @tf.function
-  def distributed_train_step(iterator, num_steps):
-    for _ in tf.range(num_steps):
-      strategy.run(run_train_step, args=(next(iterator),))
-    state.global_step.assign_add(num_steps)
-
-  @tf.function
-  def distributed_tune_step(iterator, num_steps):
-    for _ in tf.range(num_steps):
-      strategy.run(run_tune_step, args=(next(iterator),))
 
   # ============== #
   # Setup Datasets #
