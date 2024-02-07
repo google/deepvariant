@@ -715,7 +715,7 @@ def shared_flags_to_options(
     channel_set = []
     channels_enum = None
     if make_examples_core.in_calling_mode(options) and flags_obj.checkpoint:
-      model_example_info_json = f'{flags_obj.checkpoint}.example_info.json'
+      model_example_info_json = f'{flags_obj.checkpoint}/example_info.json'
       _, channels_enum = dv_utils.get_shape_and_channels_from_json(
           model_example_info_json
       )
