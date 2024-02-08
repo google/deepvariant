@@ -633,6 +633,7 @@ bool Channels::channel_exists(std::vector<std::string>& channels,
 
 int Channels::GetHPValueForHPChannel(const Read& read,
                                      int hp_tag_for_assembly_polishing) {
+  // HP values are added to reads by DeepVariant (direct phasing).
   if (!read.info().contains("HP")) {
     return 0;
   }
@@ -645,18 +646,10 @@ int Channels::GetHPValueForHPChannel(const Read& read,
     return 0;
   }
   int hp_value = hp_values[0].int_value();
-  // See the description of --add_hp_channel flag in make_examples.py: Currently
-  // we only support value of 1, 2, or 0.
-  if (hp_value != 0 && hp_value != 1 && hp_value != 2) {
-    LOG(FATAL)
-        << "This function is currently used when --add_hp_channel is set. "
-        << "HP value has to be either 1, 2, or 0. Found a read with HP="
-        << hp_value << ", read=" << read.fragment_name();
-  }
   // If hp_tag_for_assembly_polishing is set to 2, this is a special case
   // assembly polishing:
-  // If we're calling HP=2, when displayed with --add_hp_channel, we want to
-  // swap the color of reads with HP=2 and HP=1.
+  // If we're calling HP=2, when displayed with `--channel_list=haplotype`,
+  // we want to swap the color of reads with HP=2 and HP=1.
   if (hp_tag_for_assembly_polishing == 2) {
     if (hp_value == 1) return 2;
     if (hp_value == 2) return 1;
