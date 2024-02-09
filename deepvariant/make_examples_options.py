@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Shared flags and option handling for DeepVariant and DeepTrio."""
 
+import os.path
 import re
 import textwrap
 
@@ -715,10 +716,35 @@ def shared_flags_to_options(
     channel_set = []
     channels_enum = None
     if make_examples_core.in_calling_mode(options) and flags_obj.checkpoint:
-      model_example_info_json = f'{flags_obj.checkpoint}/example_info.json'
-      _, channels_enum = dv_utils.get_shape_and_channels_from_json(
-          model_example_info_json
-      )
+      # --checkpoint flag may contain the path to saved model or a checkpoint.
+      # Example: --checkpoint=/some/path/to/saved_model/
+      # Example: --checkpoint=/some/path/to/checkpoint/model.ckpt
+      # The algorithm of calculating the path to example_info.json should
+      # handle all previous releases, both ckpt and saved model cases.
+      # We assume that the name is example_info.json if checkpoint flag points
+      # to a saved model.
+      # File name may vary if checkpoint is set with cktp path.
+      model_example_info_json = None
+      # If checkpoint is a directory containing saved_model.pb then it is a
+      # saved model.
+      if gfile.Exists(f'{flags_obj.checkpoint}/saved_model.pb'):
+        model_example_info_json = f'{flags_obj.checkpoint}/example_info.json'
+      else:
+        # checkpoint is a ckpt path. We need to strip the last part of the path
+        # to get the directory. Inside, we need to find the file which ends
+        # with example_info.json.
+        model_dir = os.path.dirname(flags_obj.checkpoint)
+        for dirname, subdir, fnames in gfile.Walk(model_dir):
+          if subdir:
+            continue
+          for fname in fnames:
+            if fname.endswith('example_info.json'):
+              model_example_info_json = f'{dirname}/{fname}'
+              break
+      if model_example_info_json:
+        _, channels_enum = dv_utils.get_shape_and_channels_from_json(
+            f'{model_example_info_json}'
+        )
 
     if channels_enum is not None:
       for c_enum in channels_enum:
