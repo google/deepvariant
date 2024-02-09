@@ -504,3 +504,45 @@ def get_activations_model(
   """
   layer = model.get_layer(layer_name)
   return tf.keras.Model(inputs=model.input, outputs=layer.output)
+
+
+def copy_checkpoint(
+    src_checkpoint_name: str,
+    dest_checkpoint_name: str,
+):
+  """Copies a checkpoint and example_info.json.
+
+  Args:
+    src_checkpoint_name: Path to checkpoint not including extensions.
+    dest_checkpoint_name: Path to checkpoint not including extensions.
+
+  Returns
+    Nothing.
+  """
+  assert os.path.dirname(src_checkpoint_name) != dest_checkpoint_name
+  checkpoint_details = os.path.join(
+      os.path.dirname(src_checkpoint_name), 'checkpoint'
+  )
+  example_info_json = os.path.join(
+      os.path.dirname(src_checkpoint_name), 'example_info.json'
+  )
+  checkpoint_files = tf.io.gfile.glob(src_checkpoint_name + '*') + [
+      example_info_json,
+      checkpoint_details,
+  ]
+
+  tf.io.gfile.makedirs(os.path.dirname(dest_checkpoint_name))
+
+  for path in checkpoint_files:
+    output_basename = os.path.basename(path).replace(
+        os.path.basename(src_checkpoint_name),
+        os.path.basename(dest_checkpoint_name),
+    )
+    tf.io.gfile.copy(
+        path,
+        os.path.join(
+            os.path.dirname(dest_checkpoint_name),
+            output_basename,
+        ),
+        overwrite=True,
+    )

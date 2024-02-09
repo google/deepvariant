@@ -31,6 +31,7 @@ r"""Train a DeepVariant Keras Model.
 
 import math
 import os
+import re
 import sys
 import warnings
 
@@ -145,10 +146,10 @@ def train(config: ml_collections.ConfigDict):
         'example_info.json not found in directory'
         f' {os.path.dirname(train_dataset_config.tfrecord_path)}'
     )
-  tf.io.gfile.makedirs(experiment_dir)
+  tf.io.gfile.makedirs(os.path.join(experiment_dir, 'checkpoints'))
   tf.io.gfile.copy(
       example_info_json_path,
-      os.path.join(experiment_dir, 'example_info.json'),
+      os.path.join(experiment_dir, 'checkpoints', 'example_info.json'),
       overwrite=True,
   )
 
@@ -160,7 +161,7 @@ def train(config: ml_collections.ConfigDict):
 
   if _LIMIT.value:
     steps_per_epoch = _LIMIT.value
-    steps_per_tune = _LIMIT.value
+    steps_per_tune = min(_LIMIT.value, steps_per_tune)
 
   # =========== #
   # Setup Model #
@@ -211,8 +212,17 @@ def train(config: ml_collections.ConfigDict):
 
     # Define Optimizer.
     # TODO: Add function for retrieving custom optimizer.
-    if config.optimizer == 'nadam':
-      optimizer = tf.keras.optimizers.Nadam(learning_rate=learning_rate)
+    if config.optimizer == 'adam':
+      optimizer = tf.keras.optimizers.Adam(
+          learning_rate=learning_rate,
+          weight_decay=config.optimizer_weight_decay,
+          adaptive_epsilon=config.adaptive_epsilon,
+          beta_1=config.beta_1,
+          beta_2=config.beta_2,
+          use_ema=config.use_ema,
+          ema_momentum=config.ema_momentum,
+          ema_overwrite_frequency=None,
+      )
     elif config.optimizer == 'rmsprop':
       optimizer = tf.keras.optimizers.RMSprop(
           learning_rate=learning_rate,
@@ -516,6 +526,10 @@ def train(config: ml_collections.ConfigDict):
             )
             or is_last_step
         ):
+          if is_last_step:
+            logging.info('Finalizing model weights.')
+            optimizer.finalize_variable_values(model.trainable_weights)
+            ckpt_manager.save(train_step)
           run_tune(train_step, epoch, steps_per_tune)
 
           if get_checkpoint_metric() > best_checkpoint_metric_value:
@@ -556,8 +570,7 @@ def train(config: ml_collections.ConfigDict):
           for metric in state.tune_metrics:
             metric.reset_states()
 
-    # After training completes, load the latest checkpoint and create
-    # a saved model (.pb) and keras model formats.
+    # After training completes, create saved model (.pb).
     checkpoint_path = ckpt_manager.latest_checkpoint
     if not checkpoint_path:
       logging.info('No checkpoint found.')
@@ -568,7 +581,7 @@ def train(config: ml_collections.ConfigDict):
     tf.train.Checkpoint(model).restore(checkpoint_path).expect_partial()
 
     logging.info('Saving model using saved_model format.')
-    saved_model_dir = checkpoint_path
+    saved_model_dir = os.path.join(checkpoint_path, 'saved_model')
     model.save(saved_model_dir, save_format='tf')
     # Copy example_info.json to saved_model directory.
     tf.io.gfile.copy(

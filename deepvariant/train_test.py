@@ -86,22 +86,23 @@ class TrainTest(parameterized.TestCase):
 
     # Create temporary output path to contain output files from traiing
     # including model checkpoints.
-    model_dir = self.create_tempdir().full_path
-    output_dir = os.path.join(model_dir, "output_dir")
+    experiment_dir = self.create_tempdir().full_path
 
     # Run the model using specified config and flags
-    with flagsaver.as_parsed(xm_runlocal="True", experiment_dir=output_dir):
+    with flagsaver.as_parsed(xm_runlocal="True", experiment_dir=experiment_dir):
       train.train(config)
 
     # Asset checkpoints and example_info are present as expected in the output
     # directory.
-    test_output_directory = os.path.join(output_dir, "exp_-1", "wu_-1")
+    test_output_directory = os.path.join(experiment_dir, "wu_-1")
     self.assertNotEmpty(
         tf.io.gfile.listdir(os.path.join(test_output_directory, "checkpoints"))
     )
     self.assertTrue(
         tf.io.gfile.exists(
-            os.path.join(test_output_directory, "example_info.json")
+            os.path.join(
+                test_output_directory, "checkpoints", "example_info.json"
+            )
         )
     )
 
