@@ -218,7 +218,8 @@ class PileupImageEncoderTest(parameterized.TestCase):
   def test_encode_read_matches_with_hp_channel(
       self, hp_value, hp_color, hp_tag_for_assembly_polishing
   ):
-    # Same test case as test_encode_read_matches(), with --add_hp_channel.
+    # Same test case as test_encode_read_matches(), with
+    # --channel_list=haplotype.
     start = 10
     dv_call = _make_dv_call_with_allele_frequency()
     alt_allele = dv_call.variant.alternate_bases
