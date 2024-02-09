@@ -39,6 +39,7 @@
 #include "deepvariant/protos/realigner.pb.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
 #include "third_party/nucleus/platform/types.h"
@@ -107,8 +108,9 @@ class DeBruijnGraph {
   // filtering settings are taken from options.
   DeBruijnGraph(
       absl::string_view ref,
-      const std::vector<
-          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads,
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads,
       const Options& options, int k);
 
   // Add edge, implicitly adding the vertices if needed.  If such an edge is

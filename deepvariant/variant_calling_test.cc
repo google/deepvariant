@@ -45,8 +45,9 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-#include "absl/strings/string_view.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
@@ -130,7 +131,7 @@ VariantCallerOptions MakeOptions(
 }
 
 Variant MakeExpectedVariant(const absl::string_view ref,
-                            const std::vector<absl::string_view>& alts,
+                            absl::Span<const absl::string_view> alts,
                             const int64_t start = kStart) {
   Variant variant;
   variant.set_reference_name(kChr);
@@ -258,7 +259,7 @@ class VariantCallingTest : public ::testing::Test {
   }
 
   AlleleCount ConstructAlleleCount(absl::string_view ref,
-                                   const std::vector<Allele>& alleles) {
+                                   absl::Span<const Allele> alleles) {
     // Construct the synthetic AlleleCount we'll use to call.
     AlleleCount allele_count;
     *allele_count.mutable_position() = MakePosition(kChr, kStart);

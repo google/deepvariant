@@ -50,6 +50,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/depth_first_search.hpp"
 #include "boost/graph/graphviz.hpp"
@@ -184,7 +185,7 @@ bool DeBruijnGraph::HasCycle() const {
 
 DeBruijnGraph::DeBruijnGraph(
     absl::string_view ref,
-    const std::vector<nucleus::ConstProtoPtr<const Read>>& reads,
+    absl::Span<const nucleus::ConstProtoPtr<const Read>> reads,
     const Options& options, int k)
     : options_(options), k_(k) {
   CHECK_GT(k, 0);  // k should always be a positive integer.

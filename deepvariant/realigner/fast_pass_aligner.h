@@ -46,6 +46,7 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "re2/re2.h"
@@ -156,11 +157,9 @@ struct CigarOp {
 // supporting reads.
 struct HaplotypeReadsAlignment {
   HaplotypeReadsAlignment() : haplotype_index(0), haplotype_score(0) {}
-  HaplotypeReadsAlignment(
-      size_t haplotype_index,
-      int score,
-      const std::vector<ReadAlignment>& read_alignment_scores)
-        : haplotype_index(haplotype_index), haplotype_score(score) {
+  HaplotypeReadsAlignment(size_t haplotype_index, int score,
+                          absl::Span<const ReadAlignment> read_alignment_scores)
+      : haplotype_index(haplotype_index), haplotype_score(score) {
     this->read_alignment_scores.assign(read_alignment_scores.begin(),
                                        read_alignment_scores.end());
   }
