@@ -63,31 +63,6 @@ using ::testing::ValuesIn;
 using ContigInfo = nucleus::genomics::v1::ContigInfo;
 using ReferenceSequence = nucleus::genomics::v1::ReferenceSequence;
 
-constexpr char kSampleName[] = "MySampleName";
-constexpr char kChr[] = "chr1";
-constexpr int64_t kStart = 10;
-
-// TODO This function is used in other tests. Move to testing_utils.h
-Variant MakeVariant(absl::string_view ref,
-                    const std::vector<absl::string_view>& alts,
-                    const int64_t start = kStart) {
-  Variant variant;
-  variant.set_reference_name(kChr);
-  variant.set_start(start);
-  variant.set_reference_bases(ref.data(), ref.size());
-  for (const auto alt_allele : alts)
-    variant.add_alternate_bases(alt_allele.data(), alt_allele.size());
-
-  // End is start + ref length according to Variant.proto spec.
-  variant.set_end(variant.start() + ref.length());
-  CHECK(google::protobuf::TextFormat::ParseFromString("genotype: -1 genotype: -1",
-                                            variant.add_calls()));
-
-  VariantCall* call = variant.mutable_calls(0);
-  call->set_call_set_name(kSampleName);
-  return variant;
-}
-
 struct AltAlleleCombinationsTestData {
   PileupImageOptions_MultiAllelicMode mode;
   Variant variant;

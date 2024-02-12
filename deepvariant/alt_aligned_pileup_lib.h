@@ -33,10 +33,14 @@
 #define LEARNING_GENOMICS_DEEPVARIANT_ALT_ALIGNED_PILEUP_LIB_H_
 
 #include <cstdint>
+#include <memory>
 
+#include "deepvariant/protos/deepvariant.pb.h"
+#include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 
 namespace learning {
 namespace genomics {
@@ -57,6 +61,23 @@ void TrimCigar(
 nucleus::genomics::v1::Read TrimRead(
     const nucleus::genomics::v1::Read& read,
     const nucleus::genomics::v1::Range& region);
+
+// Calculates the alignment region to match the width of a pileup with the
+// given variant in the middle.
+nucleus::genomics::v1::Range CalculateAlignmentRegion(
+    const nucleus::genomics::v1::Variant& variant, int half_width,
+    const nucleus::GenomeReference& ref_reader);
+
+// Realign reads to a given haplotype.
+// Returns a vector of new reads.
+std::vector<nucleus::genomics::v1::Read> RealignReadsToHaplotype(
+    absl::string_view haplotype,
+    const std::vector<nucleus::genomics::v1::Read>& reads,
+    absl::string_view contig,  // Chromosome name for the haplotype.
+    int64_t ref_start,   // Start position of the haplotype relative to the ref.
+    int64_t ref_end,     // End position of the haplotype relative to the ref.
+    const nucleus::GenomeReference& ref_reader,
+    const MakeExamplesOptions& options);
 
 }  // namespace deepvariant
 }  // namespace genomics

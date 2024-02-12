@@ -33,24 +33,35 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/realigner/fast_pass_aligner.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-
-using CigarUnit = nucleus::genomics::v1::CigarUnit;
-using Read = nucleus::genomics::v1::Read;
-using Range = nucleus::genomics::v1::Range;
-
 namespace {
+
+// Margin added to the reference sequence for the aligner module.
+constexpr int64_t kRefAlignMargin = 20;
+
+using ::nucleus::genomics::v1::CigarUnit;
+using ::nucleus::genomics::v1::Read;
+using ::nucleus::genomics::v1::Range;
+using ::nucleus::genomics::v1::Variant;
+
 bool IsOperationRefAdvancing(const CigarUnit& unit) {
   static const absl::flat_hash_set<int>* kRefAdvancingOps =
       new absl::flat_hash_set<int>(
@@ -197,6 +208,63 @@ Read TrimRead(const Read& read, const Range& region) {
     pos++;
   }
   return new_read;
+}
+
+Range CalculateAlignmentRegion(const Variant& variant, int half_width,
+                               const nucleus::GenomeReference& ref_reader) {
+  // Alignment region has the same width as pileup image.
+  Range alignment_region;
+  int64_t ref_start = variant.start();
+  int64_t n_ref_bases = variant.reference_bases().size();
+  int64_t ref_end = ref_start + n_ref_bases;
+  alignment_region.set_reference_name(variant.reference_name());
+  alignment_region.set_start(std::max(variant.start() - half_width, 0L));
+  alignment_region.set_end(std::min(
+      ref_reader.Contig(variant.reference_name()).ValueOrDie()->n_bases(),
+      ref_end + half_width));
+  return alignment_region;
+}
+
+namespace {
+Range MakeRange(const std::string& ref_name, int64_t start, int64_t end) {
+  Range range;
+  range.set_reference_name(ref_name);
+  range.set_start(start);
+  range.set_end(end);
+  return range;
+}
+}  // namespace
+
+std::vector<Read> RealignReadsToHaplotype(
+    absl::string_view haplotype, const std::vector<Read>& reads,
+    absl::string_view contig, int64_t ref_start, int64_t ref_end,
+    const nucleus::GenomeReference& ref_reader,
+    const MakeExamplesOptions& options) {
+  FastPassAligner realigner;
+  AlignerOptions aln_config = options.realigner_options().aln_config();
+  if (!reads.empty()) {
+    aln_config.set_read_size(reads[0].aligned_sequence().size());
+  }
+  aln_config.set_force_alignment(true);
+  realigner.set_options(aln_config);
+  // Both reference and haplotype are padded with typically 20 bases from the
+  // reference.
+  int64_t ref_start_ext = std::max(0L, ref_start - kRefAlignMargin);
+  int64_t ref_end_ext =
+      std::min(ref_reader.Contig(std::string(contig)).ValueOrDie()->n_bases(),
+               ref_end + kRefAlignMargin);
+
+  std::string ref_prefix =
+      ref_reader.GetBases(MakeRange(std::string(contig),
+                                    ref_start_ext, ref_start)).ValueOrDie();
+  std::string ref_suffix = ref_reader.GetBases(
+      MakeRange(std::string(contig), ref_end, ref_end_ext)).ValueOrDie();
+  realigner.set_reference(absl::StrCat(ref_prefix, haplotype, ref_suffix));
+  realigner.set_ref_start(std::string(contig), ref_start_ext);
+  realigner.set_ref_prefix_len(ref_start - ref_start_ext);
+  realigner.set_ref_suffix_len(ref_end_ext - ref_end);
+  realigner.set_haplotypes({absl::StrCat(ref_prefix, haplotype, ref_suffix)});
+  return *realigner.AlignReads(reads);
 }
 
 }  // namespace deepvariant

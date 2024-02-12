@@ -32,29 +32,41 @@
 #include "deepvariant/alt_aligned_pileup_lib.h"
 
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "deepvariant/testing_utils.h"
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/util/utils.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-
 namespace {
 
-google::protobuf::RepeatedPtrField<nucleus::genomics::v1::CigarUnit> CreateCigar(
+using ::nucleus::genomics::v1::ContigInfo;
+using ::nucleus::genomics::v1::ReferenceSequence;
+using ::nucleus::genomics::v1::CigarUnit;
+using ::nucleus::genomics::v1::Read;
+using ::nucleus::genomics::v1::Range;
+using ::nucleus::genomics::v1::Variant;
+
+
+google::protobuf::RepeatedPtrField<CigarUnit> CreateCigar(
     const std::vector<std::string>& cigar_elements) {
   auto cigar_vector = nucleus::MakeCigar(cigar_elements);
-  google::protobuf::RepeatedPtrField<nucleus::genomics::v1::CigarUnit> cigar;
+  google::protobuf::RepeatedPtrField<CigarUnit> cigar;
   // Add with iterator is not available in external version, so wil have to add
   // elements one by one.
   for (const auto& element : cigar_vector) {
@@ -65,12 +77,12 @@ google::protobuf::RepeatedPtrField<nucleus::genomics::v1::CigarUnit> CreateCigar
   return cigar;
 }
 
-nucleus::genomics::v1::Read MakeRead(
+Read MakeRead(
     int64_t ref_start, const std::string& bases,
     const std::vector<std::string>& cigar,
     const std::vector<int>& aligned_quality,
     const std::string& read_name = "test_read") {
-  nucleus::genomics::v1::Read read =
+  Read read =
       nucleus::MakeRead("chr1", ref_start, bases, cigar, read_name);
   read.mutable_aligned_quality()->Clear();
   for (const auto& quality : aligned_quality) {
@@ -79,6 +91,22 @@ nucleus::genomics::v1::Read MakeRead(
   return read;
 }
 
+Read MakeRead(
+    int64_t ref_start, const std::string& bases,
+    const std::vector<std::string>& cigar,
+    const std::string& read_name = "test_read") {
+  Read read =
+      nucleus::MakeRead("chr1", ref_start, bases, cigar, read_name);
+  read.mutable_aligned_quality()->Clear();
+  // Set aligned quality to 60 for all bases.
+  const std::vector<int> aligned_quality(bases.size(), 60);
+  for (const auto& quality : aligned_quality) {
+    read.mutable_aligned_quality()->Add(quality);
+  }
+  return read;
+}
+
+// TrimCigar testing.
 struct TrimCigarTestData {
   int64_t ref_start = 0;
   int64_t ref_length = 0;
@@ -94,16 +122,16 @@ class TrimCigarTest : public testing::TestWithParam<TrimCigarTestData> {};
 TEST_P(TrimCigarTest, TrimCigarTestCases) {
   const TrimCigarTestData& param = GetParam();
   // Create input cigar.
-  google::protobuf::RepeatedPtrField<nucleus::genomics::v1::CigarUnit> cigar =
+  google::protobuf::RepeatedPtrField<CigarUnit> cigar =
       CreateCigar(param.input_cigar);
   // Create expected cigar.
-  ::google::protobuf::RepeatedPtrField<nucleus::genomics::v1::CigarUnit> expected_cigar =
+  ::google::protobuf::RepeatedPtrField<CigarUnit> expected_cigar =
       CreateCigar(param.expected_cigar);
   // read_start and read_length.
   int64_t read_start = param.trimmed_read_start;
   int64_t read_length = param.trimmed_read_length;
   // Output cigar.
-  ::google::protobuf::RepeatedPtrField<nucleus::genomics::v1::CigarUnit> new_cigar;
+  ::google::protobuf::RepeatedPtrField<CigarUnit> new_cigar;
   TrimCigar(cigar, param.ref_start, param.ref_length, &new_cigar, read_start,
             read_length);
   EXPECT_EQ(read_start, param.trimmed_read_start);
@@ -130,6 +158,7 @@ INSTANTIATE_TEST_SUITE_P(
          // Trim cigar where ref_length goes beyond the reads end.
          {10, 40, {"20M", "5I", "10M"}, {"10M", "5I", "10M"}, 10, 25}})));
 
+// TrimRead testing.
 struct TrimReadTestData {
   int64_t read_ref_start = 0;
   int64_t trim_ref_start = 0;
@@ -148,16 +177,16 @@ class TrimReadTest : public testing::TestWithParam<TrimReadTestData> {};
 
 TEST_P(TrimReadTest, TrimReadTestCases) {
   const TrimReadTestData& param = GetParam();
-  nucleus::genomics::v1::Read read = MakeRead(
+  Read read = MakeRead(
       param.read_ref_start, param.bases, param.cigar, param.aligned_quality);
-  nucleus::genomics::v1::Read expected_read =
+  Read expected_read =
       MakeRead(param.expected_read_ref_start, param.expected_bases,
                param.expected_cigar, param.expected_aligned_quality);
-  nucleus::genomics::v1::Range region;
+  Range region;
   region.set_reference_name("chr1");
   region.set_start(param.trim_ref_start);
   region.set_end(param.trim_ref_start + param.trim_ref_length);
-  nucleus::genomics::v1::Read trimmed_read = TrimRead(read, region);
+  Read trimmed_read = TrimRead(read, region);
   EXPECT_THAT(trimmed_read, nucleus::EqualsProto(expected_read));
 }
 
@@ -220,6 +249,132 @@ INSTANTIATE_TEST_SUITE_P(TrimReadTests, TrimReadTest,
                               {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
                                12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22}},
                          })));
+
+// RealignReadsToHalotype testing.
+struct RealignReadsTestData {
+  std::string haplotype;
+  std::vector<Read> reads;
+  std::string contig;
+  int64_t ref_start;
+  int64_t ref_end;
+  std::vector<Read> expected_reads;
+};
+
+class RealignReadsToHaplotypeTest
+    : public testing::TestWithParam<RealignReadsTestData> {};
+
+TEST_P(RealignReadsToHaplotypeTest, RealignReadsToHaplotypeTestCases) {
+  const RealignReadsTestData& param = GetParam();
+  MakeExamplesOptions options;
+  // Create InMemory reference.
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+  CreateTestSeq("chr1", 0, 0, 43, "TTTTTTTTTTACGTACGTAAAAAAGTGTGATCCCCCCCCCCCC",
+                &contigs, &seqs);
+
+  std::vector<Read> realigned_reads =
+      RealignReadsToHaplotype(
+          param.haplotype, param.reads, param.contig, param.ref_start,
+          param.ref_end,
+          *(nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie()),
+          options);
+  EXPECT_THAT(realigned_reads,
+              testing::Pointwise(nucleus::EqualsProto(), param.expected_reads));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    RealignReadsToHaplotypeTests, RealignReadsToHaplotypeTest,
+    testing::ValuesIn(std::vector<RealignReadsTestData>(
+        {{
+             // Haplotype has INS, read_1 matches haplotype
+             /*haplotype=*/"ACGTACGTGGGAAAAAAGTGTGATC",
+             {
+                 MakeRead(20, "ACGTACGTGGGAAAAAAGTGTGATC", {"8M", "3I", "14M"},
+                          "read_1"),
+                 MakeRead(20, "ACGTACGTAAAAAAGTGTGATC", {"22M"}, "read_2"),
+             },
+             "chr1",
+             20,
+             42,
+             {
+                 MakeRead(20, "ACGTACGTGGGAAAAAAGTGTGATC", {"25M"}, "read_1"),
+                 MakeRead(20, "ACGTACGTAAAAAAGTGTGATC", {"8M", "3D", "14M"},
+                          "read_2"),
+             },
+         },
+         {
+             // Read starts inside haplotype
+             /*haplotype=*/"ACGTACGTGGGAAAAAAGTGTGATC",
+             {
+                 MakeRead(26, "GTGGGAAAAAAGTGTGA", {"2M", "3I", "12M"},
+                          "read_1"),
+                 MakeRead(20, "ACGTACGTAAAAAAGTGTGATC", {"22M"}, "read_2"),
+             },
+             "chr1",
+             20,
+             42,
+             {
+                 MakeRead(26, "GTGGGAAAAAAGTGTGA", {"17M"}, "read_1"),
+                 MakeRead(20, "ACGTACGTAAAAAAGTGTGATC", {"8M", "3D", "14M"},
+                          "read_2"),
+             },
+         },
+         {
+             // Read ends inside haplotype
+             /*haplotype=*/"ACGTACGTGGGAAAAAAGTGTGATC",
+             {
+                 MakeRead(1, "TTTTTTTTTACGTACGTAAAAAA", {"23M"}, "read_1"),
+                 MakeRead(20, "ACGTACGTAAAAAAGTGTGATC", {"22M"}, "read_2"),
+             },
+             "chr1",
+             20,
+             42,
+             {
+                 // Local alignment cannot resolve GGG deletion, instead it is 3
+                 // bases soft clip at the end.
+                 MakeRead(1, "TTTTTTTTTACGTACGTAAAAAA", {"20M", "3S"},
+                          "read_1"),
+                 MakeRead(20, "ACGTACGTAAAAAAGTGTGATC", {"8M", "3D", "14M"},
+                          "read_2"),
+             },
+         }})));
+
+// CalculateAlignmentRegion testing.
+struct CalculateAlignmentRegionTestData {
+  Variant variant;
+  int half_width;
+  Range expected_region;
+};
+
+class CalculateAlignmentRegionTest
+    : public testing::TestWithParam<CalculateAlignmentRegionTestData> {};
+
+TEST_P(CalculateAlignmentRegionTest, CalculateAlignmentRegionTestCases) {
+  const CalculateAlignmentRegionTestData& param = GetParam();
+  // Create InMemory reference.
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+  CreateTestSeq("chr1", 0, 0, 43, "TTTTTTTTTTACGTACGTAAAAAAGTGTGATCCCCCCCCCCCC",
+                &contigs, &seqs);
+  std::unique_ptr<nucleus::InMemoryFastaReader> reference = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  EXPECT_THAT(
+      CalculateAlignmentRegion(param.variant, param.half_width, *reference),
+      nucleus::EqualsProto(param.expected_region));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    CalculateAlignmentRegionTests, CalculateAlignmentRegionTest,
+    testing::ValuesIn(std::vector<CalculateAlignmentRegionTestData>(
+        {{MakeVariant("A", {"C"}, 11), 10, nucleus::MakeRange("chr1", 1, 22)},
+         {MakeVariant("A", {"C"}, 5), 10, nucleus::MakeRange("chr1", 0, 16)},
+         {MakeVariant("A", {"C"}, 40), 10, nucleus::MakeRange("chr1", 30, 43)},
+         {MakeVariant("A", {"C"}, 20), 100, nucleus::MakeRange("chr1", 0, 43)},
+         {MakeVariant("A", {"C"}, 40), 20,
+          nucleus::MakeRange("chr1", 20, 43)}})));
 
 }  // namespace
 }  // namespace deepvariant

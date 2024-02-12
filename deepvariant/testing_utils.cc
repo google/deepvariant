@@ -31,13 +31,16 @@
 
 #include "deepvariant/testing_utils.h"
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
+#include "google/protobuf/text_format.h"
 
 namespace learning {
 namespace genomics {
@@ -72,6 +75,26 @@ nucleus::genomics::v1::Read MakeRead(
       std::vector<std::string>(cigar_elements.begin(), cigar_elements.end()));
   read.set_fragment_name(std::string(read_name));
   return read;
+}
+
+nucleus::genomics::v1::Variant MakeVariant(
+    absl::string_view ref, const std::vector<absl::string_view>& alts,
+    int64_t start) {
+  nucleus::genomics::v1::Variant variant;
+  variant.set_reference_name(std::string(kChr));
+  variant.set_start(start);
+  variant.set_reference_bases(ref.data(), ref.size());
+  for (const auto alt_allele : alts)
+    variant.add_alternate_bases(alt_allele.data(), alt_allele.size());
+
+  // End is start + ref length according to Variant.proto spec.
+  variant.set_end(variant.start() + ref.length());
+  CHECK(google::protobuf::TextFormat::ParseFromString("genotype: -1 genotype: -1",
+                                            variant.add_calls()));
+
+  nucleus::genomics::v1::VariantCall* call = variant.mutable_calls(0);
+  call->set_call_set_name(std::string(kSampleName));
+  return variant;
 }
 
 }  // namespace deepvariant

@@ -40,11 +40,19 @@
 
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+
+// Default sample name for unit testing.
+inline constexpr absl::string_view kSampleName = "MySampleName";
+// Default chromosome for unit testing.
+inline constexpr absl::string_view kChr = "chr1";
+// Default start of a variant used in unit tests.
+inline constexpr int64_t kStart = 10;
 
 // Creates reference contig from a given sequence. This is useful to create
 // InMemoryReferenceReader for testing purposes.
@@ -59,6 +67,11 @@ nucleus::genomics::v1::Read MakeRead(
     absl::string_view chromosome, int start, const std::string& bases,
     const std::vector<std::string>& cigar_elements,
     absl::string_view read_name);
+
+// Creates a simple variant for unit testing.
+nucleus::genomics::v1::Variant MakeVariant(
+    absl::string_view ref, const std::vector<absl::string_view>& alts,
+    int64_t start = kStart);
 
 }  // namespace deepvariant
 }  // namespace genomics

@@ -1694,9 +1694,11 @@ cc_library(
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -1705,13 +1707,18 @@ cc_library(
     srcs = ["alt_aligned_pileup_lib.cc"],
     hdrs = ["alt_aligned_pileup_lib.h"],
     deps = [
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//deepvariant/realigner:fast_pass_aligner",
+        "//third_party/nucleus/io:reference",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -1720,10 +1727,13 @@ cc_test(
     srcs = ["alt_aligned_pileup_lib_test.cc"],
     deps = [
         ":alt_aligned_pileup_lib",
+        ":testing_utils",
+        "//third_party/nucleus/io:reference",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",
+        "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
     ],
