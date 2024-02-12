@@ -520,10 +520,9 @@ function setup_args() {
       echo "Using checkpoint"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
-      # Starting from v1.4.0, model.ckpt.example_info.json is used to provide more
-      # information about the model.
+      # Starting from v1.7.0, example_info.json is required.
       CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
-      run "gcloud storage cp ${CUSTOMIZED_MODEL_DIR}/model.ckpt.example_info.json ${INPUT_DIR}/model.ckpt.example_info.json || echo 'skip model.ckpt.example_info.json'"
+      run "gcloud storage cp ${CUSTOMIZED_MODEL_DIR}/example_info.json ${INPUT_DIR}/example_info.json"
       extra_args+=( --customized_model "/input/model.ckpt")
     fi
   else
