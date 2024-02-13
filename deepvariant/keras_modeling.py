@@ -29,6 +29,7 @@
 """Provides an abstraction around deep learning Keras models in DeepVariant."""
 
 import os
+import tempfile
 from typing import Callable, Optional, Tuple, Type, Union
 
 from absl import logging
@@ -71,6 +72,7 @@ def add_l2_regularizers(
     model: tf.keras.Model,
     layer_class: Type[tf.keras.layers.Layer],
     l2: float = _DEFAULT_WEIGHT_DECAY,
+    regularizer_attr: str = 'kernel_regularizer',
 ) -> tf.keras.Model:
   """Adds L2 regularizers to all `layer_class` layers in `model`.
 
@@ -85,23 +87,54 @@ def add_l2_regularizers(
     model: The base model.
     layer_class: We add regularizers to all layers of type `layer_class`.
     l2: The l2 regularization factor.
+    regularizer_attr: The layer's regularizer attribute.
 
   Returns:
     A model with l2 regularization added to each `layer_class` layer.
   """
+  # Save the original model weights.
+  tmp_weights_dir = tempfile.gettempdir()
+  tmp_weights_path = os.path.join(tmp_weights_dir, 'tmp_weights.h5')
+  model.save_weights(tmp_weights_path)
 
-  if not l2:
-    return model
+  # Clone the original model.
+  reg_model = tf.keras.models.clone_model(model)
+
+  # Set the L2 `regularizer_attr` on all layers of type `layer_class`. This
+  # change is only reflected in the model's config file.
   num_regularizers_added = 0
-  l2_reg = tf.keras.regularizers.l2(l2=l2)
+  for layer in reg_model.layers:
+    if not isinstance(layer, layer_class):
+      continue
+    if not hasattr(layer, regularizer_attr):
+      continue
+    if getattr(layer, regularizer_attr) is not None:
+      continue
+    setattr(layer, regularizer_attr, tf.keras.regularizers.l2(l2=l2))
+    num_regularizers_added += 1
 
-  for layer in model.layers:
-    if isinstance(layer, layer_class):
-      model.add_loss(lambda layer=layer: l2_reg(layer.kernel))
-      num_regularizers_added += 1
+  # Save the updated model configuration.
+  reg_model_json = reg_model.to_json()
 
-  logging.info('Added %d regularizers.', num_regularizers_added)
-  return model
+  # Create a "new" model from the updated configuration and load the original
+  # model's weights.
+  reg_model = tf.keras.models.model_from_json(reg_model_json)
+  reg_model.load_weights(tmp_weights_path, by_name=True)
+
+  # Ensure model weights have not changed after adding regularization layers.
+  for layer, reg_layer in zip(model.layers, reg_model.layers):
+    weights = layer.weights
+    reg_weights = reg_layer.weights
+    if not weights:
+      assert not reg_weights
+    else:
+      for i, weight in enumerate(weights):
+        tf.debugging.assert_near(weight, reg_weights[i])
+
+  # Ensure the newly added regularizers are registered as losses.
+  assert len(reg_model.losses) == (len(model.losses) + num_regularizers_added)
+
+  return reg_model
 
 
 def load_weights_to_model_with_different_channels(
