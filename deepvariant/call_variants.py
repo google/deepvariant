@@ -449,38 +449,43 @@ def post_processing(
   n_examples = 0
   n_batches = 0
   while True:
-    item = output_queue.get()
-    if item is None:
+    try:
+      # If no records found in 3 minutes, then break.
+      item = output_queue.get(timeout=180)
+      if item is None:
+        break
+      (
+          predictions,
+          image_encodes,
+          variants,
+          alt_allele_indices_list,
+          optional_label_list,
+          layer_outputs_encoded,
+          optional_pileup_curation_list,
+      ) = item
+      if optional_label_list is not None:
+        optional_label_list = optional_label_list.numpy()
+      for i, probabilities in enumerate(predictions):
+        pred = {
+            'probabilities': probabilities,
+            'variant': variants[i].numpy(),
+            'image_encoded': image_encodes[i].numpy(),
+            'alt_allele_indices': alt_allele_indices_list[i].numpy(),
+            'layer_outputs_encoded': layer_outputs_encoded,
+        }
+        if include_debug_info:
+          if optional_pileup_curation_list is not None:
+            pred['pileup_curation'] = optional_pileup_curation_list[i]
+          if debugging_true_label_mode and optional_label_list is not None:
+            pred['label'] = optional_label_list[i][0]
+        write_variant_call(
+            writer, pred, include_debug_info, debugging_true_label_mode
+        )
+        n_examples += 1
+      n_batches += 1
+    except TimeoutError as error:
+      logging.warning('Writer timeout occurred %s.', str(error))
       break
-    (
-        predictions,
-        image_encodes,
-        variants,
-        alt_allele_indices_list,
-        optional_label_list,
-        layer_outputs_encoded,
-        optional_pileup_curation_list,
-    ) = item
-    if optional_label_list is not None:
-      optional_label_list = optional_label_list.numpy()
-    for i, probabilities in enumerate(predictions):
-      pred = {
-          'probabilities': probabilities,
-          'variant': variants[i].numpy(),
-          'image_encoded': image_encodes[i].numpy(),
-          'alt_allele_indices': alt_allele_indices_list[i].numpy(),
-          'layer_outputs_encoded': layer_outputs_encoded,
-      }
-      if include_debug_info:
-        if optional_pileup_curation_list is not None:
-          pred['pileup_curation'] = optional_pileup_curation_list[i]
-        if debugging_true_label_mode and optional_label_list is not None:
-          pred['label'] = optional_label_list[i][0]
-      write_variant_call(
-          writer, pred, include_debug_info, debugging_true_label_mode
-      )
-      n_examples += 1
-    n_batches += 1
   writer.close()
 
 
@@ -496,7 +501,22 @@ def call_variants(
     activation_layers: Sequence[str],
 ):
   """Main driver of call_variants."""
-  output_queue = multiprocessing.Queue()
+  first_example = dv_utils.get_one_example_from_examples_path(examples_filename)
+  if first_example is None:
+    logging.warning(
+        'Unable to read any records from %s. Output shards will contain zero'
+        ' records.',
+        examples_filename,
+    )
+    # Write empty shards
+    total_writer_process = 1
+    output_file = output_file.replace(
+        '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
+    )
+    paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
+    for path in paths:
+      tfrecord.write_tfrecords([], path)
+    return
 
   # See if GPU is available
   is_gpu_available = True if tf.config.list_physical_devices('GPU') else False
@@ -524,22 +544,6 @@ def call_variants(
         '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
     )
     paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
-
-  all_processes = []
-  for process_id in range(0, total_writer_process):
-    post_processing_process = multiprocessing.get_context().Process(
-        target=post_processing,
-        args=(
-            paths[process_id],
-            output_queue,
-            include_debug_info,
-            debugging_true_label_mode,
-        ),
-    )
-    all_processes.append(post_processing_process)
-    post_processing_process.start()
-
-  logging.info('Total %d writing processes started.', len(all_processes))
 
   if kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = kmp_blocktime
@@ -642,6 +646,23 @@ def call_variants(
           layer_name: modeling.get_activations_model(model, layer_name)
           for layer_name in activation_layers
       }
+
+    output_queue = multiprocessing.Queue()
+    all_processes = []
+    for process_id in range(0, total_writer_process):
+      post_processing_process = multiprocessing.get_context().Process(
+          target=post_processing,
+          args=(
+              paths[process_id],
+              output_queue,
+              include_debug_info,
+              debugging_true_label_mode,
+          ),
+      )
+      all_processes.append(post_processing_process)
+      post_processing_process.start()
+
+    logging.info('Total %d writing processes started.', len(all_processes))
 
     batch_no = 0
     n_examples = 0
