@@ -427,7 +427,9 @@ def train(config: ml_collections.ConfigDict):
                   steps_per_tune,
                   round(float(tune_step) / float(steps_per_tune), 1) * 100.0,
               )
-            distributed_tune_step(tune_ds, steps_per_iter)
+            distributed_tune_step(
+                tune_ds, tf.constant(steps_per_iter, dtype=tf.int64)
+            )
 
         metric_writer.write_scalars(
             train_step,
@@ -475,7 +477,9 @@ def train(config: ml_collections.ConfigDict):
           n_steps_iter = config.steps_per_iter
 
         with tf.profiler.experimental.Trace('train', step_num=train_step, _r=1):
-          distributed_train_step(train_ds, n_steps_iter)
+          distributed_train_step(
+              train_ds, tf.constant(n_steps_iter, dtype=tf.int64)
+          )
 
           # Quick indication that training is happening.
           logging.log_first_n(
