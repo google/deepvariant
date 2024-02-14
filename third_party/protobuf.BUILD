@@ -845,7 +845,7 @@ cc_binary(
 
 cc_binary(
     name = "python/google/protobuf/pyext/_message.so",
-    srcs = ["@com_google_deepvariant//third_party/nucleus/vendor:message_module.cc"] + glob(
+    srcs = ["@com_google_deepvariant//third_party/nucleus/core:message_module.cc"] + glob(
         [
             "python/google/protobuf/pyext/*.cc",
             "python/google/protobuf/pyext/*.h",
