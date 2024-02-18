@@ -29,7 +29,6 @@
 """Provides an abstraction around deep learning Keras models in DeepVariant."""
 
 import os
-import tempfile
 from typing import Callable, Optional, Tuple, Type, Union
 
 from absl import logging
@@ -72,7 +71,6 @@ def add_l2_regularizers(
     model: tf.keras.Model,
     layer_class: Type[tf.keras.layers.Layer],
     l2: float = _DEFAULT_WEIGHT_DECAY,
-    regularizer_attr: str = 'kernel_regularizer',
 ) -> tf.keras.Model:
   """Adds L2 regularizers to all `layer_class` layers in `model`.
 
@@ -87,54 +85,29 @@ def add_l2_regularizers(
     model: The base model.
     layer_class: We add regularizers to all layers of type `layer_class`.
     l2: The l2 regularization factor.
-    regularizer_attr: The layer's regularizer attribute.
 
   Returns:
     A model with l2 regularization added to each `layer_class` layer.
   """
-  # Save the original model weights.
-  tmp_weights_dir = tempfile.gettempdir()
-  tmp_weights_path = os.path.join(tmp_weights_dir, 'tmp_weights.h5')
-  model.save_weights(tmp_weights_path)
 
-  # Clone the original model.
-  reg_model = tf.keras.models.clone_model(model)
-
-  # Set the L2 `regularizer_attr` on all layers of type `layer_class`. This
-  # change is only reflected in the model's config file.
+  if not l2:
+    return model
   num_regularizers_added = 0
-  for layer in reg_model.layers:
-    if not isinstance(layer, layer_class):
-      continue
-    if not hasattr(layer, regularizer_attr):
-      continue
-    if getattr(layer, regularizer_attr) is not None:
-      continue
-    setattr(layer, regularizer_attr, tf.keras.regularizers.l2(l2=l2))
-    num_regularizers_added += 1
 
-  # Save the updated model configuration.
-  reg_model_json = reg_model.to_json()
+  def add_l2_regularization(layer):
+    def _add_l2():
+      l2_reg = tf.keras.regularizers.l2(l2=l2)
+      return l2_reg(layer.kernel)
 
-  # Create a "new" model from the updated configuration and load the original
-  # model's weights.
-  reg_model = tf.keras.models.model_from_json(reg_model_json)
-  reg_model.load_weights(tmp_weights_path, by_name=True)
+    return _add_l2
 
-  # Ensure model weights have not changed after adding regularization layers.
-  for layer, reg_layer in zip(model.layers, reg_model.layers):
-    weights = layer.weights
-    reg_weights = reg_layer.weights
-    if not weights:
-      assert not reg_weights
-    else:
-      for i, weight in enumerate(weights):
-        tf.debugging.assert_near(weight, reg_weights[i])
+  for layer in model.layers:
+    if isinstance(layer, layer_class):
+      model.add_loss(add_l2_regularization(layer))
+      num_regularizers_added += 1
 
-  # Ensure the newly added regularizers are registered as losses.
-  assert len(reg_model.losses) == (len(model.losses) + num_regularizers_added)
-
-  return reg_model
+  logging.info('Added %d regularizers.', num_regularizers_added)
+  return model
 
 
 def load_weights_to_model_with_different_channels(
@@ -255,9 +228,6 @@ def inceptionv3_with_imagenet(
   )
 
   weight_decay = _DEFAULT_WEIGHT_DECAY
-  backbone = add_l2_regularizers(
-      backbone, tf.keras.layers.Conv2D, l2=weight_decay
-  )
   backbone_drop_rate = _DEFAULT_BACKBONE_DROPOUT_RATE
 
   hid = tf.keras.layers.Dropout(backbone_drop_rate)(backbone.output)
@@ -268,6 +238,8 @@ def inceptionv3_with_imagenet(
   model = tf.keras.Model(
       inputs=backbone.input, outputs=outputs, name='inceptionv3'
   )
+  model = add_l2_regularizers(model, tf.keras.layers.Conv2D, l2=weight_decay)
+
   return model
 
 
@@ -308,10 +280,6 @@ def inceptionv3(
     weight_decay = _DEFAULT_WEIGHT_DECAY
     backbone_dropout_rate = _DEFAULT_BACKBONE_DROPOUT_RATE
 
-  backbone = add_l2_regularizers(
-      backbone, tf.keras.layers.Conv2D, l2=weight_decay
-  )
-
   hid = tf.keras.layers.Dropout(backbone_dropout_rate)(backbone.output)
 
   outputs = []
@@ -320,6 +288,11 @@ def inceptionv3(
   model = tf.keras.Model(
       inputs=backbone.input, outputs=outputs, name='inceptionv3'
   )
+
+  # Reinitializing the model removes model.losses added using model.add_loss,
+  # so it is important that they be added *after* calling tf.keras.Model
+  model = add_l2_regularizers(model, tf.keras.layers.Conv2D, l2=weight_decay)
+
   model.summary()
   logging.info('Number of l2 regularizers: %s.', len(model.losses))
 
