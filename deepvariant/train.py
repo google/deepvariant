@@ -409,7 +409,17 @@ def train(config: ml_collections.ConfigDict):
     with metric_writers.ensure_flushes(metric_writer):
 
       def run_tune(train_step, epoch, steps_per_tune):
-        logging.info('Running tune at step=%d epoch=%d', train_step, epoch)
+        """Runs evaluation on held out eval set."""
+        logging.info(
+            'Running tune with ema weights at step=%d epoch=%d',
+            train_step,
+            epoch,
+        )
+        if train_step > 0:
+          # Only use ema weights if we are past step 0.
+          # Usually, this means we are evaluating an initial checkpoint.
+          original_weights = model.get_weights()
+          optimizer.finalize_variable_values(model.trainable_weights)
         for tune_step in range(0, steps_per_tune, config.steps_per_iter):
           with tf.profiler.experimental.Trace('tune', step_num=tune_step, _r=1):
             if roundup(tune_step, config.steps_per_iter) > steps_per_tune:
@@ -430,6 +440,9 @@ def train(config: ml_collections.ConfigDict):
             distributed_tune_step(
                 tune_ds, tf.constant(steps_per_iter, dtype=tf.int64)
             )
+        if train_step > 0:
+          # Revert back to original weights and continue training.
+          model.set_weights(original_weights)
 
         metric_writer.write_scalars(
             train_step,
@@ -533,21 +546,17 @@ def train(config: ml_collections.ConfigDict):
           if is_last_step:
             logging.info('Finalizing model weights.')
             optimizer.finalize_variable_values(model.trainable_weights)
-            ckpt_manager.save(train_step)
           run_tune(train_step, epoch, steps_per_tune)
 
+          ckpt_manager.save(train_step)
           if get_checkpoint_metric() > best_checkpoint_metric_value:
             best_checkpoint_metric_value = get_checkpoint_metric()
-            checkpoint_path = ckpt_manager.save(train_step)
             # Reset early stopping counter
             state.early_stopping.assign(0)
             logging.info(
-                'Saved checkpoint %s=%s step=%s epoch=%s path=%s',
-                config.best_checkpoint_metric,
-                get_checkpoint_metric(),
+                'Reset early stopping counter to 0 at step=%d epoch=%d',
                 train_step,
                 epoch,
-                checkpoint_path,
             )
           else:
             if (
@@ -555,9 +564,10 @@ def train(config: ml_collections.ConfigDict):
                 and state.early_stopping.value()
                 >= config.early_stopping_patience
             ):
+              logging.info('Early Stop Reached.')
               break
             logging.info(
-                'Skipping checkpoint with %s=%s < previous best %s=%s',
+                'Early Stopping Count +1: %s=%s < previous best %s=%s',
                 config.best_checkpoint_metric,
                 get_checkpoint_metric(),
                 config.best_checkpoint_metric,
@@ -574,15 +584,9 @@ def train(config: ml_collections.ConfigDict):
           for metric in state.tune_metrics:
             metric.reset_states()
 
-    # After training completes, create saved model (.pb).
-    checkpoint_path = ckpt_manager.latest_checkpoint
-    if not checkpoint_path:
+    if not ckpt_manager.latest_checkpoint:
       logging.info('No checkpoint found.')
       return
-
-    # The latest checkpoint will be the best performing checkpoint.
-    logging.info('Loading best checkpoint: %s', checkpoint_path)
-    tf.train.Checkpoint(model).restore(checkpoint_path).expect_partial()
 
     logging.info('Saving model using saved_model format.')
     saved_model_dir = os.path.join(checkpoint_path, 'saved_model')
