@@ -39,12 +39,13 @@ friend class test_case_name##_##test_name##_Test
 
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/container/btree_map.h"
 #include "absl/hash/hash.h"
 #include "absl/strings/string_view.h"
 #include "boost/graph/adjacency_list.hpp"
