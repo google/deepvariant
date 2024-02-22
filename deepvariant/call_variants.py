@@ -545,21 +545,28 @@ def call_variants(
     )
     paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
 
+  output_queue = multiprocessing.Queue()
+  all_processes = []
+  for process_id in range(0, total_writer_process):
+    post_processing_process = multiprocessing.get_context().Process(
+        target=post_processing,
+        args=(
+            paths[process_id],
+            output_queue,
+            include_debug_info,
+            debugging_true_label_mode,
+        ),
+    )
+    all_processes.append(post_processing_process)
+    post_processing_process.start()
+
+  logging.info('Total %d writing processes started.', len(all_processes))
+
   if kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = kmp_blocktime
     logging.vlog(
         3, 'Set KMP_BLOCKTIME to {}'.format(os.environ['KMP_BLOCKTIME'])
     )
-
-  # Read a single TFExample to make sure we're not loading an older version.
-  first_example = dv_utils.get_one_example_from_examples_path(examples_filename)
-  if first_example is None:
-    logging.warning(
-        'Unable to read any records from %s. Output will contain zero records.',
-        examples_filename,
-    )
-    tfrecord.write_tfrecords([], output_file)
-    return
 
   example_info_json = dv_utils.get_example_info_json_filename(
       examples_filename, 0
@@ -646,23 +653,6 @@ def call_variants(
           layer_name: modeling.get_activations_model(model, layer_name)
           for layer_name in activation_layers
       }
-
-    output_queue = multiprocessing.Queue()
-    all_processes = []
-    for process_id in range(0, total_writer_process):
-      post_processing_process = multiprocessing.get_context().Process(
-          target=post_processing,
-          args=(
-              paths[process_id],
-              output_queue,
-              include_debug_info,
-              debugging_true_label_mode,
-          ),
-      )
-      all_processes.append(post_processing_process)
-      post_processing_process.start()
-
-    logging.info('Total %d writing processes started.', len(all_processes))
 
     batch_no = 0
     n_examples = 0
