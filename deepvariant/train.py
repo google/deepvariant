@@ -54,9 +54,9 @@ _LEADER = flags.DEFINE_string(
     'leader',
     'local',
     (
-        'The leader flag specifies the host-controller. Possible values: '
-        '(1) local=runs locally. If GPUs are available they will be detected'
-        ' and used.'
+        'The leader flag specifies the host-controller for TPU training. For '
+        'training locally, use leader=local. If GPUs are available they will '
+        'be detected automatically.'
     ),
 )
 
