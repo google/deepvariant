@@ -33,6 +33,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
