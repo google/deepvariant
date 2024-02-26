@@ -54,16 +54,28 @@ def get_wgs_config(
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
   # If set to 0, use full validation dataset.
-  config.num_validation_examples = 0
+  config.num_validation_examples = 150_000
 
-  config.early_stopping_patience = 10
+  config.best_checkpoint_metric = 'tune/f1_weighted'
+  config.batch_size = 16384
   config.num_epochs = 10
-  config.learning_rate = 0.05
+  config.optimizer = 'adam'
+  config.beta_1 = 0.9651804083266324
+  config.beta_2 = 0.9665259112630292
+  config.adaptive_epsilon = True
+  config.optimizer_weight_decay = 0.0
+
+  config.early_stopping_patience = 100
+  config.learning_rate = 0.0000796142074327502
   config.learning_rate_num_epochs_per_decay = 2.25
-  config.learning_rate_decay_rate = 0.7797961894591596
+  config.learning_rate_decay_rate = 0.9999
   config.warmup_steps = 0
 
   config.backbone_dropout_rate = 0.2
+
+  # Exponential Moving Average
+  config.use_ema = True
+  config.ema_momentum = 0.991463134331829
 
   return config
 
@@ -162,10 +174,10 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
 
   config.alt_mode = alt_mode
 
-  if config_name == 'exome':
-    config = get_exome_config(config)
-  elif config_name == 'wgs':
+  if config_name == 'wgs':
     config = get_wgs_config(config)
+  elif config_name == 'exome':
+    config = get_exome_config(config)
   elif config_name == 'base':
     # Use the base config.
     pass
