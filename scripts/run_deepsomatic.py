@@ -32,9 +32,6 @@ This script is used to run DeepSomatic, which is an extension of DeepVariant.
 If you want to access more flags that are available in `make_examples_somatic`,
 `call_variants`, and `postprocess_variants`, you can also call them separately
 using the binaries in the Docker image.
-
-DeepSomatic is not officially supported or released yet. This script does not
-include a released model yet.
 """
 
 import os
