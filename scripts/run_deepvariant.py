@@ -386,6 +386,7 @@ def make_examples_command(
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
     special_args['vsc_min_fraction_indels'] = 0.12
+    special_args['trim_reads_for_pileup'] = True
   elif _MODEL_TYPE.value == 'ONT_R104':
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['max_reads_per_partition'] = 600
@@ -399,6 +400,9 @@ def make_examples_command(
     special_args['track_ref_reads'] = True
     special_args['vsc_min_fraction_snps'] = 0.08
     special_args['vsc_min_fraction_indels'] = 0.12
+    special_args['trim_reads_for_pileup'] = True
+  elif _MODEL_TYPE.value == 'HYBRID_PACBIO_ILLUMINA':
+    special_args['trim_reads_for_pileup'] = True
 
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.

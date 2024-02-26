@@ -227,6 +227,14 @@ flags.DEFINE_bool(
         'Reads longer than 500 bp are never realigned.'
     ),
 )
+_TRIM_READS_FOR_PILUP = flags.DEFINE_bool(
+    'trim_reads_for_pileup',
+    False,
+    (
+        'If True, trim reads that are used to build a pileup image. '
+        'Reads longer than 500 bp are not trimmed.'
+    ),
+)
 flags.DEFINE_bool(
     'write_run_info',
     False,
@@ -900,6 +908,7 @@ def shared_flags_to_options(
     )
 
     options.realigner_enabled = flags_obj.realign_reads
+    options.trim_reads_for_pileup = _TRIM_READS_FOR_PILUP.value
     options.joint_realignment = _ENABLE_JOINT_REALIGNMENT.value
     options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 

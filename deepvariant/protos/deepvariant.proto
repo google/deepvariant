@@ -613,7 +613,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 62.
+// Next ID: 63.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -832,6 +832,8 @@ message MakeExamplesOptions {
   bool deterministic_serialization = 60;
 
   string channel_list = 61;
+
+  bool trim_reads_for_pileup = 62;
 }
 
 // Config describe information needed for a dataset that can be used for
