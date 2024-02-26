@@ -66,8 +66,8 @@ std::string VariantStr(const std::string& ref_name, int start, int end = 0) {
 }
 
 TEST(IndexedReaderTest, EmptyShards) {
-  std::string path_a = absl::StrCat(getenv("TEST_TMPDIR"), "/", "a.gz");
-  std::string path_b = absl::StrCat(getenv("TEST_TMPDIR"), "/", "b.gz");
+  std::string path_a = absl::StrCat(::testing::TempDir(), "/", "a.gz");
+  std::string path_b = absl::StrCat(::testing::TempDir(), "/", "b.gz");
   auto writer_a = nucleus::TFRecordWriter::New(path_a, "GZIP");
   auto writer_b = nucleus::TFRecordWriter::New(path_b, "GZIP");
   writer_a->Close();
@@ -81,7 +81,7 @@ TEST(IndexedReaderTest, EmptyShards) {
 }
 
 TEST(IndexedReaderTest, ReadsRecordsSingleShard) {
-  std::string path_a = absl::StrCat(getenv("TEST_TMPDIR"), "/", "a.gz");
+  std::string path_a = absl::StrCat(::testing::TempDir(), "/", "a.gz");
   auto writer_a = nucleus::TFRecordWriter::New(path_a, "GZIP");
   writer_a->WriteRecord(VariantStr("ref_a", 1));
   writer_a->WriteRecord(VariantStr("ref_b", 1));
@@ -100,14 +100,14 @@ TEST(IndexedReaderTest, ReadsRecordsSingleShard) {
 }
 
 TEST(IndexedReaderTest, RecordsAreGloballyOrdered) {
-  std::string path_a = absl::StrCat(getenv("TEST_TMPDIR"), "/", "a.gz");
+  std::string path_a = absl::StrCat(::testing::TempDir(), "/", "a.gz");
   auto writer_a = nucleus::TFRecordWriter::New(path_a, "GZIP");
   writer_a->WriteRecord(VariantStr("ref_a", 2));
   writer_a->WriteRecord(VariantStr("ref_c", 100));
   writer_a->WriteRecord(VariantStr("ref_d", 1));
   writer_a->Close();
 
-  std::string path_b = absl::StrCat(getenv("TEST_TMPDIR"), "/", "b.gz");
+  std::string path_b = absl::StrCat(::testing::TempDir(), "/", "b.gz");
   auto writer_b = nucleus::TFRecordWriter::New(path_b, "GZIP");
   writer_b->WriteRecord(VariantStr("ref_a", 1));
   writer_b->WriteRecord(VariantStr("ref_b", 1));
@@ -116,7 +116,7 @@ TEST(IndexedReaderTest, RecordsAreGloballyOrdered) {
   writer_b->WriteRecord(VariantStr("ref_d", 4));
   writer_b->Close();
 
-  std::string path_empty = absl::StrCat(getenv("TEST_TMPDIR"), "/", "empty.gz");
+  std::string path_empty = absl::StrCat(::testing::TempDir(), "/", "empty.gz");
   auto writer_c = nucleus::TFRecordWriter::New(path_empty, "GZIP");
   writer_c->Close();
 
@@ -144,7 +144,7 @@ TEST(IndexedReaderTest, RecordsAreGloballyOrdered) {
 }
 
 TEST(IndexedReaderTest, RecordsAreGloballyOrderedWithinContigs) {
-  std::string path_a = absl::StrCat(getenv("TEST_TMPDIR"), "/", "a.gz");
+  std::string path_a = absl::StrCat(::testing::TempDir(), "/", "a.gz");
   auto writer_a = nucleus::TFRecordWriter::New(path_a, "GZIP");
   writer_a->WriteRecord(VariantStr("ref_a", 2, 3));
   writer_a->WriteRecord(VariantStr("ref_a", 2, 5));
@@ -152,7 +152,7 @@ TEST(IndexedReaderTest, RecordsAreGloballyOrderedWithinContigs) {
   writer_a->WriteRecord(VariantStr("ref_b", 1, 1));
   writer_a->Close();
 
-  std::string path_b = absl::StrCat(getenv("TEST_TMPDIR"), "/", "b.gz");
+  std::string path_b = absl::StrCat(::testing::TempDir(), "/", "b.gz");
   auto writer_b = nucleus::TFRecordWriter::New(path_b, "GZIP");
   writer_b->WriteRecord(VariantStr("ref_a", 2, 2));
   writer_b->WriteRecord(VariantStr("ref_a", 2, 6));
@@ -184,7 +184,7 @@ TEST(IndexedReaderTest, RecordsAreGloballyOrderedWithinContigs) {
 }
 
 TEST(IndexedReaderTest, ReturnsContigIndex) {
-  std::string path_a = absl::StrCat(getenv("TEST_TMPDIR"), "/", "a");
+  std::string path_a = absl::StrCat(::testing::TempDir(), "/", "a");
   auto writer_a = nucleus::TFRecordWriter::New(path_a, "");
   writer_a->WriteRecord(VariantStr("ref_a", 1));
   writer_a->WriteRecord(VariantStr("ref_b", 2));
