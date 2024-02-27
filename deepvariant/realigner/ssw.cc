@@ -66,7 +66,7 @@ int Aligner::SetReferenceSequence(const string& reference) {
       reference.c_str(), reference.length());
 }
 
-bool Aligner::Align(const string& query, const Filter& filter,
+int Aligner::Align(const string& query, const Filter& filter,
                     Alignment* alignment) const {
   return StripedSmithWaterman::Aligner::Align(
       query.c_str(), filter, alignment, query.length());
