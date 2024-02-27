@@ -39,6 +39,7 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/alt_aligned_pileup_lib.h"
 #include "deepvariant/pileup_image_native.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
@@ -291,17 +292,19 @@ EncodedVariantType EncodedVariantType(const Variant& variant) {
 }
 
 std::string ExamplesGenerator::EncodeExample(
-    const std::vector<std::unique_ptr<ImageRow>>& image, const Variant& variant,
+    const std::vector<std::unique_ptr<ImageRow>>& image,
+    const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
+    const Variant& variant,
     const std::vector<std::string>& alt_combination) const {
   // TODO Once we know the number of channels in advance we should
   // allocate data with the correct size to avoid vector resizing when data is
   // filled.
   std::vector<unsigned char> data;
   std::array<int, 3> image_shape;
-  FillPileupArray(image, {}, alt_aligned_pileup_, &data);
+  FillPileupArray(image, alt_image, alt_aligned_pileup_, &data);
   image_shape[0] = image.size();                   // Number of rows.
   image_shape[1] = image[0]->Width();              // Width of the pileup.
-  image_shape[2] = pileup_image_.channel_enums_.size();  // Number of channels.
+  image_shape[2] = options_.pic_options().channels().size();  // Num channels.
 
   // Encode alt allele indices.
   absl::flat_hash_map<std::string, int> alt_indices;
@@ -405,6 +408,60 @@ std::string ExamplesGenerator::GetReferenceBases(const Range& region) const {
   return "";
 }
 
+// Two pileup images are built, one for each alt allele. In these pileups the
+// reference is replaced with the artificial haplotype, that is created by
+// concatenating ref prefix, alt allele, and ref suffix. Reads are aligned to
+// ths haplotype instead of the reference. BuildPileupForOneSample is called
+// the same way as for a normal pileup which means no special alt aligned
+// processing is required in pileup_image_native library.
+void ExamplesGenerator::CreateAltAlignedImages(
+    const DeepVariantCall& candidate,
+    const std::vector<std::string>& alt_combination,
+    const std::vector<Read>& trimmed_reads, int sample_order,
+    const Range& region,
+    std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images) {
+  const auto& variant = candidate.variant();
+  int image_start_pos = variant.start() - half_width_;
+  int alt_image_num = 0;
+  // It is assumed that there can be 0 - 2 alt alleles in alt_combination.
+  CHECK_LE(alt_combination.size(), 2);
+  for (const std::string& alt : alt_combination) {
+    int64_t ref_start = 0;
+    int64_t ref_end = 0;
+    // Create haplotype by combining reference and alt bases in the
+    // middle.
+    std::string haplotype = CreateHaplotype(variant, alt, &ref_start, &ref_end);
+    if (haplotype.size() < options_.pic_options().width()) {
+      // We need haplotype length to be the size of pilup width. In some
+      // cases, for example, when variant is too close to the beginning
+      // of a contig the haplotype length would be smaller than pilup
+      // width. In this case we do not fill alt aligned channels.
+      break;
+    }
+    // Realign reads to the haplotype.
+    std::vector<Read> realigned_reads = RealignReadsToHaplotype(
+        haplotype, trimmed_reads, region.reference_name(), ref_start, ref_end,
+        *(this->ref_reader_), this->options_);
+    std::vector<const Read*> realigned_reads_ptrs;
+    realigned_reads_ptrs.reserve(realigned_reads.size());
+    for (const auto& read : realigned_reads) {
+      realigned_reads_ptrs.push_back(&read);
+    }
+    // Build alt pileup with all channels. Although, we only need one
+    // channel it is easier to call BuildPileupForOneSample for all
+    // channels. The runtime penalty is very small (~1.5% of runtime).
+    auto alt_image = pileup_image_.BuildPileupForOneSample(
+        candidate, haplotype.substr(0, options_.pic_options().width()),
+        realigned_reads_ptrs, image_start_pos, alt_combination,
+        options_.sample_options(sample_order));
+    // move alt_image to alt_images[2] array.
+    for (auto& row : alt_image) {
+      alt_images[alt_image_num].push_back(std::move(row));
+    }
+    alt_image_num++;
+  }  // for (alt in alt_combination)
+}
+
 // This function is tested by integration test in make_examples_test using the
 // real data.
 // For multisample cases image is created for each sample separately and all
@@ -427,28 +484,44 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     // We are at the edge of the contig, example cannot be created.
     return;
   }
-  // Alt Alignment.
-  if (NeedAltAlignment(variant)) {
-    LOG(FATAL) << "Not implemented";
-  }
+  bool need_alt_alignment = NeedAltAlignment(variant);
   for (const std::vector<std::string>& alt_combination :
         AltAlleleCombinations(variant)) {
     std::vector<std::unique_ptr<ImageRow>> ref_images;
-    for (int sample_order : sample_order) {
+    std::vector<std::vector<std::unique_ptr<ImageRow>>> alt_images(2);
+    for (int this_sample_order : sample_order) {
+      // All reads are trimmed if trim_reads_for_pileup is set. This allows for
+      // a better runtime performance when long reads data is used.
+      std::vector<Read> trimmed_reads;
+      std::vector<const Read*> trimmed_reads_ptrs;
+      if (options_.trim_reads_for_pileup()) {
+        trimmed_reads = TrimReads(
+            readers[this_sample_order].Query(region),
+            CalculateAlignmentRegion(variant, half_width_, *ref_reader_));
+        trimmed_reads_ptrs.reserve(trimmed_reads.size());
+        for (const auto& read : trimmed_reads) {
+          trimmed_reads_ptrs.push_back(&read);
+        }
+      }
+      // If trim_reads_for_pileup is set then trimmed_reads are used.
       auto ref_image = pileup_image_.BuildPileupForOneSample(
           candidate, reference_bases,
-          readers[sample_order].Query(region), image_start_pos,
-          alt_combination, options_.sample_options(sample_order));
-      // TODO It would be more efficient to allocate pileup image here
-      // and have BuildPileupForOneSample fill it.
+          options_.trim_reads_for_pileup()
+              ? trimmed_reads_ptrs
+              : readers[this_sample_order].Query(region),
+          image_start_pos, alt_combination,
+          options_.sample_options(this_sample_order));
+      // Collect rows from all samples in ref_images.
       for (auto& row : ref_image) {
         ref_images.push_back(std::move(row));
       }
+      if (need_alt_alignment) {
+        CreateAltAlignedImages(candidate, alt_combination, trimmed_reads,
+                               this_sample_order, region, alt_images);
+      }
     }
-    // TODO Write TFRecord in a background thread can potentially
-    // improve a runtime of make_examples.
     sample.writer->WriteRecord(
-        EncodeExample(ref_images, variant, alt_combination));
+        EncodeExample(ref_images, alt_images, variant, alt_combination));
   }
 }
 

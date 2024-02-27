@@ -225,6 +225,21 @@ Range CalculateAlignmentRegion(const Variant& variant, int half_width,
   return alignment_region;
 }
 
+// Helper function to trim a vector of reads. For the general use case we don't
+// want to keep reads that are less than 15 bases long after trimming.
+std::vector<Read> TrimReads(const std::vector<const Read*>& reads,
+                            const Range& region) {
+  std::vector<Read> ret;
+  for (const Read* read : reads) {
+    Read trimmed_read;
+    trimmed_read = TrimRead(*read, region);
+    if (trimmed_read.aligned_sequence().size() >= 15) {
+      ret.push_back(trimmed_read);
+    }
+  }
+  return ret;
+}
+
 namespace {
 Range MakeRange(const std::string& ref_name, int64_t start, int64_t end) {
   Range range;

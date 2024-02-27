@@ -130,6 +130,7 @@ class ExamplesGenerator {
   // Encodes a variant into a pileup example.
   std::string EncodeExample(
       const std::vector<std::unique_ptr<ImageRow>>& image,
+      const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
       const nucleus::genomics::v1::Variant& variant,
       const std::vector<std::string>& alt_combination) const;
 
@@ -139,6 +140,14 @@ class ExamplesGenerator {
       const DeepVariantCall& candidate, const Sample& sample,
       const std::vector<int>& sample_order,
       const std::vector<InMemoryReader>& readers);
+
+  void CreateAltAlignedImages(
+      const DeepVariantCall& candidate,
+      const std::vector<std::string>& alt_combination,
+      const std::vector<nucleus::genomics::v1::Read>& trimmed_reads,
+      int sample_order,
+      const nucleus::genomics::v1::Range& region,
+      std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images);
 
   // Returns true if the variant needs alt alignment.
   bool NeedAltAlignment(const nucleus::genomics::v1::Variant& variant) const;
