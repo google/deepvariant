@@ -190,7 +190,7 @@ Alignment FastPassAligner::SswAlign(const string& target) const {
   CHECK(ssw_aligner_);
   Filter filter;
   Alignment alignment;
-  if (ssw_aligner_->Align(target, filter, &alignment) == 0) {
+  if (ssw_aligner_->Align(target, filter, &alignment)) {
     return alignment;
   } else {
     LOG(WARNING) << "SSW alignment failed for query: '" << target << "'";

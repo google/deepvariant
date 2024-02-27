@@ -33,8 +33,6 @@ from __future__ import division
 from __future__ import print_function
 
 import abc
-from typing import Any
-
 import six
 
 from third_party.nucleus.protos import bed_pb2
@@ -55,17 +53,6 @@ def ValueErrorOnFalse(ok, *args):
   if args:
     return args if len(args) > 1 else args[0]
   return None
-
-
-def ValueErrorOnInaccurate(accuracy: int, alignment: Any):
-  """Returns Alignment if accuracy is good (equals 0).
-
-  See: third_party/ssw/src/ssw_cpp.h;l=137
-  """
-  if accuracy == 0:
-    return alignment
-  else:
-    raise ValueError(f"Alignment is not accurate, returned '{accuracy}.'")
 
 
 class WrappedCppIterable(six.Iterator):
