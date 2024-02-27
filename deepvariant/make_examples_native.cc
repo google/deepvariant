@@ -41,6 +41,7 @@
 
 #include "deepvariant/pileup_image_native.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -70,6 +71,20 @@ ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
         Sample(sample_options_for_one_sample);
   }
   half_width_ = (options_.pic_options().width() - 1) / 2;
+  absl::flat_hash_map<absl::string_view, AltAlignedPileup>
+      alt_aligned_pileup_map({
+          {"none", AltAlignedPileup::kNone},
+          {"base_channels", AltAlignedPileup::kBaseChannels},
+          {"diff_channels", AltAlignedPileup::kDiffChannels},
+          {"rows", AltAlignedPileup::kRows},
+      });
+  auto it =
+      alt_aligned_pileup_map.find(options_.pic_options().alt_aligned_pileup());
+  if (it == alt_aligned_pileup_map.end()) {
+    LOG(FATAL) << "Unknown value is specified for alt_aligned_pileup";
+  } else {
+    alt_aligned_pileup_ = it->second;
+  }
   if (test_mode) {
     return;
   }
@@ -188,26 +203,68 @@ std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
   return absl::StrCat(prefix, alt, suffix);
 }
 
-// TODO There is an ongoing work to re-implement pileup channels.
-// As a result this code will be obsolete once new channels code is submitted.
-// This functionality is ported from deepvariant/python/clif_converters.cc.
-// Returns a number of channels.
-int FillPileupArray(const std::vector<std::unique_ptr<ImageRow>>& image,
-                     std::vector<unsigned char>* data) {
-  int num_channels = 6;
-
-  for (const std::unique_ptr<ImageRow>& row : image) {
-    for (int i = 0; i < row->Width(); i++) {
-      if (!row->channel_data.empty()) {
-        // Iterate over channels here and fill data...
-        for (int j = 0; j < row->channel_data.size(); j++) {
-          data->push_back(row->channel_data[j][i]);
-          num_channels += 1;
+// Converting a vector<ImageRow> into a 3-d vector where channels are stored in
+// the lowest dimension. Special processing is required for alt aligned
+// channels.
+// * --alt_aligned_pileup=diff_channels Add channel 5 (base differs
+// from ref) of both alts as channels
+// * --alt_aligned_pileup=base_channels Add channel 0 (bases ATCG) of both alts
+// as channels.
+// * --alt_aligned_pileup=rows alt aligned data is stored as extra rows.
+//
+void FillPileupArray(
+    const std::vector<std::unique_ptr<ImageRow>>& image,
+    const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
+    const AltAlignedPileup alt_aligned_representation,
+    std::vector<unsigned char>* pileup_array) {
+  // TODO Although channels 0 and 5 should not change we need to set
+  // channel number programmatically.
+  int alt_channel_index = 0;
+  switch (alt_aligned_representation) {
+    case AltAlignedPileup::kDiffChannels:
+      alt_channel_index = 5;
+      break;
+    case AltAlignedPileup::kBaseChannels:
+      alt_channel_index = 0;
+      break;
+    case AltAlignedPileup::kRows:
+      LOG(FATAL) << "Alt alignment as row is not implemented.";
+    default:
+      alt_channel_index = 0;
+  }
+  for (int row = 0; row < image.size(); row++) {
+    for (int column = 0; column < image[row]->Width(); column++) {
+      if (!image[row]->channel_data.empty()) {
+        // Lower dimension is a channel data. Here we iterate all channels to
+        // fill one position of the pileup image.
+        for (int channel = 0; channel < image[row]->channel_data.size();
+             channel++) {
+          pileup_array->push_back(image[row]->channel_data[channel][column]);
         }
+        // Fill alt aligned channels if needed.
+        if (alt_aligned_representation == AltAlignedPileup::kBaseChannels ||
+            alt_aligned_representation == AltAlignedPileup::kDiffChannels) {
+          CHECK_EQ(alt_image.size(), 2);
+          unsigned char alt_aligned_channel_1_value = 0;
+          if (!alt_image[0].empty() &&
+              !alt_image[0][row]->channel_data.empty()) {
+            alt_aligned_channel_1_value =
+                alt_image[0][row]->channel_data[alt_channel_index][column];
+          }
+          // Fill alt aligned channel 1.
+          pileup_array->push_back(alt_aligned_channel_1_value);
+          // Fill alt aligned channel 2.
+          if (alt_image[1].empty() || alt_image[1][row]->channel_data.empty()) {
+            // Fill with alt aligned channel 1 if alt2 is empty.
+            pileup_array->push_back(alt_aligned_channel_1_value);
+          } else {
+            pileup_array->push_back(
+                alt_image[1][row]->channel_data[alt_channel_index][column]);
+          }
+        }  // if need_alt_alignment
       }
     }  // for row->Width
   }  // for row
-  return num_channels;
 }
 
 // Calculates the variant type to be encoded in a TensorFlow example.
@@ -241,7 +298,7 @@ std::string ExamplesGenerator::EncodeExample(
   // filled.
   std::vector<unsigned char> data;
   std::array<int, 3> image_shape;
-  FillPileupArray(image, &data);
+  FillPileupArray(image, {}, alt_aligned_pileup_, &data);
   image_shape[0] = image.size();                   // Number of rows.
   image_shape[1] = image[0]->Width();              // Width of the pileup.
   image_shape[2] = pileup_image_.channel_enums_.size();  // Number of channels.

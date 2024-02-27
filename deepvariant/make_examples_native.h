@@ -56,6 +56,16 @@ enum class EncodedVariantType {
   kIndel = 2,
 };
 
+// Different ways alt aligned reads can be expressed.
+// This enum matches flag values in make_example_options.
+// It helps to avoid string comparison in performance critical parts.
+enum AltAlignedPileup {
+  kNone = 0,
+  kBaseChannels = 1,
+  kDiffChannels = 2,
+  kRows = 3,
+};
+
 struct Sample {
   Sample() = default;
   explicit Sample(const SampleOptions& options) : sample_options(options){};
@@ -151,6 +161,9 @@ class ExamplesGenerator {
 
   // Samples keyed by role.
   absl::flat_hash_map<std::string, Sample> samples_;
+
+  // Alt aligned pileup option.
+  AltAlignedPileup alt_aligned_pileup_;
 };
 
 // Helper class to allow unit testing of some private methods.
@@ -187,6 +200,13 @@ nucleus::genomics::v1::Range MakeRange(const std::string& ref_name,
 
 std::string GetExamplesFilename(const MakeExamplesOptions& options,
                                 const Sample& sample);
+
+void FillPileupArray(
+    const std::vector<std::unique_ptr<ImageRow>>& image,
+    const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
+    AltAlignedPileup alt_aligned_representation,
+    std::vector<unsigned char>* pileup_array);
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
