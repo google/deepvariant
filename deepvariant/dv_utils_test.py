@@ -88,7 +88,7 @@ class DVUtilsTest(parameterized.TestCase):
     valid_shape = [1, 2, 3]
     example.features.feature['image/shape'].int64_list.value.extend(valid_shape)
     output_file = test_utils.test_tmpfile(file_name_to_write)
-    tfrecord.write_tfrecords([example], output_file)
+    tfrecord.write_tfrecords([example], output_file, compression_type='GZIP')
     self.assertEqual(
         valid_shape,
         dv_utils.get_shape_from_examples_path(
@@ -112,7 +112,7 @@ class DVUtilsTest(parameterized.TestCase):
       self, file_name_to_write, tfrecord_path_to_match
   ):
     output_file = test_utils.test_tmpfile(file_name_to_write)
-    tfrecord.write_tfrecords([], output_file)
+    tfrecord.write_tfrecords([], output_file, compression_type='GZIP')
     self.assertIsNone(
         dv_utils.get_shape_from_examples_path(
             test_utils.test_tmpfile(tfrecord_path_to_match)
@@ -152,12 +152,6 @@ class DVUtilsTest(parameterized.TestCase):
       x = sess.run(it)
       t = dv_utils.int_tensor_to_string(x)
       self.assertEqual(t, s)
-
-  def testCompressionTypeOfFiles(self):
-    self.assertEqual(
-        'GZIP', dv_utils.compression_type_of_files(['/tmp/foo.tfrecord.gz'])
-    )
-    self.assertIsNone(dv_utils.compression_type_of_files(['/tmp/foo.tfrecord']))
 
   def test_tfexample_conversion(self):
     # This tests the partial conversion of a CallVariantsOutput proto.

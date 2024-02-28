@@ -400,7 +400,7 @@ def call_variants(
         'Unable to read any records from %s. Output will contain zero records.',
         examples_filename,
     )
-    tfrecord.write_tfrecords([], output_file)
+    tfrecord.write_tfrecords([], output_file, compression_type='GZIP')
     return
 
   example_info_json = dv_utils.get_example_info_json_filename(
@@ -527,7 +527,7 @@ def call_variants(
     )[0]
   # Consume predictions one at a time and write them to output_file.
   logging.info('Writing calls to %s', output_file)
-  writer = tfrecord.Writer(output_file)
+  writer = tfrecord.Writer(output_file, compression_type='GZIP')
   with writer:
     start_time = time.time()
     n_examples, n_batches = 0, 0

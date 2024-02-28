@@ -269,7 +269,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # to check lots of properties of the output.
     candidates = sorted(
         tfrecord.read_tfrecords(
-            child_candidates, proto=deepvariant_pb2.DeepVariantCall
+            child_candidates,
+            proto=deepvariant_pb2.DeepVariantCall,
+            compression_type='GZIP',
         ),
         key=lambda c: variant_utils.variant_range_tuple(c.variant),
     )
@@ -303,7 +305,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     else:
       golden_file = _sharded(testdata.GOLDEN_TRAINING_EXAMPLES, num_shards)
     self.assertDeepVariantExamplesEqual(
-        examples, list(tfrecord.read_tfrecords(golden_file))
+        examples,
+        list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
     )
 
     if mode == 'calling':
@@ -313,7 +316,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
       # Check the quality of our generated gvcf file.
       gvcfs = variant_utils.sorted_variants(
-          tfrecord.read_tfrecords(child_gvcf, proto=variants_pb2.Variant)
+          tfrecord.read_tfrecords(
+              child_gvcf, proto=variants_pb2.Variant, compression_type='GZIP'
+          )
       )
       self.verify_variants(gvcfs, region, options, is_gvcf=True)
       self.verify_contiguity(gvcfs, region)
@@ -321,7 +326,11 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           testdata.GOLDEN_POSTPROCESS_GVCF_INPUT, num_shards
       )
       expected_gvcfs = list(
-          tfrecord.read_tfrecords(gvcf_golden_file, proto=variants_pb2.Variant)
+          tfrecord.read_tfrecords(
+              gvcf_golden_file,
+              proto=variants_pb2.Variant,
+              compression_type='GZIP',
+          )
       )
       # Despite its name, assertCountEqual checks that all items are equal.
       self.assertCountEqual(gvcfs, expected_gvcfs)
@@ -422,7 +431,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       )
 
       self.assertDeepVariantExamplesEqual(
-          examples, list(tfrecord.read_tfrecords(golden_file))
+          examples,
+          list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
       )
       if denovo_test:
         # Check total number of denovo examples.
@@ -493,7 +503,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, region, options, verify_labels=True
     )
     self.assertDeepVariantExamplesEqual(
-        examples, list(tfrecord.read_tfrecords(golden_file))
+        examples,
+        list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
     )
 
   # Golden sets are created with learning/genomics/internal/create_golden.sh
@@ -532,7 +543,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, region, options, verify_labels=True
     )
     self.assertDeepVariantExamplesEqual(
-        examples, list(tfrecord.read_tfrecords(golden_file))
+        examples,
+        list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
     )
     # Pileup image should now have 8 channels.
     # Height should be 60 + 40 * 2 = 140.
@@ -634,7 +646,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     make_examples_core.make_examples_runner(options)
 
-    candidates = list(tfrecord.read_tfrecords(child_candidates))
+    candidates = list(
+        tfrecord.read_tfrecords(child_candidates, compression_type='GZIP')
+    )
     self.assertLen(candidates, expected_count)
 
   @parameterized.parameters(
@@ -752,7 +766,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         examples_filename=FLAGS.examples,
     )
     self.assertDeepVariantExamplesEqual(
-        output_examples_to_compare, list(tfrecord.read_tfrecords(golden_file))
+        output_examples_to_compare,
+        list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
     )
 
   @parameterized.parameters(
@@ -1023,7 +1038,11 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     if verify_labels:
       expected_features += ['label']
 
-    examples = list(tfrecord.read_tfrecords(path_to_output_examples))
+    examples = list(
+        tfrecord.read_tfrecords(
+            path_to_output_examples, compression_type='GZIP'
+        )
+    )
     for example in examples:
       for label_feature in expected_features:
         self.assertIn(label_feature, example.features.feature)

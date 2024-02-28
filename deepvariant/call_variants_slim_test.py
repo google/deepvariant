@@ -134,7 +134,9 @@ class CallVariantsEndToEndTests(
         max_batches=None,
     )
     call_variants_outputs = list(
-        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput)
+        tfrecord.read_tfrecords(
+            outfile, deepvariant_pb2.CallVariantsOutput, compression_type='GZIP'
+        )
     )
     # Check that we have the right number of output protos.
     self.assertEqual(len(call_variants_outputs), num_examples)
@@ -156,7 +158,9 @@ class CallVariantsEndToEndTests(
         use_tpu=FLAGS.use_tpu,
     )
     call_variants_outputs = list(
-        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput)
+        tfrecord.read_tfrecords(
+            outfile, deepvariant_pb2.CallVariantsOutput, compression_type='GZIP'
+        )
     )
     # Check that we have the right number of output protos.
     self.assertEqual(len(call_variants_outputs), num_examples)
@@ -165,12 +169,14 @@ class CallVariantsEndToEndTests(
     # Get only up to 10 examples.
     examples = list(
         tfrecord.read_tfrecords(
-            testdata.GOLDEN_CALLING_EXAMPLES, max_records=10
+            testdata.GOLDEN_CALLING_EXAMPLES,
+            max_records=10,
+            compression_type='GZIP',
         )
     )
     # Write to 15 shards, which means there will be multiple empty shards.
     source_path = test_utils.test_tmpfile('sharded@{}'.format(15))
-    tfrecord.write_tfrecords(examples, source_path)
+    tfrecord.write_tfrecords(examples, source_path, compression_type='GZIP')
     self.assertCallVariantsEmitsNRecordsForConstantModel(
         source_path, len(examples)
     )
@@ -179,31 +185,35 @@ class CallVariantsEndToEndTests(
     # Get only up to 10 examples.
     examples = list(
         tfrecord.read_tfrecords(
-            testdata.GOLDEN_CALLING_EXAMPLES, max_records=10
+            testdata.GOLDEN_CALLING_EXAMPLES,
+            max_records=10,
+            compression_type='GZIP',
         )
     )
     empty_first_file = test_utils.test_tmpfile('empty_1st_shard-00000-of-00002')
-    tfrecord.write_tfrecords([], empty_first_file)
+    tfrecord.write_tfrecords([], empty_first_file, compression_type='GZIP')
     second_file = test_utils.test_tmpfile('empty_1st_shard-00001-of-00002')
-    tfrecord.write_tfrecords(examples, second_file)
+    tfrecord.write_tfrecords(examples, second_file, compression_type='GZIP')
     self.assertCallVariantsEmitsNRecordsForConstantModel(
         test_utils.test_tmpfile('empty_1st_shard@2'), len(examples)
     )
 
   def test_call_end2end_zero_record_file_for_inception_v3(self):
     zero_record_file = test_utils.test_tmpfile('zero_record_file')
-    tfrecord.write_tfrecords([], zero_record_file)
+    tfrecord.write_tfrecords([], zero_record_file, compression_type='GZIP')
     self.assertCallVariantsEmitsNRecordsForInceptionV3(
         test_utils.test_tmpfile('zero_record_file'), 0
     )
 
   def _call_end2end_helper(self, examples_path, model, shard_inputs):
-    examples = list(tfrecord.read_tfrecords(examples_path))
+    examples = list(
+        tfrecord.read_tfrecords(examples_path, compression_type='GZIP')
+    )
 
     if shard_inputs:
       # Create a sharded version of our golden examples.
       source_path = test_utils.test_tmpfile('sharded@{}'.format(3))
-      tfrecord.write_tfrecords(examples, source_path)
+      tfrecord.write_tfrecords(examples, source_path, compression_type='GZIP')
     else:
       source_path = examples_path
 
@@ -234,7 +244,9 @@ class CallVariantsEndToEndTests(
     )
 
     call_variants_outputs = list(
-        tfrecord.read_tfrecords(outfile, deepvariant_pb2.CallVariantsOutput)
+        tfrecord.read_tfrecords(
+            outfile, deepvariant_pb2.CallVariantsOutput, compression_type='GZIP'
+        )
     )
 
     return call_variants_outputs, examples, batch_size, max_batches
@@ -356,11 +368,15 @@ class CallVariantsEndToEndTests(
   @parameterized.parameters(model for model in modeling.production_models())
   def test_call_variants_with_no_shape(self, model):
     # Read one good record from a valid file.
-    example = next(tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES))
+    example = next(
+        tfrecord.read_tfrecords(
+            testdata.GOLDEN_CALLING_EXAMPLES, compression_type='GZIP'
+        )
+    )
     # Remove image/shape.
     del example.features.feature['image/shape']
     source_path = test_utils.test_tmpfile('make_examples_out_noshape.tfrecord')
-    tfrecord.write_tfrecords([example], source_path)
+    tfrecord.write_tfrecords([example], source_path, compression_type='GZIP')
     with self.assertRaisesRegex(
         ValueError,
         (
@@ -373,7 +389,7 @@ class CallVariantsEndToEndTests(
 
   def test_call_variants_with_empty_input(self):
     source_path = test_utils.test_tmpfile('empty.tfrecord')
-    tfrecord.write_tfrecords([], source_path)
+    tfrecord.write_tfrecords([], source_path, compression_type='GZIP')
     # Make sure that prepare_inputs don't crash on empty input.
     ds = call_variants_slim.prepare_inputs(source_path)
     m = modeling.get_model('constant')
@@ -397,7 +413,9 @@ class CallVariantsUnitTests(
   def setUpClass(cls):
     super().setUpClass()
     cls.examples = list(
-        tfrecord.read_tfrecords(testdata.GOLDEN_CALLING_EXAMPLES)
+        tfrecord.read_tfrecords(
+            testdata.GOLDEN_CALLING_EXAMPLES, compression_type='GZIP'
+        )
     )
     cls.variants = [dv_utils.example_variant(ex) for ex in cls.examples]
     cls.model = modeling.get_model('constant')
@@ -410,7 +428,9 @@ class CallVariantsUnitTests(
   )
   def test_prepare_inputs(self, filename_to_write, file_string_input):
     source_path = test_utils.test_tmpfile(filename_to_write)
-    tfrecord.write_tfrecords(self.examples, source_path)
+    tfrecord.write_tfrecords(
+        self.examples, source_path, compression_type='GZIP'
+    )
     # file_string_input could be a comma-separated list. Add the prefix to all
     # of them, and join it back to a string.
     file_string_input = ','.join(

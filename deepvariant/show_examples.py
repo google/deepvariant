@@ -370,7 +370,7 @@ def run():
       ids_from_tsv = set(tsv_df[0])
 
     # Use nucleus.io.tfrecord to read all shards.
-    dataset = tfrecord.read_tfrecords(examples_path)
+    dataset = tfrecord.read_tfrecords(examples_path, compression_type='GZIP')
 
     make_rgb = _IMAGE_TYPE.value in ['both', 'RGB']
     make_channels = _IMAGE_TYPE.value in ['both', 'channels']

@@ -139,6 +139,7 @@ class CallVariantsTest(parameterized.TestCase):
         tfrecord.read_tfrecords(
             only_sharded_output_filepath,
             proto=deepvariant_pb2.CallVariantsOutput,
+            compression_type="GZIP",
         )
     )
 
@@ -160,7 +161,13 @@ class CallVariantsTest(parameterized.TestCase):
           )
       )
     else:
-      num_examples = len(list(tfrecord.read_tfrecords(calling_testdata_path)))
+      num_examples = len(
+          list(
+              tfrecord.read_tfrecords(
+                  calling_testdata_path, compression_type="GZIP"
+              )
+          )
+      )
     self.assertLen(call_variants_outputs, num_examples)
     if include_debug_info:
       # Let's just check the first record.

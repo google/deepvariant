@@ -3448,7 +3448,13 @@ options {
     other_allele_supporting_read_alpha: 0.6000000238418579
     min_non_zero_allele_frequency: 9.999999747378752e-06
     types_to_alt_align: "indels"
-    add_hp_channel: true
+    channels: "read_base"
+    channels: "base_quality"
+    channels: "mapping_quality"
+    channels: "strand"
+    channels: "read_supports_variant"
+    channels: "base_differs_from_ref"
+    channels: "haplotype"
   }
   read_requirements {
     min_mapping_quality: 1
@@ -3614,14 +3620,14 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 12
-  cpu_frequency_mhz: 2376.6170833333326
-  total_memory_mb: 128631
-  wall_time_seconds: 42.997251749038696
-  cpu_user_time_seconds: 47.352518
-  cpu_system_time_seconds: 0.6560619999999999
-  memory_peak_rss_mb: 1075
-  write_bytes: 16384
+  physical_core_count: 6
+  cpu_frequency_mhz: 3402.7421666666664
+  total_memory_mb: 63888
+  wall_time_seconds: 28.957508325576782
+  cpu_user_time_seconds: 33.860056
+  cpu_system_time_seconds: 0.476676
+  memory_peak_rss_mb: 1058
+  write_bytes: 12288
 }
 stats {
   num_examples: 167

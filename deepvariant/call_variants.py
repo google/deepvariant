@@ -445,7 +445,7 @@ def post_processing(
     include_debug_info: If true, include debug information.
     debugging_true_label_mode: If true, include true label from the example.
   """
-  writer = tfrecord.Writer(output_file)
+  writer = tfrecord.Writer(output_file, compression_type='GZIP')
   n_examples = 0
   n_batches = 0
   while True:
@@ -515,7 +515,7 @@ def call_variants(
     )
     paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
     for path in paths:
-      tfrecord.write_tfrecords([], path)
+      tfrecord.write_tfrecords([], path, compression_type='GZIP')
     return
 
   # See if GPU is available

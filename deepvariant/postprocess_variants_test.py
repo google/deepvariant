@@ -213,8 +213,10 @@ def make_golden_dataset(compressed_inputs=False):
         tfrecord.read_tfrecords(
             testdata.GOLDEN_POSTPROCESS_INPUT_SHARDED,
             proto=deepvariant_pb2.CallVariantsOutput,
+            compression_type='GZIP',
         ),
         source_path,
+        compression_type='GZIP',
     )
     # However, the input filename should still not be in sharded pattern.
     # So replacing the shard pattern to input pattern.
@@ -358,6 +360,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     valid_variants = tfrecord.read_tfrecords(
         testdata.GOLDEN_POSTPROCESS_INPUT_SHARDED,
         proto=deepvariant_pb2.CallVariantsOutput,
+        compression_type='GZIP',
     )
     empty_shard_one = test_utils.test_tmpfile(
         'reading_empty_shard-00000-of-00002.tfrecord.gz'
@@ -365,8 +368,10 @@ class PostprocessVariantsTest(parameterized.TestCase):
     none_empty_shard_two = test_utils.test_tmpfile(
         'reading_empty_shard-00001-of-00002.tfrecord.gz'
     )
-    tfrecord.write_tfrecords([], empty_shard_one)
-    tfrecord.write_tfrecords(valid_variants, none_empty_shard_two)
+    tfrecord.write_tfrecords([], empty_shard_one, compression_type='GZIP')
+    tfrecord.write_tfrecords(
+        valid_variants, none_empty_shard_two, compression_type='GZIP'
+    )
     FLAGS.infile = test_utils.test_tmpfile('reading_empty_shard.tfrecord.gz')
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('calls_reading_empty_shard.vcf')
@@ -425,7 +430,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
         for variant in variants
     ]
 
-    tfrecord.write_tfrecords(cvos, shard)
+    tfrecord.write_tfrecords(cvos, shard, compression_type='GZIP')
     FLAGS.infile = test_utils.test_tmpfile('records.cvo.tfrecord@1')
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = test_utils.test_tmpfile('records.vcf')
@@ -435,9 +440,12 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.nonvariant_site_tfrecord_path = test_utils.test_tmpfile(
         'records.postprocess_gvcf_input.tfrecord.gz'
     )
-    tfrecord.write_tfrecords(nonvariants, FLAGS.nonvariant_site_tfrecord_path)
+    tfrecord.write_tfrecords(
+        nonvariants,
+        FLAGS.nonvariant_site_tfrecord_path,
+        compression_type='GZIP',
+    )
     FLAGS.gvcf_outfile = test_utils.test_tmpfile('records.g.vcf')
-
     postprocess_variants.main(['postprocess_variants.py'])
 
     fasta_reader = fasta.IndexedFastaReader(FLAGS.ref)

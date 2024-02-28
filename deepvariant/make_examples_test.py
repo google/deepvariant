@@ -199,6 +199,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           tfrecord.read_tfrecords(
               FLAGS.candidates,
               proto=deepvariant_pb2.DeepVariantCall,
+              compression_type='GZIP',
           ),
           key=lambda c: variant_utils.variant_range_tuple(c.variant),
       )
@@ -449,7 +450,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # to check lots of properties of the output.
     candidates = sorted(
         tfrecord.read_tfrecords(
-            FLAGS.candidates, proto=deepvariant_pb2.DeepVariantCall
+            FLAGS.candidates,
+            proto=deepvariant_pb2.DeepVariantCall,
+            compression_type='GZIP',
         ),
         key=lambda c: variant_utils.variant_range_tuple(c.variant),
     )
@@ -474,14 +477,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     else:
       golden_file = _sharded(testdata.GOLDEN_TRAINING_EXAMPLES, num_shards)
 
-    compression_type = 'GZIP' if 'tfrecord.gz' in golden_file else None
     self.assertDeepVariantExamplesEqual(
         examples,
-        list(
-            tfrecord.read_tfrecords(
-                golden_file, compression_type=compression_type
-            )
-        ),
+        list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
     )
 
     if mode == 'calling':
@@ -491,19 +489,20 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
       # Check the quality of our generated gvcf file.
       gvcfs = variant_utils.sorted_variants(
-          tfrecord.read_tfrecords(FLAGS.gvcf, proto=variants_pb2.Variant)
+          tfrecord.read_tfrecords(
+              FLAGS.gvcf, proto=variants_pb2.Variant, compression_type='GZIP'
+          )
       )
       self.verify_variants(gvcfs, region, options, is_gvcf=True)
       self.verify_contiguity(gvcfs, region)
       gvcf_golden_file = _sharded(
           testdata.GOLDEN_POSTPROCESS_GVCF_INPUT, num_shards
       )
-      compression_type = 'GZIP' if 'tfrecord.gz' in gvcf_golden_file else None
       expected_gvcfs = list(
           tfrecord.read_tfrecords(
               gvcf_golden_file,
               proto=variants_pb2.Variant,
-              compression_type=compression_type,
+              compression_type='GZIP',
           )
       )
       # Despite the name, assertCountEqual checks that all elements match.
@@ -603,7 +602,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, region, options, verify_labels=True
     )
     self.assertDeepVariantExamplesEqual(
-        examples, list(tfrecord.read_tfrecords(golden_file))
+        examples,
+        list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
     )
 
   @flagsaver.flagsaver
@@ -693,7 +693,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, None, options, verify_labels=mode == 'training'
     )
     self.assertDeepVariantExamplesEqual(
-        examples, list(tfrecord.read_tfrecords(golden_file))
+        examples,
+        list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
     )
     self.assertEqual(
         decode_example(examples[0])['image/shape'],
@@ -792,7 +793,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         FLAGS.examples, region, options, verify_labels=True
     )
     self.assertDeepVariantExamplesEqual(
-        examples, list(tfrecord.read_tfrecords(golden_file))
+        examples,
+        list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
     )
     # Pileup image should have 3 rows of height 100, so resulting height is 300.
     self.assertEqual(decode_example(examples[0])['image/shape'], expected_shape)
@@ -882,7 +884,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     make_examples_core.make_examples_runner(options)
 
-    candidates = list(tfrecord.read_tfrecords(FLAGS.candidates))
+    candidates = list(
+        tfrecord.read_tfrecords(FLAGS.candidates, compression_type='GZIP')
+    )
     self.assertLen(candidates, expected_count)
 
   @flagsaver.flagsaver
@@ -980,7 +984,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     )
     # Check against the golden file (same for all modes).
     golden_file = _sharded(testdata.GOLDEN_ALLELE_FREQUENCY_EXAMPLES)
-    examples_from_golden = list(tfrecord.read_tfrecords(golden_file))
+    examples_from_golden = list(
+        tfrecord.read_tfrecords(golden_file, compression_type='GZIP')
+    )
     self.assertDeepVariantExamplesEqual(examples_from_golden, examples)
 
 
@@ -1151,12 +1157,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     if verify_labels:
       expected_features += ['label']
 
-    compression_type = 'GZIP' if 'tfrecord.gz' in examples_filename else None
-
     examples = list(
         tfrecord.read_tfrecords(
             examples_filename,
-            compression_type=compression_type,
+            compression_type='GZIP',
         )
     )
     for example in examples:

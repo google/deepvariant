@@ -68,7 +68,11 @@ def make_golden_dataset(
   if compressed_inputs:
     source_path = test_utils.test_tmpfile('make_golden_dataset.tfrecord.gz')
     tfrecord.write_tfrecords(
-        tfrecord.read_tfrecords(testdata.GOLDEN_TRAINING_EXAMPLES), source_path
+        tfrecord.read_tfrecords(
+            testdata.GOLDEN_TRAINING_EXAMPLES, compression_type='GZIP'
+        ),
+        source_path,
+        compression_type='GZIP',
     )
   else:
     source_path = testdata.GOLDEN_TRAINING_EXAMPLES
@@ -188,7 +192,9 @@ class DataProviderTest(parameterized.TestCase):
 
     expected_loci = [
         example.features.feature['locus'].bytes_list.value[0]
-        for example in tfrecord.read_tfrecords(expected_dataset.input_file_spec)
+        for example in tfrecord.read_tfrecords(
+            expected_dataset.input_file_spec, compression_type='GZIP'
+        )
     ]
     self.assertLen(expected_loci, expected_dataset.num_examples)
     if seen != expected_loci:
@@ -279,7 +285,7 @@ class DataProviderTest(parameterized.TestCase):
     valid_shape = [1, 2, 3]
     example.features.feature['image/shape'].int64_list.value.extend(valid_shape)
     output_file = test_utils.test_tmpfile(file_name_to_write)
-    tfrecord.write_tfrecords([example], output_file)
+    tfrecord.write_tfrecords([example], output_file, compression_type='GZIP')
     ds = data_providers.DeepVariantInput(
         mode=tf_estimator.ModeKeys.PREDICT,
         name='test_shape',
@@ -479,7 +485,9 @@ class InputTest(
     # Read and parse the canonical data.
     expected_decoded_records = list(
         tfrecord.read_tfrecords(
-            testdata.GOLDEN_CALLING_EXAMPLES, proto=example_pb2.Example
+            testdata.GOLDEN_CALLING_EXAMPLES,
+            proto=example_pb2.Example,
+            compression_type='GZIP',
         )
     )
 

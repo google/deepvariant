@@ -199,11 +199,8 @@ def get_one_example_from_examples_path(source, proto=None):
     )
   for f in files:
     try:
-      compression_type = 'GZIP' if 'tfrecord.gz' in f else None
       return next(
-          tfrecord.read_tfrecords(
-              f, proto=proto, compression_type=compression_type
-          )
+          tfrecord.read_tfrecords(f, proto=proto, compression_type='GZIP')
       )
     except StopIteration:
       # Getting a StopIteration from one next() means source_path is empty.
@@ -301,11 +298,6 @@ def int_tensor_to_string(x):
   return np.array(v, dtype=np.uint8).tostring()
 
 
-def compression_type_of_files(files):
-  """Return GZIP or None for the compression type of the files."""
-  return 'GZIP' if all(f.endswith('.gz') for f in files) else None
-
-
 def tpu_available(sess=None):
   """Return true if a TPU device is available to the default session."""
   if sess is None:
@@ -378,9 +370,7 @@ def get_shape_and_channels_from_json(example_info_json):
 
 
 def get_tf_record_writer(output_filename: str) -> tf.io.TFRecordWriter:
-  tf_options = None
-  if 'tfrecord.gz' in output_filename or output_filename.endswith('.gz'):
-    tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
+  tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
   return tf.io.TFRecordWriter(output_filename, options=tf_options)
 
 

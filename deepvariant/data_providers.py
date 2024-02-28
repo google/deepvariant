@@ -188,7 +188,7 @@ def input_fn(
   return ds
 
 
-class DeepVariantInput(object):
+class DeepVariantInput:
   """This class serves as an `input_fn` for the `tf.estimator` framework."""
 
   # Calling this object like a function returns a stream of variadic tuples.
@@ -413,12 +413,11 @@ class DeepVariantInput(object):
       dataset = tf.data.TFRecordDataset(
           filename,
           buffer_size=self.prefetch_dataset_buffer_size,
-          compression_type=compression_type,
+          compression_type='GZIP',
       )
       return dataset
 
     batch_size = params['batch_size']
-    compression_type = dv_utils.compression_type_of_files(self.input_files)
 
     # NOTE: The order of the file names returned can be non-deterministic,
     # even if shuffle is false.  See internal and the note in internal.
@@ -490,12 +489,11 @@ class DeepVariantInput(object):
       dataset = tf.data.TFRecordDataset(
           filename,
           buffer_size=self.prefetch_dataset_buffer_size,
-          compression_type=compression_type,
+          compression_type='GZIP',
       )
       return dataset
 
     batch_size = params['batch_size']
-    compression_type = dv_utils.compression_type_of_files(self.input_files)
     dataset = tf.data.Dataset.list_files(
         sharded_file_utils.normalize_to_sharded_file_pattern(
             self.input_file_spec

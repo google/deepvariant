@@ -88,16 +88,21 @@ std::vector<Proto> ReadProtosFromTFRecord(const string& path) {
   return results;
 }
 
-// Writes all `protos` to a TFRecord formatted file.
+// Writes all `protos` to a gzipped TFRecord formatted file.
 template <typename Proto>
 void WriteProtosToTFRecord(const std::vector<Proto>& protos,
                            const string& output_path) {
-  std::unique_ptr<tensorflow::WritableFile> file;
-  TF_CHECK_OK(tensorflow::Env::Default()->NewWritableFile(output_path, &file));
-  tensorflow::io::RecordWriter record_writer(file.get());
+  std::unique_ptr<tensorflow::WritableFile> out_f;
+  TF_CHECK_OK(tensorflow::Env::Default()->NewWritableFile(output_path, &out_f));
+  tensorflow::io::RecordWriterOptions options =
+      tensorflow::io::RecordWriterOptions::CreateRecordWriterOptions("GZIP");
+  tensorflow::io::RecordWriter* out =
+      new tensorflow::io::RecordWriter(out_f.get(), options);
   for (const Proto& proto : protos) {
-    TF_CHECK_OK(record_writer.WriteRecord(proto.SerializeAsString()));
+    TF_CHECK_OK(out->WriteRecord(proto.SerializeAsString()));
   }
+  delete out;
+  TF_CHECK_OK(out_f->Close());
 }
 
 // Creates a vector of ContigInfos with specified `names` and `positions`
