@@ -707,10 +707,10 @@ function setup_args() {
     if [[ -n "${PROPOSED_VARIANTS}" ]]; then
       MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},proposed_variants=/input/$(basename "$PROPOSED_VARIANTS")"
     fi
-    extra_args+=( --make_examples_extra_args "${MAKE_EXAMPLES_ARGS}")
+    extra_args+=( --make_examples_extra_args "\"${MAKE_EXAMPLES_ARGS}\"")
   fi
   if [[ -n "${CALL_VARIANTS_ARGS}" ]]; then
-    extra_args+=( --call_variants_extra_args "${CALL_VARIANTS_ARGS}")
+    extra_args+=( --call_variants_extra_args "\"${CALL_VARIANTS_ARGS}\"")
   fi
   # Note: par_regions_bed won't be added if the corresponding
   # POSTPROCESS_VARIANTS_*_ARGS is empty. That is the intended behavior
@@ -719,19 +719,19 @@ function setup_args() {
     if [[ -n "${PAR_REGIONS_BED}" ]]; then
       POSTPROCESS_VARIANTS_CHILD_ARGS="${POSTPROCESS_VARIANTS_CHILD_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
     fi
-    extra_args+=( --postprocess_variants_child_extra_args "${POSTPROCESS_VARIANTS_CHILD_ARGS}")
+    extra_args+=( --postprocess_variants_child_extra_args "\"${POSTPROCESS_VARIANTS_CHILD_ARGS}\"")
   fi
   if [[ -n "${POSTPROCESS_VARIANTS_PARENT1_ARGS}" ]]; then
     if [[ -n "${PAR_REGIONS_BED}" ]]; then
       POSTPROCESS_VARIANTS_PARENT1_ARGS="${POSTPROCESS_VARIANTS_PARENT1_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
     fi
-    extra_args+=( --postprocess_variants_parent1_extra_args "${POSTPROCESS_VARIANTS_PARENT1_ARGS}")
+    extra_args+=( --postprocess_variants_parent1_extra_args "\"${POSTPROCESS_VARIANTS_PARENT1_ARGS}\"")
   fi
   if [[ -n "${POSTPROCESS_VARIANTS_PARENT2_ARGS}" ]]; then
     if [[ -n "${PAR_REGIONS_BED}" ]]; then
       POSTPROCESS_VARIANTS_PARENT2_ARGS="${POSTPROCESS_VARIANTS_PARENT2_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
     fi
-    extra_args+=( --postprocess_variants_parent2_extra_args "${POSTPROCESS_VARIANTS_PARENT2_ARGS}")
+    extra_args+=( --postprocess_variants_parent2_extra_args "\"${POSTPROCESS_VARIANTS_PARENT2_ARGS}\"")
   fi
   if [[ -n "${REGIONS}" ]]; then
     extra_args+=( --regions "${REGIONS}")

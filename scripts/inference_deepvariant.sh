@@ -565,10 +565,10 @@ function setup_args() {
     if [[ -n "${POPULATION_VCFS}" ]]; then
       MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},population_vcfs=/input/$(basename "$POPULATION_VCFS")"
     fi
-    extra_args+=( --make_examples_extra_args "${MAKE_EXAMPLES_ARGS}")
+    extra_args+=( --make_examples_extra_args "\"${MAKE_EXAMPLES_ARGS}\"")
   fi
   if [[ -n "${CALL_VARIANTS_ARGS}" ]]; then
-    extra_args+=( --call_variants_extra_args "${CALL_VARIANTS_ARGS}")
+    extra_args+=( --call_variants_extra_args "\"${CALL_VARIANTS_ARGS}\"")
   fi
   if [[ -n "${POSTPROCESS_VARIANTS_ARGS}" ]]; then
     if [[ -n "${PAR_REGIONS_BED}" ]]; then
@@ -579,7 +579,7 @@ function setup_args() {
       # is set.
       POSTPROCESS_VARIANTS_ARGS="${POSTPROCESS_VARIANTS_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
     fi
-    extra_args+=( --postprocess_variants_extra_args "${POSTPROCESS_VARIANTS_ARGS}")
+    extra_args+=( --postprocess_variants_extra_args "\"${POSTPROCESS_VARIANTS_ARGS}"\")
   fi
   if [[ -n "${REPORT_TITLE}" ]]; then
     extra_args+=( --report_title "${REPORT_TITLE}")
