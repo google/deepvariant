@@ -609,6 +609,10 @@ message SampleOptions {
 
   // If true, skip any output generation for this sample.
   bool skip_output_generation = 10;
+
+  // If True, trim reads to fit in the example window
+  // This is experimental for pangenome integration
+  bool keep_only_window_spanning_reads = 12;
 }
 
 // High-level options that encapsulates all of the parameters needed to run

@@ -249,7 +249,7 @@ class PileupImageCreator(object):
     return self._channels_enum
 
   def get_reads(
-      self, variant: variants_pb2.Variant, sam_reader: sam.SamReader
+      self, variant: variants_pb2.Variant, sam_reader: sam.InMemorySamReader
   ) -> List[reads_pb2.Read]:
     """Gets the reads used to construct the pileup image around variant.
 

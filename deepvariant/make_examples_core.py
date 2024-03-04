@@ -73,6 +73,7 @@ from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import cigar
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import utils
@@ -791,7 +792,6 @@ def regions_to_process(
   if calling_regions:
     regions = regions.intersection(calling_regions)
 
-  partitioned = []
   # Depending on candidates parameter we choose the partitioning method.
   if candidates is not None:
     partitioned = partition_by_candidates(regions, candidates, 200)
@@ -1032,7 +1032,6 @@ def reservoir_sample_reads(
       total_bases += overlap_len
       if total_bases > max_bases_to_cover:
         sampled_reads = sampled_reads[: i + 1]
-        sampled_reads_overlap_len = sampled_reads_overlap_len[: i + 1]
         bases_covered = total_bases
         break
     logging.info(
@@ -1139,7 +1138,6 @@ class OutputsWriter:
     if options.output_sitelist:
       sitelist_fname = options.examples_filename + '.sitelist.tsv'
       self._add_writer('sitelist', epath.Path(sitelist_fname).open('w'))
-      writer = self._writers['sitelist']
 
     self._deterministic_serialization = options.deterministic_serialization
 
@@ -1285,6 +1283,9 @@ class RegionProcessor:
       # One instance of DirectPhasing per lifetime of make_examples.
       self.direct_phasing_cpp = self._make_direct_phasing_obj()
     self.writers_dict = {}
+    self.contig_dict = ranges.contigs_dict(
+        fasta.IndexedFastaReader(self.options.reference_filename).header.contigs
+    )
 
   def _make_direct_phasing_obj(self) -> direct_phasing.DirectPhasing:
     return direct_phasing.DirectPhasing()
@@ -1741,17 +1742,14 @@ class RegionProcessor:
     # is only needed when phase_reads flag is on.
     region_padding_percent = self.options.phase_reads_region_padding_pct
     if self.options.phase_reads and region_padding_percent > 0:
-      contig_dict = ranges.contigs_dict(
-          fasta.IndexedFastaReader(
-              self.options.reference_filename
-          ).header.contigs
-      )
       # When candidate partitioning is used region size is variable. Therefore
       # we need to calculate the padding for each region.
       padding_fraction = int(
           (region.end - region.start) * region_padding_percent / 100
       )
-      region_expanded = ranges.expand(region, padding_fraction, contig_dict)
+      region_expanded = ranges.expand(
+          region, padding_fraction, self.contig_dict
+      )
 
       candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(
           region=region, region_n=region_n, padded_region=region_expanded
@@ -2106,14 +2104,14 @@ class RegionProcessor:
 
         for read in sample.reads:
           if self.options.allele_counter_options.normalize_reads:
-            cigar, read_shift = sample.allele_counter.normalize_and_add(
+            cigar_list, read_shift = sample.allele_counter.normalize_and_add(
                 read, sample.options.name
             )
-            if cigar:
+            if cigar_list:
               if read_shift != 0:
                 read.alignment.position.position += read_shift
               del read.alignment.cigar[:]
-              for el in cigar:
+              for el in cigar_list:
                 read.alignment.cigar.add(
                     operation=el.operation, operation_length=el.operation_length
                 )
@@ -2189,7 +2187,6 @@ class RegionProcessor:
               and len(self.samples) == 1
           ):
             self.log_graph_metrics(region, self.direct_phasing_cpp)
-        reads_to_phase = None
 
       if padded_region is not None:
         candidates[role] = self.filter_candidates_by_region(
@@ -2311,12 +2308,59 @@ class RegionProcessor:
     Returns:
       A list of tf.Example protos.
     """
-    reads_for_samples = [
-        self.pic.get_reads(
-            dv_call.variant, sam_reader=sample.in_memory_sam_reader
-        )
-        for sample in self.samples
-    ]
+    # Create a range spanning the whole example window
+    # This range will be used for trimming haplotypes
+    # and keeping only the haplotypes spanning the window
+    # completely
+    if (
+        isinstance(dv_call.variant.start, int)
+        and isinstance(dv_call.variant.reference_name, str)
+        and dv_call.variant.reference_name in self.contig_dict
+    ):
+      padding_fraction = int((self.options.pic_options.width - 1) / 2)
+      dv_region_literal = (
+          f'{dv_call.variant.reference_name}:{dv_call.variant.start}'
+      )
+      dv_region = ranges.parse_literal(
+          dv_region_literal, contig_map=self.contig_dict
+      )
+      example_window = ranges.expand(
+          dv_region, padding_fraction, self.contig_dict
+      )
+    else:
+      example_window = None
+    # The main motivation to add the following code block for trimming
+    # reads (or haplotypes) is because of the preprocessing that was done on the
+    # input pangenome bam file. The preprocessing made fragmented alignments for
+    # speeding up the image generation process but the fragmented
+    # alignments of the same original alignment might have overlaps
+    # so in order to keep only one instance of each haplotype in each image
+    # and remove redundancy the following trimming is necessary.
+    # With GBZ integration we might remove the following code block in
+    # the future.
+    # This trimming is disabled by default and it's only enabled
+    # with --keep_only_window_spanning_reads so it shouldn't interfere
+    # with the current test modules.
+    reads_for_samples = []
+    # More information here internal#comment5
+    for sample in self.samples:
+      reads = self.pic.get_reads(
+          dv_call.variant, sam_reader=sample.in_memory_sam_reader
+      )
+      if (
+          sample.options.keep_only_window_spanning_reads
+          and example_window is not None
+      ):
+        trimmed_reads = [
+            realigner.trim_read(read, example_window) for read in reads
+        ]
+        reads = [
+            read
+            for read in trimmed_reads
+            if cigar.alignment_length(read.alignment.cigar)
+            >= self.options.pic_options.width
+        ]
+      reads_for_samples.append(reads)
 
     logging.vlog(
         3,
