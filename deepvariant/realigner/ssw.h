@@ -65,7 +65,7 @@ class Aligner : public StripedSmithWaterman::Aligner {
 
   int SetReferenceSequence(const string& reference);
 
-  bool Align(const string& query, const Filter& filter, Alignment* alignment)
+  int Align(const string& query, const Filter& filter, Alignment* alignment)
       const;
 };
 
