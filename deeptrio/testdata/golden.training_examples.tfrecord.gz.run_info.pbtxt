@@ -3440,7 +3440,7 @@ options {
     multi_allelic_mode: ADD_HET_ALT_IMAGES
     mapping_quality_cap: 60
     random_seed: 2101079370
-    num_channels: 6
+    num_channels: 7
     sequencing_type: TRIO
     alt_aligned_pileup: "none"
     other_allele_supporting_read_alpha: 0.6000000238418579
@@ -3452,6 +3452,7 @@ options {
     channels: "strand"
     channels: "read_supports_variant"
     channels: "base_differs_from_ref"
+    channels: "insert_size"
   }
   read_requirements {
     min_mapping_quality: 5
@@ -3611,13 +3612,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 4327.689333333333
+  cpu_frequency_mhz: 3541.5772500000003
   total_memory_mb: 63888
-  wall_time_seconds: 1.80312180519104
-  cpu_user_time_seconds: 7.062482
-  cpu_system_time_seconds: 3.531241
-  memory_peak_rss_mb: 449
-  read_bytes: 4096
+  wall_time_seconds: 1.95137357711792
+  cpu_user_time_seconds: 6.647615
+  cpu_system_time_seconds: 0.427058
+  memory_peak_rss_mb: 450
   write_bytes: 20480
 }
 stats {
