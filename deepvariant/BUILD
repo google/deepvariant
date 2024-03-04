@@ -12,7 +12,6 @@ filegroup(
     name = "binaries",
     srcs = [
         "call_variants",
-        "call_variants_slim",
         "make_examples",
         "make_examples_somatic",
         "multisample_make_examples",
@@ -52,7 +51,6 @@ py_library(
     deps = [
         ":allele_frequency",
         ":call_variants_lib",
-        ":call_variants_slim_lib",
         ":data_providers",
         ":dv_utils",
         ":dv_vcf_constants",
@@ -755,37 +753,6 @@ py_test(
 )
 
 py_library(
-    name = "call_variants_slim_lib",
-    srcs = ["call_variants_slim.py"],
-    srcs_version = "PY3",
-    deps = [
-        ":data_providers",
-        ":dv_utils",
-        ":logging_level",
-        ":modeling",
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "//third_party/nucleus/io:tfrecord",
-        "//third_party/nucleus/protos:variants_py_pb2",
-        "//third_party/nucleus/util:errors",
-        "//third_party/nucleus/util:proto_utils",
-        "//third_party/nucleus/util:variant_utils",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-    ],
-)
-
-py_binary(
-    name = "call_variants_slim",
-    srcs = ["call_variants_slim.py"],
-    python_version = "PY3",
-    deps = [
-        ":call_variants_slim_main_lib",
-        # TODO: Figure out why we need this dep.
-        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
-    ],
-)
-
-py_library(
     name = "keras_modeling",
     srcs = ["keras_modeling.py"],
     srcs_version = "PY3",
@@ -917,63 +884,6 @@ py_test(
         "@absl_py//absl/flags",
         "@absl_py//absl/testing:absltest",  # buildcleaner: keep
         "@absl_py//absl/testing:flagsaver",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_library(
-    name = "call_variants_slim_main_lib",
-    srcs = [
-        "call_variants_slim.py",
-    ],
-    deps = [
-        ":call_variants_slim_lib",
-        "@absl_py//absl/flags",
-    ],
-)
-
-py_test(
-    name = "call_variants_slim_test",
-    size = "large",
-    srcs = ["call_variants_slim_test.py"],
-    args = ["--use_tpu=false"],
-    data = [":testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        ":call_variants_slim_main_lib",
-        ":dv_utils",
-        ":modeling",
-        ":py_testdata",
-        "//deepvariant/protos:deepvariant_py_pb2",
-        "//third_party/nucleus/io:tfrecord",
-        "//third_party/nucleus/testing:py_test_utils",
-        "//third_party/nucleus/util:variant_utils",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:flagsaver",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_test(
-    name = "call_variants_accelerator_test",
-    size = "large",
-    srcs = ["call_variants_accelerator_test.py"],
-    data = [":testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    tags = [
-        "gpu_test",
-        "manual",
-        "notap",
-    ],
-    deps = [
-        ":call_variants_slim_main_lib",
-        ":modeling",
-        ":py_testdata",
-        "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
 )

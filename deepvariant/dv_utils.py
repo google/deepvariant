@@ -240,42 +240,6 @@ def _simplify_variant(variant):
   )
 
 
-def model_shapes(checkpoint_path, variables_to_get=None):
-  """Returns the shape of each tensor in the model at checkpoint_path.
-
-  Args:
-    checkpoint_path: string. The path to a tensorflow checkpoint containing a
-      model whose tensor shapes we want to get.
-    variables_to_get: options, list of strings. If provided, only returns the
-      shapes of tensors in variables whose name is present in this list. If
-      None, the default, gets all of the tensors. A KeyError will be raised if
-      any variable name in variables_to_get isn't present in the checkpointed
-      model.
-
-  Returns:
-    A dictionary mapping variable names [string] to tensor shapes [tuple].
-  """
-  reader = tf.compat.v1.train.NewCheckpointReader(checkpoint_path)
-  var_to_shape_map = reader.get_variable_to_shape_map()
-  keys = variables_to_get if variables_to_get else var_to_shape_map.keys()
-  return {key: tuple(var_to_shape_map[key]) for key in keys}
-
-
-def model_num_classes(checkpoint_path, n_classes_model_variable):
-  """Returns the number of classes in the checkpoint."""
-  if not checkpoint_path:
-    return None
-
-  # Figure out how many classes this inception model was trained to predict.
-  try:
-    shapes = model_shapes(checkpoint_path, [n_classes_model_variable])
-  except KeyError:
-    return None
-  if n_classes_model_variable not in shapes:
-    return None
-  return shapes[n_classes_model_variable][-1]
-
-
 def string_to_int_tensor(x):
   """Graph operations decode a string into a fixed-size tensor of ints."""
   decoded = tf.compat.v1.decode_raw(x, tf.uint8)
