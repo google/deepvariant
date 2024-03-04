@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from third_party.nucleus.io.clif_postproc import ValueErrorOnFalse
+from third_party.nucleus.io.clif_postproc import ValueErrorOnInaccurate
 
 from "deepvariant/realigner/ssw.h":
 
@@ -86,5 +86,5 @@ from "deepvariant/realigner/ssw.h":
       # Align query against previously set reference sequence.
       # Prefer this method if aligning many queries to a single reference.
       def `Align` as align(self, query: bytes, filter: Filter)
-          -> (ok: bool, alignment: Alignment):
-        return ValueErrorOnFalse(...)
+          -> (accuracy: int, alignment: Alignment):
+          return ValueErrorOnInaccurate(...)
