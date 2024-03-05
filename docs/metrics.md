@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | ~100m
-call_variants                    | ~206m
-postprocess_variants (with gVCF) | ~28m
-total                            | ~334m = ~5.57 hours
+make_examples                    | ~98m
+call_variants                    | ~207m
+postprocess_variants (with gVCF) | ~27m
+total                            | ~332m = ~5.53 hours
 
 ### Accuracy
 
@@ -58,10 +58,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~127m
-call_variants                    | ~238m
-postprocess_variants (with gVCF) | ~36m
-total                            | ~401m = ~6.67 hours
+make_examples                    | ~132m
+call_variants                    | ~242m
+postprocess_variants (with gVCF) | ~34m
+total                            | ~408m = ~6.8 hours
 
 ### Accuracy
 
@@ -86,10 +86,10 @@ Runtime is on HG003 reads (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | ~242m
-call_variants                    | ~289m
+make_examples                    | ~251m
+call_variants                    | ~295m
 postprocess_variants (with gVCF) | ~35m
-total                            | ~566m = ~9.43 hours
+total                            | ~581m = ~9.68 hours
 
 ### Accuracy
 
@@ -111,10 +111,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~148m
-call_variants                    | ~213m
-postprocess_variants (with gVCF) | ~25m
-total                            | ~386m = ~6.43 hours
+make_examples                    | ~147m
+call_variants                    | ~209m
+postprocess_variants (with gVCF) | ~22m
+total                            | ~378m = ~6.3 hours
 
 ### Accuracy
 
