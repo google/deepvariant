@@ -173,9 +173,8 @@ std::vector<std::vector<std::string>> ExamplesGenerator::AltAlleleCombinations(
   return alt_combinations;
 }
 
-
 std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
-                                               const std::string& alt,
+                                               absl::string_view alt,
                                                int64_t* ref_start_out,
                                                int64_t* ref_end_out) const {
   int64_t var_start = variant.start();

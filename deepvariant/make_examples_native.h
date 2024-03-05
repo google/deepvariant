@@ -40,6 +40,7 @@
 #include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/tfrecord_writer.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -124,7 +125,7 @@ class ExamplesGenerator {
   // ref_start_out and ref_end_out are haplotype's start and end in reference
   // coordinates.
   std::string CreateHaplotype(const nucleus::genomics::v1::Variant& variant,
-                              const std::string& alt, int64_t* ref_start_out,
+                              absl::string_view alt, int64_t* ref_start_out,
                               int64_t* ref_end_out) const;
 
   // Encodes a variant into a pileup example.
