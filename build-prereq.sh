@@ -138,8 +138,4 @@ note_build_stage "Set pyparsing to 2.2.0 for CLIF."
 export PATH="$HOME/.local/bin":$PATH
 pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.0'
 
-note_build_stage "Set pyparsing to 2.2.0 for CLIF."
-export PATH="$HOME/.local/bin":$PATH
-pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.0'
-
 note_build_stage "build-prereq.sh complete"

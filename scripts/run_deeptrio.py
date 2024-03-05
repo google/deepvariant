@@ -1013,12 +1013,19 @@ def run_commands(
     Exception: When one or more of the given commands have failed.
   """
 
+  env = os.environ.copy()
+  included_env = None
+  if 'TF_ENABLE_ONEDNN_OPTS' in env:
+    included_env = {}
+    included_env['TF_ENABLE_ONEDNN_OPTS'] = env['TF_ENABLE_ONEDNN_OPTS']
   if sequential:
     for command in commands:
       print('\n***** Running the command:*****\n{}\n'.format(command))
       if not dry_run:
         try:
-          subprocess.check_call(command, shell=True, executable='/bin/bash')
+          subprocess.check_call(
+              command, shell=True, executable='/bin/bash', env=included_env
+          )
         except subprocess.CalledProcessError as e:
           logging.info(e.output)
           raise ValueError('Command(s) failed. See details above.') from e
@@ -1027,7 +1034,9 @@ def run_commands(
       print('\n***** Running the command:*****\n{}\n'.format(command))
     if not _DRY_RUN.value:
       tasks = [
-          subprocess.Popen(command, shell=True, executable='/bin/bash')
+          subprocess.Popen(
+              command, shell=True, executable='/bin/bash', env=included_env
+          )
           for command in commands
       ]
       failed_task_indices = [

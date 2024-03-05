@@ -81,15 +81,8 @@ export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="2.11.0"
 # defaulting to 0 (CPU only build).
 export DV_GPU_BUILD="${DV_GPU_BUILD:-0}"
 
-# If this variable is set to 1, DeepVariant will use a TensorFlow wheel file
-# compiled with MKL support for corei7 or better chipsets, which
-# significantly speeds up execution when running on modern CPUs. The default
-# TensorFlow wheel files don't contain these instructions (and thereby run on a
-# broader set of CPUs). Using this optimized wheel reduces the runtime of
-# DeepVariant's call_variants step by >3x. This is called the GCP (Google Cloud
-# Platform) optimized wheel because all GCP instances have at least Sandy Bridge
-# or better chipsets, so this wheel should run anywhere on GCP.
-export DV_USE_GCP_OPTIMIZED_TF_WHL="${DV_USE_GCP_OPTIMIZED_TF_WHL:-1}"
+# NOTE: CPU TensorFlow has a TF_ENABLE_ONEDNN_OPTS option that can be used to
+# enable Intel-specific optimization.
 export GCP_OPTIMIZED_TF_WHL_FILENAME="tensorflow-${DV_GCP_OPTIMIZED_TF_WHL_VERSION}.deepvariant_gcp-cp27-none-linux_x86_64.whl"
 export GCP_OPTIMIZED_TF_WHL_PATH="${DV_PACKAGE_BUCKET_PATH}/tensorflow"
 export GCP_OPTIMIZED_TF_WHL_CURL_PATH="${DV_PACKAGE_CURL_PATH}/tensorflow"

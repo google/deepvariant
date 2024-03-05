@@ -16,6 +16,7 @@ ARG FROM_IMAGE=ubuntu:20.04
 ARG PYTHON_VERSION=3.8
 ARG DV_GPU_BUILD=0
 ARG VERSION=1.6.0
+ARG TF_ENABLE_ONEDNN_OPTS=1
 
 FROM continuumio/miniconda3 as conda_setup
 RUN conda config --add channels defaults && \
@@ -51,9 +52,11 @@ FROM ${FROM_IMAGE}
 ARG DV_GPU_BUILD
 ARG VERSION
 ARG PYTHON_VERSION
+ARG TF_ENABLE_ONEDNN_OPTS
 ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 ENV VERSION ${VERSION}
 ENV PYTHON_VERSION ${PYTHON_VERSION}
+ENV TF_ENABLE_ONEDNN_OPTS ${TF_ENABLE_ONEDNN_OPTS}
 
 RUN echo "Acquire::http::proxy \"$http_proxy\";\n" \
          "Acquire::https::proxy \"$https_proxy\";" > "/etc/apt/apt.conf"
