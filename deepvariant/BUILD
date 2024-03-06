@@ -58,7 +58,6 @@ py_library(
         ":keras_modeling",
         ":make_examples_core",
         ":make_examples_lib",
-        ":modeling",
         ":pileup_image",
         "//deepvariant/python:allelecounter",
         "//deepvariant/python:direct_phasing",
@@ -1169,35 +1168,6 @@ py_test(
         "@absl_py//absl/flags",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:flagsaver",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
-py_library(
-    name = "modeling",
-    srcs = ["modeling.py"],
-    srcs_version = "PY3",
-    deps = [
-        ":data_providers",
-        ":dv_utils",
-        "//third_party/nucleus/util:variant_utils",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-    ],
-)
-
-py_test(
-    name = "modeling_test",
-    size = "large",
-    srcs = ["modeling_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        ":dv_constants",
-        ":dv_utils",
-        ":dv_utils_using_clif",
-        ":modeling",
-        "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
 )
