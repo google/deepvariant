@@ -129,7 +129,6 @@ pip3 install "${PIP_ARGS[@]}" 'clu==0.0.9'
 # Ideally we want to make these protobuf versions all match, eventually.
 pip3 install "${PIP_ARGS[@]}" 'protobuf==3.13.0'
 pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
-pip3 install "${PIP_ARGS[@]}" git+https://github.com/google-research/tf-slim.git@v1.1.0
 
 pip3 install "${PIP_ARGS[@]}" "numpy==${DV_TF_NUMPY_VERSION}"
 

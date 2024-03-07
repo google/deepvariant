@@ -1075,5 +1075,9 @@ def check_options_are_valid(
       [sample.pileup_height for sample in options.sample_options]
   )
   # Height constraint for Slim InceptionV3 implementation.
+  # For Keras,
+  # https://www.tensorflow.org/api_docs/python/tf/keras/applications/inception_v3/InceptionV3
+  # mentioned only "width and height should be no smaller than 75", so we might
+  # want to update this later.
   if total_pileup_height < 75 or total_pileup_height > 362:
     errors.log_and_raise('Total pileup image heights must be between 75-362.')

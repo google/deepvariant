@@ -232,7 +232,7 @@ specifically call out a few key ones:
 *   [Nucleus](https://github.com/google/nucleus)
 *   [numpy](http://www.numpy.org/)
 *   [SSW Library](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library)
-*   [TensorFlow and Slim](https://www.tensorflow.org/)
+*   [TensorFlow](https://www.tensorflow.org/)
 
 We thank all of the developers and contributors to these packages for their
 work.
