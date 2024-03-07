@@ -551,7 +551,7 @@ message PileupImageOptions {
 
   // If true, add an additional channel where the color information per-read
   // indicates the HP value.
-  bool add_hp_channel = 37;
+  bool add_hp_channel = 37 [deprecated = true];
 
   // For assembly polishing, specifies the HP tag we're calling for.
   int32 hp_tag_for_assembly_polishing = 38;
