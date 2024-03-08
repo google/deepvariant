@@ -31,9 +31,17 @@ from "third_party/nucleus/util/proto_clif_converter.h" import *
 from "third_party/nucleus/protos/reads_pyclif.h" import *
 from "deepvariant/protos/deepvariant_pyclif.h" import *
 from "third_party/nucleus/protos/range_pyclif.h" import *
+from "third_party/nucleus/protos/variants_pyclif.h" import *
 
 from "deepvariant/make_examples_native.h":
   namespace `learning::genomics::deepvariant`:
+    class VariantLabel:
+      def __init__(self, is_confident: bool, variant: Variant, genotype: list<int>, is_denovo: bool)
+      is_confident: bool
+      variant: Variant
+      genotype: list<int>
+      is_denovo : bool
+
     class ExamplesGenerator:
       def __init__(self,
                    options: MakeExamplesOptions, test_mode: bool = default)
@@ -42,4 +50,5 @@ from "deepvariant/make_examples_native.h":
         candidates: list<ConstProtoPtr<DeepVariantCall>>,
         reads: list<list<ConstProtoPtr<Read>>>,
         sample_order: list<int>,
-        role: str)
+        role: str,
+        labels: list<VariantLabel>)

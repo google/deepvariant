@@ -35,6 +35,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -42,6 +43,7 @@
 #include "deepvariant/alt_aligned_pileup_lib.h"
 #include "deepvariant/pileup_image_native.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
@@ -293,8 +295,8 @@ EncodedVariantType EncodedVariantType(const Variant& variant) {
 std::string ExamplesGenerator::EncodeExample(
     const std::vector<std::unique_ptr<ImageRow>>& image,
     const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
-    const Variant& variant,
-    const std::vector<std::string>& alt_combination) const {
+    const Variant& variant, const std::vector<std::string>& alt_combination,
+    const VariantLabel* label) const {
   // TODO Once we know the number of channels in advance we should
   // allocate data with the correct size to avoid vector resizing when data is
   // filled.
@@ -307,9 +309,11 @@ std::string ExamplesGenerator::EncodeExample(
 
   // Encode alt allele indices.
   absl::flat_hash_map<std::string, int> alt_indices;
+  absl::flat_hash_set<int> alt_indices_set;
   int i = 0;
   for (const std::string& alt : variant.alternate_bases()) {
     alt_indices[alt] = i;
+    alt_indices_set.insert(i);
     i++;
   }
   std::vector<int> indices;
@@ -327,15 +331,19 @@ std::string ExamplesGenerator::EncodeExample(
   // Encode variant range.
   Range variant_range;
   std::string variant_range_encoded;
-  variant_range.set_reference_name(variant.reference_name());
-  variant_range.set_start(variant.start());
-  variant_range.set_end(variant.end());
-  variant_range.SerializeToString(&variant_range_encoded);
+  std::ostringstream s;
+  s << variant.reference_name() << ":" << variant.start() << "-"
+    << variant.end();
+  variant_range_encoded.assign(s.str());
 
   // Ecode features of the example.
   tensorflow::Example example;
   std::string ecoded_variant;
-  variant.SerializeToString(&ecoded_variant);
+  if (label == nullptr) {
+    variant.SerializeToString(&ecoded_variant);
+  } else {  // For train examples the variant from label is used.
+    label->variant.SerializeToString(&ecoded_variant);
+  }
   (*example.mutable_features()->mutable_feature())["locus"]
       .mutable_bytes_list()
       ->add_value(variant_range_encoded);
@@ -360,6 +368,29 @@ std::string ExamplesGenerator::EncodeExample(
       .mutable_int64_list()
       ->add_value(options_.pic_options().sequencing_type());
   std::string encoded_example;
+
+  // Set the label if it is provided.
+  if (label != nullptr) {
+    int label_value = 0;
+    for (int i = 0; i < label->genotype.size(); i++) {
+      if (label->genotype[i] == 0) {
+        continue;
+      }
+      if (alt_indices_set.contains(label->genotype[i] - 1)) {
+        label_value++;
+      }
+    }
+    (*example.mutable_features()->mutable_feature())["label"]
+        .mutable_int64_list()
+        ->add_value(label_value);
+  }
+
+  // Set de novo feature if de novo regions are provided.
+  if (!options_.denovo_regions_filename().empty() && label != nullptr) {
+    (*example.mutable_features()->mutable_feature())["denovo_label"]
+        .mutable_int64_list()
+        ->add_value(label->is_denovo);
+  }
 
   // Example is serialized to a string before it is written to a TFRecord.
   example.SerializeToString(&encoded_example);
@@ -468,7 +499,7 @@ void ExamplesGenerator::CreateAltAlignedImages(
 void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     const DeepVariantCall& candidate, const Sample& sample,
     const std::vector<int>& sample_order,
-    const std::vector<InMemoryReader>& readers) {
+    const std::vector<InMemoryReader>& readers, const VariantLabel* label) {
   const auto& variant = candidate.variant();
   int image_start_pos = variant.start() - half_width_;
   // Pileup range.
@@ -520,7 +551,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       }
     }
     sample.writer->WriteRecord(
-        EncodeExample(ref_images, alt_images, variant, alt_combination));
+        EncodeExample(ref_images, alt_images, variant, alt_combination, label));
   }
 }
 
@@ -532,7 +563,9 @@ void ExamplesGenerator::WriteExamplesInRegion(
     const std::vector<nucleus::ConstProtoPtr<DeepVariantCall>>& candidates,
     const std::vector<std::vector<nucleus::ConstProtoPtr<Read>>>&
         reads_per_sample,
-    const std::vector<int>& sample_order, const std::string& role) {
+    const std::vector<int>& sample_order, const std::string& role,
+    const std::vector<VariantLabel>& labels) {
+  CHECK(labels.empty() || candidates.size() == labels.size());
   // Load reads.
   std::vector<InMemoryReader> readers;
   // Cache reads passed from Python. The order of samples is preserved as
@@ -541,9 +574,10 @@ void ExamplesGenerator::WriteExamplesInRegion(
   for (const auto& reads : reads_per_sample) {
     readers.push_back(InMemoryReader(InMemoryReader(reads)));
   }
-  for (const auto& candidate : candidates) {
-    CreateAndWriteExamplesForCandidate(*candidate.p_, samples_[role],
-                                        sample_order, readers);
+  for (int i = 0; i < candidates.size(); i++) {
+    CreateAndWriteExamplesForCandidate(*(candidates[i].p_), samples_[role],
+                                       sample_order, readers,
+                                       labels.empty() ? nullptr : &labels[i]);
   }
 }
 

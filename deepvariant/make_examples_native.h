@@ -93,6 +93,21 @@ class InMemoryReader {
       reads_cache_;
 };
 
+struct VariantLabel {
+  VariantLabel() = default;
+  explicit VariantLabel(bool is_confident,
+                        const nucleus::genomics::v1::Variant& variant,
+                        const std::vector<int>& genotype, bool is_denovo)
+      : is_confident(is_confident),
+        variant(variant),
+        genotype(genotype),
+        is_denovo(is_denovo) {}
+  bool is_confident;
+  nucleus::genomics::v1::Variant variant;
+  std::vector<int> genotype;
+  bool is_denovo;
+};
+
 // Generates TensorFlow examples from candidates and reads.
 class ExamplesGenerator {
  public:
@@ -111,7 +126,7 @@ class ExamplesGenerator {
       const std::vector<int>& sample_order,
       // std::string has to be used here instead of absl::string view due to the
       // PyClif restrictions.
-      const std::string& role);
+      const std::string& role, const std::vector<VariantLabel>& labels);
 
  private:
   friend class ExamplesGeneratorPeer;
@@ -133,14 +148,16 @@ class ExamplesGenerator {
       const std::vector<std::unique_ptr<ImageRow>>& image,
       const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
       const nucleus::genomics::v1::Variant& variant,
-      const std::vector<std::string>& alt_combination) const;
+      const std::vector<std::string>& alt_combination,
+      const VariantLabel* label = nullptr) const;
 
   // Generates one or more examples from a given candidate. Example(s) are
   // written to TFRecord.
   void CreateAndWriteExamplesForCandidate(
       const DeepVariantCall& candidate, const Sample& sample,
       const std::vector<int>& sample_order,
-      const std::vector<InMemoryReader>& readers);
+      const std::vector<InMemoryReader>& readers,
+      const VariantLabel* label = nullptr);
 
   void CreateAltAlignedImages(
       const DeepVariantCall& candidate,
