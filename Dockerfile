@@ -11,9 +11,9 @@
 # $ sudo docker build --build-arg=FROM_IMAGE=nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04 --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
 
 
-ARG FROM_IMAGE=ubuntu:20.04
+ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
-ARG PYTHON_VERSION=3.8
+ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
 ARG VERSION=1.6.0
 ARG TF_ENABLE_ONEDNN_OPTS=1

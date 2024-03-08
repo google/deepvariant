@@ -65,6 +65,8 @@ http_archive(
 # That BUILD file must be kept in sync with the version of protobuf used.
 http_archive(
     name = "com_google_protobuf",
+    patch_args = ["-p1"],
+    patches = ["//:third_party/protobuf.patch"],
     build_file = "//:third_party/protobuf.BUILD",
     sha256 = "cfcba2df10feec52a84208693937c17a4b5df7775e1635c1e3baffc487b24c9b",
     # This protobuf release is based on protobuf 3.9.2.

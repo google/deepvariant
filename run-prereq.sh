@@ -82,10 +82,6 @@ sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null
 
 note_build_stage "Install python3 packaging infrastructure"
 
-sudo -H apt-get install "${APT_ARGS[@]}" "python${PYTHON_VERSION}-dev"
-sudo update-alternatives --install /usr/bin/python3 python3 "/usr/bin/python${PYTHON_VERSION}" 0
-sudo update-alternatives --install /usr/bin/python python "/usr/bin/python${PYTHON_VERSION}" 0
-
 # Avoid issue with pip's dependency resolver not accounting for all installed
 # packages.
 sudo -H apt-get install "${APT_ARGS[@]}" "python3-testresources"
@@ -143,7 +139,7 @@ pip3 install "${PIP_ARGS[@]}" 'six>=1.11.0'
 pip3 install "${PIP_ARGS[@]}" joblib
 pip3 install "${PIP_ARGS[@]}" psutil
 pip3 install "${PIP_ARGS[@]}" --upgrade google-api-python-client
-pip3 install "${PIP_ARGS[@]}" 'pandas==1.2.4'
+pip3 install "${PIP_ARGS[@]}" 'pandas==1.3.4'
 # We manually install jsonschema here to pin it to v3.2.0, since
 # the latest v4.0.1 has issues with Altair v4.1.0.
 # See https://github.com/altair-viz/altair/issues/2496
@@ -155,7 +151,9 @@ pip3 install "${PIP_ARGS[@]}" 'Pillow==9.5.0'
 pip3 install "${PIP_ARGS[@]}" 'ipython>=7.9.0'
 pip3 install "${PIP_ARGS[@]}" 'pysam==0.20.0'
 pip3 install "${PIP_ARGS[@]}" 'tensorflow-addons==0.21.0'
-pip3 install "${PIP_ARGS[@]}"  "tf-models-official==${DV_GCP_OPTIMIZED_TF_WHL_VERSION}"
+# This is to avoid ERROR: No matching distribution found for opencv-python-headless==4.5.2.52.
+# TODO: Make this the same as ${DV_GCP_OPTIMIZED_TF_WHL_VERSION}" later
+pip3 install "${PIP_ARGS[@]}"  "tf-models-official==2.13.1"
 
 ################################################################################
 # TensorFlow
@@ -212,6 +210,7 @@ note_build_stage "Install CUDA"
 # See https://www.tensorflow.org/install/source#gpu for versions required.
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   if [[ "${DV_INSTALL_GPU_DRIVERS}" = "1" ]]; then
+    # TODO: This will be updated in internal.
     # This script is only maintained for Ubuntu 20.04.
     UBUNTU_VERSION="2004"
     # https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=20.04&target_type=deb_local
@@ -291,10 +290,10 @@ fi
 note_build_stage "Install other packages"
 
 # for htslib
-sudo -H apt-get install "${APT_ARGS[@]}" libssl-dev libcurl4-openssl-dev liblz-dev libbz2-dev liblzma-dev > /dev/null
+sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libssl-dev libcurl4-openssl-dev liblz-dev libbz2-dev liblzma-dev > /dev/null
 
 # for the debruijn graph
-sudo -H apt-get install "${APT_ARGS[@]}" libboost-graph-dev > /dev/null
+sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libboost-graph-dev > /dev/null
 
 # Just being safe, pin protobuf's version one more time.
 pip3 install "${PIP_ARGS[@]}" 'protobuf==3.13.0'

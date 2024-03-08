@@ -36,10 +36,9 @@ echo ========== This script has been tested on Ubuntu18.04 and Ubuntu20.04.
 echo ========== See https://github.com/google/clif for how to build on different Unix distributions.
 echo ========== Run this script in root mode.
 
-CLIF_UBUNTU_VERSION="${CLIF_UBUNTU_VERSION-20.04}"
 ABSL_PIN="${ABSL_PIN-29bf8085f3bf17b84d30e34b3d7ff8248fda404e}"
 PROTOBUF_VERSION=3.13.0
-CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.8}"
+CLIF_PYTHON_VERSION="${CLIF_PYTHON_VERSION-3.10}"
 # CLIF_PIN can be set to a specific commit hash on
 # https://github.com/google/clif/commits/main.
 # If not set, the default is to checkout the latest commit.
@@ -51,7 +50,7 @@ APT_ARGS=(
 
 
 apt-get update  "${APT_ARGS[@]}"
-apt-get install "${APT_ARGS[@]}" --no-install-recommends \
+NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" --no-install-recommends \
     autoconf \
     automake \
     cmake \
@@ -65,13 +64,9 @@ apt-get install "${APT_ARGS[@]}" --no-install-recommends \
     wget \
     unzip
 
-# Configure LLVM 11 apt repository
-wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key |  apt-key add - && \
-  add-apt-repository "deb http://apt.llvm.org/$(lsb_release -sc)/ llvm-toolchain-$(lsb_release -sc)-11 main"
-
 # Install CLIF dependencies
 apt-get update "${APT_ARGS[@]}"
-apt-get install  "${APT_ARGS[@]}" \
+NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" \
     clang-11 \
     libclang-11-dev \
     libgoogle-glog-dev \
@@ -82,24 +77,6 @@ apt-get install  "${APT_ARGS[@]}" \
     llvm-11-linker-tools \
     python3-dev \
     zlib1g-dev
-
-# Uninstall an older version of libclang so that cmake uses the correct one.
-apt-get remove "${APT_ARGS[@]}" libclang-common-9-dev
-
-# Configure deadsnakes PPA with the more recent versions of python packaged for
-# Ubuntu. See https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa
-apt-get update "${APT_ARGS[@]}" && \
-  apt-get install "${APT_ARGS[@]}" \
-    "python$CLIF_PYTHON_VERSION-dev" \
-    "python$CLIF_PYTHON_VERSION-distutils"
-
-# Install latest version of pip since the version on ubuntu could be outdated.
-# Uninstall setuptools before installation of pip according to this suggestion:
-# https://github.com/google/deepvariant/commit/5469fec47e57febba751c30f1eb587cbffea8d89#commitcomment-64556350
-curl -Ss -o get-pip.py https://bootstrap.pypa.io/get-pip.py && \
-    pip uninstall -y setuptools &&
-    "python$CLIF_PYTHON_VERSION" get-pip.py --force-reinstall && \
-    rm get-pip.py
 
 # Compile and install absl-cpp from source
 git clone https://github.com/abseil/abseil-cpp.git
@@ -123,21 +100,27 @@ wget "https://github.com/protocolbuffers/protobuf/releases/download/v$PROTOBUF_V
     make -j"$(nproc)" && \
     make install && \
     ldconfig && \
-    rm -rf "/protobuf-$PROTOBUF_VERSION" "/protobuf-cpp-$PROTOBUF_VERSION.tar.gz"
+    cd .. && \
+    rm -rf "protobuf-$PROTOBUF_VERSION" "protobuf-cpp-$PROTOBUF_VERSION.tar.gz"
 
 # Install googletest
 cd /usr/src/googletest && \
     cmake . && \
     make install
 
+curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
+python3 get-pip.py --force-reinstall --user
+rm -f get-pip.py
+
+export PATH="$HOME/.local/bin":$PATH
+echo "$(pip3 --version)"
+
 # Install python runtime and test dependencies
-"python$CLIF_PYTHON_VERSION" -m pip install \
+pip3 install \
     absl-py \
     parameterized \
     protobuf=="$PROTOBUF_VERSION" \
-    pyparsing==2.2.0
-
-DV_PLATFORM="ubuntu-${CLIF_UBUNTU_VERSION}"
+    pyparsing==2.2.2
 
 ln -sf /usr/bin/python$CLIF_PYTHON_VERSION /usr/local/bin/python3
 

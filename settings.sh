@@ -86,14 +86,14 @@ export DV_GPU_BUILD="${DV_GPU_BUILD:-0}"
 export GCP_OPTIMIZED_TF_WHL_FILENAME="tensorflow-${DV_GCP_OPTIMIZED_TF_WHL_VERSION}.deepvariant_gcp-cp27-none-linux_x86_64.whl"
 export GCP_OPTIMIZED_TF_WHL_PATH="${DV_PACKAGE_BUCKET_PATH}/tensorflow"
 export GCP_OPTIMIZED_TF_WHL_CURL_PATH="${DV_PACKAGE_CURL_PATH}/tensorflow"
-export DV_TF_NUMPY_VERSION="1.19.2"  # To match GCP_OPTIMIZED_TF_WHL_FILENAME
+export DV_TF_NUMPY_VERSION="1.21.2"  # Python 3.10 requires >= 1.21.2
 
 # Set this to 1 to make our prereq scripts install the CUDA libraries.
 # If you already have CUDA installed, such as on a properly provisioned
 # Docker image, it shouldn't be necessary.
 export DV_INSTALL_GPU_DRIVERS="${DV_INSTALL_GPU_DRIVERS:-0}"
 
-export PYTHON_VERSION=3.8
+export PYTHON_VERSION=3.10
 # shellcheck disable=SC2155
 export PYTHON_BIN_PATH="$(which python${PYTHON_VERSION})"
 export PYTHON_LIB_PATH="/usr/local/lib/python${PYTHON_VERSION}/dist-packages"

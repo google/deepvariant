@@ -51,7 +51,7 @@ note_build_stage "build-prereq.sh: Install development packages"
 
 # Need to wait for dpkg lock (see internal)
 wait_for_dpkg_lock
-sudo -H apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git wget > /dev/null
+sudo -H NEEDRESTART_MODE=a apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git wget > /dev/null
 
 
 ################################################################################
@@ -134,8 +134,31 @@ wget https://raw.githubusercontent.com/tensorflow/tensorflow/r2.13/third_party/a
 wget https://raw.githubusercontent.com/tensorflow/tensorflow/r2.13/third_party/absl/absl_designated_initializers.patch -O ../tensorflow/third_party/absl/absl_design\
 ated_initializers.patch
 
-note_build_stage "Set pyparsing to 2.2.0 for CLIF."
+# Inspired by part of https://raw.githubusercontent.com/tensorflow/tensorflow/r2.11/third_party/protobuf/protobuf.patch.
+# This is necessary for Python 3.10.
+cat > third_party/protobuf.patch <<- EOM
+diff --git a/python/google/protobuf/pyext/message.cc b/python/google/protobuf/pyext/message.cc
+index 3530a9b37..c31fa8fcc 100644
+--- a/python/google/protobuf/pyext/message.cc
++++ b/python/google/protobuf/pyext/message.cc
+@@ -2991,8 +2991,12 @@ bool InitProto2MessageModule(PyObject *m) {
+         reinterpret_cast<PyObject*>(
+             &RepeatedCompositeContainer_Type));
+ 
+-    // Register them as collections.Sequence
++    // Register them as MutableSequence.
++#if PY_MAJOR_VERSION >= 3
++    ScopedPyObjectPtr collections(PyImport_ImportModule("collections.abc"));
++#else
+     ScopedPyObjectPtr collections(PyImport_ImportModule("collections"));
++#endif
+     if (collections == NULL) {
+       return false;
+     }
+EOM
+
+note_build_stage "Set pyparsing to 2.2.2 for CLIF."
 export PATH="$HOME/.local/bin":$PATH
-pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.0'
+pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.2'
 
 note_build_stage "build-prereq.sh complete"

@@ -695,10 +695,7 @@ def main(_):
       'in docker. ****\n'.format(intermediate_results_dir)
   )
   env = os.environ.copy()
-  included_env = None
-  if 'TF_ENABLE_ONEDNN_OPTS' in env:
-    included_env = {}
-    included_env['TF_ENABLE_ONEDNN_OPTS'] = env['TF_ENABLE_ONEDNN_OPTS']
+  logging.info('env = %s', env)
   for command, logfile in commands_logfiles:
     print('\n***** Running the command:*****\n{}\n'.format(command))
     if not _DRY_RUN.value:
@@ -711,7 +708,7 @@ def main(_):
           shell=True,
           executable='/bin/bash',
           universal_newlines=True,
-          env=included_env,
+          env=env,
       ) as proc:
         for line in proc.stdout:
           print(line, end='')

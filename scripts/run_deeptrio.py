@@ -1014,17 +1014,14 @@ def run_commands(
   """
 
   env = os.environ.copy()
-  included_env = None
-  if 'TF_ENABLE_ONEDNN_OPTS' in env:
-    included_env = {}
-    included_env['TF_ENABLE_ONEDNN_OPTS'] = env['TF_ENABLE_ONEDNN_OPTS']
+  logging.info('env = %s', env)
   if sequential:
     for command in commands:
       print('\n***** Running the command:*****\n{}\n'.format(command))
       if not dry_run:
         try:
           subprocess.check_call(
-              command, shell=True, executable='/bin/bash', env=included_env
+              command, shell=True, executable='/bin/bash', env=env
           )
         except subprocess.CalledProcessError as e:
           logging.info(e.output)
@@ -1034,9 +1031,7 @@ def run_commands(
       print('\n***** Running the command:*****\n{}\n'.format(command))
     if not _DRY_RUN.value:
       tasks = [
-          subprocess.Popen(
-              command, shell=True, executable='/bin/bash', env=included_env
-          )
+          subprocess.Popen(command, shell=True, executable='/bin/bash', env=env)
           for command in commands
       ]
       failed_task_indices = [

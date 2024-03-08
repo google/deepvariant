@@ -739,6 +739,8 @@ def call_variants(
 
 
 def main(argv=()):
+  env = os.environ.copy()
+  logging.info('call_variants: env = %s', env)
   with errors.clean_commandline_error_exit():
     if len(argv) > 1:
       errors.log_and_raise(
