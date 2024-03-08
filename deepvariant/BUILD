@@ -1401,7 +1401,7 @@ py_library(
     srcs = ["show_examples.py"],
     srcs_version = "PY3",
     deps = [
-        "//deepvariant/protos:deepvariant_py_pb2",
+        ":dv_constants",
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:variants_py_pb2",

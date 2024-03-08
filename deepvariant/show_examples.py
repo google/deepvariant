@@ -40,6 +40,7 @@ show_examples
   --verbose
 """
 
+import glob
 import gzip
 import json
 import os
@@ -51,7 +52,7 @@ from absl import logging
 import pandas as pd
 import tensorflow as tf
 
-from deepvariant.protos import deepvariant_pb2
+from deepvariant import dv_constants
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
@@ -71,10 +72,11 @@ _EXAMPLES = flags.DEFINE_string(
 )
 _EXAMPLE_INFO_JSON = flags.DEFINE_string(
     'example_info_json',
-    None,
+    'auto',
     (
         'Path to one *example_info.json file containing '
-        'the information of the channels for the examples.'
+        'the information of the channels for the examples. '
+        'If set to auto, try to find path automatically.'
     ),
 )
 _VCF = flags.DEFINE_string(
@@ -332,22 +334,34 @@ def run():
       raise ValueError('--examples is required')
     examples_path = _EXAMPLES.value
 
-    if _COLUMN_LABELS.value and _EXAMPLE_INFO_JSON.value:
+    if _COLUMN_LABELS.value and _EXAMPLE_INFO_JSON.value != 'auto':
       raise ValueError(
           'Set at most one of --column_labels or --example_info_json.'
       )
 
     if _COLUMN_LABELS.value:
       column_labels = _COLUMN_LABELS.value.split(',')
+    elif _EXAMPLE_INFO_JSON.value:
+      example_info_path = None
+      if _EXAMPLE_INFO_JSON.value == 'auto':
+        try:
+          example_info_path = glob.glob(
+              os.path.dirname(examples_path) + '/*.example_info.json'
+          )[0]
+        except IndexError:
+          logging.info('No example_info.json found in %s', examples_path)
+          pass
+      else:
+        example_info_path = _EXAMPLE_INFO_JSON.value
+      if example_info_path:
+        logging.info('Loading example info from %s', example_info_path)
+        example_info = json.load(tf.io.gfile.GFile(example_info_path, 'r'))
+        column_labels = [
+            dv_constants.CHANNEL_ENUM_TO_STRING[x]
+            for x in example_info['channels']
+        ]
     else:
       column_labels = None
-
-    if _EXAMPLE_INFO_JSON.value:
-      example_info = json.load(tf.io.gfile.GFile(_EXAMPLE_INFO_JSON.value, 'r'))
-      column_labels = [
-          deepvariant_pb2.DeepVariantChannelEnum.Name(x)
-          for x in example_info['channels']
-      ]
 
     filter_to_vcf = _VCF.value is not None
     if filter_to_vcf:
