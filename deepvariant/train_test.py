@@ -49,13 +49,13 @@ class TrainTest(parameterized.TestCase):
   @parameterized.named_parameters(
       dict(
           testcase_name="deepvariant_base_train_test",
-          config_name="base:test",
+          config_name="base+test",
           testdata_tfrecord_filename="golden.training_examples.tfrecord.gz",
           num_examples=49,
       ),
       dict(
           testcase_name="deepvariant_exome_train_test",
-          config_name="exome:test",
+          config_name="exome+test",
           testdata_tfrecord_filename="golden.training_examples.tfrecord.gz",
           num_examples=49,
       ),

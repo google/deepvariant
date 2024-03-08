@@ -30,6 +30,10 @@
 
 import ml_collections
 
+# =============#
+# Test Config #
+# =============#
+
 
 def get_test_config(config: ml_collections.ConfigDict):
   """Config parameters for test training."""
@@ -42,11 +46,15 @@ def get_test_config(config: ml_collections.ConfigDict):
   config.limit = 50
   config.steps_per_iter = 4
   config.shuffle_buffer_elements = 50
+  config.init_checkpoint = ''
 
 
-def get_wgs_config(
-    config: ml_collections.ConfigDict,
-) -> ml_collections.ConfigDict:
+# =====================#
+# DeepVariant Configs #
+# =====================#
+
+
+def get_wgs_config(config: ml_collections.ConfigDict):
   """Config parameters for wgs training."""
 
   # Exome Dataset
@@ -80,33 +88,89 @@ def get_wgs_config(
   return config
 
 
-def get_exome_config(
-    config: ml_collections.ConfigDict,
-) -> ml_collections.ConfigDict:
+def get_exome_config(config: ml_collections.ConfigDict):
   """Config parameters for exome training."""
+  # Values from xids/97384092
 
   # Exome Dataset
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = '/path/to/warmstart/checkpoint'
   # If set to 0, use full validation dataset.
   config.num_validation_examples = 0
 
+  config.best_checkpoint_metric = 'tune/f1_weighted'
+  config.batch_size = 16384
   config.num_epochs = 80
-  config.learning_rate = 0.05
-  config.learning_rate_num_epochs_per_decay = 28.9949
-  config.learning_rate_decay_rate = 0.8348574046107808
-  config.rho = 0.9763046740422171
-  config.momentum = 0.9848544529312561
-  config.epsilon = 0.8696723762650027
-  config.warmup_steps = 718
-  config.weight_decay = 0.00004
-  config.backbone_dropout_rate = 0.22517227651098964
-  config.backbone_dropout_rate = 0.2
-  config.best_checkpoint_metric = 'tune/categorical_accuracy'
+  config.optimizer = 'adam'
+  config.beta_1 = 0.749995
+  config.beta_2 = 0.749995
+  config.adaptive_epsilon = True
+  config.optimizer_weight_decay = 0.0
 
+  config.early_stopping_patience = 10
+  config.learning_rate = 0.0000796142074327502
+  config.learning_rate_num_epochs_per_decay = 2.25
+  config.learning_rate_decay_rate = 0.9999
+  config.warmup_steps = 0
+
+  config.backbone_dropout_rate = 0.25
+
+  # Exponential Moving Average
+  config.use_ema = True
+  config.ema_momentum = 0.899995
+
+
+# =====================#
+# DeepSomatic Configs #
+# =====================#
+
+
+def get_deepsomatic_wgs_config(config: ml_collections.ConfigDict):
+  get_wgs_config(config)
+  config.train_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepsomatic/deepsomatic-insert/deepsomatic-insert_train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepsomatic/deepsomatic-insert/deepsomatic-insert_tune.dataset_config.pbtxt'
+
+
+def get_deepsomatic_wes_config(
+    config: ml_collections.ConfigDict,
+):
+  """Config parameters for wgs training."""
+  get_wgs_config(config)
+  # Exome Dataset
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
+  config.num_epochs = 80
+  config.early_stopping_patience = 10
 
-  return config
+
+# FFPE Configs
+def get_deepsomatic_wgs_ffpe_config(
+    config: ml_collections.ConfigDict,
+):
+  get_wgs_config(config)
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = '/path/to/warmstart/checkpoint'
+
+
+def get_deepsomatic_wes_ffpe_config(
+    config: ml_collections.ConfigDict,
+):
+  """Config parameters for wgs training."""
+  get_wgs_config(config)
+  # Exome Dataset
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = ''
+  config.num_epochs = 80
+  config.early_stopping_patience = 10
+
+
+# =============#
+# Base Config #
+# =============#
 
 
 def get_config(config_name: str) -> ml_collections.ConfigDict:
@@ -170,17 +234,25 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Placeholder value for limiting training examples. 0=No limit.
   config.limit = 0
 
-  if config_name and ':' in config_name:
-    config_name, alt_mode = config_name.split(':')
+  if config_name and '+' in config_name:
+    config_name, alt_mode = config_name.split('+')
   else:
     alt_mode = None
 
   config.alt_mode = alt_mode
 
   if config_name == 'wgs':
-    config = get_wgs_config(config)
+    get_wgs_config(config)
   elif config_name == 'exome':
-    config = get_exome_config(config)
+    get_exome_config(config)
+  elif config_name == 'deepsomatic_wgs':
+    get_deepsomatic_wgs_config(config)
+  elif config_name == 'deepsomatic_wes':
+    get_deepsomatic_wes_config(config)
+  elif config_name == 'deepsomatic_wgs_ffpe':
+    get_deepsomatic_wgs_ffpe_config(config)
+  elif config_name == 'deepsomatic_wes_ffpe':
+    get_deepsomatic_wes_ffpe_config(config)
   elif config_name == 'base':
     # Use the base config.
     pass
