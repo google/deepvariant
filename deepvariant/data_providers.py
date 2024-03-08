@@ -67,6 +67,11 @@ def create_parse_example_fn(
 ]:
   """Generates a function for parsing tf.train.Examples."""
 
+  # class_weights is a comma-delimited string of weights for each class.
+  # e.g. 1,1,10 or 1,1,1
+  if config.class_weights:
+    class_weights = list(map(float, config.class_weights.split(',')))
+
   def parse_example(
       example: tf.train.Example,
       input_shape: Tuple[int, int, int],
@@ -104,6 +109,11 @@ def create_parse_example_fn(
     if config.denovo_enabled and parsed_features['denovo_label'][0] == 1:
       # If the example is denovo then set the denovo example weights for this.
       sample_weight = tf.constant(config.denovo_weight, dtype=tf.float32)
+    elif config.class_weights:
+      sample_weight = tf.gather(
+          class_weights,
+          tf.cast(tf.math.argmax(label, axis=-1), dtype=tf.int16),
+      )
     else:
       sample_weight = tf.constant(1.0, dtype=tf.float32)
 

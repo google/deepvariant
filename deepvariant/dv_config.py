@@ -129,6 +129,9 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.use_ema = True
 
   config.denovo_enabled = False
+  # class_weights can be specified as a comma-delimited string of weights
+  # for each class: e.g. 1,1,10 or 1,1,1
+  config.class_weights = ''
 
   # Training hyperparameters
   config.learning_rate = 0.001
