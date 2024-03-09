@@ -8,10 +8,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | ~98m
-call_variants                    | ~207m
-postprocess_variants (with gVCF) | ~27m
-total                            | ~332m = ~5.53 hours
+make_examples                    | ~96m
+call_variants                    | ~200m
+postprocess_variants (with gVCF) | ~25m
+total                            | ~321m = ~5.35 hours
 
 ### Accuracy
 
@@ -58,10 +58,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~132m
-call_variants                    | ~242m
-postprocess_variants (with gVCF) | ~34m
-total                            | ~408m = ~6.8 hours
+make_examples                    | ~122m
+call_variants                    | ~222m
+postprocess_variants (with gVCF) | ~27m
+total                            | ~371m = ~6.18 hours
 
 ### Accuracy
 
@@ -86,10 +86,10 @@ Runtime is on HG003 reads (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | ~251m
-call_variants                    | ~295m
-postprocess_variants (with gVCF) | ~35m
-total                            | ~581m = ~9.68 hours
+make_examples                    | ~242m
+call_variants                    | ~275m
+postprocess_variants (with gVCF) | ~28m
+total                            | ~545m = ~9.08 hours
 
 ### Accuracy
 
@@ -111,10 +111,10 @@ Runtime is on HG003 (all chromosomes).
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~147m
-call_variants                    | ~209m
-postprocess_variants (with gVCF) | ~22m
-total                            | ~378m = ~6.3 hours
+make_examples                    | ~142m
+call_variants                    | ~196m
+postprocess_variants (with gVCF) | ~18m
+total                            | ~356m = ~5.93 hours
 
 ### Accuracy
 
