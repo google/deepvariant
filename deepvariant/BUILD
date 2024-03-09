@@ -1104,7 +1104,6 @@ py_library(
     deps = [
         ":dv_constants",
         ":dv_utils",
-        ":keras_modeling",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:sharded_file_utils",
         "@absl_py//absl/logging",
@@ -1123,10 +1122,8 @@ py_library(
         ":dv_constants",
         ":dv_utils",
         ":py_testdata",
-        "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/testing:py_test_utils",
-        "//third_party/nucleus/util:variant_utils",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
