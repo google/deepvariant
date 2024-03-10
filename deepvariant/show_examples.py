@@ -339,6 +339,7 @@ def run():
           'Set at most one of --column_labels or --example_info_json.'
       )
 
+    column_labels = None
     if _COLUMN_LABELS.value:
       column_labels = _COLUMN_LABELS.value.split(',')
     elif _EXAMPLE_INFO_JSON.value:
