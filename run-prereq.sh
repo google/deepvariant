@@ -210,42 +210,35 @@ note_build_stage "Install CUDA"
 # See https://www.tensorflow.org/install/source#gpu for versions required.
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   if [[ "${DV_INSTALL_GPU_DRIVERS}" = "1" ]]; then
-    # TODO: This will be updated in internal.
-    # This script is only maintained for Ubuntu 20.04.
-    UBUNTU_VERSION="2004"
-    # https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=20.04&target_type=deb_local
+    # This script is only maintained for Ubuntu 22.04.
     echo "Checking for CUDA..."
-    if ! dpkg-query -W cuda-11-3; then
+    if ! dpkg-query -W cuda-11-8; then
       echo "Installing CUDA..."
-      UBUNTU_VERSION="2004"
-      curl -O https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
-      sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
-      # From https://forums.developer.nvidia.com/t/notice-cuda-linux-repository-key-rotation/212772
-      sudo -H apt-key adv --fetch-keys "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/3bf863cc.pub"
-      sudo add-apt-repository -y "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
-      sudo -H apt-get update "${APT_ARGS[@]}"
-      # From: https://superuser.com/a/1638789
-      sudo -H DEBIAN_FRONTEND=noninteractive apt-get \
-        -o Dpkg::Options::=--force-confold \
-        -o Dpkg::Options::=--force-confdef \
-        -y --allow-downgrades --allow-remove-essential --allow-change-held-packages \
-        full-upgrade
-      sudo -H apt-get install "${APT_ARGS[@]}" cuda-11-3
+      UBUNTU_VERSION="2204"
+      curl -O https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/cuda-ubuntu${UBUNTU_VERSION}.pin
+      sudo mv cuda-ubuntu${UBUNTU_VERSION}.pin /etc/apt/preferences.d/cuda-repository-pin-600
+
+      curl https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub | gpg --dearmor | sudo tee /usr/share/keyrings/nvidia-cuda-archive-keyring.gpg > /dev/null
+      echo \
+        "deb [signed-by=/usr/share/keyrings/nvidia-cuda-archive-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" | \
+        sudo tee /etc/apt/sources.list.d/cuda.list > /dev/null
+      sudo -H NEEDRESTART_MODE=a apt-get update "${APT_ARGS[@]}"
+      sudo -H NEEDRESTART_MODE=a apt-get full-upgrade "${APT_ARGS[@]}"
+      sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" cuda-11-8
     fi
     echo "Checking for CUDNN..."
     if [[ ! -e /usr/local/cuda-11/include/cudnn.h ]]; then
       echo "Installing CUDNN..."
-      CUDNN_TAR_FILE="cudnn-11.3-linux-x64-v8.2.0.53.tgz"
-      wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v8.2.0/${CUDNN_TAR_FILE}
-      tar -xzvf ${CUDNN_TAR_FILE}
-      sudo cp -P cuda/include/cudnn.h /usr/local/cuda-11/include
-      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-11/lib64/
-      sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda-11/lib64/
+      CUDNN_TAR_FILE="cudnn-linux-x86_64-8.6.0.163_cuda11-archive.tar.xz"
+      wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v8.6.0/local_installers/11.8/${CUDNN_TAR_FILE}
+      tar -xvf ${CUDNN_TAR_FILE}
+      sudo cp -P cudnn-linux-x86_64-8.6.0.163_cuda11-archive/include/cudnn.h /usr/local/cuda-11/include
+      sudo cp -P cudnn-linux-x86_64-8.6.0.163_cuda11-archive/lib/libcudnn* /usr/local/cuda-11/lib64/
       sudo chmod a+r /usr/local/cuda-11/lib64/libcudnn*
       sudo ldconfig
     fi
     # Tensorflow says to do this.
-    sudo -H apt-get install "${APT_ARGS[@]}" libcupti-dev > /dev/null
+    sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libcupti-dev > /dev/null
   fi
 
   # If we are doing a gpu-build, nvidia-smi should be install. Run it so we

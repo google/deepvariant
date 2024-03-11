@@ -8,7 +8,7 @@
 # $ sudo docker build -f Dockerfile.deeptrio -t deeptrio .
 #
 # To build for GPU, use a command like:
-# $ sudo docker build -f Dockerfile.deeptrio --build-arg=FROM_IMAGE=nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04 --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu .
+# $ sudo docker build -f Dockerfile.deeptrio --build-arg=FROM_IMAGE=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04 --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu .
 
 
 ARG FROM_IMAGE=ubuntu:22.04

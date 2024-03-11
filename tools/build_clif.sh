@@ -130,4 +130,9 @@ if [[ ! -z ${CLIF_PIN} ]]; then
   git checkout "${CLIF_PIN}"
 fi
 
+
+# On GPU machines, this might be necessary because of the reason mentioned in:
+# https://stackoverflow.com/a/74605488
+NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libstdc++-12-dev
+
 ./INSTALL.sh
