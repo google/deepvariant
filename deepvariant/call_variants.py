@@ -658,27 +658,25 @@ def call_variants(
     n_examples = 0
     n_batches = 0
     start_time = time.time()
-    for batch in enc_image_variant_alt_allele_ds:
-      # Here are the elements in `batch`. To see where the reading logic came
-      # from, please see the `get_dataset` function, specifically the
-      # `_parse_example` function within it.
-      # TODO: consider using these as variable names to make this
-      # function more readable.
-      # batch[0]: image_encodes
-      # batch[1]: images_in_batch
-      # batch[2]: variants
-      # batch[3]: alt_allele_indices_list
-      # batch[4]: optional_label_list
+    for (
+        image_encodes,
+        images_in_batch,
+        variants,
+        alt_allele_indices_list,
+        optional_label_list,
+    ) in enc_image_variant_alt_allele_ds:
+      # These elements per iteration are read from the `get_dataset` function,
+      # specifically the `_parse_example` function within it.
       if use_saved_model:
-        predictions = model.signatures['serving_default'](batch[1])
+        predictions = model.signatures['serving_default'](images_in_batch)
         predictions = predictions['classification'].numpy()
       else:
         if not is_gpu_available:
           # This is faster on CPU but slower on GPU.
-          predictions = model.predict_on_batch(batch[1])
+          predictions = model.predict_on_batch(images_in_batch)
         else:
           # This is faster on GPU but slower on CPU.
-          predictions = model(batch[1], training=False).numpy()
+          predictions = model(images_in_batch, training=False).numpy()
 
       layer_outputs_encoded = None
       if include_debug_info and activation_layers:
@@ -686,14 +684,18 @@ def call_variants(
           if not is_gpu_available:
             # This is faster on CPU but slower on GPU.
             layer_outputs_encoded = {
-                layer: activation_model.predict_on_batch(batch[1]).tobytes()
+                layer: activation_model.predict_on_batch(
+                    images_in_batch
+                ).tobytes()
                 for layer, activation_model in activation_models.items()
             }
           else:
             # This is faster on GPU but slower on CPU.
             layer_outputs_encoded = {
                 layer: (
-                    activation_model(batch[1], training=False).numpy().tobytes()
+                    activation_model(images_in_batch, training=False)
+                    .numpy()
+                    .tobytes()
                 )
                 for layer, activation_model in activation_models.items()
             }
@@ -712,7 +714,7 @@ def call_variants(
                     dv_utils.unpreprocess_images(image.numpy())
                 )
             )
-            for image in batch[1]
+            for image in images_in_batch
         ]
       batch_no += 1
       duration = time.time() - start_time
@@ -728,10 +730,10 @@ def call_variants(
       )
       output_queue.put((
           predictions,
-          batch[0],  # image_encodes
-          batch[2],  # variants
-          batch[3],  # alt_allele_indices_list
-          batch[4],  # optional_label_list
+          image_encodes,
+          variants,
+          alt_allele_indices_list,
+          optional_label_list,
           layer_outputs_encoded,
           pileup_curation_in_batch,
       ))
