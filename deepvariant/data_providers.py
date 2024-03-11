@@ -113,7 +113,9 @@ def create_parse_example_fn(
   # class_weights is a comma-delimited string of weights for each class.
   # e.g. 1,1,10 or 1,1,1
   if config.class_weights:
-    class_weights = list(map(float, config.class_weights.split(',')))
+    class_weights = tf.constant(
+        list(map(float, config.class_weights.split(','))), dtype=tf.float32
+    )
 
   def parse_example(
       example: tf.train.Example,
