@@ -347,7 +347,7 @@ def run():
       if _EXAMPLE_INFO_JSON.value == 'auto':
         try:
           example_info_path = glob.glob(
-              os.path.dirname(examples_path) + '/*.example_info.json'
+              os.path.dirname(examples_path) + '/*example_info.json'
           )[0]
         except IndexError:
           logging.info('No example_info.json found in %s', examples_path)
