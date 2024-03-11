@@ -40,7 +40,7 @@ gcloud compute instances create ${host} \
     --scopes "compute-rw,storage-full,cloud-platform" \
     --maintenance-policy "TERMINATE" \
     --accelerator=type=nvidia-tesla-p100,count=1 \
-    --image-family "ubuntu-2004-lts" \
+    --image-family "ubuntu-2204-lts" \
     --image-project "ubuntu-os-cloud" \
     --machine-type "n1-standard-16" \
     --boot-disk-size "300" \

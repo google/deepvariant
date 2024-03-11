@@ -84,7 +84,7 @@ command line, we do:
 ```shell
 gcloud beta compute instances create "${USER}-deepvariant-quickstart" \
   --scopes "compute-rw,storage-full,cloud-platform"  \
-  --image-family ubuntu-2004-lts --image-project ubuntu-os-cloud \
+  --image-family ubuntu-2204-lts --image-project ubuntu-os-cloud \
   --machine-type n1-standard-8  \
   --boot-disk-size=200GB \
   --zone us-west1-b \
