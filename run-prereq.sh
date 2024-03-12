@@ -223,7 +223,7 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
         "deb [signed-by=/usr/share/keyrings/nvidia-cuda-archive-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" | \
         sudo tee /etc/apt/sources.list.d/cuda.list > /dev/null
       sudo -H NEEDRESTART_MODE=a apt-get update "${APT_ARGS[@]}"
-      sudo -H NEEDRESTART_MODE=a apt-get full-upgrade "${APT_ARGS[@]}"
+      sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get full-upgrade "${APT_ARGS[@]}"
       sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" cuda-11-8
     fi
     echo "Checking for CUDNN..."
