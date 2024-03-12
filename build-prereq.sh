@@ -41,7 +41,7 @@ source settings.sh
 
 note_build_stage "Install the runtime packages"
 
-bash -x ./run-prereq.sh
+./run-prereq.sh
 
 note_build_stage "Update package list"
 
