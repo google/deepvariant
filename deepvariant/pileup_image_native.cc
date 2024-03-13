@@ -34,6 +34,7 @@
 #include <math.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <numeric>
 #include <random>
@@ -126,12 +127,14 @@ vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
 std::vector<std::unique_ptr<ImageRow>>
 PileupImageEncoderNative::BuildPileupForOneSample(
     const DeepVariantCall& dv_call, const string& ref_bases,
-    const std::vector<const ::nucleus::genomics::v1::Read *>& reads,
-    int image_start_pos,
-    const vector<std::string>& alt_alleles,
-    const SampleOptions& sample_options) {
+    const std::vector<const ::nucleus::genomics::v1::Read*>& reads,
+    int image_start_pos, const vector<std::string>& alt_alleles,
+    const SampleOptions& sample_options,
+    const std::vector<int64_t>* alignment_positions) {
   // The width of a pileup is defined by the length of ref_bases. ref_bases must
   // have the correct length.
+  CHECK(alignment_positions == nullptr ||
+        alignment_positions->size() == reads.size());
   CHECK_EQ(ref_bases.size(), options_.width());
   int pileup_height = sample_options.pileup_height();
   if (pileup_height == 0) {
@@ -170,9 +173,15 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     if (image_row == nullptr) {
       continue;
     }
-    pileup_of_reads.push_back(std::make_tuple(
-        GetHapIndex(read), read.alignment().position().position(),
-        std::move(image_row)));
+    if (alignment_positions == nullptr) {
+      pileup_of_reads.push_back(std::make_tuple(
+          GetHapIndex(read), read.alignment().position().position(),
+          std::move(image_row)));
+    } else {
+      pileup_of_reads.push_back(std::make_tuple(GetHapIndex(read),
+                                                alignment_positions->at(index),
+                                                std::move(image_row)));
+    }
   }
 
   // Sort reads by alignment position.

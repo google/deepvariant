@@ -80,9 +80,12 @@ class PileupImageEncoderNative {
   // Create read pileup image section for one sample.
   std::vector<std::unique_ptr<ImageRow>> BuildPileupForOneSample(
       const DeepVariantCall& dv_call, const string& ref_bases,
-      const std::vector<const ::nucleus::genomics::v1::Read *>& reads,
+      const std::vector<const ::nucleus::genomics::v1::Read*>& reads,
       int image_start_pos, const std::vector<std::string>& alt_alleles,
-      const SampleOptions& sample_options);
+      const SampleOptions& sample_options,
+      // Contains original alignment positions for trimmed reads. This array has
+      // the same order as reads.
+      const std::vector<int64_t>* alignment_positions = nullptr);
 
   // Simple wrapper around BuildPileupForOneSample that allows us to efficiently
   // pass large protobufs in from Python. Simply unwraps the ConstProtoPtr
