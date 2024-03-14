@@ -473,10 +473,14 @@ void ExamplesGenerator::CreateAltAlignedImages(
     const std::vector<std::string>& alt_combination,
     const std::vector<Read>& trimmed_reads, int sample_order,
     const Range& region,
-    std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images) {
+    std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images,
+    std::vector<int64_t>* original_start_positions) {
   const auto& variant = candidate.variant();
   int image_start_pos = variant.start() - half_width_;
   int alt_image_num = 0;
+  CHECK(original_start_positions == nullptr ||
+        original_start_positions->size() == trimmed_reads.size());
+
   // It is assumed that there can be 0 - 2 alt alleles in alt_combination.
   CHECK_LE(alt_combination.size(), 2);
   for (const std::string& alt : alt_combination) {
@@ -507,7 +511,7 @@ void ExamplesGenerator::CreateAltAlignedImages(
     auto alt_image = pileup_image_.BuildPileupForOneSample(
         candidate, haplotype.substr(0, options_.pic_options().width()),
         realigned_reads_ptrs, image_start_pos, alt_combination,
-        options_.sample_options(sample_order));
+        options_.sample_options(sample_order), original_start_positions);
     // move alt_image to alt_images[2] array.
     for (auto& row : alt_image) {
       alt_images[alt_image_num].push_back(std::move(row));
@@ -549,10 +553,12 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       // a better runtime performance when long reads data is used.
       std::vector<Read> trimmed_reads;
       std::vector<const Read*> trimmed_reads_ptrs;
+      std::vector<int64_t> original_start_positions;
       if (options_.trim_reads_for_pileup()) {
         trimmed_reads = TrimReads(
             readers[this_sample_order].Query(region),
-            CalculateAlignmentRegion(variant, half_width_, *ref_reader_));
+            CalculateAlignmentRegion(variant, half_width_, *ref_reader_),
+            original_start_positions);
         trimmed_reads_ptrs.reserve(trimmed_reads.size());
         for (const auto& read : trimmed_reads) {
           trimmed_reads_ptrs.push_back(&read);
@@ -565,14 +571,16 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
               ? trimmed_reads_ptrs
               : readers[this_sample_order].Query(region),
           image_start_pos, alt_combination,
-          options_.sample_options(this_sample_order));
+          options_.sample_options(this_sample_order),
+          &original_start_positions);
       // Collect rows from all samples in ref_images.
       for (auto& row : ref_image) {
         ref_images.push_back(std::move(row));
       }
       if (need_alt_alignment) {
         CreateAltAlignedImages(candidate, alt_combination, trimmed_reads,
-                               this_sample_order, region, alt_images);
+                               this_sample_order, region, alt_images,
+                               &original_start_positions);
       }
     }
     sample.writer->WriteRecord(EncodeExample(ref_images, alt_images, variant,

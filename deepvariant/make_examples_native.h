@@ -165,9 +165,9 @@ class ExamplesGenerator {
       const DeepVariantCall& candidate,
       const std::vector<std::string>& alt_combination,
       const std::vector<nucleus::genomics::v1::Read>& trimmed_reads,
-      int sample_order,
-      const nucleus::genomics::v1::Range& region,
-      std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images);
+      int sample_order, const nucleus::genomics::v1::Range& region,
+      std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images,
+      std::vector<int64_t>* original_start_positions = nullptr);
 
   // Returns true if the variant needs alt alignment.
   bool NeedAltAlignment(const nucleus::genomics::v1::Variant& variant) const;

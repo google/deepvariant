@@ -82,7 +82,8 @@ std::vector<nucleus::genomics::v1::Read> RealignReadsToHaplotype(
 // Helper function to trim a vector of reads.
 std::vector<nucleus::genomics::v1::Read> TrimReads(
     const std::vector<const nucleus::genomics::v1::Read*>& reads,
-    const nucleus::genomics::v1::Range& region);
+    const nucleus::genomics::v1::Range& region,
+    std::vector<int64_t>& original_alignment_positions);
 
 }  // namespace deepvariant
 }  // namespace genomics
