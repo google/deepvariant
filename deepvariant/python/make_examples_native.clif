@@ -51,4 +51,4 @@ from "deepvariant/make_examples_native.h":
         reads: list<list<ConstProtoPtr<Read>>>,
         sample_order: list<int>,
         role: str,
-        labels: list<VariantLabel>)
+        labels: list<VariantLabel>) -> (n_stats: dict<str, int>)

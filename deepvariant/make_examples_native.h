@@ -118,7 +118,7 @@ class ExamplesGenerator {
 
   // Encodes candidates into TensorFlow examples containing pileup images
   // and writes them to TFRecord.
-  void WriteExamplesInRegion(
+  std::unordered_map<std::string, int> WriteExamplesInRegion(
       const std::vector<nucleus::ConstProtoPtr<DeepVariantCall>>& candidates,
       const std::vector<
           std::vector<nucleus::ConstProtoPtr<nucleus::genomics::v1::Read>>>&
@@ -149,6 +149,7 @@ class ExamplesGenerator {
       const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
       const nucleus::genomics::v1::Variant& variant,
       const std::vector<std::string>& alt_combination,
+      std::unordered_map<std::string, int>& stats,
       const VariantLabel* label = nullptr) const;
 
   // Generates one or more examples from a given candidate. Example(s) are
@@ -157,6 +158,7 @@ class ExamplesGenerator {
       const DeepVariantCall& candidate, const Sample& sample,
       const std::vector<int>& sample_order,
       const std::vector<InMemoryReader>& readers,
+      std::unordered_map<std::string, int>& stats,
       const VariantLabel* label = nullptr);
 
   void CreateAltAlignedImages(

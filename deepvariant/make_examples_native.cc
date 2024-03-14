@@ -37,6 +37,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -292,10 +293,39 @@ EncodedVariantType EncodedVariantType(const Variant& variant) {
   return EncodedVariantType::kUnknown;
 }
 
+namespace {
+bool HasAtLeastOneNonSingleBaseAllele(const Variant& variant) {
+  for (const std::string& alt : variant.alternate_bases()) {
+    if (alt.size() > 1) return true;
+  }
+  return false;
+}
+
+void UpdateStats(enum EncodedVariantType variant_type,
+                 const VariantLabel* label, int label_value,
+                 std::unordered_map<std::string, int>& stats) {
+  stats["n_examples"] += 1;
+  if (variant_type == EncodedVariantType::kIndel) {
+    stats["n_indels"] += 1;
+  } else {
+    stats["n_snps"] += 1;
+  }
+
+  if (label != nullptr) {
+    stats["n_class_0"] += (label_value == 0 ? 1 : 0);
+    stats["n_class_1"] += (label_value == 1 ? 1 : 0);
+    stats["n_class_2"] += (label_value == 2 ? 1 : 0);
+    stats["n_non_denovo"] += (label->is_denovo ? 0 : 1);
+    stats["n_denovo"] += (label->is_denovo ? 1 : 0);
+  }
+}
+}  // namespace
+
 std::string ExamplesGenerator::EncodeExample(
     const std::vector<std::unique_ptr<ImageRow>>& image,
     const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
     const Variant& variant, const std::vector<std::string>& alt_combination,
+    std::unordered_map<std::string, int>& stats,
     const VariantLabel* label) const {
   // TODO Once we know the number of channels in advance we should
   // allocate data with the correct size to avoid vector resizing when data is
@@ -344,6 +374,7 @@ std::string ExamplesGenerator::EncodeExample(
   } else {  // For train examples the variant from label is used.
     label->variant.SerializeToString(&ecoded_variant);
   }
+  enum EncodedVariantType variant_type = EncodedVariantType(variant);
   (*example.mutable_features()->mutable_feature())["locus"]
       .mutable_bytes_list()
       ->add_value(variant_range_encoded);
@@ -352,7 +383,7 @@ std::string ExamplesGenerator::EncodeExample(
       ->add_value(ecoded_variant);
   (*example.mutable_features()->mutable_feature())["variant_type"]
       .mutable_int64_list()
-      ->add_value(static_cast<int64_t>(EncodedVariantType(variant)));
+      ->add_value(static_cast<int64_t>(variant_type));
   (*example.mutable_features()->mutable_feature())["alt_allele_indices/encoded"]
       .mutable_bytes_list()
       ->add_value(alt_indices_encoded);
@@ -370,8 +401,8 @@ std::string ExamplesGenerator::EncodeExample(
   std::string encoded_example;
 
   // Set the label if it is provided.
+  int label_value = 0;
   if (label != nullptr) {
-    int label_value = 0;
     for (int i = 0; i < label->genotype.size(); i++) {
       if (label->genotype[i] == 0) {
         continue;
@@ -383,6 +414,7 @@ std::string ExamplesGenerator::EncodeExample(
     (*example.mutable_features()->mutable_feature())["label"]
         .mutable_int64_list()
         ->add_value(label_value);
+    CHECK(label_value >= 0 && label_value <= 2);
   }
 
   // Set de novo feature if de novo regions are provided.
@@ -394,16 +426,8 @@ std::string ExamplesGenerator::EncodeExample(
 
   // Example is serialized to a string before it is written to a TFRecord.
   example.SerializeToString(&encoded_example);
+  UpdateStats(variant_type, label, label_value, stats);
   return encoded_example;
-}
-
-namespace {
-  bool HasAtLeastOneNonSingleBaseAllele(const Variant& variant) {
-    for (const std::string& alt : variant.alternate_bases()) {
-      if (alt.size() > 1) return true;
-    }
-    return false;
-  }
 }
 
 bool ExamplesGenerator::NeedAltAlignment(const Variant& variant) const {
@@ -499,7 +523,8 @@ void ExamplesGenerator::CreateAltAlignedImages(
 void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     const DeepVariantCall& candidate, const Sample& sample,
     const std::vector<int>& sample_order,
-    const std::vector<InMemoryReader>& readers, const VariantLabel* label) {
+    const std::vector<InMemoryReader>& readers,
+    std::unordered_map<std::string, int>& stats, const VariantLabel* label) {
   const auto& variant = candidate.variant();
   int image_start_pos = variant.start() - half_width_;
   // Pileup range.
@@ -550,8 +575,8 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
                                this_sample_order, region, alt_images);
       }
     }
-    sample.writer->WriteRecord(
-        EncodeExample(ref_images, alt_images, variant, alt_combination, label));
+    sample.writer->WriteRecord(EncodeExample(ref_images, alt_images, variant,
+                                             alt_combination, stats, label));
   }
 }
 
@@ -559,7 +584,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
 // depends on the role.
 // reads_per_sample contain reads for each sample. In a multisample mode reads
 // are stacked according to the reads_per_sample order.
-void ExamplesGenerator::WriteExamplesInRegion(
+std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
     const std::vector<nucleus::ConstProtoPtr<DeepVariantCall>>& candidates,
     const std::vector<std::vector<nucleus::ConstProtoPtr<Read>>>&
         reads_per_sample,
@@ -568,6 +593,7 @@ void ExamplesGenerator::WriteExamplesInRegion(
   CHECK(labels.empty() || candidates.size() == labels.size());
   // Load reads.
   std::vector<InMemoryReader> readers;
+  std::unordered_map<std::string, int> stats;
   // Cache reads passed from Python. The order of samples is preserved as
   // passed from the caller.
   readers.reserve(reads_per_sample.size());
@@ -576,9 +602,10 @@ void ExamplesGenerator::WriteExamplesInRegion(
   }
   for (int i = 0; i < candidates.size(); i++) {
     CreateAndWriteExamplesForCandidate(*(candidates[i].p_), samples_[role],
-                                       sample_order, readers,
+                                       sample_order, readers, stats,
                                        labels.empty() ? nullptr : &labels[i]);
   }
+  return stats;
 }
 
 InMemoryReader::InMemoryReader(
