@@ -12,7 +12,7 @@
 ##FORMAT=<ID=VAF,Number=A,Type=Float,Description="Variant allele fractions.">
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods rounded to the closest integer">
 ##FORMAT=<ID=MED_DP,Number=1,Type=Integer,Description="Median DP observed within the GVCF block rounded to the nearest integer.">
-##DeepVariant_version=1.6.0
+##DeepVariant_version=1.6.1
 ##contig=<ID=chr20,length=63025520>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12878
 chr20	10000000	.	T	<*>	0	.	END=10000116	GT:GQ:MIN_DP:PL	0/0:50:45:0,135,1349

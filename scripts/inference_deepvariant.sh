@@ -75,7 +75,7 @@ SKIP_HAPPY=false
 # Strings; sorted alphabetically.
 BAM=""
 DOCKER_SOURCE="google/deepvariant"
-BIN_VERSION="1.6.0"
+BIN_VERSION="1.6.1"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
