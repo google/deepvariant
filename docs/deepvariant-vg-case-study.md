@@ -181,7 +181,7 @@ And then, run DeepVariant.
 [DeepVariant Case Study](deepvariant-case-study.md).)
 
 ```bash
-BIN_VERSION="1.6.0"
+BIN_VERSION="1.6.1"
 
 sudo docker pull google/deepvariant:"${BIN_VERSION}"
 
@@ -253,7 +253,7 @@ INDEL   PASS       504501    502199      2302       960061      1526     434935 
 | SNP   | 3316515  | 10981    | 5550     | 0.9967        | 0.99833          | 0.997514        |
 
 This can be compared with
-https://github.com/google/deepvariant/blob/r1.6/docs/metrics.md#accuracy.
+https://github.com/google/deepvariant/blob/r1.6.1/docs/metrics.md#accuracy.
 
 Which shows that `vg giraffe` improves F1:
 
