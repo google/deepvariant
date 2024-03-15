@@ -238,11 +238,17 @@ class GetModelTest(parameterized.TestCase):
     #     model.load_weights(checkpoint_path).expect_partial()
     # to load the weights. But here we're just testing the architecture, so
     # we skip loading specific weights.
-    activation_model = keras_modeling.get_activations_model(model)
+    layers = ['max_pooling2d', 'mixed0', 'mixed5']
+    activation_model = keras_modeling.get_activations_model(model, layers)
     input_image = np.zeros(example_shape, dtype=np.float32)
     input_image = tf.expand_dims(input_image, axis=0)
-    output_layer = activation_model(input_image)
-    self.assertEqual(list(output_layer.shape), [1, 4, 12, 768])
+    output_layers = activation_model(input_image)
+    self.assertCountEqual(output_layers.keys(), layers)
+    self.assertEqual(
+        list(output_layers['max_pooling2d'].shape), [1, 23, 53, 64]
+    )
+    self.assertEqual(list(output_layers['mixed0'].shape), [1, 10, 25, 256])
+    self.assertEqual(list(output_layers['mixed5'].shape), [1, 4, 12, 768])
 
 
 if __name__ == '__main__':

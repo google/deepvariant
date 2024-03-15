@@ -29,7 +29,7 @@
 """Provides an abstraction around deep learning Keras models in DeepVariant."""
 
 import os
-from typing import Callable, Optional, Tuple, Type, Union
+from typing import Callable, Optional, Sequence, Tuple, Type, Union
 
 from absl import logging
 import ml_collections
@@ -459,7 +459,7 @@ def get_model(
 
 
 def get_activations_model(
-    model: tf.keras.Model, layer_name: str = 'mixed5'
+    model: tf.keras.Model, layer_names: Sequence[str]
 ) -> tf.keras.Model:
   """Creates a Model that gets activations from a layer in an InceptionV3 model.
 
@@ -467,7 +467,7 @@ def get_activations_model(
     model: A DeepVariant InceptionV3 model, which is a
       keras.applications.InceptionV3 model (i.e., the backbone model from which
       activations will be extracted).
-    layer_name: The name of the InceptionV3 layer from which to extract
+    layer_names: The name of the InceptionV3 layer from which to extract
       activations. Defaults to the 'mixed5' layer
 
   Returns:
@@ -475,8 +475,11 @@ def get_activations_model(
     activations from the specified layer in the wrapped
     keras.applications.InceptionV3 model.
   """
-  layer = model.get_layer(layer_name)
-  return tf.keras.Model(inputs=model.input, outputs=layer.output)
+  layer_outputs = {
+      layer_name: model.get_layer(layer_name).output
+      for layer_name in layer_names
+  }
+  return tf.keras.Model(inputs=model.input, outputs=layer_outputs)
 
 
 def copy_checkpoint(
