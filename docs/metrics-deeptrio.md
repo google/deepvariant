@@ -8,12 +8,12 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~430m
-call_variants for HG002          | ~330m
-call_variants for HG003          | ~330m
-call_variants for HG004          | ~332m
-postprocess_variants (parallel)  | ~60m
-total                            | ~1482m = ~24.7 hours
+make_examples                    | ~439m
+call_variants for HG002          | ~351m
+call_variants for HG003          | ~355m
+call_variants for HG004          | ~361m
+postprocess_variants (parallel)  | ~61m
+total                            | ~1567m = ~26.12 hours
 
 ### Accuracy
 
@@ -42,13 +42,13 @@ truth), which was held out while training.
 | SNP   | 71446    | 213      | 52       | 0.997028      | 0.999273         | 0.998149        |
 
 * See VCF stats report (for all chromosomes)
-  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WGS/HG002.output.visual_report.html)
-  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WGS/HG003.output.visual_report.html)
-  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WGS/HG004.output.visual_report.html)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.1/WGS/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.1/WGS/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.1/WGS/HG004.output.visual_report.html)
 
 ## PacBio (HiFi)
 
-In v1.6.0, we introduced read haplotagging in DeepTrio PacBio. You no longer
+In v1.6.1, we introduced read haplotagging in DeepTrio PacBio. You no longer
 need to run DeepVariant->WhatsHap->DeepTrio, and can just run DeepTrio once.
 
 ### Runtime
@@ -57,17 +57,17 @@ Runtime is on HG002/HG003/HG004 (all chromosomes).
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~52+1050m
-call_variants for HG002          | ~326m
-call_variants for HG003          | ~328m
-call_variants for HG004          | ~337m
-postprocess_variants (parallel)  | ~84m
-total                            | ~2177m = ~36.3 hours
+make_examples                    | ~51+1078m
+call_variants for HG002          | ~364m
+call_variants for HG003          | ~365m
+call_variants for HG004          | ~372m
+postprocess_variants (parallel)  | ~88m
+total                            | ~2318m = ~38.63 hours
 
 * See VCF stats report (for all chromosomes)
-  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/PACBIO/HG002.output.visual_report.html)
-  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/PACBIO/HG003.output.visual_report.html)
-  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/PACBIO/HG004.output.visual_report.html)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.1/PACBIO/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.1/PACBIO/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.1/PACBIO/HG004.output.visual_report.html)
 
 ### Accuracy
 
@@ -138,9 +138,9 @@ truth), which was held out while training.
 | SNP   | 677      | 2        | 0        | 0.997054      | 1.0              | 0.998525        |
 
 * See VCF stats report (for all chromosomes)
-  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WES/HG002.output.visual_report.html)
-  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WES/HG003.output.visual_report.html)
-  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.0/WES/HG004.output.visual_report.html)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.1/WES/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.1/WES/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.6.1/WES/HG004.output.visual_report.html)
 
 ## How to reproduce the metrics on this page
 
