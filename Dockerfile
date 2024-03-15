@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
-ARG VERSION=1.6.0
+ARG VERSION=1.6.1
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
 FROM continuumio/miniconda3 as conda_setup
