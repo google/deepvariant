@@ -85,8 +85,6 @@ def get_wgs_config(config: ml_collections.ConfigDict):
   config.use_ema = True
   config.ema_momentum = 0.991463134331829
 
-  return config
-
 
 def get_exome_config(config: ml_collections.ConfigDict):
   """Config parameters for exome training."""
