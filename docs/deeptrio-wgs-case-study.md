@@ -82,7 +82,7 @@ command.
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.6.0"
+BIN_VERSION="1.6.1"
 
 sudo docker pull google/deepvariant:deeptrio-"${BIN_VERSION}"
 

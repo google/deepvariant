@@ -62,7 +62,7 @@ YOUR_PROJECT=REPLACE_WITH_YOUR_PROJECT
 OUTPUT_GCS_BUCKET=REPLACE_WITH_YOUR_GCS_BUCKET
 
 BUCKET="gs://deepvariant"
-VERSION="1.6.0"
+VERSION="1.6.1"
 DOCKER_IMAGE="google/deepvariant:${VERSION}"
 
 MODEL_BUCKET="${BUCKET}/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard"
@@ -115,7 +115,7 @@ gsutil -m cp -r "${DATA_BUCKET}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Io
 ```bash
 sudo apt -y update
 sudo apt -y install parallel
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.6/scripts/install_nvidia_docker.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.6.1/scripts/install_nvidia_docker.sh
 bash -x install_nvidia_docker.sh
 ```
 
@@ -191,7 +191,7 @@ cat "${OUTPUT_DIR}/training_set.with_label.tfrecord-00000-of-00016.gz.example_in
 
 ```json
 {
-  "version": "1.6.0",
+  "version": "1.6.1",
   "shape": [100, 221, 7],
   "channels": [1, 2, 3, 4, 5, 6, 19]
 }
@@ -284,7 +284,7 @@ Then, get the script that performs shuffling:
 
 ```bash
 mkdir -p ${SHUFFLE_SCRIPT_DIR}
-wget https://raw.githubusercontent.com/google/deepvariant/r1.6/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
+wget https://raw.githubusercontent.com/google/deepvariant/r1.6.1/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
 ```
 
 Next, we shuffle the data using DataflowRunner. Before that, please make sure
@@ -393,7 +393,7 @@ training parameters. Parameters within this training file can be overridden when
 we run `train` by passing `--config.<param>=<value>`.
 
 ```bash
-curl https://raw.githubusercontent.com/google/deepvariant/r1.6/deepvariant/dv_config.py > dv_config.py
+curl https://raw.githubusercontent.com/google/deepvariant/r1.6.1/deepvariant/dv_config.py > dv_config.py
 ```
 
 ### Start `train`
@@ -410,7 +410,7 @@ this dataset, and are not recommended as the best default either.
     --config=dv_config.py:base \
     --config.train_dataset_pbtxt="${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt" \
     --config.tune_dataset_pbtxt="${OUTPUT_DIR}/validation_set.dataset_config.pbtxt" \
-    --config.init_checkpoint=gs://deepvariant/models/DeepVariant/1.6.0/checkpoints/wgs/deepvariant.wgs.ckpt \
+    --config.init_checkpoint=gs://deepvariant/models/DeepVariant/1.6.1/checkpoints/wgs/deepvariant.wgs.ckpt \
     --config.num_epochs=10 \
     --config.learning_rate=0.0001 \
     --config.num_validation_examples=0 \

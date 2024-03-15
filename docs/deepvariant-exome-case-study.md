@@ -68,7 +68,7 @@ curl ${HTTPDIR}/idt_capture_novogene.grch38.bed > input/idt_capture_novogene.grc
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.6.0"
+BIN_VERSION="1.6.1"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \

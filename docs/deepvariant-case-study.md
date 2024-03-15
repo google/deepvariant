@@ -67,7 +67,7 @@ DeepVariant pipeline consists of 3 steps: `make_examples`, `call_variants`, and
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.6.0"
+BIN_VERSION="1.6.1"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \

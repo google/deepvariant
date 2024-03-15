@@ -143,7 +143,7 @@ container, you can `ls` inside the container. For example, using the setup shown
 in the README and looking inside the `/input` volume:
 
 ```
-BIN_VERSION="1.6.0"
+BIN_VERSION="1.6.1"
 docker run \
   -v "YOUR_INPUT_DIR":"/input" \
   -v "YOUR_OUTPUT_DIR:/output" \
@@ -158,7 +158,7 @@ and outside the Docker container.
 ```
 echo $HOME # see what your home directory is first.
 ls $HOME
-BIN_VERSION="1.6.0"
+BIN_VERSION="1.6.1"
 sudo docker run \
   -v "${HOME}":"${HOME}" \
   google/deepvariant:"${BIN_VERSION}" \
@@ -171,7 +171,7 @@ Since the DeepVariant v0.9 release, we recommend
 "[Best practices for multi-sample variant calling with DeepVariant](https://github.com/google/deepvariant/blob/r0.9/docs/trio-merge-case-study.md)".
 
 For specifically calling on duos or trios, we introduced
-[DeepTrio](https://github.com/google/deepvariant/blob/r1.6/docs/deeptrio-details.md)
+[DeepTrio](https://github.com/google/deepvariant/blob/r1.6.1/docs/deeptrio-details.md)
 in v1.1.
 
 ## Why am I seeing "CUDA_ERROR_NOT_INITIALIZED: initialization error" while running on GPU?
