@@ -475,14 +475,22 @@ function get_docker_image() {
 
   else
     if [[ "${USE_GPU}" = true ]]; then
-      IMAGE="${DOCKER_SOURCE}:deepsomatic-${BIN_VERSION}-gpu"
+      if [[ "${DOCKER_SOURCE}" = "google/deepsomatic" ]]; then
+        IMAGE="${DOCKER_SOURCE}:${BIN_VERSION}-gpu"
+      else
+        IMAGE="${DOCKER_SOURCE}:deepsomatic-${BIN_VERSION}-gpu"
+      fi
       # shellcheck disable=SC2027
       # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
         (sleep 5 ; sudo docker pull "${IMAGE}")"
       docker_args+=( --gpus 1 )
     else
-      IMAGE="${DOCKER_SOURCE}:deepsomatic-${BIN_VERSION}"
+      if [[ "${DOCKER_SOURCE}" = "google/deepsomatic" ]]; then
+        IMAGE="${DOCKER_SOURCE}:${BIN_VERSION}"
+      else
+        IMAGE="${DOCKER_SOURCE}:deepsomatic-${BIN_VERSION}"
+      fi
       # shellcheck disable=SC2027
       # shellcheck disable=SC2086
       run "sudo docker pull "${IMAGE}" || \
