@@ -225,9 +225,10 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.tune_every_steps = 12_800
 
   # Data Pipeline Options
+  config.buffer_size = 16 * 1000 * 1000
   config.prefetch_buffer_bytes = 16 * 1000 * 1000
   config.shuffle_buffer_elements = 50_000
-  config.input_read_threads = 64
+  config.input_reader_threads = 32
 
   # Placeholder value for limiting training examples. 0=No limit.
   config.limit = 0

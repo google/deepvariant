@@ -335,12 +335,22 @@ def train(config: ml_collections.ConfigDict):
       mode='train',
       strategy=strategy,
       config=config,
+      limit=-1,  # -1 repeats input_fn.
+      batch_size=config.batch_size,
+      buffer_size=config.buffer_size,
+      input_reader_threads=config.input_reader_threads,
+      shuffle_buffer_elements=config.shuffle_buffer_elements,
   )
   tune_ds = data_providers.input_fn(
       tune_dataset_config.tfrecord_path,
       mode='tune',
       strategy=strategy,
       config=config,
+      limit=-1,  # -1 repeats input_fn.
+      batch_size=config.batch_size,
+      buffer_size=config.buffer_size,
+      input_reader_threads=config.input_reader_threads,
+      shuffle_buffer_elements=config.shuffle_buffer_elements,
   )
   train_ds, tune_ds = iter(train_ds), iter(tune_ds)
   num_train_steps = steps_per_epoch * config.num_epochs
