@@ -154,7 +154,7 @@ Use `gcloud compute ssh` to log in to the newly created instance.
 Download and run any of the following case study scripts:
 
 ```
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.6/scripts/inference_deeptrio.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.6.1/scripts/inference_deeptrio.sh
 
 # WGS
 bash inference_deeptrio.sh --model_preset WGS
