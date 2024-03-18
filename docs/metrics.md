@@ -151,7 +151,7 @@ Download and run any of the following case study scripts:
 
 ```
 # Get the script.
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.6/scripts/inference_deepvariant.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.6.1/scripts/inference_deepvariant.sh
 
 # WGS
 bash inference_deepvariant.sh --model_preset WGS
