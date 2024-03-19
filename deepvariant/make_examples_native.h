@@ -126,7 +126,8 @@ class ExamplesGenerator {
       const std::vector<int>& sample_order,
       // std::string has to be used here instead of absl::string view due to the
       // PyClif restrictions.
-      const std::string& role, const std::vector<VariantLabel>& labels);
+      const std::string& role, const std::vector<VariantLabel>& labels,
+      std::vector<int>* image_shape);
 
  private:
   friend class ExamplesGeneratorPeer;
@@ -150,7 +151,7 @@ class ExamplesGenerator {
       const nucleus::genomics::v1::Variant& variant,
       const std::vector<std::string>& alt_combination,
       std::unordered_map<std::string, int>& stats,
-      const VariantLabel* label = nullptr) const;
+      std::vector<int>& image_shape, const VariantLabel* label = nullptr) const;
 
   // Generates one or more examples from a given candidate. Example(s) are
   // written to TFRecord.
@@ -159,7 +160,7 @@ class ExamplesGenerator {
       const std::vector<int>& sample_order,
       const std::vector<InMemoryReader>& readers,
       std::unordered_map<std::string, int>& stats,
-      const VariantLabel* label = nullptr);
+      std::vector<int>& image_shape, const VariantLabel* label = nullptr);
 
   void CreateAltAlignedImages(
       const DeepVariantCall& candidate,

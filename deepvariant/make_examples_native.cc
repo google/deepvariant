@@ -351,13 +351,12 @@ std::string ExamplesGenerator::EncodeExample(
     const std::vector<std::unique_ptr<ImageRow>>& image,
     const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
     const Variant& variant, const std::vector<std::string>& alt_combination,
-    std::unordered_map<std::string, int>& stats,
+    std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
     const VariantLabel* label) const {
   // TODO Once we know the number of channels in advance we should
   // allocate data with the correct size to avoid vector resizing when data is
   // filled.
   std::vector<unsigned char> data;
-  std::array<int, 3> image_shape;
   FillPileupArray(image, alt_image, alt_aligned_pileup_, &data);
   // if AltAlignedPileup::kRows is set then number of
   // rows equals: (image.size + alt_image_1.size + alt_image_2.size) or
@@ -562,7 +561,8 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     const DeepVariantCall& candidate, const Sample& sample,
     const std::vector<int>& sample_order,
     const std::vector<InMemoryReader>& readers,
-    std::unordered_map<std::string, int>& stats, const VariantLabel* label) {
+    std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
+    const VariantLabel* label) {
   const auto& variant = candidate.variant();
   int image_start_pos = variant.start() - half_width_;
   // Pileup range.
@@ -618,7 +618,8 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       }
     }
     sample.writer->WriteRecord(EncodeExample(ref_images, alt_images, variant,
-                                             alt_combination, stats, label));
+                                             alt_combination, stats,
+                                             image_shape, label));
   }
 }
 
@@ -631,7 +632,7 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
     const std::vector<std::vector<nucleus::ConstProtoPtr<Read>>>&
         reads_per_sample,
     const std::vector<int>& sample_order, const std::string& role,
-    const std::vector<VariantLabel>& labels) {
+    const std::vector<VariantLabel>& labels, std::vector<int>* image_shape) {
   CHECK(labels.empty() || candidates.size() == labels.size());
   // Load reads.
   std::vector<InMemoryReader> readers;
@@ -643,9 +644,9 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
     readers.push_back(InMemoryReader(InMemoryReader(reads)));
   }
   for (int i = 0; i < candidates.size(); i++) {
-    CreateAndWriteExamplesForCandidate(*(candidates[i].p_), samples_[role],
-                                       sample_order, readers, stats,
-                                       labels.empty() ? nullptr : &labels[i]);
+    CreateAndWriteExamplesForCandidate(
+        *(candidates[i].p_), samples_[role], sample_order, readers, stats,
+        *image_shape, labels.empty() ? nullptr : &labels[i]);
   }
   return stats;
 }
