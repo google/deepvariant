@@ -547,7 +547,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         ValueError,
         (
             'NOT_FOUND: Unknown reference_name '
-            'reference_name:[ \t]*"chr20" start: 9999999 end: 10000999'
+            'reference_name:.*"chr20" start: 9999999 end: 10000999'
         ),
     ):
       make_examples_core.make_examples_runner(options)
