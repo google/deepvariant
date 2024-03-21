@@ -57,8 +57,6 @@ def get_golden_dataset(
           path=testdata.GOLDEN_TRAINING_EXAMPLES,
           config=config,
           mode=mode,
-          batch_size=config.batch_size,
-          limit=0,
       )
   )
 
@@ -66,50 +64,21 @@ def get_golden_dataset(
 class ParseExampleTest(parameterized.TestCase):
 
   @parameterized.parameters(
-      dict(
-          mode='train',
-          expected_keys={'image', 'image/encoded', 'label', 'sample_weight'},
-          debugging_true_label_mode=False,
-      ),
-      dict(
-          mode='train',
-          expected_keys={'image', 'image/encoded', 'label', 'sample_weight'},
-          debugging_true_label_mode=False,
-          class_weights='1,10,100',
-      ),
-      dict(
-          mode='tune',
-          expected_keys={'image', 'image/encoded', 'label', 'sample_weight'},
-          debugging_true_label_mode=False,
-      ),
+      dict(mode='train', expected_keys={'image', 'label', 'sample_weight'}),
+      dict(mode='tune', expected_keys={'image', 'label', 'sample_weight'}),
       dict(
           mode='predict',
           expected_keys={
               'image',
-              'image/encoded',
               'sample_weight',
               'variant/encoded',
               'alt_allele_indices/encoded',
           },
-          debugging_true_label_mode=False,
-      ),
-      dict(
-          mode='predict',
-          expected_keys={
-              'image',
-              'image/encoded',
-              'sample_weight',
-              'variant/encoded',
-              'alt_allele_indices/encoded',
-              'label',
-          },
-          debugging_true_label_mode=True,
       ),
       dict(
           mode='debug',
           expected_keys={
               'image',
-              'image/encoded',
               'label',
               'locus',
               'variant_type',
@@ -118,40 +87,17 @@ class ParseExampleTest(parameterized.TestCase):
               'alt_allele_indices/encoded',
               'sequencing_type',
           },
-          debugging_true_label_mode=True,
-      ),
-      dict(
-          mode='debug',
-          expected_keys={
-              'image',
-              'image/encoded',
-              'locus',
-              'variant_type',
-              'sample_weight',
-              'variant/encoded',
-              'alt_allele_indices/encoded',
-              'sequencing_type',
-          },
-          debugging_true_label_mode=False,
       ),
   )
-  def test_parse_example(
-      self,
-      mode,
-      expected_keys,
-      debugging_true_label_mode=False,
-      class_weights='',
-  ):
+  def test_parse_example(self, mode, expected_keys):
     path = testdata.GOLDEN_TRAINING_EXAMPLES
     ds = tf.data.TFRecordDataset(path, compression_type='GZIP')
     item = ds.take(1).get_single_element()
     input_shape = dv_utils.get_shape_from_examples_path(path)
     config = dv_config.get_config('exome')
-    config.class_weights = class_weights
     parse_example = data_providers.create_parse_example_fn(
-        mode=mode,
-        config=config,
-        debugging_true_label_mode=debugging_true_label_mode,
+        config,
+        mode,
     )
     output = parse_example(item, input_shape)
     self.assertIsInstance(output, dict)
@@ -162,8 +108,8 @@ class ClassWeightsTest(absltest.TestCase):
 
   def test_parse_example(self):
     config = dv_config.get_config('exome+test')
-    config.batch_size = 32
-    config.class_weights = '1,10,100'
+    config.batch_size = 128
+    config.class_weights = '1,1,10'
     batch = next(get_golden_dataset(config=config, mode='train'))
     _, _, sample_weights = batch
     # Test for sample weights greater than 1
@@ -182,7 +128,6 @@ class CreateExamplesTest(absltest.TestCase):
     with self.assertRaisesRegex(ValueError, 'Mode must be set to'):
       _ = data_providers.input_fn(
           path=testdata.GOLDEN_TRAINING_EXAMPLES,
-          batch_size=self.config.batch_size,
           config=self.config,
           mode='invalid_mode',
       )
@@ -192,21 +137,9 @@ class CreateExamplesTest(absltest.TestCase):
         path=testdata.GOLDEN_TRAINING_EXAMPLES,
         config=self.config,
         mode='train',
-        batch_size=self.config.batch_size,
     )
     item = ds.take(1).get_single_element()
     self.assertIsInstance(item, tuple)
-
-  def test_limit(self):
-    ds = data_providers.input_fn(
-        path=testdata.GOLDEN_TRAINING_EXAMPLES,
-        config=self.config,
-        mode='predict',
-        batch_size=self.config.batch_size,
-        limit=3,
-    )
-    batch = next(iter(ds))
-    self.assertEqual(batch['image'].shape[0], 3)
 
 
 class DataProviderTest(parameterized.TestCase):

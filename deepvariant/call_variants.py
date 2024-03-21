@@ -40,7 +40,6 @@ from absl import logging
 import numpy as np
 import tensorflow as tf
 
-from deepvariant import data_providers
 from deepvariant import dv_utils
 from deepvariant import keras_modeling as modeling
 from deepvariant import logging_level
@@ -55,6 +54,12 @@ from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import vis
 
+
+_ALLOW_EXECUTION_HARDWARE = [
+    'auto',  # Default, no validation.
+    'cpu',  # Don't use accelerators, even if available.
+    'accelerator',  # Must be hardware acceleration or an error will be raised.
+]
 
 # The number of digits past the decimal point that genotype likelihoods are
 # rounded to, for numerical stability.
@@ -181,10 +186,7 @@ flags.DEFINE_integer(
     ),
 )
 _LIMIT = flags.DEFINE_integer(
-    'limit',
-    0,
-    'If set to > 0, limit processing to this number of variants. If 0, run all'
-    ' variants.',
+    'limit', 0, 'If set to > 0, limit processing to <= limit examples.'
 )
 
 
@@ -344,7 +346,7 @@ def _create_cvo_proto(
         has_deletion=variant_utils.has_deletion(variant),
         is_snp=variant_utils.is_snp(variant),
         predicted_label=np.argmax(gls),
-        true_label=np.argmax(true_labels, axis=-1),
+        true_label=true_labels,
         logits=logits,
         prelogits=prelogits,
         image_encoded=image_encoded,
@@ -359,6 +361,74 @@ def _create_cvo_proto(
       debug_info=debug_info,
   )
   return call_variants_output
+
+
+# TODO: Consider creating one data loading function to re-use simliar
+#                code with training in train_inceptionv3.py.
+def get_dataset(
+    path,
+    example_shape,
+    batch_size,
+    include_debug_info,
+    debugging_true_label_mode,
+):
+  """Parse TFRecords, do image preprocessing, and return the image dataset for inference and the variant/alt-allele dataset for writing the variant calls."""
+
+  proto_features = {
+      'image/encoded': tf.io.FixedLenFeature((), tf.string),
+      'variant/encoded': tf.io.FixedLenFeature((), tf.string),
+      'alt_allele_indices/encoded': tf.io.FixedLenFeature((), tf.string),
+  }
+  if debugging_true_label_mode:
+    proto_features['label'] = tf.io.FixedLenFeature((1), tf.int64)
+
+  def _parse_example(example):
+    """Parses a serialized tf.Example."""
+    parsed_features = tf.io.parse_single_example(
+        serialized=example, features=proto_features
+    )
+    image_encoded = (
+        parsed_features['image/encoded'] if include_debug_info else b''
+    )
+    image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
+    image = tf.reshape(image, example_shape)
+    image = tf.cast(image, tf.float32)
+    image = dv_utils.preprocess_images(image)
+    variant = parsed_features['variant/encoded']
+    alt_allele_indices = parsed_features['alt_allele_indices/encoded']
+    optional_label = None
+    if debugging_true_label_mode:
+      optional_label = parsed_features['label']
+    return image_encoded, image, variant, alt_allele_indices, optional_label
+
+  ds = tf.data.TFRecordDataset.list_files(
+      sharded_file_utils.normalize_to_sharded_file_pattern(path), shuffle=False
+  )
+
+  def load_dataset(filename):
+    dataset = tf.data.TFRecordDataset(
+        filename,
+        buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
+        compression_type='GZIP',
+    )
+    return dataset
+
+  ds = ds.interleave(
+      load_dataset,
+      cycle_length=_DEFAULT_INPUT_READ_THREADS,
+      num_parallel_calls=tf.data.AUTOTUNE,
+  )
+  if _LIMIT.value > 0:
+    ds = ds.take(_LIMIT.value)
+
+  enc_image_variant_alt_allele_ds = ds.map(
+      map_func=_parse_example, num_parallel_calls=tf.data.AUTOTUNE
+  )
+
+  enc_image_variant_alt_allele_ds = enc_image_variant_alt_allele_ds.batch(
+      batch_size=batch_size
+  ).prefetch(tf.data.AUTOTUNE)
+  return enc_image_variant_alt_allele_ds
 
 
 def post_processing(
@@ -432,7 +502,6 @@ def call_variants(
     include_debug_info: bool,
     debugging_true_label_mode: bool,
     activation_layers: Sequence[str],
-    limit: int,
 ):
   """Main driver of call_variants."""
   first_example = dv_utils.get_one_example_from_examples_path(examples_filename)
@@ -573,14 +642,14 @@ def call_variants(
       )
       model.load_weights(checkpoint_path).expect_partial()
 
-    mode = 'debug' if include_debug_info else 'predict'
-    enc_image_variant_alt_allele_ds = data_providers.input_fn(
+    enc_image_variant_alt_allele_ds = get_dataset(
         examples_filename,
-        batch_size=batch_size,
-        mode=mode,
-        debugging_true_label_mode=debugging_true_label_mode,
-        limit=limit,
+        example_shape,
+        batch_size,
+        include_debug_info,
+        debugging_true_label_mode,
     )
+
     activation_model = model
     if include_debug_info and activation_layers:
       if not use_saved_model:
@@ -592,14 +661,15 @@ def call_variants(
     n_examples = 0
     n_batches = 0
     start_time = time.time()
-    for record in enc_image_variant_alt_allele_ds:
+    for (
+        image_encodes,
+        images_in_batch,
+        variants,
+        alt_allele_indices_list,
+        optional_label_list,
+    ) in enc_image_variant_alt_allele_ds:
       # These elements per iteration are read from the `get_dataset` function,
       # specifically the `_parse_example` function within it.
-      images_encoded = record['image/encoded']
-      images_in_batch = record['image']
-      variants = record['variant/encoded']
-      alt_allele_indices_list = record['alt_allele_indices/encoded']
-      optional_label_list = record.get('label', None)
       if use_saved_model:
         predictions = model.signatures['serving_default'](images_in_batch)
         predictions = predictions['classification'].numpy()
@@ -655,7 +725,7 @@ def call_variants(
       )
       output_queue.put((
           predictions,
-          images_encoded,
+          image_encodes,
           variants,
           alt_allele_indices_list,
           optional_label_list,
@@ -709,7 +779,6 @@ def main(argv=()):
         include_debug_info=FLAGS.include_debug_info,
         debugging_true_label_mode=FLAGS.debugging_true_label_mode,
         activation_layers=FLAGS.activation_layers,
-        limit=_LIMIT.value,
     )
     logging.info('Complete: call_variants.')
 

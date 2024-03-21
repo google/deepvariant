@@ -875,7 +875,6 @@ py_library(
     srcs = ["call_variants.py"],
     srcs_version = "PY3",
     deps = [
-        ":data_providers",
         ":dv_utils",
         ":keras_modeling",
         ":logging_level",
@@ -1132,7 +1131,7 @@ py_library(
 
 py_test(
     name = "data_providers_test",
-    size = "large",
+    size = "medium",
     srcs = ["data_providers_test.py"],
     data = [":testdata"],
     main = "data_providers_test.py",
