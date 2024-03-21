@@ -70,6 +70,7 @@ def get_wgs_config(config: ml_collections.ConfigDict):
   config.optimizer = 'adam'
   config.beta_1 = 0.9651804083266324
   config.beta_2 = 0.9665259112630292
+  config.weight_decay = 0.00004
   config.adaptive_epsilon = True
   config.optimizer_weight_decay = 0.0
 
