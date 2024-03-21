@@ -144,6 +144,13 @@ def get_deepsomatic_wes_config(
   config.early_stopping_patience = 10
 
 
+def get_deepsomatic_wgs_tumor_only_config(config: ml_collections.ConfigDict):
+  get_wgs_config(config)
+  config.class_weights = '1,1,10'
+  config.train_dataset_pbtxt = '/placer/prod/home/brain-genomics/danielecook/deepsomatic/ds_wgs_tumor_only/ds_wgs_tumor_only_train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/placer/prod/home/brain-genomics/danielecook/deepsomatic/ds_wgs_tumor_only/ds_wgs_tumor_only_tune.dataset_config.pbtxt'
+
+
 # FFPE Configs
 def get_deepsomatic_wgs_ffpe_config(
     config: ml_collections.ConfigDict,
@@ -247,6 +254,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_exome_config(config)
   elif config_name == 'deepsomatic_wgs':
     get_deepsomatic_wgs_config(config)
+  elif config_name == 'deepsomatic_wgs_tumor_only':
+    get_deepsomatic_wgs_tumor_only_config(config)
   elif config_name == 'deepsomatic_wes':
     get_deepsomatic_wes_config(config)
   elif config_name == 'deepsomatic_wgs_ffpe':

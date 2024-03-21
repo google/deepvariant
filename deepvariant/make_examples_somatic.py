@@ -34,7 +34,6 @@ from absl import app
 from absl import flags
 
 from deepvariant import dv_constants
-
 from deepvariant import logging_level
 from deepvariant import make_examples_core
 from deepvariant import make_examples_options
@@ -48,8 +47,9 @@ NO_DOWNSAMPLING = 0.0
 
 # 1 is the tumor, 0 is the normal match.
 # Tumor sample is the "main" sample because the goal here is somatic calling.
-MAIN_SAMPLE_INDEX = 1
-NORMAL_SAMPLE_INDEX = 0
+NORMAL_SAMPLE_INDEX = (
+    0  # If the normal sample is present, it will appear first.
+)
 
 FLAGS = flags.FLAGS
 
@@ -117,18 +117,18 @@ _DOWNSAMPLE_FRACTION_NORMAL = flags.DEFINE_float(
 )
 _PILEUP_IMAGE_HEIGHT_TUMOR = flags.DEFINE_integer(
     'pileup_image_height_tumor',
-    0,
+    dv_constants.PILEUP_DEFAULT_HEIGHT,
     (
         'Height for the part of the pileup image showing reads from the tumor. '
-        'If 0, uses the default height'
+        f'Uses {dv_constants.PILEUP_DEFAULT_HEIGHT} by default.'
     ),
 )
 _PILEUP_IMAGE_HEIGHT_NORMAL = flags.DEFINE_integer(
     'pileup_image_height_normal',
-    0,
+    dv_constants.PILEUP_DEFAULT_HEIGHT,
     (
         'Height for the part of the pileup image showing reads from the matched'
-        ' normal. If 0, uses the default height'
+        f' normal. Uses {dv_constants.PILEUP_DEFAULT_HEIGHT} by default.'
     ),
 )
 
@@ -138,73 +138,69 @@ _PILEUP_IMAGE_HEIGHT_NORMAL = flags.DEFINE_integer(
 FLAGS.set_default('vsc_min_fraction_multiplier', float('inf'))
 
 
-def tumor_normal_samples_from_flags(add_flags=True, flags_obj=None):
+def tumor_normal_samples_from_flags(flags_obj):
   """Collects sample-related options into a list of samples."""
-  # Sample-specific options.
-  tumor_sample_name = make_examples_core.assign_sample_name(
-      sample_name_flag=flags_obj.sample_name_tumor,
-      reads_filenames=flags_obj.reads_tumor,
-  )
+  samples_in_order = []
 
-  normal_sample_name = make_examples_core.assign_sample_name(
-      sample_name_flag=flags_obj.sample_name_normal,
-      reads_filenames=flags_obj.reads_normal,
-  )
+  def setup_sample(role):
+    pileup_height = (
+        flags_obj.pileup_image_height_tumor
+        if role == 'tumor'
+        else flags_obj.pileup_image_height_normal
+    )
+    read_filenames = (
+        flags_obj.reads_tumor if role == 'tumor' else flags_obj.reads_normal
+    )
+    sample_name_flag = (
+        flags_obj.sample_name_tumor
+        if role == 'tumor'
+        else flags_obj.sample_name_normal
+    )
+    reads_filenames_split = read_filenames.split(',')
+    sample_name = make_examples_core.assign_sample_name(
+        sample_name_flag=sample_name_flag,
+        reads_filenames=read_filenames,
+    )
+    skip_output_generation = True if role == 'normal' else False
 
-  tumor_sample_options = deepvariant_pb2.SampleOptions(
-      role='tumor',
-      name=tumor_sample_name,
-      variant_caller_options=make_examples_core.make_vc_options(
-          sample_name=tumor_sample_name, flags_obj=flags_obj
-      ),
-      order=[0, 1],
-      pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT,
-  )
-  normal_sample_options = deepvariant_pb2.SampleOptions(
-      role='normal',
-      name=normal_sample_name,
-      variant_caller_options=make_examples_core.make_vc_options(
-          sample_name=normal_sample_name, flags_obj=flags_obj
-      ),
-      skip_output_generation=True,
-      pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT,
-  )
+    sample_options = deepvariant_pb2.SampleOptions(
+        role=role,
+        name=sample_name,
+        variant_caller_options=make_examples_core.make_vc_options(
+            sample_name=sample_name, flags_obj=flags_obj
+        ),
+        skip_output_generation=skip_output_generation,
+        pileup_height=pileup_height,
+        reads_filenames=reads_filenames_split,
+    )
+    if role == 'tumor':
+      if flags_obj.reads_normal and flags_obj.reads_tumor:
+        sample_options.order.extend([0, 1])
+      else:
+        sample_options.order.extend([0])
 
-  if add_flags:
-    if flags_obj.reads_tumor:
-      tumor_sample_options.reads_filenames.extend(
-          flags_obj.reads_tumor.split(',')
-      )
-    if flags_obj.reads_normal:
-      normal_sample_options.reads_filenames.extend(
-          flags_obj.reads_normal.split(',')
-      )
+    downsample_fraction = (
+        flags_obj.downsample_fraction_tumor
+        if role == 'tumor'
+        else flags_obj.downsample_fraction_normal
+    )
+    if downsample_fraction != NO_DOWNSAMPLING:
+      sample_options.downsample_fraction = downsample_fraction
+    samples_in_order.append(sample_options)
 
-    if flags_obj.downsample_fraction_tumor != NO_DOWNSAMPLING:
-      tumor_sample_options.downsample_fraction = (
-          flags_obj.downsample_fraction_tumor
-      )
-    if flags_obj.downsample_fraction_normal != NO_DOWNSAMPLING:
-      normal_sample_options.downsample_fraction = (
-          flags_obj.downsample_fraction_normal
-      )
+  if flags_obj.reads_normal:
+    setup_sample('normal')
 
-    if flags_obj.pileup_image_height_tumor:
-      tumor_sample_options.pileup_height = flags_obj.pileup_image_height_tumor
-    if flags_obj.pileup_image_height_normal:
-      normal_sample_options.pileup_height = flags_obj.pileup_image_height_normal
+  setup_sample('tumor')
 
-  # Ordering here determines the default order of samples, and when a sample
-  # above has a custom .order, then this is the list those indices refer to.
-  samples_in_order = [normal_sample_options, tumor_sample_options]
-  sample_role_to_train = 'tumor'
-  return samples_in_order, sample_role_to_train
+  return samples_in_order, 'tumor'
 
 
-def default_options(add_flags=True, flags_obj=None):
+def default_options(main_sample_index, add_flags=True, flags_obj=None):
   """Creates a MakeExamplesOptions proto populated with reasonable defaults.
 
   Args:
+    main_sample_index: int. Indicates the position of the tumor sample.
     add_flags: bool. defaults to True. If True, we will push the value of
       certain FLAGS into our options. If False, those option fields are left
       uninitialized.
@@ -221,7 +217,7 @@ def default_options(add_flags=True, flags_obj=None):
     flags_obj = FLAGS
 
   samples_in_order, sample_role_to_train = tumor_normal_samples_from_flags(
-      add_flags=add_flags, flags_obj=flags_obj
+      flags_obj=flags_obj
   )
 
   options = make_examples_options.shared_flags_to_options(
@@ -229,37 +225,41 @@ def default_options(add_flags=True, flags_obj=None):
       flags_obj=flags_obj,
       samples_in_order=samples_in_order,
       sample_role_to_train=sample_role_to_train,
-      main_sample_index=MAIN_SAMPLE_INDEX,
+      main_sample_index=main_sample_index,
   )
 
-  if add_flags:
+  if _READS_NORMAL.value:
     options.bam_fname = f'{os.path.basename(flags_obj.reads_tumor)}|{os.path.basename(flags_obj.reads_normal)}'
+  else:
+    options.bam_fname = os.path.basename(flags_obj.reads_tumor)
 
   return options
 
 
-def check_options_are_valid(options):
+def check_options_are_valid(options, main_sample_index):
   """Checks that all the options chosen make sense together."""
 
   # Check for general flags (shared for DeepVariant and DeepTrio).
   make_examples_options.check_options_are_valid(
-      options, main_sample_index=MAIN_SAMPLE_INDEX
+      options, main_sample_index=main_sample_index
   )
 
-  tumor = options.sample_options[MAIN_SAMPLE_INDEX]
-  normal = options.sample_options[NORMAL_SAMPLE_INDEX]
+  tumor = options.sample_options[main_sample_index]
+  if _READS_NORMAL.value:
+    normal = options.sample_options[NORMAL_SAMPLE_INDEX]
 
-  if (
-      tumor.variant_caller_options.sample_name
-      == normal.variant_caller_options.sample_name
-  ):
-    errors.log_and_raise(
-        (
-            'Sample names of tumor and normal samples cannot be the same. Use '
-            '--sample_name_tumor and --sample_name_normal with different names '
-        ),
-        errors.CommandLineError,
-    )
+    if (
+        tumor.variant_caller_options.sample_name
+        == normal.variant_caller_options.sample_name
+    ):
+      errors.log_and_raise(
+          (
+              'Sample names of tumor and normal samples cannot be the same. Use'
+              ' --sample_name_tumor and --sample_name_normal with different'
+              ' names '
+          ),
+          errors.CommandLineError,
+      )
 
 
 def main(argv=()):
@@ -279,8 +279,10 @@ def main(argv=()):
     hts_verbose.set(hts_verbose.htsLogLevel[FLAGS.hts_logging_level])
 
     # Set up options; may do I/O.
-    options = default_options(add_flags=True, flags_obj=FLAGS)
-    check_options_are_valid(options)
+    is_tumor_only = _READS_TUMOR.value and not _READS_NORMAL.value
+    main_sample_index = 0 if is_tumor_only else 1
+    options = default_options(main_sample_index, flags_obj=FLAGS)
+    check_options_are_valid(options, main_sample_index)
 
     # Run!
     make_examples_core.make_examples_runner(options)
@@ -291,7 +293,6 @@ if __name__ == '__main__':
       'examples',
       'mode',
       'reads_tumor',
-      'reads_normal',
       'ref',
   ])
   app.run(main)
