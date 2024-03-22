@@ -593,7 +593,7 @@ function setup_args() {
       happy_args+=( -l "${REGIONS}")
     fi
   fi
-  if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" =~ ^1\.[2-9]\.0$ ]]; then
+  if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" =~ ^1\.[2-9]\.[0-9]$ ]]; then
     extra_args+=( --runtime_report )
   fi
 }
