@@ -64,13 +64,23 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-
-
-bool SortByAlignment(std::tuple<int, int, std::unique_ptr<ImageRow>>& a,
-                     std::tuple<int, int, std::unique_ptr<ImageRow>>& b) {
-  // Sort tuples by making tuples with just the ints.
-  return std::tuple<int, int>(std::get<0>(a), std::get<1>(a)) <
-         std::tuple<int, int>(std::get<0>(b), std::get<1>(b));
+bool SortByAlignment(
+    std::tuple<int, const Read*, std::unique_ptr<ImageRow>>& a,
+    std::tuple<int, const Read*, std::unique_ptr<ImageRow>>& b) {
+  // Sort reads by position + fragment_name + read_number.
+  const Read* read1 = std::get<1>(a);
+  const Read* read2 = std::get<1>(b);
+  int position1 = read1->alignment().position().position();
+  int position2 = read2->alignment().position().position();
+  if (std::tuple<int, int>(std::get<0>(a), position1) ==
+      std::tuple<int, int>(std::get<0>(b), position2)) {
+    return std::tuple<std::string, int>(read1->fragment_name(),
+                                        read1->read_number()) <
+           std::tuple<std::string, int>(read2->fragment_name(),
+                                        read2->read_number());
+  }
+  return std::tuple<int, int>(std::get<0>(a), position1) <
+         std::tuple<int, int>(std::get<0>(b), position2);
 }
 
 ImageRow::ImageRow(int width, int num_channels)
@@ -133,7 +143,7 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     const std::vector<int64_t>* alignment_positions) {
   // The width of a pileup is defined by the length of ref_bases. ref_bases must
   // have the correct length.
-  CHECK(alignment_positions == nullptr ||
+  CHECK(alignment_positions == nullptr || alignment_positions->empty() ||
         alignment_positions->size() == reads.size());
   CHECK_EQ(ref_bases.size(), options_.width());
   int pileup_height = sample_options.pileup_height();
@@ -162,7 +172,8 @@ PileupImageEncoderNative::BuildPileupForOneSample(
 
   // We add a row for each read in order, down-sampling if the number of
   // reads is greater than the max reads for each sample.
-  std::vector<std::tuple<int, int, std::unique_ptr<ImageRow>>> pileup_of_reads;
+  std::vector<std::tuple<int, const Read*, std::unique_ptr<ImageRow>>>
+      pileup_of_reads;
   for (int index : read_indices) {
     if (pileup_of_reads.size() >= max_reads) {
       break;
@@ -173,20 +184,18 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     if (image_row == nullptr) {
       continue;
     }
-    if (alignment_positions == nullptr) {
-      pileup_of_reads.push_back(std::make_tuple(
-          GetHapIndex(read), read.alignment().position().position(),
-          std::move(image_row)));
+    if (alignment_positions == nullptr || alignment_positions->empty()) {
+      pileup_of_reads.push_back(
+          std::make_tuple(GetHapIndex(read), &read, std::move(image_row)));
     } else {
-      pileup_of_reads.push_back(std::make_tuple(GetHapIndex(read),
-                                                alignment_positions->at(index),
-                                                std::move(image_row)));
+      pileup_of_reads.push_back(
+          std::make_tuple(GetHapIndex(read), &read, std::move(image_row)));
     }
   }
 
   // Sort reads by alignment position.
   std::sort(pileup_of_reads.begin(), pileup_of_reads.end(), SortByAlignment);
-  for (auto& [hap_index, position, row] : pileup_of_reads) {
+  for (auto& [hap_index, read, row] : pileup_of_reads) {
     rows.push_back(std::move(row));
   }
 
@@ -213,7 +222,7 @@ int PileupImageEncoderNative::GetHapIndex(const Read& read) {
   if (read_info_hp.values().empty()) {
     return default_hap_idx;
   }
-  nucleus::genomics::v1::Value hp_field = read_info_hp.values(0);
+  const nucleus::genomics::v1::Value& hp_field = read_info_hp.values(0);
   if (hp_field.kind_case() != nucleus::genomics::v1::Value::kIntValue) {
     return default_hap_idx;
   }
