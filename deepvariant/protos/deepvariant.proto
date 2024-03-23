@@ -810,7 +810,8 @@ message MakeExamplesOptions {
   // per-sample statistics for training examples.
   string bam_fname = 45;
 
-  // Samples, e.g. a list of 3 for DeepTrio, list of 1 for DeepVariant.
+  // Samples, e.g. a list of 3 for DeepTrio, 2 for DeepSomatic or 1 for
+  // DeepVariant.
   repeated SampleOptions sample_options = 46;
 
   // Sample role to focus on for training. This can be different from the sample

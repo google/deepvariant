@@ -1246,7 +1246,7 @@ class RegionProcessor:
 
   This class helps us to run the very sensitive caller, pileup image creator,
   and variant labeler operations on a single region in parallel across many
-  regions using the PoolExecutor API. In order to do this we need separate three
+  regions using the PoolExecutor API. In order to do this we need three separate
   key operations:
 
   (1) Collect all of the info needed to create our resources (e.g., ref reader)
@@ -2649,7 +2649,7 @@ def processing_regions_from_options(
   Returns:
     Two values. The first is a list of nucleus.genomics.v1.Range protos of the
     regions we should process. The second is a RangeSet containing the calling
-    regions calculated from intersection of input regions, condident regions
+    regions calculated from intersection of input regions, confident regions
     and regions to exclude.
   """
 
