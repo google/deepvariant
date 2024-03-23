@@ -247,6 +247,10 @@ candidate variant, which can result in millions of tiny bam files, so when using
 this, narrow down the DeepVariant run using `--regions` to just the variants you
 want to inspect more closely.
 
+For an example, please see:
+https://github.com/google/deepvariant/issues/691#issuecomment-2014404465
+
+
 ## How are `AD` and `DP` values calculated?
 
 In order to efficiently perform variant calling, DeepVariant partitions the
