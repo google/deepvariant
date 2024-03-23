@@ -103,13 +103,21 @@ ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
       nucleus::IndexedFastaReader::FromFile(fasta_path, fai_path).ValueOrDie());
 
   // Initialize TFRecord writers for each sample.
+  int samples_that_need_writers = 0;
+  for (auto& [role, sample] : samples_) {
+    if (!sample.sample_options.skip_output_generation()) {
+      samples_that_need_writers++;
+    }
+  }
   for (auto& [role, sample] : samples_) {
     if (sample.sample_options.skip_output_generation()) {
       continue;
     }
     // TFRecrd examples are always compressed as it is also in call_variants.
     sample.writer = nucleus::TFRecordWriter::New(
-        GetExamplesFilename(options_, sample), "GZIP");
+        GetExamplesFilename(options_, sample,
+                            /*add_suffix=*/samples_that_need_writers > 1),
+        "GZIP");
   }
 }
 
@@ -123,11 +131,11 @@ ExamplesGenerator::~ExamplesGenerator() {
 }
 
 std::string GetExamplesFilename(const MakeExamplesOptions& options,
-                                const Sample& sample) {
+                                const Sample& sample, bool add_suffix) {
   // If make_examples is run on a single sample or in training mode then suffix
   // is not added to the output file name.
   if (options.mode() == deepvariant::MakeExamplesOptions::TRAINING ||
-      options.sample_options().size() == 1) {
+      !add_suffix) {
     return options.examples_filename();
   } else {
     // Add suffix to the filename.
@@ -182,7 +190,7 @@ std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
                                                int64_t* ref_end_out) const {
   int64_t var_start = variant.start();
   absl::string_view ref_bases = variant.reference_bases();
-  std::string contig = variant.reference_name();
+  const std::string& contig = variant.reference_name();
   int64_t var_end = var_start + ref_bases.size();
 
   std::string prefix = "";

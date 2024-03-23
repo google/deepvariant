@@ -229,7 +229,7 @@ nucleus::genomics::v1::Range MakeRange(const std::string& ref_name,
                                        int64_t start, int64_t end);
 
 std::string GetExamplesFilename(const MakeExamplesOptions& options,
-                                const Sample& sample);
+                                const Sample& sample, bool add_suffix = false);
 
 void FillPileupArray(
     const std::vector<std::unique_ptr<ImageRow>>& image,
