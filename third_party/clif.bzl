@@ -129,7 +129,6 @@ _clif_wrap_cc = rule(
             allow_files = True,
         ),
     },
-    output_to_genfiles = True,
     outputs = {
         "cc_out": "%{module_name}.cc",
         "h_out": "%{module_name}.h",
@@ -389,7 +388,6 @@ _run_clif_proto_parser_rule = rule(
             cfg = "exec",
         ),
     },
-    output_to_genfiles = True,
     implementation = _clif_proto_parser_rule_impl,
 )
 
