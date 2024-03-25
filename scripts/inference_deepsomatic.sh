@@ -437,21 +437,9 @@ function setup_test() {
 
   if ! hash docker 2>/dev/null; then
     echo "'docker' was not found in PATH. Installing docker..."
-    # Install docker using instructions on:
-    # https://docs.docker.com/install/linux/docker-ce/ubuntu/
-    sudo apt-get -qq -y install \
-      apt-transport-https \
-      ca-certificates \
-      curl \
-      gnupg-agent \
-      software-properties-common
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-    sudo add-apt-repository \
-      "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-      $(lsb_release -cs) \
-      stable"
-    sudo apt-get -qq -y update
-    sudo apt-get -qq -y install docker-ce
+    # This installs an older version, which currently can work as a workaround
+    # for the issue in internal#comment23.
+    sudo apt update -y && sudo apt install -y docker.io
   fi
 }
 
@@ -509,6 +497,13 @@ function get_docker_image() {
       python3 -c 'import tensorflow as tf; \
       tf.test.is_gpu_available() or exit(1)' \
       2> /dev/null || exit 1"
+  fi
+  # Pull som.py image earlier too. If there's any issues we can fail early.
+  if [[ "${SKIP_SOMPY}" == "false" ]]; then
+    SOMPY_VERSION="v0.3.9"
+    # Pulling twice in case the first one times out.
+    run "sudo docker pull pkrusche/hap.py:${SOMPY_VERSION} || \
+      (sleep 5 ; sudo docker pull pkrusche/hap.py:${SOMPY_VERSION})"
   fi
 }
 
@@ -612,9 +607,6 @@ function run_sompy() {
   run "zcat <"${INPUT_DIR}/$(basename $REF).gz" >"${UNCOMPRESSED_REF}""
 
   SOMPY_VERSION="v0.3.9"
-  # Pulling twice in case the first one times out.
-  run "sudo docker pull pkrusche/hap.py:${SOMPY_VERSION} || \
-    (sleep 5 ; sudo docker pull pkrusche/hap.py:${SOMPY_VERSION})"
   # shellcheck disable=SC2027
   # shellcheck disable=SC2046
   # shellcheck disable=SC2086
