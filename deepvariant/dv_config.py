@@ -89,7 +89,6 @@ def get_wgs_config(config: ml_collections.ConfigDict):
 
 def get_exome_config(config: ml_collections.ConfigDict):
   """Config parameters for exome training."""
-  # Values from xids/97384092
 
   # Exome Dataset
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
@@ -100,24 +99,25 @@ def get_exome_config(config: ml_collections.ConfigDict):
 
   config.best_checkpoint_metric = 'tune/f1_weighted'
   config.batch_size = 16384
-  config.num_epochs = 80
+  config.num_epochs = 4
   config.optimizer = 'adam'
-  config.beta_1 = 0.749995
-  config.beta_2 = 0.749995
+  config.beta_1 = 0.9575875572181167
+  config.beta_2 = 0.9475272158875401
   config.adaptive_epsilon = True
+  config.weight_decay = 0.00004
   config.optimizer_weight_decay = 0.0
 
-  config.early_stopping_patience = 10
-  config.learning_rate = 0.0000796142074327502
+  config.early_stopping_patience = 250
+  config.learning_rate = 0.00008663001151624387
   config.learning_rate_num_epochs_per_decay = 2.25
   config.learning_rate_decay_rate = 0.9999
   config.warmup_steps = 0
 
-  config.backbone_dropout_rate = 0.25
+  config.backbone_dropout_rate = 0.0
 
   # Exponential Moving Average
   config.use_ema = True
-  config.ema_momentum = 0.899995
+  config.ema_momentum = 0.999
 
 
 # =====================#
@@ -222,7 +222,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.early_stopping_patience = 250
 
   # Weight decay of optimizer
-  config.optimizer_weight_decay = 0.001
+  config.optimizer_weight_decay = 0.0
 
   # An 'iter' refers to a group of train/tune steps run in succession.
   config.steps_per_iter = 128
