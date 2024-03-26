@@ -384,13 +384,13 @@ std::string ExamplesGenerator::EncodeExample(
   int i = 0;
   for (const std::string& alt : variant.alternate_bases()) {
     alt_indices[alt] = i;
-    alt_indices_set.insert(i);
     i++;
   }
   std::vector<int> indices;
   indices.reserve(alt_combination.size());
   for (const std::string& alt : alt_combination) {
     indices.push_back(alt_indices[alt]);
+    alt_indices_set.insert(alt_indices[alt]);
   }
   std::string alt_indices_encoded;
   CallVariantsOutput::AltAlleleIndices alt_indices_proto;
@@ -403,7 +403,11 @@ std::string ExamplesGenerator::EncodeExample(
   Range variant_range;
   std::string variant_range_encoded;
   std::ostringstream s;
-  s << variant.reference_name() << ":" << variant.start() << "-"
+  // The string literal form looks like:
+  //   reference_name:start+1-end
+  // since start and end are zero-based inclusive (start) and exclusive (end),
+  // while the literal form is one-based inclusive on both ends.
+  s << variant.reference_name() << ":" << variant.start() + 1 << "-"
     << variant.end();
   variant_range_encoded.assign(s.str());
 
@@ -439,23 +443,14 @@ std::string ExamplesGenerator::EncodeExample(
   (*example.mutable_features()->mutable_feature())["sequencing_type"]
       .mutable_int64_list()
       ->add_value(options_.pic_options().sequencing_type());
-  std::string encoded_example;
 
   // Set the label if it is provided.
   int label_value = 0;
   if (label != nullptr) {
-    for (int i = 0; i < label->genotype.size(); i++) {
-      if (label->genotype[i] == 0) {
-        continue;
-      }
-      if (alt_indices_set.contains(label->genotype[i] - 1)) {
-        label_value++;
-      }
-    }
+    label_value = label->LabelForAltAlleles(alt_indices_set);
     (*example.mutable_features()->mutable_feature())["label"]
         .mutable_int64_list()
         ->add_value(label_value);
-    CHECK(label_value >= 0 && label_value <= 2);
   }
 
   // Set de novo feature if de novo regions are provided.
@@ -466,6 +461,7 @@ std::string ExamplesGenerator::EncodeExample(
   }
 
   // Example is serialized to a string before it is written to a TFRecord.
+  std::string encoded_example;
   example.SerializeToString(&encoded_example);
   UpdateStats(variant_type, label, label_value, stats);
   return encoded_example;
@@ -595,8 +591,9 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       // a better runtime performance when long reads data is used.
       std::vector<Read> trimmed_reads;
       std::vector<const Read*> trimmed_reads_ptrs;
-      std::vector<int64_t> original_start_positions;
-      if (options_.trim_reads_for_pileup()) {
+      std::vector<int64_t> original_start_positions = {};
+      // We always trim reads if alt alignment is needed.
+      if (options_.trim_reads_for_pileup() || need_alt_alignment) {
         trimmed_reads = TrimReads(
             readers[this_sample_order].Query(region),
             CalculateAlignmentRegion(variant, half_width_, *ref_reader_),
@@ -609,7 +606,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       // If trim_reads_for_pileup is set then trimmed_reads are used.
       auto ref_image = pileup_image_.BuildPileupForOneSample(
           candidate, reference_bases,
-          options_.trim_reads_for_pileup()
+          options_.trim_reads_for_pileup() || need_alt_alignment
               ? trimmed_reads_ptrs
               : readers[this_sample_order].Query(region),
           image_start_pos, alt_combination,
@@ -642,6 +639,9 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
     const std::vector<int>& sample_order, const std::string& role,
     const std::vector<VariantLabel>& labels, std::vector<int>* image_shape) {
   CHECK(labels.empty() || candidates.size() == labels.size());
+  // image_shape is the return parameter that is passed to Python. The memory
+  // is handled by Pyhon.
+  image_shape->resize(3);
   // Load reads.
   std::vector<InMemoryReader> readers;
   std::unordered_map<std::string, int> stats;
@@ -674,6 +674,79 @@ std::vector<const Read*> InMemoryReader::Query(const Range& range) const {
     }
   }
   return out;
+}
+
+// Implementation of VariantLabel. This functionality is moved from
+// variant_labeler.py.
+int VariantLabel::LabelForAltAlleles(
+    const absl::flat_hash_set<int>& alt_indices_set) const {
+  int label_value = 0;
+
+  for (int i = 0; i < genotype.size(); i++) {
+    if (genotype[i] == 0) {
+      continue;
+    }
+    if (alt_indices_set.contains(genotype[i] - 1)) {
+      label_value++;
+    }
+  }
+  CHECK(label_value >= 0 && label_value <= 2);
+  return label_value;
+}
+
+absl::string_view CustomizedClassesLabel::GetClassStatus(
+    const ::google::protobuf::Map<std::string, ::nucleus::genomics::v1::ListValue>&
+        info_field) const {
+  if (info_field.find(info_field_name) == info_field.end()) {
+    LOG(FATAL) << "Cannot create class labels: VCF file does not contain INFO/"
+               << info_field_name << " field";
+  }
+
+  absl::string_view class_status =
+      info_field.at(info_field_name).values(0).string_value();
+
+  if (classes_dict.find(std::string(class_status)) == classes_dict.end()) {
+    std::stringstream all_classes;
+    for (const auto& [class_status, label] : classes_dict) {
+      all_classes << class_status << ", ";
+    }
+    LOG(FATAL) << "class_status status unknown: " << class_status
+               << " Known status: " << all_classes.str();
+  }
+  return class_status;
+}
+
+// Implementation of CustomizedClassesLabel. The code is adopted from
+// customized_class_labeler.py.
+int CustomizedClassesLabel::LabelForAltAlleles(
+    const absl::flat_hash_set<int>& alt_indices_set) const {
+  int label_value = 0;
+  // If truth variant is {0,0} then the label is 0.
+  if (!truth_variant.calls().empty() &&
+      truth_variant.calls()[0].genotype()[0] == 0 &&
+      truth_variant.calls()[0].genotype()[1] == 0) {
+    return 0;
+  }
+
+  // If the ref of the candidate and the truth doesn't match, return 0 (ref).
+  if (truth_variant.reference_bases() != variant.reference_bases()) {
+    return 0;
+  }
+
+  auto true_class_status = GetClassStatus(truth_variant.info());
+  auto truth_alt = truth_variant.alternate_bases()[0];
+  // Default is label 0. Usually reference.
+  // Note that this logic below might not be the best when
+  // `alt_alleles_indices` is a composite one, like [0, 1]. For now we'll
+  // return the corresponding label if any of them matches truth_alt.
+  for (int ind : alt_indices_set) {
+    if (variant.alternate_bases()[ind] == truth_alt) {
+      // allele in called variant is the same as truth_alt
+      label_value = classes_dict.at(std::string(true_class_status));
+    }
+  }
+
+  return label_value;
 }
 
 }  // namespace deepvariant

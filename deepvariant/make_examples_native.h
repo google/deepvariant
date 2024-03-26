@@ -40,10 +40,12 @@
 #include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/tfrecord_writer.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "google/protobuf/map.h"
 
 namespace learning {
 namespace genomics {
@@ -93,6 +95,9 @@ class InMemoryReader {
       reads_cache_;
 };
 
+// VariantLabel data structure is exposed to Python. It represents a training
+// example label. It implements a virtual method that calculates a training
+// label value for a given set of alt allele indices.
 struct VariantLabel {
   VariantLabel() = default;
   explicit VariantLabel(bool is_confident,
@@ -102,10 +107,47 @@ struct VariantLabel {
         variant(variant),
         genotype(genotype),
         is_denovo(is_denovo) {}
+
+  virtual ~VariantLabel() = default;
+  virtual int LabelForAltAlleles(
+      const absl::flat_hash_set<int>& alt_indices_set) const;
   bool is_confident;
+
   nucleus::genomics::v1::Variant variant;
   std::vector<int> genotype;
   bool is_denovo;
+};
+
+// CustomizedClassesLabel data structure is exposed to Python. It represents
+// a training example label created with CustomClassesLabeler. It implements
+// a virtual method that calculates a training label value for a given set
+// of alt allele indices.
+// Following members are derived from VariantLabel.
+//  bool is_confident;
+//  nucleus::genomics::v1::Variant variant;
+
+struct CustomizedClassesLabel : public VariantLabel {
+  CustomizedClassesLabel() = default;
+  explicit CustomizedClassesLabel(
+      bool is_confident, const nucleus::genomics::v1::Variant& variant,
+      const nucleus::genomics::v1::Variant& truth_variant,
+      const std::unordered_map<std::string, int>& classes_dict,
+      const std::string& info_field_name)
+      : VariantLabel(is_confident, variant, {}, false),
+        truth_variant(truth_variant),
+        classes_dict(classes_dict),
+        info_field_name(info_field_name) {}
+  ~CustomizedClassesLabel() override = default;
+
+  int LabelForAltAlleles(
+      const absl::flat_hash_set<int>& alt_indices_set) const override;
+  absl::string_view GetClassStatus(
+      const ::google::protobuf::Map<std::string, ::nucleus::genomics::v1::ListValue>&
+          info_field) const;
+
+  nucleus::genomics::v1::Variant truth_variant;
+  std::unordered_map<std::string, int> classes_dict;
+  std::string info_field_name;
 };
 
 // Generates TensorFlow examples from candidates and reads.

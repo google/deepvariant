@@ -45,6 +45,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -62,6 +63,313 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
 using ContigInfo = nucleus::genomics::v1::ContigInfo;
 using ReferenceSequence = nucleus::genomics::v1::ReferenceSequence;
+
+// TODO Implement CustomizedClassesLabel. The comment out code can
+// be used once all the infrastructure is implemented.
+// struct CustomizedClassesLabelTestData {
+//   Variant variant;
+//   Variant truth_variant;
+//   std::unordered_map<std::string, int> classes_dict;
+//   absl::string_view info_field_name;
+//   absl::flat_hash_set<int> alt_indices_set;
+//   int expected_label;
+// };
+
+// class CustomizedClassesLabelTest :
+//     public testing::TestWithParam<CustomizedClassesLabelTestData> {};
+
+// TEST_P(CustomizedClassesLabelTest, CustomizedClassesLabelTestCases) {
+//   const CustomizedClassesLabelTestData& param = GetParam();
+//   CustomizedClassesLabel customized_classes_label(
+//       true, param.variant,
+//       param.truth_variant,
+//       param.classes_dict,
+//       std::string(param.info_field_name));
+
+//   EXPECT_EQ(customized_classes_label.LabelForAltAlleles(
+//       param.alt_indices_set), param.expected_label);
+// }
+
+struct VariantLabelTestData {
+  bool is_confident;
+  Variant variant;
+  std::vector<int> genotype;
+  bool is_denovo;
+  absl::flat_hash_set<int> alt_indices_set;
+  int expected_label;
+};
+
+class VariantLabelTest : public testing::TestWithParam<VariantLabelTestData> {};
+
+TEST_P(VariantLabelTest, VariantLabelTestCases) {
+  const VariantLabelTestData& param = GetParam();
+  VariantLabel variant_label(param.is_confident, param.variant, param.genotype,
+                             param.is_denovo);
+
+  EXPECT_EQ(variant_label.LabelForAltAlleles(param.alt_indices_set),
+            param.expected_label);
+}
+
+// These unit tests were moved from variant_labeler_test.py. Not all of them
+// were moved because we only need to test LabelForAltAlleles method.
+INSTANTIATE_TEST_SUITE_P(
+    VariantLabelTests, VariantLabelTest,
+    ValuesIn(std::vector<VariantLabelTestData>({
+        // Make sure we get the right alt counts for all diploid genotypes.
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C"}),
+         .genotype = {0, 0},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 0},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C"}),
+         .genotype = {0, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C"}),
+         .genotype = {1, 0},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C"}),
+         .genotype = {1, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 2},
+        // Make sure get back a zero alt count for a reference variant.
+        {.is_confident = true,
+         .variant = MakeVariant("A", {}),
+         .genotype = {0, 0},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 0},
+        // Basic multi-allelic tests, without having to deal with simplifying
+        // alleles as all of the alleles are SNPs. Our candidates have an extra
+        // allele, but the true GT is A/C.
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G"}),
+         .genotype = {0, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G"}),
+         .genotype = {1, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 2},
+        // When considering A/G our answer should be 0 as we have no copies
+        // of the G allele.
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G"}),
+         .genotype = {0, 1},
+         .is_denovo = false,
+         .alt_indices_set = {1},
+         .expected_label = 0},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G"}),
+         .genotype = {1, 1},
+         .is_denovo = false,
+         .alt_indices_set = {1},
+         .expected_label = 0},
+        // We are considering the het-alt configuration here of A vs. C+G. We've
+        // got one copy of the C allele so our true genotype is het. If truth is
+        // hom-var for the C, though, we again label the composite as hom_var as
+        // we have two copies of the C/G alt.
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G"}),
+         .genotype = {0, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0, 1},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G"}),
+         .genotype = {1, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0, 1},
+         .expected_label = 2},
+        // Here we have an extra allele in truth, while candidate is bi-allelic.
+        // This example 'G' is unused in truth, so we are simply the normal
+        // bi-allelic result.
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C"}),
+         .genotype = {0, 0},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 0},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C"}),
+         .genotype = {0, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C"}),
+         .genotype = {1, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 2},
+        // Now for a real het-alt. We've got three alleles in both, and the true
+        // genotype is 1/2.
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G"}),
+         .genotype = {1, 2},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G"}),
+         .genotype = {1, 2},
+         .is_denovo = false,
+         .alt_indices_set = {1},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G"}),
+         .genotype = {1, 2},
+         .is_denovo = false,
+         .alt_indices_set = {0, 1},
+         .expected_label = 2},
+        // Test all possible values in candidate against het-alt:
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G", "T"}),
+         .genotype = {1, 2},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G", "T"}),
+         .genotype = {1, 2},
+         .is_denovo = false,
+         .alt_indices_set = {1},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G", "T"}),
+         .genotype = {1, 2},
+         .is_denovo = false,
+         .alt_indices_set = {2},
+         .expected_label = 0},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G", "T"}),
+         .genotype = {1, 2},
+         .is_denovo = false,
+         .alt_indices_set = {0, 1},
+         .expected_label = 2},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G", "T"}),
+         .genotype = {1, 2},
+         .is_denovo = false,
+         .alt_indices_set = {0, 2},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"C", "G", "T"}),
+         .genotype = {1, 2},
+         .is_denovo = false,
+         .alt_indices_set = {1, 2},
+         .expected_label = 1},
+        // Simple start for indel alleles => exact matching works here.
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"AC"}),
+         .genotype = {0, 0},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 0},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"AC"}),
+         .genotype = {0, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("A", {"AC"}),
+         .genotype = {1, 1},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 2},
+        // We have a multi-allelic candidate but a simple bi-allelic truth. Make
+        // sure we match correctly. This is a key case, as we should expect
+        // that
+        // our candidates frequently have extra alleles changing the
+        // representation
+        // relative to our truth candidates.
+        {.is_confident = true,
+         .variant = MakeVariant("ACT", {"A", "AACT"}),
+         .genotype = {0, 2},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 0},
+        {.is_confident = true,
+         .variant = MakeVariant("ACT", {"A", "AACT"}),
+         .genotype = {2, 2},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 0},
+        {.is_confident = true,
+         .variant = MakeVariant("ACT", {"A", "AACT"}),
+         .genotype = {0, 2},
+         .is_denovo = false,
+         .alt_indices_set = {1},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("ACT", {"A", "AACT"}),
+         .genotype = {0, 2},
+         .is_denovo = false,
+         .alt_indices_set = {0, 1},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("ACT", {"A", "AACT"}),
+         .genotype = {2, 2},
+         .is_denovo = false,
+         .alt_indices_set = {0, 1},
+         .expected_label = 2},
+        // The whole complexity: multi-allelic candidate and truth, all with
+        // different allele representations.
+        // True genotype here is A/AGTGT where ref is AGT [common
+        // dinucleotide expansion]. Both candidate and truth have this but each
+        // as a different ref so none of the alleles exactly match.
+        //
+        // Truth     : AGT   => A [1] + AGTGT [2]
+        // Candidate : AGTGT => AGT [2] + AGTGTGT [3]
+        {.is_confident = true,
+         .variant = MakeVariant("AGTGT", {"A", "AGT", "AGTGTGT"}),
+         .genotype = {2, 3},
+         .is_denovo = false,
+         .alt_indices_set = {0},
+         .expected_label = 0},
+        {.is_confident = true,
+         .variant = MakeVariant("AGTGT", {"A", "AGT", "AGTGTGT"}),
+         .genotype = {2, 3},
+         .is_denovo = false,
+         .alt_indices_set = {1},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("AGTGT", {"A", "AGT", "AGTGTGT"}),
+         .genotype = {2, 3},
+         .is_denovo = false,
+         .alt_indices_set = {2},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("AGTGT", {"A", "AGT", "AGTGTGT"}),
+         .genotype = {2, 3},
+         .is_denovo = false,
+         .alt_indices_set = {0, 1},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("AGTGT", {"A", "AGT", "AGTGTGT"}),
+         .genotype = {2, 3},
+         .is_denovo = false,
+         .alt_indices_set = {0, 2},
+         .expected_label = 1},
+        {.is_confident = true,
+         .variant = MakeVariant("AGTGT", {"A", "AGT", "AGTGTGT"}),
+         .genotype = {2, 3},
+         .is_denovo = false,
+         .alt_indices_set = {1, 2},
+         .expected_label = 2},
+    })));
 
 struct AltAlleleCombinationsTestData {
   PileupImageOptions_MultiAllelicMode mode;

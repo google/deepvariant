@@ -42,6 +42,14 @@ from "deepvariant/make_examples_native.h":
       genotype: list<int>
       is_denovo : bool
 
+    class CustomizedClassesLabel(VariantLabel):
+      def __init__(self, is_confident: bool, variant: Variant, truth_variant: Variant, classes_dict: dict<str, int>, info_field_name: str)
+      is_confident: bool
+      variant: Variant
+      truth_variant: Variant
+      classes_dict: dict<str, int>
+      info_field_name: str
+
     class ExamplesGenerator:
       def __init__(self,
                    options: MakeExamplesOptions, test_mode: bool = default)
