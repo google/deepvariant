@@ -153,8 +153,10 @@ struct CustomizedClassesLabel : public VariantLabel {
 // Generates TensorFlow examples from candidates and reads.
 class ExamplesGenerator {
  public:
-  explicit ExamplesGenerator(const MakeExamplesOptions& options,
-                             bool test_mode = false);
+  explicit ExamplesGenerator(
+      const MakeExamplesOptions& options,
+      const std::unordered_map<std::string, std::string>& example_filenames,
+      bool test_mode = false);
 
   ~ExamplesGenerator();
 

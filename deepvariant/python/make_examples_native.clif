@@ -52,7 +52,9 @@ from "deepvariant/make_examples_native.h":
 
     class ExamplesGenerator:
       def __init__(self,
-                   options: MakeExamplesOptions, test_mode: bool = default)
+                   options: MakeExamplesOptions,
+                   example_filenames: dict<str, str>,
+                   test_mode: bool = default)
       def `WriteExamplesInRegion` as write_examples_in_region(
         self,
         candidates: list<ConstProtoPtr<DeepVariantCall>>,

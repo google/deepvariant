@@ -387,7 +387,8 @@ TEST_P(AltAlleleCombinationsTest, AltAlleleCombinationsTestCases) {
   options.mutable_pic_options()->set_width(21);
   options.mutable_pic_options()->set_num_channels(6);
   options.mutable_pic_options()->set_alt_aligned_pileup("none");
-  ExamplesGenerator generator(options, /*test_mode=*/true);
+  ExamplesGenerator generator(options, {{"main_sample", "name.tfrecord.gz"}},
+                              /*test_mode=*/true);
 
   EXPECT_THAT(
       ExamplesGeneratorPeer::CallAltAlleleCombinations(generator,
@@ -432,7 +433,8 @@ TEST_P(CreateHaplotypeTest, CreateHaplotypeTestCases) {
   options.mutable_pic_options()->set_width(21);
   options.mutable_pic_options()->set_num_channels(6);
   options.mutable_pic_options()->set_alt_aligned_pileup("none");
-  ExamplesGenerator generator(options, /*test_mode=*/true);
+  ExamplesGenerator generator(options, {{"main_sample", "name.tfrecord.gz"}},
+                              /*test_mode=*/true);
   // Create InMemory reference.
   int kNum = 1;
   std::vector<ContigInfo> contigs(kNum);
@@ -590,7 +592,8 @@ TEST(ExamplesGenerator, NeedAlignmentAltAlignedIndels) {
   options.mutable_pic_options()->set_num_channels(6);
   options.mutable_pic_options()->set_alt_aligned_pileup("diff_channels");
   options.mutable_pic_options()->set_types_to_alt_align("indels");
-  ExamplesGenerator generator(options, /*test_mode=*/true);
+  ExamplesGenerator generator(options, {{"main_sample", "name.tfrecord.gz"}},
+                              /*test_mode=*/true);
 
   // SNP - not alt alignment.
   EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
@@ -612,7 +615,8 @@ TEST(ExamplesGenerator, NeedAlignmentAltAlignedAll) {
   options.mutable_pic_options()->set_num_channels(6);
   options.mutable_pic_options()->set_alt_aligned_pileup("diff_channels");
   options.mutable_pic_options()->set_types_to_alt_align("all");
-  ExamplesGenerator generator(options, /*test_mode=*/true);
+  ExamplesGenerator generator(options, {{"main_sample", "name.tfrecord.gz"}},
+                              /*test_mode=*/true);
 
   // SNP - need alt alignment.
   EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
@@ -633,7 +637,8 @@ TEST(ExamplesGenerator, NeedAlignmentAltAlignedNone) {
   options.mutable_pic_options()->set_width(21);
   options.mutable_pic_options()->set_num_channels(6);
   options.mutable_pic_options()->set_alt_aligned_pileup("none");
-  ExamplesGenerator generator(options, /*test_mode=*/true);
+  ExamplesGenerator generator(options, {{"main_sample", "name.tfrecord.gz"}},
+                              /*test_mode=*/true);
 
   // SNP - need alt alignment.
   EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(

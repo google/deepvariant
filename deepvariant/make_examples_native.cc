@@ -66,8 +66,10 @@ using Variant = nucleus::genomics::v1::Variant;
 using Range = nucleus::genomics::v1::Range;
 using Read = nucleus::genomics::v1::Read;
 
-ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
-                                     bool test_mode)
+ExamplesGenerator::ExamplesGenerator(
+    const MakeExamplesOptions& options,
+    const std::unordered_map<std::string, std::string>& example_filenames,
+    bool test_mode)
     : options_(options), pileup_image_(options_.pic_options()) {
   // Initialize samples.
   for (const auto& sample_options_for_one_sample : options_.sample_options()) {
@@ -113,11 +115,13 @@ ExamplesGenerator::ExamplesGenerator(const MakeExamplesOptions& options,
     if (sample.sample_options.skip_output_generation()) {
       continue;
     }
+    auto it = example_filenames.find(role);
+    if (it == example_filenames.end()) {
+      LOG(INFO) << "Example filename not found for role: " << role;
+      continue;
+    }
     // TFRecrd examples are always compressed as it is also in call_variants.
-    sample.writer = nucleus::TFRecordWriter::New(
-        GetExamplesFilename(options_, sample,
-                            /*add_suffix=*/samples_that_need_writers > 1),
-        "GZIP");
+    sample.writer = nucleus::TFRecordWriter::New(it->second, "GZIP");
   }
 }
 
@@ -126,7 +130,9 @@ ExamplesGenerator::~ExamplesGenerator() {
     if (sample.sample_options.skip_output_generation()) {
       continue;
     }
-    sample.writer->Close();
+    if (sample.writer != nullptr) {
+      sample.writer->Close();
+    }
   }
 }
 
@@ -639,6 +645,10 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
     const std::vector<int>& sample_order, const std::string& role,
     const std::vector<VariantLabel>& labels, std::vector<int>* image_shape) {
   CHECK(labels.empty() || candidates.size() == labels.size());
+  auto sample_it = samples_.find(role);
+  CHECK(sample_it != samples_.end()) << "Role " << role << " not found.";
+  CHECK(sample_it->second.writer != nullptr) << "Role " << role
+      << " does not have a writer.";
   // image_shape is the return parameter that is passed to Python. The memory
   // is handled by Pyhon.
   image_shape->resize(3);
@@ -653,7 +663,7 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
   }
   for (int i = 0; i < candidates.size(); i++) {
     CreateAndWriteExamplesForCandidate(
-        *(candidates[i].p_), samples_[role], sample_order, readers, stats,
+        *(candidates[i].p_), sample_it->second, sample_order, readers, stats,
         *image_shape, labels.empty() ? nullptr : &labels[i]);
   }
   return stats;
