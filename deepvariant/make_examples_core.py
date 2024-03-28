@@ -2912,6 +2912,8 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
         continue
       if in_training_mode(options) and options.sample_role_to_train != role:
         continue
+      if sample.options.skip_output_generation:
+        continue
       writer = writers_dict[role]
       region_example_shape = region_processor.writes_examples_in_region(
           candidates_by_sample[role],

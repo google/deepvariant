@@ -1,5 +1,5 @@
-load("//third_party:clif.bzl", "pyclif_proto_library")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
+load("//third_party:clif.bzl", "pyclif_proto_library")
 
 package(
     default_visibility = [
