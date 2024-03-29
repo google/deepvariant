@@ -195,9 +195,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('examples.tfrecord', num_shards)
     )
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     child_examples = test_utils.test_tmpfile(
         _sharded('examples_child.tfrecord', num_shards)
     )
@@ -491,9 +489,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
@@ -570,7 +566,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       FLAGS.candidates = test_utils.test_tmpfile(f'{name}.vsc.tfrecord')
       FLAGS.examples = test_utils.test_tmpfile(f'{name}.examples.tfrecord')
       FLAGS.channel_list = ','.join(
-          dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
+          dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE
       )
       child_examples = test_utils.test_tmpfile(
           f'{name}_child.examples.tfrecord'
@@ -644,9 +640,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
     child_candidates = test_utils.test_tmpfile(_sharded('vsc_child.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     FLAGS.partition_size = 1000
     FLAGS.mode = 'calling'
     FLAGS.keep_legacy_allele_counter_behavior = keep_legacy_behavior
@@ -693,9 +687,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads = testdata.HG001_CHR20_BAM
     FLAGS.sample_name = 'child'
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     FLAGS.partition_size = 1000
 
     FLAGS.mode = mode
@@ -739,9 +731,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('vcf_candidate_importer.examples.{}.tfrecord'.format(mode))
     )
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     FLAGS.mode = mode
     FLAGS.regions = '20:10,000,000-10,010,000'
 
@@ -812,9 +802,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.examples = test_utils.test_tmpfile(_sharded('ex.tfrecord'))
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     child_examples = test_utils.test_tmpfile(_sharded('ex_child.tfrecord'))
     FLAGS.partition_size = 1000
     FLAGS.mode = 'calling'
@@ -1125,9 +1113,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
         options.pic_options.read_requirements.keep_duplicates, True
@@ -1148,9 +1134,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
         options.pic_options.read_requirements.keep_supplementary_alignments,
@@ -1172,9 +1156,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
         options.pic_options.read_requirements.keep_secondary_alignments, True
@@ -1195,9 +1177,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(options.pic_options.read_requirements.min_base_quality, 5)
 
@@ -1216,9 +1196,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
         options.pic_options.read_requirements.min_mapping_quality, 15
@@ -1238,9 +1216,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
 
     FLAGS.training_random_emit_ref_sites = 0.3
     options = make_examples.default_options(add_flags=True)
@@ -1265,9 +1241,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
 
     options = make_examples.default_options(add_flags=True)
     # In proto3, there is no way to check presence of scalar field:
@@ -1294,9 +1268,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
     FLAGS.examples = ''
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
 
     options = make_examples.default_options(add_flags=True)
     confident_regions = make_examples_core.read_confident_regions(options)
@@ -1347,9 +1319,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
       setattr(FLAGS, name, flag_val)
 
     FLAGS.mode = 'training'
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     FLAGS.reads = ''
     FLAGS.ref = ''
     options = make_examples.default_options(add_flags=True)
@@ -1390,9 +1360,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile('vsc.tfrecord')
     FLAGS.examples = test_utils.test_tmpfile('examples.tfrecord')
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
@@ -1423,9 +1391,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.regions = '20:10,000,000-11,000,000'
     FLAGS.examples = 'examples.tfrecord'
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     FLAGS.exclude_regions = '20:10,010,000-10,100,000'
 
     options = make_examples.default_options(add_flags=True)
@@ -1453,9 +1419,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     # Deliberately incorrect contig name.
     FLAGS.regions = 'xxx20:10,000,000-11,000,000'
     FLAGS.examples = 'examples.tfrecord'
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
 
     options = make_examples.default_options(add_flags=True)
     with self.assertRaisesRegex(ValueError, 'The regions to call is empty.'):
@@ -1652,9 +1616,7 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.examples = 'examples.tfrecord'
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     FLAGS.use_original_quality_scores = True
     FLAGS.parse_sam_aux_fields = False
 
@@ -1687,9 +1649,7 @@ class RegionProcessorTest(parameterized.TestCase):
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.examples = 'examples.tfrecord'
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
 
     options = make_examples.default_options(add_flags=True)
     with self.assertRaisesRegex(

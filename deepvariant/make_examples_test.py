@@ -381,9 +381,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('examples.tfrecord', num_shards)
     )
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     if mode == 'candidate_sweep':
       FLAGS.candidate_positions = test_utils.test_tmpfile(
           _sharded('candidate_positions', num_shards)
@@ -591,9 +589,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.gvcf_gq_binsize = 5
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF_WITH_TYPES
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     options = make_examples.default_options(add_flags=True)
     make_examples_core.make_examples_runner(options)
     golden_file = _sharded(testdata.CUSTOMIZED_CLASSES_GOLDEN_TRAINING_EXAMPLES)
@@ -668,9 +664,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.examples = test_utils.test_tmpfile(
         _sharded('vcf_candidate_importer.examples.{}.tfrecord'.format(mode))
     )
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['insert_size']
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
     FLAGS.mode = mode
 
     if mode == 'calling':

@@ -51,6 +51,17 @@ PILEUP_DEFAULT_CHANNELS = [
     'base_differs_from_ref',
 ]
 
+# Channels that include insert size.
+PILEUP_CHANNELS_WITH_INSERT_SIZE = [
+    'read_base',
+    'base_quality',
+    'mapping_quality',
+    'strand',
+    'read_supports_variant',
+    'base_differs_from_ref',
+    'insert_size',
+]
+
 # Not a default because it's hard-coded into the code.
 PILEUP_NUM_CHANNELS = len(PILEUP_DEFAULT_CHANNELS)
 
