@@ -35,6 +35,7 @@ using the binaries in the Docker image.
 """
 
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -259,12 +260,18 @@ def trim_suffix(string: str, suffix: str) -> str:
     return string
 
 
+def split_extra_args(input_string: str) -> list[str]:
+  """Splits into strs that do not contain commas or are enclosed in quotes."""
+  pattern = r"[^,]+=[\"'][^\"']*[\"']|[^,]+"
+  return re.findall(pattern, input_string)
+
+
 def _extra_args_to_dict(extra_args: str) -> Dict[str, Any]:
   """Parses comma-separated list of flag_name=flag_value to dict."""
   args_dict = {}
   if extra_args is None:
     return args_dict
-  for extra_arg in extra_args.split(','):
+  for extra_arg in split_extra_args(extra_args):
     (flag_name, flag_value) = extra_arg.split('=')
     flag_name = flag_name.strip('-')
     # Check for boolean values.

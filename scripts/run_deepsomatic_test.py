@@ -389,6 +389,10 @@ class RunDeepSomaticTest(parameterized.TestCase):
               ' {per_process_gpu_memory_fraction: 0.5}"'
           ),
       ),
+      (
+          'activation_layers="foo,bar,baz",include_debug_info=true',
+          '--activation_layers "foo,bar,baz" --include_debug_info',
+      ),
   )
   @flagsaver.flagsaver
   def test_call_variants_extra_args(
@@ -450,6 +454,32 @@ class RunDeepSomaticTest(parameterized.TestCase):
         '"/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" '
         '%s' % expected_args,
     )
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='comma separated, double quotes',
+          input_str='some_flag=true,channel_list="foo,bar,baz"',
+          expected_list=[
+              'some_flag=true',
+              'channel_list="foo,bar,baz"',
+          ],
+      ),
+      dict(
+          testcase_name='comma separated, single quotes',
+          input_str="some_flag=true,channel_list='foo,bar'",
+          expected_list=[
+              'some_flag=true',
+              "channel_list='foo,bar'",
+          ],
+      ),
+      dict(
+          testcase_name='quotes with no comma',
+          input_str='channel_list="foo"',
+          expected_list=['channel_list="foo"'],
+      ),
+  )
+  def test_split_extra_args(self, input_str, expected_list):
+    self.assertEqual(run_deepsomatic.split_extra_args(input_str), expected_list)
 
 
 if __name__ == '__main__':
