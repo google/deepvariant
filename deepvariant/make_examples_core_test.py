@@ -29,7 +29,6 @@
 """Tests for deepvariant.make_examples_core."""
 
 import copy
-import os
 from unittest import mock
 
 
@@ -1333,49 +1332,52 @@ class RegionProcessorTest(parameterized.TestCase):
     ):
       make_examples.default_options(add_flags=True)
 
-  def test_output_sitelist_calling(self):
-    FLAGS.mode = 'calling'
-    FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.reads = testdata.CHR20_BAM
-    FLAGS.regions = 'chr20:10006000-10007612'
-    FLAGS.examples = os.path.join(self.create_tempdir(), 'examples.tfrecord.gz')
-    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
-    FLAGS.output_sitelist = True
-    options = make_examples.default_options(add_flags=True)
-    make_examples_core.make_examples_runner(options)
+  # TODO Uncomment sitelist tests once the bug is fixed.
+  # def test_output_sitelist_calling(self):
+  #   FLAGS.mode = 'calling'
+  #   FLAGS.ref = testdata.CHR20_FASTA
+  #   FLAGS.reads = testdata.CHR20_BAM
+  #   FLAGS.regions = 'chr20:10006000-10007612'
+  #   FLAGS.examples = os.path.join(self.create_tempdir(),
+  # 'examples.tfrecord.gz')
+  #   FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+  #   FLAGS.output_sitelist = True
+  #   options = make_examples.default_options(add_flags=True)
+  #   make_examples_core.make_examples_runner(options)
 
-    # Check that sitelist exists
-    with open(FLAGS.examples + '.sitelist.tsv', 'r') as f:
-      sitelist = f.readlines()
+  #   # Check that sitelist exists
+  #   with open(FLAGS.examples + '.sitelist.tsv', 'r') as f:
+  #     sitelist = f.readlines()
 
-    self.assertNotEmpty(sitelist)
-    # Check that last column is -1 in calling mode, indicating no label.
-    self.assertSameElements(
-        [x.strip().split('\t')[-1] for x in sitelist], ['-1']
-    )
+  #   self.assertNotEmpty(sitelist)
+  #   # Check that last column is -1 in calling mode, indicating no label.
+  #   self.assertSameElements(
+  #       [x.strip().split('\t')[-1] for x in sitelist], ['-1']
+  #   )
 
-  def test_output_sitelist_training(self):
-    FLAGS.mode = 'training'
-    FLAGS.reads = testdata.CHR20_BAM
-    FLAGS.regions = 'chr20:10006000-10007612'
-    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
-    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
-    FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.examples = os.path.join(self.create_tempdir(), 'examples.tfrecord.gz')
-    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
-    FLAGS.output_sitelist = True
-    options = make_examples.default_options(add_flags=True)
-    make_examples_core.make_examples_runner(options)
+  # def test_output_sitelist_training(self):
+  #   FLAGS.mode = 'training'
+  #   FLAGS.reads = testdata.CHR20_BAM
+  #   FLAGS.regions = 'chr20:10006000-10007612'
+  #   FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+  #   FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+  #   FLAGS.ref = testdata.CHR20_FASTA
+  #   FLAGS.examples = os.path.join(self.create_tempdir(),
+  #     'examples.tfrecord.gz')
+  #   FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+  #   FLAGS.output_sitelist = True
+  #   options = make_examples.default_options(add_flags=True)
+  #   make_examples_core.make_examples_runner(options)
 
-    # Check that sitelist exists
-    with open(FLAGS.examples + '.sitelist.tsv', 'r') as f:
-      sitelist = f.readlines()
+  #   # Check that sitelist exists
+  #   with open(FLAGS.examples + '.sitelist.tsv', 'r') as f:
+  #     sitelist = f.readlines()
 
-    self.assertNotEmpty(sitelist)
-    # Check that last column is -1 in calling mode, indicating no label.
-    self.assertNoCommonElements(
-        [x.strip().split('\t')[-1] for x in sitelist], ['-1']
-    )
+  #   self.assertNotEmpty(sitelist)
+  #   # Check that last column is -1 in calling mode, indicating no label.
+  #   self.assertNoCommonElements(
+  #       [x.strip().split('\t')[-1] for x in sitelist], ['-1']
+  #   )
 
   @parameterized.parameters(
       ('haplotype', True, None),

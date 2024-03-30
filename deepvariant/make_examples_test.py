@@ -36,6 +36,7 @@ import sys
 from unittest import mock
 
 
+
 from absl import flags
 from absl import logging
 from absl.testing import absltest
@@ -743,16 +744,21 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(
           alt_align='rows',
+          alt_channels=[],
           expected_shape=[300, 221, dv_constants.PILEUP_NUM_CHANNELS],
       ),
       dict(
           alt_align='diff_channels',
+          alt_channels=[
+              'diff_channels_alternate_allele_1',
+              'diff_channels_alternate_allele_2',
+          ],
           expected_shape=[100, 221, dv_constants.PILEUP_NUM_CHANNELS + 2],
       ),
   )
   @flagsaver.flagsaver
   def test_make_examples_training_end2end_with_alt_aligned_pileup(
-      self, alt_align, expected_shape
+      self, alt_align, alt_channels, expected_shape
   ):
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.regions = [ranges.to_literal(region)]
@@ -760,7 +766,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
-    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS + alt_channels
+    )
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
@@ -1065,7 +1073,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # enforcing expectations for gVCF records if true or variant calls if false.
     for variant in variants:
       if region:
-        self.assertEqual(variant.reference_name, region.reference_name)
+        self.assertEqual(
+            variant.reference_name,
+            region.reference_name,
+            'variant.reference_name=%s, region.reference_name=%s'
+            % (variant.reference_name, region.reference_name),
+        )
         self.assertGreaterEqual(variant.start, region.start)
         self.assertLessEqual(variant.start, region.end)
       self.assertNotEqual(variant.reference_bases, '')

@@ -61,6 +61,7 @@ from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.python import direct_phasing
+from deepvariant.python import make_examples_native
 from deepvariant.realigner import realigner
 from deepvariant.vendor import timer
 from google.protobuf import text_format
@@ -1105,9 +1106,6 @@ class OutputsWriter:
       self.examples_filename = self._add_suffix(
           options.examples_filename, suffix
       )
-      self._add_writer(
-          'examples', dv_utils.get_tf_record_writer(self.examples_filename)
-      )
 
     if options.gvcf_filename:
       self._add_writer(
@@ -1279,6 +1277,7 @@ class RegionProcessor:
     self.pic = None
     self.labeler = None
     self.population_vcf_readers = None
+    self.make_examples_native = None
     if self.options.phase_reads:
       # One instance of DirectPhasing per lifetime of make_examples.
       self.direct_phasing_cpp = self._make_direct_phasing_obj()
@@ -1510,9 +1509,9 @@ class RegionProcessor:
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
       region: range_pb2.Range,
       sample_order: List[int],
-      writer: OutputsWriter,
       n_stats: Dict[str, int],
       runtimes: Dict[str, float],
+      role: str,
   ) -> Optional[List[int]]:
     """Generates and writes out the examples in a region.
 
@@ -1520,9 +1519,9 @@ class RegionProcessor:
       candidates: List of candidates to be processed into examples.
       region: The region to generate examples.
       sample_order: Order of the samples to use when generating examples.
-      writer: A OutputsWriter used to write out examples.
       n_stats: A dictionary that is used to accumulate counts for reporting.
       runtimes: A dictionary that recorded runtime information for reporting.
+      role: The role that we make examples for.
 
     Returns:
       example_shape: a list of 3 integers, representing the example shape in the
@@ -1536,67 +1535,85 @@ class RegionProcessor:
     if in_training_mode(self.options):
       # Get all denovo regions
       denovo_regions = read_denovo_regions(self.options.denovo_regions_filename)
-      denovo_enabled = True if denovo_regions else False
       # Initialize labels and types to be updated in the for loop below.
-      labels = {i: 0 for i in range(0, dv_constants.NUM_CLASSES)}
-      labels_denovo = {i: 0 for i in range(0, dv_constants.NUM_DENOVO_CLASSES)}
-      types = {
-          dv_utils_using_clif.EncodedVariantType.SNP: 0,
-          dv_utils_using_clif.EncodedVariantType.INDEL: 0,
-          dv_utils_using_clif.EncodedVariantType.UNKNOWN: 0,
-      }
+      reads_per_sample = []
+      pileup_height = 0
+      for sample in self.samples:
+        reads_per_sample.append(sample.in_memory_sam_reader.iterate())
+        pileup_height += sample.options.pileup_height
+      # Unzip list of tuples.
+      candidates_list = []
+      labels_list = []
       for candidate, label in self.label_candidates(candidates, region):
-        denovo_label = 0
-        # If the variant overlaps with provided de novo regions then set label.
+        candidates_list.append(candidate)
+        is_denovo = False
         if denovo_regions and denovo_regions.variant_overlaps(
             candidate.variant
         ):
-          denovo_label = 1
-        for example in self.create_pileup_examples(
-            candidate, sample_order=sample_order
+          is_denovo = True
+        # pylint: disable=unidiomatic-typecheck
+        if type(label) is variant_labeler.VariantLabel:
+          labels_list.append(
+              make_examples_native.VariantLabel(
+                  label.is_confident, label.variant, label.genotype, is_denovo
+              )
+          )
+        elif (
+            # pylint: disable=unidiomatic-typecheck
+            type(label)
+            is customized_classes_labeler.CustomizedClassesVariantLabel
         ):
-          self.add_label_to_example(
-              example, label, denovo_label, denovo_enabled
+          labels_list.append(
+              make_examples_native.CustomizedClassesLabel(
+                  label.is_confident,
+                  label.variant,
+                  label.truth_variant,
+                  label.classes_dict,
+                  label.info_field_name,
+              )
           )
-          _write_example_and_update_stats(
-              example,
-              writer,
-              runtimes,
-              labels,
-              labels_denovo,
-              types,
-              denovo_enabled,
+        else:
+          raise ValueError('Unknown VariantLabel type: %s' % (type(label),))
+
+      n_stats_one_region, example_shape_one = (
+          self.make_examples_native.write_examples_in_region(
+              candidates_list, reads_per_sample, sample_order, role, labels_list
           )
-          n_stats['n_examples'] += 1
+      )
 
-          if self.options.output_sitelist:
-            writer.write_site(candidate.variant, example)
+      for stat, val in n_stats_one_region.items():
+        n_stats[stat] += val
+        if stat == 'n_examples':
+          if 'num examples' not in runtimes:
+            runtimes['num examples'] = 0
+          runtimes['num examples'] += val
 
-          if example_shape is None:
-            example_shape = dv_utils.example_image_shape(example)
-      if self.options.run_info_filename:
-        n_stats['n_class_0'] += labels[0]
-        n_stats['n_class_1'] += labels[1]
-        n_stats['n_class_2'] += labels[2]
-        n_stats['n_snps'] += types[dv_utils_using_clif.EncodedVariantType.SNP]
-        n_stats['n_indels'] += types[
-            dv_utils_using_clif.EncodedVariantType.INDEL
-        ]
-        n_stats['n_non_denovo'] += labels_denovo[0]
-        n_stats['n_denovo'] += labels_denovo[1]
+      if example_shape is None and example_shape_one[0] > 0:
+        example_shape = example_shape_one
+
     else:
-      for candidate in candidates:
-        for example in self.create_pileup_examples(
-            candidate, sample_order=sample_order
-        ):
-          _write_example_and_update_stats(example, writer, runtimes)
-          n_stats['n_examples'] += 1
+      reads_per_sample = []
+      pileup_height = 0
+      for sample in self.samples:
+        reads_per_sample.append(sample.in_memory_sam_reader.iterate())
+        pileup_height += sample.options.pileup_height
 
-          if self.options.output_sitelist:
-            writer.write_site(candidate.variant)
+      n_stats_one_region, example_shape_one = (
+          self.make_examples_native.write_examples_in_region(
+              candidates, reads_per_sample, sample_order, role, []
+          )
+      )
 
-          if example_shape is None:
-            example_shape = dv_utils.example_image_shape(example)
+      for stat, val in n_stats_one_region.items():
+        n_stats[stat] += val
+        if stat == 'n_examples':
+          if 'num examples' not in runtimes:
+            runtimes['num examples'] = 0
+          runtimes['num examples'] += val
+
+      if example_shape is None and example_shape_one[0] > 0:
+        example_shape = example_shape_one
+
     runtimes['make pileup images'] = trim_runtime(
         time.time() - before_make_pileup_images
     )
@@ -2853,6 +2870,12 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
             options, suffix=sample.options.role
         )
   region_processor.writers_dict = writers_dict
+  example_filenames = {
+      role: writers_dict[role].examples_filename for role in writers_dict
+  }
+  region_processor.make_examples_native = (
+      make_examples_native.ExamplesGenerator(options, example_filenames)
+  )
 
   logging_with_options(
       options,
@@ -2919,9 +2942,9 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
           candidates_by_sample[role],
           region,
           sample.options.order,
-          writer,
           n_stats,
           runtimes,
+          role,
       )
       if example_shape is None and region_example_shape is not None:
         example_shape = region_example_shape

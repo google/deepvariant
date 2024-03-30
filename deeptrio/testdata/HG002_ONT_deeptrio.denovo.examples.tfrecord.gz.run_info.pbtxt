@@ -3441,7 +3441,7 @@ options {
     multi_allelic_mode: ADD_HET_ALT_IMAGES
     mapping_quality_cap: 60
     random_seed: 2101079370
-    num_channels: 7
+    num_channels: 9
     sequencing_type: TRIO
     alt_aligned_pileup: "diff_channels"
     sort_by_haplotypes: true
@@ -3455,6 +3455,8 @@ options {
     channels: "read_supports_variant"
     channels: "base_differs_from_ref"
     channels: "haplotype"
+    channels: "diff_channels_alternate_allele_1"
+    channels: "diff_channels_alternate_allele_2"
   }
   read_requirements {
     min_mapping_quality: 1
@@ -3498,11 +3500,9 @@ options {
       gap_extend: 2
       k: 23
       error_rate: 0.009999999776482582
-      read_size: 200
       kmer_size: 32
       max_num_of_mismatches: 2
       realignment_similarity_threshold: 0.16934
-      force_alignment: true
     }
     diagnostics {
     }
@@ -3621,12 +3621,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 12
-  cpu_frequency_mhz: 3128.9319583333327
+  cpu_frequency_mhz: 3278.755833333333
   total_memory_mb: 128631
-  wall_time_seconds: 28.45531439781189
-  cpu_user_time_seconds: 32.418828
-  cpu_system_time_seconds: 0.54018
-  memory_peak_rss_mb: 1045
+  wall_time_seconds: 15.740817070007324
+  cpu_user_time_seconds: 19.722365
+  cpu_system_time_seconds: 0.5931529999999999
+  memory_peak_rss_mb: 1033
   write_bytes: 12288
 }
 stats {

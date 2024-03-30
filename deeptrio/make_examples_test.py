@@ -352,10 +352,20 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(
           denovo_test=False,
+          opt_channels=[
+              'haplotype',
+              'diff_channels_alternate_allele_1',
+              'diff_channels_alternate_allele_2',
+          ],
           expected_denovo_variants=0,
       ),
       dict(
           denovo_test=True,
+          opt_channels=[
+              'haplotype',
+              'diff_channels_alternate_allele_1',
+              'diff_channels_alternate_allele_2',
+          ],
           expected_denovo_variants=3,
       ),
   )
@@ -363,12 +373,15 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   def test_make_examples_ont_end2end(
       self,
       denovo_test: bool,
+      opt_channels: list[str],
       expected_denovo_variants: int,
   ):
     """Test end to end for long ONT reads with phasing enabled.
 
     Args:
       denovo_test: If true, denovo parameters will be set.
+      opt_channels: List of channels that are added in addition to base
+        channels.
       expected_denovo_variants: Total number of denovo examples expected.
 
     This test runs ONT end to end and compares the output with the golden
@@ -408,7 +421,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         _sharded('examples.tfrecord', num_shards)
     )
     FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['haplotype']
+        dv_constants.PILEUP_DEFAULT_CHANNELS + opt_channels
     )
     FLAGS.regions = [ranges.to_literal(region)]
     golden_file = _sharded(testdata.GOLDEN_ONT_MAKE_EXAMPLES_OUTPUT, num_shards)
@@ -522,7 +535,13 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.sample_name_parent2 = 'parent2'
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
-    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS
+        + [
+            'diff_channels_alternate_allele_1',
+            'diff_channels_alternate_allele_2',
+        ]
+    )
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
