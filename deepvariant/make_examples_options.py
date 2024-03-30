@@ -781,6 +781,16 @@ def shared_flags_to_options(
               errors.CommandLineError,
           )
         channel_set.append(channel)
+      # Alt aligned channels can only be added programmatically if
+      # --alt_aligned_pileup is set to diff_channels or base_channels.
+      # These channels must always be the last in channel_set.
+      if flags_obj.alt_aligned_pileup == 'diff_channels':
+        channel_set.append('diff_channels_alternate_allele_1')
+        channel_set.append('diff_channels_alternate_allele_2')
+      if flags_obj.alt_aligned_pileup == 'base_channels':
+        channel_set.append('base_channels_alternate_allele_1')
+        channel_set.append('base_channels_alternate_allele_2')
+
     elif not make_examples_core.in_candidate_sweep_mode(options):
       errors.log_and_raise(
           '--channel_list is required. A good default value to use is'

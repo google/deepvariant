@@ -744,21 +744,16 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(
           alt_align='rows',
-          alt_channels=[],
           expected_shape=[300, 221, dv_constants.PILEUP_NUM_CHANNELS],
       ),
       dict(
           alt_align='diff_channels',
-          alt_channels=[
-              'diff_channels_alternate_allele_1',
-              'diff_channels_alternate_allele_2',
-          ],
           expected_shape=[100, 221, dv_constants.PILEUP_NUM_CHANNELS + 2],
       ),
   )
   @flagsaver.flagsaver
   def test_make_examples_training_end2end_with_alt_aligned_pileup(
-      self, alt_align, alt_channels, expected_shape
+      self, alt_align, expected_shape
   ):
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.regions = [ranges.to_literal(region)]
@@ -766,9 +761,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_BAM
     FLAGS.candidates = test_utils.test_tmpfile(_sharded('vsc.tfrecord'))
     FLAGS.examples = test_utils.test_tmpfile(_sharded('examples.tfrecord'))
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + alt_channels
-    )
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.partition_size = 1000
     FLAGS.mode = 'training'
     FLAGS.gvcf_gq_binsize = 5
