@@ -148,7 +148,7 @@ pip3 install "${PIP_ARGS[@]}" 'pandas==1.3.4'
 pip3 install "${PIP_ARGS[@]}" 'jsonschema==3.2.0'
 pip3 install "${PIP_ARGS[@]}" 'altair==4.1.0'
 pip3 install "${PIP_ARGS[@]}" 'Pillow==9.5.0'
-pip3 install "${PIP_ARGS[@]}" 'ipython>=7.9.0'
+pip3 install "${PIP_ARGS[@]}" 'ipython==8.22.2'
 pip3 install "${PIP_ARGS[@]}" 'pysam==0.20.0'
 pip3 install "${PIP_ARGS[@]}" 'tensorflow-addons==0.21.0'
 # This is to avoid ERROR: No matching distribution found for opencv-python-headless==4.5.2.52.
