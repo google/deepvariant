@@ -217,6 +217,26 @@ singularity run --nv -B /usr/lib/locale/:/usr/lib/locale/ \
   ...
 ```
 
+### Addressing compatibility issues
+
+The default behavior of Singularity is to pass all environment variables of the
+host system to the container at run time. This can lead to version compatibility
+issues with Python and its libraries when running DeepVariant.
+
+If such compatibility issues are encountered, you can try the `--cleanenv` flag.
+From the
+[docs](https://docs.sylabs.io/guides/3.0/user-guide/environment_and_metadata.html#environment-and-metadata),
+this option can be used to remove the host environment and execute a container
+with a minimal environment.
+
+```
+# Run DeepVariant with "--cleanenv"
+singularity run --cleanenv -B /usr/lib/locale/:/usr/lib/locale/ \
+  docker://google/deepvariant:"${BIN_VERSION}" \
+  /opt/deepvariant/bin/run_deepvariant \
+  ...
+```
+
 ## Evaluating the results
 
 Here we use the `hap.py`
