@@ -53,6 +53,11 @@ Flags:
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 --skip_happy (true|false) If True, skip the hap.py evaluation.
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
+# TODO: It might be worth considering having a separate inference_pangenome_aware_deepvariant.sh script.
+# Because there are specific optional flags, such as --pangenome that could be added.
+# However, right now it seems most convenient for me to re-use inference_deepvariant.sh
+# for my experiment.
+--main_binary_name (run_deepvariant|run_pangenome_aware_deepvariant)  Default is run_deepvariant. If using the pangenome-aware DeepVariant Docker image, use run_pangenome_aware_deepvariant.
 
 If model_preset is not specified, the below flags are required:
 --model_type Type of DeepVariant model to run (WGS, WES, PACBIO, ONT_R104, HYBRID_PACBIO_ILLUMINA)
@@ -79,6 +84,7 @@ BIN_VERSION="1.6.1"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
+MAIN_BINARY_NAME="run_deepvariant"
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
@@ -151,6 +157,11 @@ while (( "$#" )); do
       ;;
     --customized_model)
       CUSTOMIZED_MODEL="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --main_binary_name)
+      MAIN_BINARY_NAME="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -351,6 +362,7 @@ echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
 echo "CAPTURE_BED: ${CAPTURE_BED}"
 echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
+echo "MAIN_BINARY_NAME: ${MAIN_BINARY_NAME}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
 echo "MODEL_TYPE: ${MODEL_TYPE}"
@@ -611,7 +623,7 @@ function run_deepvariant_with_docker() {
     -v "${OUTPUT_DIR}:/output" \
     ${docker_args[@]-} \
     "${IMAGE}" \
-    /opt/deepvariant/bin/run_deepvariant \
+    /opt/deepvariant/bin/${MAIN_BINARY_NAME} \
     --model_type="${MODEL_TYPE}" \
     --ref="/input/$(basename $REF).gz" \
     --reads="/input/$(basename $BAM)" \

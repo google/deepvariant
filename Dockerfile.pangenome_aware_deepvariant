@@ -1,0 +1,134 @@
+# Copyright 2019 Google LLC.
+# This is used to build the pangenome-aware DeepVariant release docker image.
+# It can also be used to build local images, especially if you've made changes
+# to the code.
+# Example command:
+# $ git clone https://github.com/google/deepvariant.git
+# $ cd deepvariant
+# $ sudo docker build -f Dockerfile.pangenome_aware_deepvariant -t pangenome_aware_deepvariant .
+#
+# To build for GPU, use a command like:
+# $ sudo docker build -f Dockerfile.pangenome_aware_deepvariant --build-arg=FROM_IMAGE=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04 --build-arg=DV_GPU_BUILD=1 -t pangenome_aware_deepvariant_gpu .
+
+
+ARG FROM_IMAGE=ubuntu:22.04
+# PYTHON_VERSION is also set in settings.sh.
+ARG PYTHON_VERSION=3.10
+ARG DV_GPU_BUILD=0
+ARG VERSION_DEEPVARIANT=1.7.0
+ARG TF_ENABLE_ONEDNN_OPTS=1
+
+FROM continuumio/miniconda3 as conda_setup
+RUN conda config --add channels defaults && \
+    conda config --add channels bioconda && \
+    conda config --add channels conda-forge
+RUN conda create -n bio \
+                    bioconda::bcftools=1.10 \
+                    bioconda::samtools=1.10 \
+    && conda clean -a
+
+FROM ${FROM_IMAGE} as builder
+COPY --from=conda_setup /opt/conda /opt/conda
+LABEL maintainer="https://github.com/google/deepvariant/issues"
+
+ARG DV_GPU_BUILD
+ENV DV_GPU_BUILD=${DV_GPU_BUILD}
+
+# Copying DeepVariant source code
+COPY . /opt/deepvariant
+
+WORKDIR /opt/deepvariant
+
+RUN ./build-prereq.sh \
+  && PATH="${HOME}/bin:${PATH}" ./build_release_binaries.sh  # PATH for bazel
+
+FROM ${FROM_IMAGE}
+ARG DV_GPU_BUILD
+ARG VERSION_DEEPVARIANT
+ARG PYTHON_VERSION
+ARG TF_ENABLE_ONEDNN_OPTS
+ENV DV_GPU_BUILD=${DV_GPU_BUILD}
+ENV VERSION_DEEPVARIANT ${VERSION_DEEPVARIANT}
+ENV PYTHON_VERSION ${PYTHON_VERSION}
+ENV TF_ENABLE_ONEDNN_OPTS ${TF_ENABLE_ONEDNN_OPTS}
+
+WORKDIR /opt/
+COPY --from=builder /opt/deepvariant/bazel-bin/licenses.zip .
+
+WORKDIR /opt/deepvariant/bin/
+COPY --from=builder /opt/conda /opt/conda
+COPY --from=builder /opt/deepvariant/run-prereq.sh .
+COPY --from=builder /opt/deepvariant/settings.sh .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examples_pangenome_aware_dv.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/call_variants.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/postprocess_variants.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/vcf_stats_report.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examples.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/runtime_by_region_vis.zip  .
+COPY --from=builder /opt/deepvariant/scripts/run_pangenome_aware_deepvariant.py .
+RUN ./run-prereq.sh
+
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 0 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VERSION} 0
+
+# Create shell wrappers for python zip files for easier use.
+RUN \
+  BASH_HEADER='#!/bin/bash' && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python3 -u /opt/deepvariant/bin/make_examples_pangenome_aware_dv.zip "$@"' > \
+    /opt/deepvariant/bin/make_examples_pangenome_aware_dv && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python3 /opt/deepvariant/bin/call_variants.zip "$@"' > \
+    /opt/deepvariant/bin/call_variants && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python3 /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
+    /opt/deepvariant/bin/postprocess_variants && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python3 /opt/deepvariant/bin/vcf_stats_report.zip "$@"' > \
+    /opt/deepvariant/bin/vcf_stats_report && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python3 /opt/deepvariant/bin/show_examples.zip "$@"' > \
+    /opt/deepvariant/bin/show_examples && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python3 /opt/deepvariant/bin/runtime_by_region_vis.zip "$@"' > \
+    /opt/deepvariant/bin/runtime_by_region_vis && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python3 -u /opt/deepvariant/bin/run_pangenome_aware_deepvariant.py "$@"' > \
+    /opt/deepvariant/bin/run_pangenome_aware_deepvariant && \
+  chmod +x /opt/deepvariant/bin/make_examples_pangenome_aware_dv \
+    /opt/deepvariant/bin/call_variants \
+    /opt/deepvariant/bin/postprocess_variants \
+    /opt/deepvariant/bin/vcf_stats_report \
+    /opt/deepvariant/bin/show_examples \
+    /opt/deepvariant/bin/runtime_by_region_vis \
+    /opt/deepvariant/bin/run_pangenome_aware_deepvariant
+
+# Copy default data used for the representation.
+WORKDIR /opt/models/pangenome_aware_deepvariant
+ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/hprc-v1.1-mc-grch38.haplotypes.aligned_to_GRCh38.minimap2_v2.26_asm5.sorted.quality_added.primary_only.HP_tag_added.split_1kb.merged.bam .
+ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/hprc-v1.1-mc-grch38.haplotypes.aligned_to_GRCh38.minimap2_v2.26_asm5.sorted.quality_added.primary_only.HP_tag_added.split_1kb.merged.bam.bai .
+# The model files should be added later. For now, --customized_model will
+# need to be set when running with this Dockerfile.
+
+RUN chmod -R +r /opt/models/pangenome_aware_deepvariant/*
+
+ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin/pangenome_aware_deepvariant:/opt/deepvariant/bin
+
+RUN apt-get -y update && \
+  apt-get install -y parallel python3-pip && \
+  PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.13.0 && \
+  apt-get clean autoclean && \
+  apt-get autoremove -y --purge && \
+  rm -rf /var/lib/apt/lists/*
+
+
+WORKDIR /opt/deepvariant
+
+CMD ["/opt/deepvariant/bin/run_pangenome_aware_deepvariant", "--help"]

@@ -143,6 +143,7 @@ bazel build  -c opt \
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/train"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/call_variants"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples_pangenome_aware_dv"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples_somatic"
 fix_zip_file "bazel-out/k8-opt/bin/deeptrio/make_examples"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/postprocess_variants"

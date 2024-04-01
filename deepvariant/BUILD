@@ -13,6 +13,7 @@ filegroup(
     srcs = [
         "call_variants",
         "make_examples",
+        "make_examples_pangenome_aware_dv",
         "make_examples_somatic",
         "multisample_make_examples",
         "runtime_by_region_vis",
