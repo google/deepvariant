@@ -51,6 +51,7 @@ from deepvariant import dv_vcf_constants
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import sample as sample_lib
+from deepvariant import small_model_make_examples
 from deepvariant import variant_caller as vc_base
 from deepvariant import vcf_candidate_importer
 from deepvariant import very_sensitive_caller
@@ -1090,6 +1091,7 @@ class OutputsWriter:
         'runtime',
         'read_phases',
         'sitelist',
+        'small_model_examples',
     ]
     self._writers = {k: None for k in outputs}
     self.examples_filename = None
@@ -1136,6 +1138,17 @@ class OutputsWriter:
     if options.output_sitelist:
       sitelist_fname = options.examples_filename + '.sitelist.tsv'
       self._add_writer('sitelist', epath.Path(sitelist_fname).open('w'))
+
+    if options.write_small_model_examples:
+      summaries_fname = options.examples_filename + '.small_model.tsv'
+      self._add_writer(
+          'small_model_examples', epath.Path(summaries_fname).open('w')
+      )
+      writer = self._writers['small_model_examples']
+      if writer is not None:
+        writer.__enter__()
+        columns = small_model_make_examples.get_example_feature_columns()
+        writer.write('\t'.join(columns) + '\n')
 
     self._deterministic_serialization = options.deterministic_serialization
 
@@ -1193,6 +1206,11 @@ class OutputsWriter:
     if writer is not None:
       read_key = read.fragment_name + '/' + str(read.read_number)
       writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
+
+  def write_small_model_examples(self, *examples: Sequence[Union[str, int]]):
+    writer = self._writers['small_model_examples']
+    for row in examples:
+      writer.write('\t'.join(map(str, row)) + '\n')
 
   def _add_writer(self, name: str, writer: tf_record.TFRecordWriter):
     if name not in self._writers:
@@ -1618,6 +1636,39 @@ class RegionProcessor:
         time.time() - before_make_pileup_images
     )
     return example_shape
+
+  def write_small_model_examples_in_region(
+      self,
+      candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      region: range_pb2.Range,
+      writer: OutputsWriter,
+      n_stats: Dict[str, int],
+      runtimes: Dict[str, float],
+  ) -> None:
+    """Writes out the small model training examples in a region.
+
+    Args:
+      candidates: List of candidates to be processed into examples.
+      region: The region to generate examples.
+      writer: A OutputsWriter used to write out examples.
+      n_stats: A dictionary that is used to accumulate counts for reporting.
+      runtimes: A dictionary that recorded runtime information for reporting.
+    """
+    before_make_summaries = time.time()
+    if not in_training_mode(self.options):
+      raise ValueError(
+          'Writing small model examples is only supported in training mode.'
+      )
+
+    small_model_examples = small_model_make_examples.generate_training_examples(
+        list(self.label_candidates(candidates, region))
+    )
+    writer.write_small_model_examples(*small_model_examples)
+
+    n_stats['n_small_model_examples'] += 1
+    runtimes['make small_model_examples'] = trim_runtime(
+        time.time() - before_make_summaries
+    )
 
   def find_candidate_positions(self, region: range_pb2.Range) -> Iterator[int]:
     """Finds all candidate positions within a given region."""
@@ -2905,6 +2956,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       'n_regions': 0,
       'n_candidates': 0,
       'n_examples': 0,
+      'n_small_model_examples': 0,
   }
   example_shape = None
   region_n = 0
@@ -2938,6 +2990,18 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       if sample.options.skip_output_generation:
         continue
       writer = writers_dict[role]
+
+      if options.write_small_model_examples:
+        region_processor.write_small_model_examples_in_region(
+            candidates_by_sample[role],
+            region,
+            writer,
+            n_stats,
+            runtimes,
+        )
+        # Question: do we want to skip pileup image generation?
+        continue
+
       region_example_shape = region_processor.writes_examples_in_region(
           candidates_by_sample[role],
           region,
@@ -3065,3 +3129,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       options, 'Found %s candidate variants' % n_stats['n_candidates']
   )
   logging_with_options(options, 'Created %s examples' % n_stats['n_examples'])
+  logging_with_options(
+      options,
+      'Created %s small model examples' % n_stats['n_small_model_examples'],
+  )

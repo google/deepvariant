@@ -458,6 +458,32 @@ cc_test(
 )
 
 py_library(
+    name = "small_model_make_examples",
+    srcs = ["small_model_make_examples.py"],
+    srcs_version = "PY3",
+    deps = [
+        "//deepvariant/labeler:variant_labeler",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/util:variant_utils",
+    ],
+)
+
+py_test(
+    name = "small_model_make_examples_test",
+    srcs = ["small_model_make_examples_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":small_model_make_examples",
+        "//deepvariant/labeler:variant_labeler",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/protos:struct_py_pb2",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
     name = "make_examples_core",
     srcs = ["make_examples_core.py"],
     srcs_version = "PY3",
@@ -470,6 +496,7 @@ py_library(
         ":pileup_image",
         ":resources_main_lib",
         ":sample",
+        ":small_model_make_examples",
         ":variant_caller",
         ":vcf_candidate_importer",
         ":very_sensitive_caller",

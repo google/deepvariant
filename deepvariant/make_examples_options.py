@@ -632,6 +632,11 @@ _DETERMINISTIC_SERIALIZATION = flags.DEFINE_bool(
     'run with SerializeToString(deterministic=True). This is useful for '
     'creating deterministic testdata.',
 )
+_WRITE_SMALL_MODEL_EXAMPLES = flags.DEFINE_bool(
+    'write_small_model_examples',
+    False,
+    'If True, write small model training examples to TSV files.',
+)
 
 
 def shared_flags_to_options(
@@ -680,6 +685,7 @@ def shared_flags_to_options(
       sample_role_to_train=sample_role_to_train,
       output_sitelist=_OUTPUT_SITELIST.value,
       deterministic_serialization=_DETERMINISTIC_SERIALIZATION.value,
+      write_small_model_examples=_WRITE_SMALL_MODEL_EXAMPLES.value,
   )
 
   if add_flags:
