@@ -545,7 +545,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     with self.assertRaisesRegex(
         ValueError,
         (
-            'NOT_FOUND: Unknown reference_name '
+            'NOT_FOUND: Unknown reference_name.*'
             'reference_name:.*"chr20" start: 9999999 end: 10000999'
         ),
     ):
