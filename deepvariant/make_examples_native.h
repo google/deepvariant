@@ -252,7 +252,7 @@ class ExamplesGeneratorPeer {
 
   static std::string CallCreateHaplotype(
       const ExamplesGenerator& generator,
-      const nucleus::genomics::v1::Variant& variant, const std::string& alt,
+      const nucleus::genomics::v1::Variant& variant, absl::string_view alt,
       int64_t* ref_start_out, int64_t* ref_end_out) {
     return generator.CreateHaplotype(variant, alt, ref_start_out, ref_end_out);
   }
