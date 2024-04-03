@@ -65,13 +65,13 @@ namespace genomics {
 namespace deepvariant {
 
 bool SortByAlignment(
-    std::tuple<int, const Read*, std::unique_ptr<ImageRow>>& a,
-    std::tuple<int, const Read*, std::unique_ptr<ImageRow>>& b) {
+    std::tuple<int, int, const Read*, std::unique_ptr<ImageRow>>& a,
+    std::tuple<int, int, const Read*, std::unique_ptr<ImageRow>>& b) {
   // Sort reads by position + fragment_name + read_number.
-  const Read* read1 = std::get<1>(a);
-  const Read* read2 = std::get<1>(b);
-  int position1 = read1->alignment().position().position();
-  int position2 = read2->alignment().position().position();
+  const Read* read1 = std::get<2>(a);
+  const Read* read2 = std::get<2>(b);
+  int position1 = std::get<1>(a);
+  int position2 = std::get<1>(b);
   if (std::tuple<int, int>(std::get<0>(a), position1) ==
       std::tuple<int, int>(std::get<0>(b), position2)) {
     return std::tuple<std::string, int>(read1->fragment_name(),
@@ -172,7 +172,9 @@ PileupImageEncoderNative::BuildPileupForOneSample(
 
   // We add a row for each read in order, down-sampling if the number of
   // reads is greater than the max reads for each sample.
-  std::vector<std::tuple<int, const Read*, std::unique_ptr<ImageRow>>>
+  // Each tuple contains:
+  //   <hap_index, original read_alignment_positionm, read, image_row>
+  std::vector<std::tuple<int, int, const Read*, std::unique_ptr<ImageRow>>>
       pileup_of_reads;
   for (int index : read_indices) {
     if (pileup_of_reads.size() >= max_reads) {
@@ -185,17 +187,19 @@ PileupImageEncoderNative::BuildPileupForOneSample(
       continue;
     }
     if (alignment_positions == nullptr || alignment_positions->empty()) {
-      pileup_of_reads.push_back(
-          std::make_tuple(GetHapIndex(read), &read, std::move(image_row)));
+      pileup_of_reads.push_back(std::make_tuple(
+          GetHapIndex(read), read.alignment().position().position(), &read,
+          std::move(image_row)));
     } else {
-      pileup_of_reads.push_back(
-          std::make_tuple(GetHapIndex(read), &read, std::move(image_row)));
+      pileup_of_reads.push_back(std::make_tuple(GetHapIndex(read),
+                                                alignment_positions->at(index),
+                                                &read, std::move(image_row)));
     }
   }
 
   // Sort reads by alignment position.
   std::sort(pileup_of_reads.begin(), pileup_of_reads.end(), SortByAlignment);
-  for (auto& [hap_index, read, row] : pileup_of_reads) {
+  for (auto& [hap_index, pos, read, row] : pileup_of_reads) {
     rows.push_back(std::move(row));
   }
 
