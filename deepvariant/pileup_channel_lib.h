@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -154,7 +155,7 @@ class Channels {
   int normalizeFragmentLength(const Read& read);
 
   bool channel_exists(std::vector<std::string>& channels,
-                      const std::string& channel_name);
+                      absl::string_view channel_name);
 
   std::vector<std::uint8_t> Blank(const Read& read);
   std::vector<std::uint8_t> HomoPolymerWeighted(
@@ -194,7 +195,7 @@ class Channels {
 
   bool CalculateChannels(
       const std::vector<DeepVariantChannelEnum>& channel_enums,
-      const nucleus::genomics::v1::Read& read, const std::string& ref_bases,
+      const nucleus::genomics::v1::Read& read, absl::string_view ref_bases,
       const DeepVariantCall& dv_call,
       const std::vector<std::string>& alt_alleles, int image_start_pos);
 

@@ -45,6 +45,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -63,7 +64,7 @@ namespace deepvariant {
 
 bool Channels::CalculateChannels(
     const std::vector<DeepVariantChannelEnum>& channel_enums, const Read& read,
-    const std::string& ref_bases, const DeepVariantCall& dv_call,
+    absl::string_view ref_bases, const DeepVariantCall& dv_call,
     const std::vector<std::string>& alt_alleles, int image_start_pos) {
   int maxEnumValue = getMaxEnumValue(channel_enums);
   channel_enum_to_index_ = std::vector<int>(maxEnumValue + 1);
@@ -100,7 +101,8 @@ bool Channels::CalculateChannels(
   // have a low quality base at the call position (in which case we
   // should return null) from EncodeRead.
   std::function<bool(int, int, const CigarUnit::Operation&)>
-      action_per_cigar_unit = [&](int ref_i, int read_i,
+      action_per_cigar_unit = [&, ref_bases](
+                                  int ref_i, int read_i,
                                   const CigarUnit::Operation& cigar_op) {
         char read_base = 0;
         if (cigar_op == CigarUnit::INSERT) {
@@ -623,7 +625,7 @@ int Channels::normalizeFragmentLength(const Read& read) {
 }
 
 bool Channels::channel_exists(std::vector<std::string>& channels,
-                              const std::string& channel_name) {
+                              absl::string_view channel_name) {
   if (std::find(channels.begin(), channels.end(), channel_name) !=
       channels.end()) {
     return true;
