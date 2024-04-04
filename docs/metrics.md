@@ -5,13 +5,15 @@
 ### Runtime
 
 Runtime is on HG003 (all chromosomes).
+Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | ~96m
-call_variants                    | ~200m
-postprocess_variants (with gVCF) | ~25m
-total                            | ~321m = ~5.35 hours
+make_examples                    | 89m56.75s
+call_variants                    | 188m44.84s
+postprocess_variants (with gVCF) | 22m26.60s
+vcf_stats_report (optional)      | 7m12.57s
+total                            | 314m47.98s (5h14m47.98s)
 
 ### Accuracy
 
@@ -20,8 +22,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501680   | 2821     | 1276     | 0.994408      | 0.997565         | 0.995984        |
-| SNP   | 3306792  | 20704    | 4270     | 0.993778      | 0.998711         | 0.996238        |
+| INDEL | 501676   | 2825     | 1267     | 0.9944        | 0.997583         | 0.995989        |
+| SNP   | 3306782  | 20714    | 4284     | 0.993775      | 0.998707         | 0.996235        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.7.0/WGS/deepvariant.output.visual_report.html)
 
@@ -30,13 +32,15 @@ held out while training.
 ### Runtime
 
 Runtime is on HG003 (all chromosomes).
+Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | ~7m
-call_variants                    | ~1m
-postprocess_variants (with gVCF) | ~1m
-total                            | ~9m
+make_examples                    | 5m47.57s
+call_variants                    | 1m17.44s
+postprocess_variants (with gVCF) | 0m42.33s
+vcf_stats_report (optional)      | 0m6.34s
+total                            | 8m12.60s
 
 ### Accuracy
 
@@ -45,8 +49,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 1021     | 30       | 13       | 0.971456      | 0.987689         | 0.979505        |
-| SNP   | 24981    | 298      | 62       | 0.988212      | 0.997524         | 0.992846        |
+| INDEL | 1020     | 31       | 12       | 0.970504      | 0.988615         | 0.979476        |
+| SNP   | 24982    | 297      | 64       | 0.988251      | 0.997445         | 0.992827        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.7.0/WES/deepvariant.output.visual_report.html)
 
@@ -55,13 +59,15 @@ held out while training.
 ### Runtime
 
 Runtime is on HG003 (all chromosomes).
+Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~122m
-call_variants                    | ~222m
-postprocess_variants (with gVCF) | ~27m
-total                            | ~371m = ~6.18 hours
+make_examples                    | 86m15.04s
+call_variants                    | 213m38.31s
+postprocess_variants (with gVCF) | 25m2.41s
+vcf_stats_report (optional)      | 7m57.53s
+total                            | 343m26.11s (5h43m26.11s)
 
 ### Accuracy
 
@@ -73,8 +79,8 @@ to run DeepVariant once.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501502   | 2999     | 2781     | 0.994056      | 0.994704         | 0.99438         |
-| SNP   | 3324311  | 3184     | 1497     | 0.999043      | 0.99955          | 0.999297        |
+| INDEL | 501504   | 2997     | 2760     | 0.994059      | 0.994744         | 0.994402        |
+| SNP   | 3324308  | 3187     | 1508     | 0.999042      | 0.999547         | 0.999295        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.7.0/PACBIO/deepvariant.output.visual_report.html)
 
@@ -83,13 +89,15 @@ to run DeepVariant once.
 ### Runtime
 
 Runtime is on HG003 reads (all chromosomes).
+Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | ~242m
-call_variants                    | ~275m
-postprocess_variants (with gVCF) | ~28m
-total                            | ~545m = ~9.08 hours
+make_examples                    | 161m40.64s
+call_variants                    | 272m47.18s
+postprocess_variants (with gVCF) | 28m51.29s
+vcf_stats_report (optional)      | 8m41.07s
+total                            | 474m57.63s (7h54m57.63s)
 
 ### Accuracy
 
@@ -98,8 +106,8 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 438790   | 65711    | 40704    | 0.869751      | 0.918025         | 0.893236        |
-| SNP   | 3314049  | 13446    | 8147     | 0.995959      | 0.997549         | 0.996753        |
+| INDEL | 441622   | 62879    | 41271    | 0.875364      | 0.917466         | 0.895921        |
+| SNP   | 3314061  | 13434    | 8137     | 0.995963      | 0.997552         | 0.996757        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.7.0/ONT_R104/deepvariant.output.visual_report.html)
 
@@ -108,13 +116,15 @@ truth), which was held out while training.
 ### Runtime
 
 Runtime is on HG003 (all chromosomes).
+Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | ~142m
-call_variants                    | ~196m
-postprocess_variants (with gVCF) | ~18m
-total                            | ~356m = ~5.93 hours
+make_examples                    | 121m18.93s
+call_variants                    | 186m13.20s
+postprocess_variants (with gVCF) | 17m30.18s
+vcf_stats_report (optional)      | 6m53.86s
+total                            | 342m47.30s (5h42m47.30s)
 
 ### Accuracy
 
@@ -123,8 +133,8 @@ out while training the hybrid model.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 503007   | 1494     | 2765     | 0.997039      | 0.994785         | 0.995911        |
-| SNP   | 3323624  | 3871     | 2277     | 0.998837      | 0.999316         | 0.999076        |
+| INDEL | 503013   | 1488     | 2742     | 0.997051      | 0.994828         | 0.995938        |
+| SNP   | 3323633  | 3862     | 2259     | 0.998839      | 0.999321         | 0.99908         |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.7.0/HYBRID/deepvariant.output.visual_report.html)
 
