@@ -26,13 +26,13 @@ gcloud storage cp gs://brain-genomics-public/research/sequencing/fastq/novaseq/w
 
 ## Download VG files
 
-Get binaries `vg` 1.51.0 and `kmc`:
+Get binaries `vg` 1.55.0 and `kmc`:
 
 ```bash
 wget https://github.com/refresh-bio/KMC/releases/download/v3.2.2/KMC3.2.2.linux.x64.tar.gz
 tar zxf KMC3.2.2.linux.x64.tar.gz bin/kmc
 mv bin/kmc ${DATA_DIR}/
-wget https://github.com/vgteam/vg/releases/download/v1.51.0/vg -O ${DATA_DIR}/vg
+wget https://github.com/vgteam/vg/releases/download/v1.55.0/vg -O ${DATA_DIR}/vg
 chmod +x ${DATA_DIR}/vg ${DATA_DIR}/kmc
 ```
 
@@ -67,12 +67,11 @@ Output on the terminal:
 
 ```
 *******************************************************************************
-Stage 1: 55%
 Stage 1: 100%
 Stage 2: 100%
-1st stage: 944.485s
-2nd stage: 506.81s
-Total    : 1451.29s
+1st stage: 1080.93s
+2nd stage: 383.703s
+Total    : 1464.63s
 Tmp size : 110071MB
 
 Stats:
@@ -84,9 +83,9 @@ Stats:
    Total no. of reads                 :    838385300
    Total no. of super-k-mers          :   9929565346
 
-real    24m11.431s
-user    142m37.817s
-sys     8m14.566s
+real    24m24.961s
+user    157m44.462s
+sys     10m9.054s
 ```
 
 Run `giraffe`` on the graph, haplotype index, kmers and reads:
@@ -118,29 +117,29 @@ NOTE: No need to sort this yet, because we'll need to sort it in the next step.
 On my machine, the last few lines of the log showed:
 
 ```
-Mapped 838385300 reads across 64 threads in 14093.4 seconds with 3.25431 additional single-threaded seconds.
-Mapping speed: 929.496 reads per second per thread
-Used 896175 CPU-seconds (including output).
-Achieved 935.515 reads per CPU-second (including output)
-Memory footprint: 61.0703 GB
+Mapped 838385300 reads across 64 threads in 16094.2 seconds with 2.27046 additional single-threaded seconds.
+Mapping speed: 813.942 reads per second per thread
+Used 1.02948e+06 CPU-seconds (including output).
+Achieved 814.375 reads per CPU-second (including output)
+Memory footprint: 60.8593 GB
 
-real    283m10.368s
-user    15260m35.845s
-sys     214m57.882s
+real    322m57.058s
+user    17482m34.387s
+sys     257m57.409s
 ```
 
 File size:
 
 ```
 $ ls -lh reads.unsorted.bam
--rw-rw-r-- 1 pichuan pichuan 69G Nov  1 23:56 reads.unsorted.bam
+-rw-rw-r-- 1 pichuan pichuan 69G Apr  4 08:39 reads.unsorted.bam
 ```
 
 Then, clean up contig names, and sort:
 
 ```bash
 INBAM=reads.unsorted.bam
-BAM=reads.sorted.chrfixed.bam
+BAM=HG003.novaseq.pcr-free.35x.vg-1.55.0.bam
 time samtools view -h $INBAM | sed -e "s/GRCh38#0#//g" | samtools sort --threads 10 -m 2G -O BAM > ${BAM}
 # Index the BAM.
 samtools index -@$(nproc) ${BAM}
@@ -149,18 +148,22 @@ samtools index -@$(nproc) ${BAM}
 The step with `time` above took:
 
 ```
-real    73m19.172s
-user    178m59.088s
-sys     24m36.986s
+real    77m14.107s
+user    184m18.458s
+sys     28m51.487s
 ```
 
 
 File size:
 
 ```
-$ ls -lh reads.sorted.chrfixed.bam
--rw-rw-r-- 1 pichuan pichuan 40G Nov  2 02:09 reads.sorted.chrfixed.bam
+$ ls -lh HG003.novaseq.pcr-free.35x.vg-1.55.0.bam
+-rw-rw-r-- 1 pichuan pichuan 39G Apr  4 17:06 HG003.novaseq.pcr-free.35x.vg-1.55.0.bam
 ```
+
+This file can also be found at:
+
+`gs://deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-1.55.0.bam`
 
 ## Run DeepVariant With `min_mapping_quality=1,keep_legacy_allele_counter_behavior=true,normalize_reads=true`
 
@@ -201,9 +204,9 @@ time sudo docker run --rm \
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 116m37.385s
-call_variants                    | 214m37.055s
-postprocess_variants (with gVCF) | 30m59.968s
+make_examples                    | 106m32.652s
+call_variants                    | 214m25.256s
+postprocess_variants (with gVCF) | 25m19.176s
 
 
 ### Run hap.py
@@ -241,21 +244,21 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL       504501    502199      2302       960061      1526     434935    906    371       0.995437          0.997094        0.453029         0.996265                     NaN                     NaN                   1.489759                   1.952023
-INDEL   PASS       504501    502199      2302       960061      1526     434935    906    371       0.995437          0.997094        0.453029         0.996265                     NaN                     NaN                   1.489759                   1.952023
-  SNP    ALL      3327496   3316515     10981      3858659      5550     534709   2104    475       0.996700          0.998330        0.138574         0.997514                2.102576                1.970783                   1.535137                   1.436586
-  SNP   PASS      3327496   3316515     10981      3858659      5550     534709   2104    475       0.996700          0.998330        0.138574         0.997514                2.102576                1.970783                   1.535137                   1.436586
+INDEL    ALL       504501    502352      2149       960961      1490     435763    901    347       0.995740          0.997163        0.453466         0.996451                     NaN                     NaN                   1.489759                   1.949881
+INDEL   PASS       504501    502352      2149       960961      1490     435763    901    347       0.995740          0.997163        0.453466         0.996451                     NaN                     NaN                   1.489759                   1.949881
+  SNP    ALL      3327496   3316966     10530      3860709      5011     536891   1967    355       0.996835          0.998492        0.139065         0.997663                2.102576                 1.97108                   1.535137                   1.438119
+  SNP   PASS      3327496   3316966     10530      3860709      5011     536891   1967    355       0.996835          0.998492        0.139065         0.997663                2.102576                 1.97108                   1.535137                   1.438119
 ```
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502199   | 2302     | 1526     | 0.995437      | 0.997094         | 0.996265        |
-| SNP   | 3316515  | 10981    | 5550     | 0.9967        | 0.99833          | 0.997514        |
+| INDEL | 502352   | 2149     | 1490     | 0.99574       | 0.997163         | 0.996451        |
+| SNP   | 3316966  | 10530    | 5011     | 0.996835      | 0.998492         | 0.997663        |
 
 This can be compared with
 https://github.com/google/deepvariant/blob/r1.6.1/docs/metrics.md#accuracy.
 
 Which shows that `vg giraffe` improves F1:
 
-- Indel F1: 0.995998 --> 0.996265
-- SNP F1: 0.996237 --> 0.997514
+- Indel F1: 0.995998 --> 0.996451
+- SNP F1: 0.996237 --> 0.997663
