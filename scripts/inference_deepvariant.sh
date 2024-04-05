@@ -301,9 +301,16 @@ elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   BASE="${HOME}/wgs-case-study"
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-  BAM="${BAM:=${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+  if [[ "${MAIN_BINARY_NAME}" = "run_pangenome_aware_deepvariant" ]]; then
+    echo "Use VG BAM for pangenome-aware DeepVariant."
+    BAM="${BAM:=gs://deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-1.55.0.bam}"
+    echo "Add VG default make_examples args for pangenome-aware DeepVariant."
+    MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS:+$MAKE_EXAMPLES_ARGS,}min_mapping_quality=1,keep_legacy_allele_counter_behavior=true,normalize_reads=true"
+  else
+    BAM="${BAM:=${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
+  fi
 elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   MODEL_TYPE="WES"
   BASE="${HOME}/wes-case-study"
