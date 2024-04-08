@@ -12,11 +12,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 319m20.13s
-call_variants                    | 490m13.13s
-postprocess_variants (with gVCF) | 37m15.49s
-vcf_stats_report (optional)      | 7m58.21s
-total                            | 870m4.31s (14h30m4.31s)
+make_examples                    | 330m38.83s
+call_variants                    | 534m22.24s
+postprocess_variants (with gVCF) | 40m42.87s
+vcf_stats_report (optional)      | 8m47.20s
+total                            | 929m51.74s (15h29m51.74s)
 
 ### Accuracy
 
@@ -25,8 +25,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502505   | 1996     | 1366     | 0.996044      | 0.997399         | 0.996721        |
-| SNP   | 3318433  | 9063     | 4427     | 0.997276      | 0.998668         | 0.997972        |
+| INDEL | 502505   | 1996     | 1367     | 0.996044      | 0.997397         | 0.99672         |
+| SNP   | 3319187  | 8309     | 4395     | 0.997503      | 0.998678         | 0.99809         |
 
 ## WES (Illumina)
 
