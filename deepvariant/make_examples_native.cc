@@ -66,6 +66,8 @@ using Variant = nucleus::genomics::v1::Variant;
 using Range = nucleus::genomics::v1::Range;
 using Read = nucleus::genomics::v1::Read;
 
+constexpr int kDefaultMinimumReadOverlap = 15;
+
 ExamplesGenerator::ExamplesGenerator(
     const MakeExamplesOptions& options,
     const std::unordered_map<std::string, std::string>& example_filenames,
@@ -75,6 +77,7 @@ ExamplesGenerator::ExamplesGenerator(
   for (const auto& sample_options_for_one_sample : options_.sample_options()) {
     samples_[sample_options_for_one_sample.role()] =
         Sample(sample_options_for_one_sample);
+    roles_by_order_.push_back(sample_options_for_one_sample.role());
   }
   half_width_ = (options_.pic_options().width() - 1) / 2;
   absl::flat_hash_map<absl::string_view, AltAlignedPileup>
@@ -588,22 +591,36 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     return;
   }
   bool need_alt_alignment = NeedAltAlignment(variant);
+  bool use_trimmed_reads =
+      options_.trim_reads_for_pileup() || need_alt_alignment ||
+      sample.sample_options.keep_only_window_spanning_reads();
+  int min_trimming_overlap = kDefaultMinimumReadOverlap;
   for (const std::vector<std::string>& alt_combination :
         AltAlleleCombinations(variant)) {
     std::vector<std::unique_ptr<ImageRow>> ref_images;
     std::vector<std::vector<std::unique_ptr<ImageRow>>> alt_images(2);
     for (int this_sample_order : sample_order) {
+      // Implementing the logic from internal#comment5.
+      CHECK(this_sample_order < roles_by_order_.size());
+      if (samples_[roles_by_order_[this_sample_order]]
+              .sample_options.keep_only_window_spanning_reads()) {
+        min_trimming_overlap = options_.pic_options().width();
+      } else {
+        min_trimming_overlap = kDefaultMinimumReadOverlap;
+      }
       // All reads are trimmed if trim_reads_for_pileup is set. This allows for
       // a better runtime performance when long reads data is used.
       std::vector<Read> trimmed_reads;
       std::vector<const Read*> trimmed_reads_ptrs;
       std::vector<int64_t> original_start_positions = {};
       // We always trim reads if alt alignment is needed.
-      if (options_.trim_reads_for_pileup() || need_alt_alignment) {
+      if (use_trimmed_reads) {
         trimmed_reads = TrimReads(
-            readers[this_sample_order].Query(region),
+            /*reads=*/readers[this_sample_order].Query(region),
+            /*region=*/
             CalculateAlignmentRegion(variant, half_width_, *ref_reader_),
-            original_start_positions);
+            /*original_alignment_positions=*/original_start_positions,
+            /*min_overlap=*/min_trimming_overlap);
         trimmed_reads_ptrs.reserve(trimmed_reads.size());
         for (const auto& read : trimmed_reads) {
           trimmed_reads_ptrs.push_back(&read);
@@ -612,9 +629,8 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       // If trim_reads_for_pileup is set then trimmed_reads are used.
       auto ref_image = pileup_image_.BuildPileupForOneSample(
           candidate, reference_bases,
-          options_.trim_reads_for_pileup() || need_alt_alignment
-              ? trimmed_reads_ptrs
-              : readers[this_sample_order].Query(region),
+          use_trimmed_reads ? trimmed_reads_ptrs
+                            : readers[this_sample_order].Query(region),
           image_start_pos, alt_combination,
           options_.sample_options(this_sample_order),
           &original_start_positions);

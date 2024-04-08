@@ -83,7 +83,7 @@ std::vector<nucleus::genomics::v1::Read> RealignReadsToHaplotype(
 std::vector<nucleus::genomics::v1::Read> TrimReads(
     const std::vector<const nucleus::genomics::v1::Read*>& reads,
     const nucleus::genomics::v1::Range& region,
-    std::vector<int64_t>& original_alignment_positions);
+    std::vector<int64_t>& original_alignment_positions, int min_overlap = 15);
 
 }  // namespace deepvariant
 }  // namespace genomics
