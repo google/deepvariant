@@ -38,6 +38,7 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "tensorflow/core/platform/test.h"
+#include "absl/container/flat_hash_set.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
@@ -49,6 +50,8 @@ using nucleus::genomics::v1::Read;
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+
+using ::testing::ValuesIn;
 
 TEST(ScaleColor, BasicCase) {
   PileupImageOptions options{};
@@ -455,7 +458,15 @@ TEST(ReadInsertSizeTest, NoValue) {
   EXPECT_EQ(w_insert_size, expected);
 }
 
-TEST(GetChannelDataTest, ReadData) {
+struct GetChannelDataTestData {
+  absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank;
+};
+
+class GetChannelDataTest
+    : public testing::TestWithParam<GetChannelDataTestData> {};
+
+TEST_P(GetChannelDataTest, ReadData) {
+  const GetChannelDataTestData& param = GetParam();
   PileupImageOptions options{};
   options.set_mapping_quality_cap(1);
   options.set_positive_strand_color(20);
@@ -499,15 +510,28 @@ TEST(GetChannelDataTest, ReadData) {
 
   channel_set.CalculateChannels(channel_enums, read,
                                 ref_read.aligned_sequence(), dv_call,
-                                alt_alleles, 0);
-  EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 11), 4);
-  EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 9), 2);
-  EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 1), 3);
-  EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 4), 1);
+                                alt_alleles, 0, param.channels_enum_to_blank);
+  if (!param.channels_enum_to_blank.contains(
+          DeepVariantChannelEnum::CH_READ_BASE)) {
+    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 11), 4);
+    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 9), 2);
+    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 1), 3);
+    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 4), 1);
+  } else {
+    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 11), 0);
+    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 9), 0);
+    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 1), 0);
+    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 4), 0);
+  }
   EXPECT_EQ(channel_set.GetChannelData(ch_base_quality, 1),
             kMaxPixelValueAsFloat);
-  EXPECT_EQ(channel_set.GetChannelData(ch_mapping_quality, 1),
-            static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+  if (!param.channels_enum_to_blank.contains(
+          DeepVariantChannelEnum::CH_MAPPING_QUALITY)) {
+    EXPECT_EQ(channel_set.GetChannelData(ch_mapping_quality, 1),
+              static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+  } else {
+    EXPECT_EQ(channel_set.GetChannelData(ch_mapping_quality, 1), 0);
+  }
   EXPECT_EQ(channel_set.GetChannelData(ch_strand, 1), 20);
   EXPECT_EQ(channel_set.GetChannelData(ch_read_supports_variant, 1),
             static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
@@ -527,6 +551,24 @@ TEST(GetChannelDataTest, ReadData) {
   EXPECT_EQ(channel_set.GetChannelData(ch_blank, 1), 0);
   EXPECT_EQ(channel_set.GetChannelData(ch_insert_size, 1), 254);
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    GetChannelDataTests, GetChannelDataTest,
+    ValuesIn(std::vector<GetChannelDataTestData>({
+        {
+            .channels_enum_to_blank = {},
+        },
+        // Include a base-level test case.
+        {
+            .channels_enum_to_blank = {DeepVariantChannelEnum::CH_READ_BASE},
+        },
+        // Include a base-level and a read-level test case.
+        {
+            .channels_enum_to_blank =
+                {DeepVariantChannelEnum::CH_READ_BASE,
+                 DeepVariantChannelEnum::CH_MAPPING_QUALITY},
+        },
+    })));
 
 TEST(GetRefChannelDataTest, ReadData) {
   PileupImageOptions options{};

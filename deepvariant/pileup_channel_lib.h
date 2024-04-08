@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -197,11 +198,13 @@ class Channels {
       const std::vector<DeepVariantChannelEnum>& channel_enums,
       const nucleus::genomics::v1::Read& read, absl::string_view ref_bases,
       const DeepVariantCall& dv_call,
-      const std::vector<std::string>& alt_alleles, int image_start_pos);
+      const std::vector<std::string>& alt_alleles, int image_start_pos,
+      absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank =
+          {});
 
   // Calculate values for channels that only depend on information at the
   // granularity of an entire read.
-  bool CalculateReadLevelData(const DeepVariantChannelEnum channel_enum,
+  bool CalculateReadLevelData(DeepVariantChannelEnum channel_enum,
                               const nucleus::genomics::v1::Read& read,
                               const DeepVariantCall& dv_call,
                               const std::vector<std::string>& alt_alleles);

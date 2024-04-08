@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
@@ -65,7 +66,8 @@ namespace deepvariant {
 bool Channels::CalculateChannels(
     const std::vector<DeepVariantChannelEnum>& channel_enums, const Read& read,
     absl::string_view ref_bases, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles, int image_start_pos) {
+    const std::vector<std::string>& alt_alleles, int image_start_pos,
+    const absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank) {
   int maxEnumValue = getMaxEnumValue(channel_enums);
   channel_enum_to_index_ = std::vector<int>(maxEnumValue + 1);
   int currIndex = 0;
@@ -84,7 +86,8 @@ bool Channels::CalculateChannels(
   for (const DeepVariantChannelEnum channel_enum : channel_enums) {
     int index = channel_enum_to_index_[channel_enum];
     data_[index] = std::vector<unsigned char>(ref_bases.size(), 0);
-    if (!isBaseLevelChannel(channel_enum)) {
+    if (!isBaseLevelChannel(channel_enum) &&
+        !channels_enum_to_blank.contains(channel_enum)) {
       bool ok =
           CalculateReadLevelData(channel_enum, read, dv_call, alt_alleles);
       if (!ok) return false;
@@ -130,7 +133,8 @@ bool Channels::CalculateChannels(
           for (int i = 0; i < channel_enums.size(); ++i) {
             DeepVariantChannelEnum channel_enum = channel_enums[i];
             int index = channel_enum_to_index_[channel_enum];
-            if (isBaseLevelChannel(channel_enum)) {
+            if (isBaseLevelChannel(channel_enum) &&
+                !channels_enum_to_blank.contains(channel_enum)) {
               if (channel_enum == DeepVariantChannelEnum::CH_READ_BASE) {
                 data_[index][col] = BaseColor(read_base, options_);
               } else if (channel_enum ==
@@ -150,7 +154,8 @@ bool Channels::CalculateChannels(
           for (int i = 0; i < channel_enums.size(); ++i) {
             DeepVariantChannelEnum channel_enum = channel_enums[i];
             int index = channel_enum_to_index_[channel_enum];
-            if (!isBaseLevelChannel(channel_enum)) {
+            if (!isBaseLevelChannel(channel_enum) &&
+                !channels_enum_to_blank.contains(channel_enum)) {
               if (read_level_data_[index].size() == 1) {
                 data_[index][col] = read_level_data_[index][0];
               } else {
