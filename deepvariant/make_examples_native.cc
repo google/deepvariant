@@ -125,6 +125,9 @@ ExamplesGenerator::ExamplesGenerator(
     }
     // TFRecrd examples are always compressed as it is also in call_variants.
     sample.writer = nucleus::TFRecordWriter::New(it->second, "GZIP");
+    if (sample.writer == nullptr) {
+      LOG(FATAL) << "Failed to create TFRecord writer for " << it->second;
+    }
   }
 }
 
