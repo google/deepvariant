@@ -235,9 +235,6 @@ class ExamplesGenerator {
 
   // Samples keyed by role.
   absl::flat_hash_map<std::string, Sample> samples_;
-  // Roles stored in the same order as input samples. This can help to access
-  // a sample's role by order.
-  std::vector<std::string> roles_by_order_;
 
   // Alt aligned pileup option.
   AltAlignedPileup alt_aligned_pileup_;

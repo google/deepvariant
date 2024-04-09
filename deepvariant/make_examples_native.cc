@@ -77,7 +77,6 @@ ExamplesGenerator::ExamplesGenerator(
   for (const auto& sample_options_for_one_sample : options_.sample_options()) {
     samples_[sample_options_for_one_sample.role()] =
         Sample(sample_options_for_one_sample);
-    roles_by_order_.push_back(sample_options_for_one_sample.role());
   }
   half_width_ = (options_.pic_options().width() - 1) / 2;
   absl::flat_hash_map<absl::string_view, AltAlignedPileup>
@@ -604,9 +603,9 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     std::vector<std::vector<std::unique_ptr<ImageRow>>> alt_images(2);
     for (int this_sample_order : sample_order) {
       // Implementing the logic from internal#comment5.
-      CHECK(this_sample_order < roles_by_order_.size());
-      if (samples_[roles_by_order_[this_sample_order]]
-              .sample_options.keep_only_window_spanning_reads()) {
+      CHECK(this_sample_order < options_.sample_options().size());
+      if (options_.sample_options(this_sample_order)
+              .keep_only_window_spanning_reads()) {
         min_trimming_overlap = options_.pic_options().width();
       } else {
         min_trimming_overlap = kDefaultMinimumReadOverlap;
