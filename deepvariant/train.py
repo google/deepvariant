@@ -33,7 +33,6 @@ import math
 import os
 import re
 import sys
-import warnings
 
 from absl import app
 from absl import flags
@@ -318,14 +317,34 @@ def train(config: ml_collections.ConfigDict):
 
   # The state object allows checkpointing of the model and associated variables
   # for the optimizer, step, and train/tune metrics.
+  pre_ema_checkpoint_path = os.path.join(model_dir, 'pre_ema')
+  ema_checkpoint_path = os.path.join(model_dir, 'ema')
+  best_checkpoint_path = os.path.join(model_dir, 'best')
+  last_checkpoint_path = os.path.join(model_dir, 'last')
   ckpt_manager = keras_modeling.create_state(
       config,
-      model_dir,
+      pre_ema_checkpoint_path,
       model,
       optimizer,
       strategy,
   )
   state = ckpt_manager.checkpoint
+
+  def save_checkpoint(path):
+    logging.info('Saving checkpoint to %s', path)
+    tf.io.gfile.makedirs(os.path.dirname(path))
+    local_example_info_json = os.path.join(
+        os.path.dirname(path), 'example_info.json'
+    )
+    if not tf.io.gfile.exists(local_example_info_json):
+      logging.info('Copying example_info.json to %s', local_example_info_json)
+      tf.io.gfile.copy(
+          example_info_json_path,
+          local_example_info_json,
+      )
+    tf.train.Checkpoint(
+        model,
+    ).save(path)
 
   # ============== #
   # Setup Datasets #
@@ -394,6 +413,7 @@ def train(config: ml_collections.ConfigDict):
       every_secs=300,
       on_steps=[0, num_train_steps - 1],
   )
+  best_checkpoint_fname = None
 
   with strategy.scope():
 
@@ -415,11 +435,6 @@ def train(config: ml_collections.ConfigDict):
             train_step,
             epoch,
         )
-        if train_step > 0:
-          # Only use ema weights if we are past step 0.
-          # Usually, this means we are evaluating an initial checkpoint.
-          original_weights = model.get_weights()
-          optimizer.finalize_variable_values(model.trainable_weights)
         for tune_step in range(0, steps_per_tune, config.steps_per_iter):
           with tf.profiler.experimental.Trace('tune', step_num=tune_step, _r=1):
             if roundup(tune_step, config.steps_per_iter) > steps_per_tune:
@@ -440,9 +455,6 @@ def train(config: ml_collections.ConfigDict):
             distributed_tune_step(
                 tune_ds, tf.constant(steps_per_iter, dtype=tf.int64)
             )
-        if train_step > 0:
-          # Revert back to original weights and continue training.
-          model.set_weights(original_weights)
 
         metric_writer.write_scalars(
             train_step,
@@ -543,14 +555,44 @@ def train(config: ml_collections.ConfigDict):
             )
             or is_last_step
         ):
-          if is_last_step:
-            logging.info('Finalizing model weights.')
+
+          # ckpt_manager saves checkpoints without ema averaging.
+          ckpt_manager.save(train_step)
+
+          if config.use_ema:
+            # Run tune using EMA model.
+            original_weights = model.get_weights()
             optimizer.finalize_variable_values(model.trainable_weights)
+            save_checkpoint(
+                os.path.join(
+                    ema_checkpoint_path,
+                    f'checkpoint-{train_step}-{best_checkpoint_metric_value:.5f}',
+                )
+            )
+
           run_tune(train_step, epoch, steps_per_tune)
 
-          ckpt_manager.save(train_step)
+          if is_last_step:
+            logging.info('Finalizing model weights.')
+            save_checkpoint(
+                os.path.join(
+                    last_checkpoint_path,
+                    f'checkpoint-{train_step}-{best_checkpoint_metric_value:.5f}',
+                )
+            )
+            break
+
           if get_checkpoint_metric() > best_checkpoint_metric_value:
             best_checkpoint_metric_value = get_checkpoint_metric()
+            best_checkpoint_fname = (
+                f'checkpoint-{train_step}-{best_checkpoint_metric_value:.5f}'
+            )
+            save_checkpoint(
+                os.path.join(
+                    best_checkpoint_path,
+                    best_checkpoint_fname,
+                )
+            )
             # Reset early stopping counter
             state.early_stopping.assign(0)
             logging.info(
@@ -564,7 +606,13 @@ def train(config: ml_collections.ConfigDict):
                 and state.early_stopping.value()
                 >= config.early_stopping_patience
             ):
-              logging.info('Early Stop Reached.')
+              logging.info('Early Stop Reached. Finalizing model weights.')
+              save_checkpoint(
+                  os.path.join(
+                      last_checkpoint_path,
+                      f'checkpoint-{train_step}-{best_checkpoint_metric_value:.5f}',
+                  )
+              )
               break
             logging.info(
                 'Early Stopping Count +1: %s=%s < previous best %s=%s',
@@ -580,6 +628,10 @@ def train(config: ml_collections.ConfigDict):
                 {'tune/early_stopping': state.early_stopping.value()},
             )
 
+          # Revert weights to original weights to resume training.
+          if config.use_ema:
+            model.set_weights(original_weights)
+
           # Reset tune metrics
           for metric in state.tune_metrics:
             metric.reset_states()
@@ -589,17 +641,6 @@ def train(config: ml_collections.ConfigDict):
       return
 
     logging.info('Saving model using saved_model format.')
-    saved_model_dir = os.path.join(checkpoint_path, 'saved_model')
-    model.save(saved_model_dir, save_format='tf')
-    # Copy example_info.json to saved_model directory.
-    tf.io.gfile.copy(
-        example_info_json_path,
-        os.path.join(
-            saved_model_dir,
-            'example_info.json',
-        ),
-        overwrite=True,
-    )
 
 
 def main(unused_argv):
@@ -617,7 +658,4 @@ def main(unused_argv):
 
 if __name__ == '__main__':
   logging.set_verbosity(logging.INFO)
-  warnings.filterwarnings(
-      'ignore', module='tensorflow_addons.optimizers.average_wrapper'
-  )
   app.run(main)

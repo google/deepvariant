@@ -267,7 +267,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   else:
     raise ValueError(f'Unknown config_name: {config_name}')
 
-  if alt_mode == 'test':
+  if config.alt_mode == 'test':
+    config.alt_mode = 'test'
     get_test_config(config)
 
   return config

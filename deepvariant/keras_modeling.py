@@ -194,7 +194,7 @@ def num_channels_from_checkpoint(filepath: str) -> int:
 
 
 def inceptionv3_with_imagenet(
-    input_shape: Tuple[int, int, int]
+    input_shape: Tuple[int, int, int],
 ) -> tf.keras.Model:
   """Returns `inceptionv3` model with 3 channels; init with `weights=imagenet`.
 
@@ -428,7 +428,7 @@ def create_state(
     ckpt_manager = tf.train.CheckpointManager(
         checkpoint=state,
         directory=model_dir,
-        max_to_keep=5,
+        max_to_keep=None,
     )
 
     if ckpt_manager.latest_checkpoint:
