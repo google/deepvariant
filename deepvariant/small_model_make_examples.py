@@ -70,7 +70,7 @@ IDENTIFYING_FEATURES = (
 TRUTH_FEATURE = SmallModelFeature.GENOTYPE
 
 
-def _encode_genotype(genotype: Tuple[int, int]) -> int:
+def encode_genotype(genotype: Tuple[int, int]) -> int:
   """Maps the given genotype to its encoding."""
   if genotype == (0, 0):
     return GenotypeEncoding.REF.value
@@ -181,7 +181,7 @@ def get_feature_from_candidate_or_label(
   elif feature == SmallModelFeature.VARIANT_ALLELE_FREQUENCY_1:
     return _get_variant_allele_frequency_1(candidate)
   elif feature == SmallModelFeature.GENOTYPE:
-    return _encode_genotype(label.genotype)
+    return encode_genotype(label.genotype)
   else:
     raise ValueError(f'{feature} does not map to a callable.')
 
