@@ -138,6 +138,8 @@ _KEEP_ONLY_WINDOW_SPANNING_HAPLOTYPES = flags.DEFINE_bool(
 # I'm setting this to float('inf') because we don't want to include any
 # candidates from the non-target (i.e., pangenome) sample.
 FLAGS.set_default('vsc_min_fraction_multiplier', float('inf'))
+# trim_reads_for_pileup is always needed for the Pangenome input.
+FLAGS.set_default('trim_reads_for_pileup', True)
 
 
 def reads_and_pangenome_samples_from_flags(add_flags=True, flags_obj=None):

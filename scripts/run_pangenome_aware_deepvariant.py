@@ -356,6 +356,8 @@ def make_examples_pangenome_aware_dv_command(
     special_args['keep_only_window_spanning_haplotypes'] = True
     special_args['keep_supplementary_alignments'] = True
     special_args['sort_by_haplotypes'] = True
+    # Already default for make_examples_pangenome_aware_dv. Set just in case.
+    special_args['trim_reads_for_pileup'] = True
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'PACBIO':
     special_args['alt_aligned_pileup'] = 'diff_channels'

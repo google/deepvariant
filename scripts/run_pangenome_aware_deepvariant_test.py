@@ -71,8 +71,8 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt" %s'
         ' --keep_only_window_spanning_haplotypes'
-        ' --keep_supplementary_alignments'
-        ' --sample_name_pangenome "hprc_v1.1" --sort_by_haplotypes --task {}'
+        ' --keep_supplementary_alignments --sample_name_pangenome "hprc_v1.1"'
+        ' --sort_by_haplotypes --trim_reads_for_pileup --task {}'
         % (extra_args_plus_gvcf),
     )
     call_variants_bin = 'call_variants'
@@ -143,8 +143,8 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' --keep_only_window_spanning_haplotypes'
-        ' --keep_supplementary_alignments%s'
-        ' --sort_by_haplotypes --task {}' % extra_sample_name_flag,
+        ' --keep_supplementary_alignments%s --sort_by_haplotypes'
+        ' --trim_reads_for_pileup --task {}' % extra_sample_name_flag,
     )
     self.assertEqual(
         commands[1][0],
@@ -171,7 +171,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --keep_secondary_alignments'
           + ' --keep_supplementary_alignments'
           + ' --sample_name_pangenome "hprc_v1.1"'
-          + ' --sort_by_haplotypes',
+          + ' --sort_by_haplotypes --trim_reads_for_pileup',
       ),
       (
           'keep_secondary_alignments=false',
@@ -179,7 +179,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --nokeep_secondary_alignments'
           + ' --keep_supplementary_alignments'
           + ' --sample_name_pangenome "hprc_v1.1"'
-          + ' --sort_by_haplotypes',
+          + ' --sort_by_haplotypes --trim_reads_for_pileup',
       ),
       (
           'keep_secondary_alignments=true,keep_supplementary_alignments=true',
@@ -187,7 +187,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --keep_secondary_alignments'
           + ' --keep_supplementary_alignments'
           + ' --sample_name_pangenome "hprc_v1.1"'
-          + ' --sort_by_haplotypes',
+          + ' --sort_by_haplotypes --trim_reads_for_pileup',
       ),
       (
           'use_ref_for_cram=true,keep_secondary_alignments=true,'
@@ -196,7 +196,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --keep_secondary_alignments'
           + ' --nokeep_supplementary_alignments'
           + ' --sample_name_pangenome "hprc_v1.1"'
-          + ' --sort_by_haplotypes --use_ref_for_cram',
+          + ' --sort_by_haplotypes --trim_reads_for_pileup --use_ref_for_cram',
       ),
   )
   @flagsaver.flagsaver
@@ -253,8 +253,8 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
             ' --checkpoint "/opt/models/wgs/model.ckpt" --gvcf'
             ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
             ' --keep_only_window_spanning_haplotypes'
-            ' --keep_supplementary_alignments'
-            ' --sample_name_pangenome "hprc_v1.1" --sort_by_haplotypes'
+            ' --keep_supplementary_alignments --sample_name_pangenome'
+            ' "hprc_v1.1" --sort_by_haplotypes --trim_reads_for_pileup'
             ' --task {}'
         ),
     )
@@ -289,8 +289,8 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --checkpoint "/opt/models/wgs/model.ckpt" --gvcf'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
         ' --keep_only_window_spanning_haplotypes'
-        ' --keep_supplementary_alignments %s'
-        ' --sample_name_pangenome "hprc_v1.1" --sort_by_haplotypes --task {}'
+        ' --keep_supplementary_alignments %s --sample_name_pangenome'
+        ' "hprc_v1.1" --sort_by_haplotypes --trim_reads_for_pileup --task {}'
         % expected_args,
     )
 
