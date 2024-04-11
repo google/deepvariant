@@ -31,9 +31,9 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from deepvariant import small_model_make_examples
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
+from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 
@@ -79,78 +79,78 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           testcase_name="contig_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.CONTIG,
+          feature=make_small_model_examples.SmallModelFeature.CONTIG,
           expected_value="chr9",
       ),
       dict(
           testcase_name="start_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.START,
+          feature=make_small_model_examples.SmallModelFeature.START,
           expected_value=5000,
       ),
       dict(
           testcase_name="end_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.END,
+          feature=make_small_model_examples.SmallModelFeature.END,
           expected_value=5001,
       ),
       dict(
           testcase_name="ref_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.REF,
+          feature=make_small_model_examples.SmallModelFeature.REF,
           expected_value="A",
       ),
       dict(
           testcase_name="alt_1_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.ALT_1,
+          feature=make_small_model_examples.SmallModelFeature.ALT_1,
           expected_value="C",
       ),
       dict(
           testcase_name="num_reads_supports_ref_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.NUM_READS_SUPPORTS_REF,
+          feature=make_small_model_examples.SmallModelFeature.NUM_READS_SUPPORTS_REF,
           expected_value=14,
       ),
       dict(
           testcase_name="num_reads_supports_alt_1_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.NUM_READS_SUPPORTS_ALT_1,
+          feature=make_small_model_examples.SmallModelFeature.NUM_READS_SUPPORTS_ALT_1,
           expected_value=16,
       ),
       dict(
           testcase_name="total_depth_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.TOTAL_DEPTH,
+          feature=make_small_model_examples.SmallModelFeature.TOTAL_DEPTH,
           expected_value=30,
       ),
       dict(
           testcase_name="variant_allele_frequency_1_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.VARIANT_ALLELE_FREQUENCY_1,
+          feature=make_small_model_examples.SmallModelFeature.VARIANT_ALLELE_FREQUENCY_1,
           expected_value=87,
       ),
       dict(
           testcase_name="genotype_feature",
           candidate=FAKE_VARIANT_CALL_HET,
           label=FAKE_VARIANT_CALL_HET_LABEL,
-          feature=small_model_make_examples.SmallModelFeature.GENOTYPE,
-          expected_value=small_model_make_examples.GenotypeEncoding.HET.value,
+          feature=make_small_model_examples.SmallModelFeature.GENOTYPE,
+          expected_value=make_small_model_examples.GenotypeEncoding.HET.value,
       ),
   )
   def test_get_feature_from_candidate_or_label(
       self, candidate, label, feature, expected_value
   ):
     self.assertEqual(
-        small_model_make_examples.get_feature_from_candidate_or_label(
+        make_small_model_examples.get_feature_from_candidate_or_label(
             feature,
             candidate,
             label,
@@ -161,7 +161,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
   def test_get_example_feature_columns(self):
     # Note: for now, testing only the identifying columns and the first four
     # features since the features will evolve.
-    num_test_columns = len(small_model_make_examples.IDENTIFYING_FEATURES) + 4
+    num_test_columns = len(make_small_model_examples.IDENTIFYING_FEATURES) + 4
     expected_columns = [
         "contig",
         "start",
@@ -175,7 +175,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     ]
 
     example_feature_columns = (
-        small_model_make_examples.get_example_feature_columns()
+        make_small_model_examples.get_example_feature_columns()
     )
 
     self.assertEqual(
@@ -186,10 +186,10 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     self.assertEqual(example_feature_columns[-1], "genotype")
 
   def test_generate_training_examples(self):
-    num_test_columns = len(small_model_make_examples.IDENTIFYING_FEATURES) + 4
+    num_test_columns = len(make_small_model_examples.IDENTIFYING_FEATURES) + 4
 
     small_model_examples = (
-        small_model_make_examples.generate_training_examples([
+        make_small_model_examples.generate_training_examples([
             (FAKE_VARIANT_CALL_HET, FAKE_VARIANT_CALL_HET_LABEL),
         ])
     )
@@ -210,7 +210,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     # Last column should be truth value
     self.assertEqual(
         small_model_examples[0][-1],
-        small_model_make_examples.GenotypeEncoding.HET.value,
+        make_small_model_examples.GenotypeEncoding.HET.value,
     )
 
 

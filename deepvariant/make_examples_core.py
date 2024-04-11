@@ -51,7 +51,6 @@ from deepvariant import dv_vcf_constants
 from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import sample as sample_lib
-from deepvariant import small_model_make_examples
 from deepvariant import variant_caller as vc_base
 from deepvariant import vcf_candidate_importer
 from deepvariant import very_sensitive_caller
@@ -64,6 +63,7 @@ from deepvariant.python import allelecounter
 from deepvariant.python import direct_phasing
 from deepvariant.python import make_examples_native
 from deepvariant.realigner import realigner
+from deepvariant.small_model import make_small_model_examples
 from deepvariant.vendor import timer
 from google.protobuf import text_format
 from third_party.nucleus.io import fasta
@@ -1147,7 +1147,7 @@ class OutputsWriter:
       writer = self._writers['small_model_examples']
       if writer is not None:
         writer.__enter__()
-        columns = small_model_make_examples.get_example_feature_columns()
+        columns = make_small_model_examples.get_example_feature_columns()
         writer.write('\t'.join(columns) + '\n')
 
     self._deterministic_serialization = options.deterministic_serialization
@@ -1660,7 +1660,7 @@ class RegionProcessor:
           'Writing small model examples is only supported in training mode.'
       )
 
-    small_model_examples = small_model_make_examples.generate_training_examples(
+    small_model_examples = make_small_model_examples.generate_training_examples(
         list(self.label_candidates(candidates, region))
     )
     writer.write_small_model_examples(*small_model_examples)

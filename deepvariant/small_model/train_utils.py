@@ -40,7 +40,7 @@ import pysam
 from sklearn import ensemble
 from sklearn import metrics
 
-from deepvariant import small_model_make_examples
+from deepvariant.small_model import make_small_model_examples
 from io import fileio
 from third_party.nucleus.util import genomics_math
 
@@ -53,7 +53,7 @@ def _is_snp(variant: pysam.VariantRecord) -> bool:
 def _get_genotype_class(genotype: Tuple[int, int]) -> int:
   """Safely tries to encode the genotype class for the given genotype."""
   try:
-    return small_model_make_examples.encode_genotype(genotype)
+    return make_small_model_examples.encode_genotype(genotype)
   except KeyError:
     return -1
 
@@ -148,7 +148,7 @@ def filter_out_mislabels(vcf: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
       return vcf.loc[key][gt_column]
     except KeyError:
       # if not present, must be a no-call
-      return small_model_make_examples.GenotypeEncoding.REF.value
+      return make_small_model_examples.GenotypeEncoding.REF.value
 
   df["true_gt"] = df.apply(get_true_gt, axis=1)
   mislabels = df[df["true_gt"] != df["genotype"]]
@@ -222,7 +222,7 @@ class ModelRunner:
   def train(self) -> None:
     """Trains the model."""
     x_train = self.training_df[self.get_model_features()]
-    y_train = self.training_df[small_model_make_examples.TRUTH_FEATURE.value]
+    y_train = self.training_df[make_small_model_examples.TRUTH_FEATURE.value]
     time_before_train = time.time()
     self.model.fit(x_train.values, y_train.values)
     self.training_time = time.time() - time_before_train
@@ -242,7 +242,7 @@ class ModelRunner:
 
   def assess(self, predictions: np.ndarray) -> None:
     """Runs quick analysis on model performance."""
-    y_test = self.test_df[small_model_make_examples.TRUTH_FEATURE.value]
+    y_test = self.test_df[make_small_model_examples.TRUTH_FEATURE.value]
     self.accuracy = metrics.accuracy_score(y_test, predictions)
     model_metrics = [
         f"Name: {self.get_experiment_name()}",
@@ -276,9 +276,9 @@ class ModelRunner:
       return self.model_features
     return [
         f.value
-        for f in small_model_make_examples.SmallModelFeature
-        if f not in small_model_make_examples.IDENTIFYING_FEATURES
-        and f != small_model_make_examples.TRUTH_FEATURE
+        for f in make_small_model_examples.SmallModelFeature
+        if f not in make_small_model_examples.IDENTIFYING_FEATURES
+        and f != make_small_model_examples.TRUTH_FEATURE
     ]
 
   def run(self) -> None:
@@ -302,7 +302,7 @@ class ModelRunner:
   def calculate_feature_importance(self) -> None:
     """Calculates feature importance using RFC and MDI."""
     x_train = self.training_df[self.get_model_features()]
-    y_train = self.training_df[small_model_make_examples.TRUTH_FEATURE.value]
+    y_train = self.training_df[make_small_model_examples.TRUTH_FEATURE.value]
     feature_names = x_train.columns
     forest = ensemble.RandomForestClassifier(random_state=0)
     forest.fit(x_train, y_train)
