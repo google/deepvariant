@@ -134,7 +134,7 @@ TEST_P(GenomeReferenceTest, NotOKIfIntervalIsInvalid) {
   // Asking for bad chromosome values produces death.
   StatusOr<string> result = Ref().GetBases(MakeRange("missing", 0, 1));
   EXPECT_THAT(result,
-              IsNotOKWithCodeAndMessage(static_cast<tsl::errors::Code>(
+              IsNotOKWithCodeAndMessage(static_cast<absl::StatusCode>(
                                             absl::StatusCode::kInvalidArgument),
                                         "Invalid interval"));
 
