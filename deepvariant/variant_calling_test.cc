@@ -78,7 +78,7 @@ constexpr int64_t kStart = 10;
 AlleleCount MakeAlleleCount(const absl::string_view chr_name, int start,
                             const absl::string_view ref_base,
                             int ref_supporting_read_count,
-                            absl::Span<const Allele> read_alleles) {
+                            const std::vector<Allele>& read_alleles) {
   AlleleCount allele_count;
   *allele_count.mutable_position() = nucleus::MakePosition(chr_name, start);
   QCHECK_EQ(ref_base.length(), 1) << "AlleleCount.ref_base has to be one char.";
@@ -211,7 +211,7 @@ class VariantCallingTest : public ::testing::Test {
   std::optional<DeepVariantCall>
   CheckCallFromComputeVariantWithSameProposedVariant(
       absl::string_view ref, const VariantCaller& caller,
-      absl::Span<const Allele> alleles, const ExpectedVariant expect_variant,
+      const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
       const Variant& expected_variant) {
     AlleleCount allele_count = ConstructAlleleCount(ref, alleles);
     std::vector<AlleleCount> allele_counts = {allele_count};
