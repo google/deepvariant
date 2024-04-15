@@ -225,10 +225,21 @@ Range CalculateAlignmentRegion(const Variant& variant, int half_width,
   return alignment_region;
 }
 
+int CalculateCigarLength(const google::protobuf::RepeatedPtrField<CigarUnit>& cigar) {
+  int cigar_length = 0;
+  for (const auto& cigar_unit : cigar) {
+    if (IsOperationRefAdvancing(cigar_unit)) {
+      cigar_length += cigar_unit.operation_length();
+    }
+  }
+  return cigar_length;
+}
+
 // Helper function to trim a vector of reads. For the general use case we don't
 // want to keep reads that are less than 15 bases long after trimming.
 // original_alignment_positions is a vector where read alignment starting
 // positions before trimming are stored.
+// TODO Add unit test for this function.
 std::vector<Read> TrimReads(const std::vector<const Read*>& reads,
                             const Range& region,
                             std::vector<int64_t>& original_alignment_positions,
@@ -237,7 +248,7 @@ std::vector<Read> TrimReads(const std::vector<const Read*>& reads,
   for (const Read* read : reads) {
     Read trimmed_read;
     trimmed_read = TrimRead(*read, region);
-    if (trimmed_read.aligned_sequence().size() >= min_overlap) {
+    if (CalculateCigarLength(trimmed_read.alignment().cigar()) >= min_overlap) {
       original_alignment_positions.push_back(
           read->alignment().position().position());
       ret.push_back(trimmed_read);
