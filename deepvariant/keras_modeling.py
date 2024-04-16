@@ -510,15 +510,11 @@ def copy_checkpoint(
   tf.io.gfile.makedirs(os.path.dirname(dest_checkpoint_name))
 
   for path in checkpoint_files:
-    output_basename = os.path.basename(path).replace(
-        os.path.basename(src_checkpoint_name),
-        os.path.basename(dest_checkpoint_name),
+    output_fname = os.path.join(
+        os.path.dirname(dest_checkpoint_name), os.path.basename(path)
     )
     tf.io.gfile.copy(
         path,
-        os.path.join(
-            os.path.dirname(dest_checkpoint_name),
-            output_basename,
-        ),
+        output_fname,
         overwrite=True,
     )
