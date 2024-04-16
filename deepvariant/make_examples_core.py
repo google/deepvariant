@@ -1561,7 +1561,6 @@ class RegionProcessor:
         pileup_height += sample.options.pileup_height
       # Unzip list of tuples.
       candidates_list = []
-      labels_list = []
       for candidate, label in self.label_candidates(candidates, region):
         candidates_list.append(candidate)
         is_denovo = False
@@ -1571,7 +1570,7 @@ class RegionProcessor:
           is_denovo = True
         # pylint: disable=unidiomatic-typecheck
         if type(label) is variant_labeler.VariantLabel:
-          labels_list.append(
+          self.make_examples_native.append_label(
               make_examples_native.VariantLabel(
                   label.is_confident, label.variant, label.genotype, is_denovo
               )
@@ -1581,7 +1580,7 @@ class RegionProcessor:
             type(label)
             is customized_classes_labeler.CustomizedClassesVariantLabel
         ):
-          labels_list.append(
+          self.make_examples_native.append_label(
               make_examples_native.CustomizedClassesLabel(
                   label.is_confident,
                   label.variant,
@@ -1595,7 +1594,7 @@ class RegionProcessor:
 
       n_stats_one_region, example_shape_one = (
           self.make_examples_native.write_examples_in_region(
-              candidates_list, reads_per_sample, sample_order, role, labels_list
+              candidates_list, reads_per_sample, sample_order, role
           )
       )
 
@@ -1618,7 +1617,7 @@ class RegionProcessor:
 
       n_stats_one_region, example_shape_one = (
           self.make_examples_native.write_examples_in_region(
-              candidates, reads_per_sample, sample_order, role, []
+              candidates, reads_per_sample, sample_order, role
           )
       )
 

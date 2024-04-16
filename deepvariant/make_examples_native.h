@@ -46,6 +46,7 @@
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/tfrecord_writer.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 #include "google/protobuf/map.h"
 
 namespace learning {
@@ -171,8 +172,13 @@ class ExamplesGenerator {
       const std::vector<int>& sample_order,
       // std::string has to be used here instead of absl::string view due to the
       // PyClif restrictions.
-      const std::string& role, const std::vector<VariantLabel>& labels,
+      const std::string& role,
+      // const std::vector<VariantLabel>& labels,
       std::vector<int>* image_shape);
+
+  void AppendLabel(std::unique_ptr<VariantLabel> label) {
+    labels_.push_back(std::move(label));
+  }
 
  private:
   friend class ExamplesGeneratorPeer;
@@ -196,7 +202,8 @@ class ExamplesGenerator {
       const nucleus::genomics::v1::Variant& variant,
       const std::vector<std::string>& alt_combination,
       std::unordered_map<std::string, int>& stats,
-      std::vector<int>& image_shape, const VariantLabel* label = nullptr) const;
+      std::vector<int>& image_shape,
+      const std::unique_ptr<VariantLabel>& label) const;
 
   // Generates one or more examples from a given candidate. Example(s) are
   // written to TFRecord.
@@ -205,7 +212,8 @@ class ExamplesGenerator {
       const std::vector<int>& sample_order,
       const std::vector<InMemoryReader>& readers,
       std::unordered_map<std::string, int>& stats,
-      std::vector<int>& image_shape, const VariantLabel* label = nullptr);
+      std::vector<int>& image_shape,
+      const std::unique_ptr<VariantLabel>& label);
 
   void CreateAltAlignedImages(
       const DeepVariantCall& candidate,
@@ -239,6 +247,8 @@ class ExamplesGenerator {
 
   // Alt aligned pileup option.
   AltAlignedPileup alt_aligned_pileup_;
+
+  std::vector<std::unique_ptr<VariantLabel>> labels_;
 };
 
 // Helper class to allow unit testing of some private methods.

@@ -60,5 +60,6 @@ from "deepvariant/make_examples_native.h":
         candidates: list<ConstProtoPtr<DeepVariantCall>>,
         reads: list<list<ConstProtoPtr<Read>>>,
         sample_order: list<int>,
-        role: str,
-        labels: list<VariantLabel>) -> (n_stats: dict<str, int>, image_shape: list<int>)
+        role: str) -> (n_stats: dict<str, int>, image_shape: list<int>)
+
+      def `AppendLabel` as append_label(self, label: VariantLabel)

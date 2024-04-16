@@ -371,7 +371,7 @@ std::string ExamplesGenerator::EncodeExample(
     const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
     const Variant& variant, const std::vector<std::string>& alt_combination,
     std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
-    const VariantLabel* label) const {
+    const std::unique_ptr<VariantLabel>& label) const {
   // TODO Once we know the number of channels in advance we should
   // allocate data with the correct size to avoid vector resizing when data is
   // filled.
@@ -474,7 +474,7 @@ std::string ExamplesGenerator::EncodeExample(
   // Example is serialized to a string before it is written to a TFRecord.
   std::string encoded_example;
   example.SerializeToString(&encoded_example);
-  UpdateStats(variant_type, label, label_value, stats);
+  UpdateStats(variant_type, label.get(), label_value, stats);
   return encoded_example;
 }
 
@@ -577,7 +577,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     const std::vector<int>& sample_order,
     const std::vector<InMemoryReader>& readers,
     std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
-    const VariantLabel* label) {
+    const std::unique_ptr<VariantLabel>& label) {
   const auto& variant = candidate.variant();
   int image_start_pos = variant.start() - half_width_;
   // Pileup range.
@@ -661,8 +661,9 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
     const std::vector<std::vector<nucleus::ConstProtoPtr<Read>>>&
         reads_per_sample,
     const std::vector<int>& sample_order, const std::string& role,
-    const std::vector<VariantLabel>& labels, std::vector<int>* image_shape) {
-  CHECK(labels.empty() || candidates.size() == labels.size());
+    // const std::vector<VariantLabel>& labels,
+    std::vector<int>* image_shape) {
+  CHECK(labels_.empty() || candidates.size() == labels_.size());
   auto sample_it = samples_.find(role);
   CHECK(sample_it != samples_.end()) << "Role " << role << " not found.";
   CHECK(sample_it->second.writer != nullptr) << "Role " << role
@@ -680,10 +681,17 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
     readers.push_back(InMemoryReader(InMemoryReader(reads)));
   }
   for (int i = 0; i < candidates.size(); i++) {
-    CreateAndWriteExamplesForCandidate(
-        *(candidates[i].p_), sample_it->second, sample_order, readers, stats,
-        *image_shape, labels.empty() ? nullptr : &labels[i]);
+    if (labels_.empty()) {
+      CreateAndWriteExamplesForCandidate(*(candidates[i].p_), sample_it->second,
+                                         sample_order, readers, stats,
+                                         *image_shape, nullptr);
+    } else {
+      CreateAndWriteExamplesForCandidate(*(candidates[i].p_), sample_it->second,
+                                         sample_order, readers, stats,
+                                         *image_shape, labels_[i]);
+    }
   }
+  labels_.clear();
   return stats;
 }
 
@@ -761,7 +769,7 @@ int CustomizedClassesLabel::LabelForAltAlleles(
     return 0;
   }
 
-  auto true_class_status = GetClassStatus(truth_variant.info());
+  absl::string_view true_class_status = GetClassStatus(truth_variant.info());
   auto truth_alt = truth_variant.alternate_bases()[0];
   // Default is label 0. Usually reference.
   // Note that this logic below might not be the best when
