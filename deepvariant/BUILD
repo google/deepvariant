@@ -482,6 +482,7 @@ py_library(
         "//deepvariant/python:direct_phasing",
         "//deepvariant/python:make_examples_native",
         "//deepvariant/realigner",
+        "//deepvariant/small_model:inference",
         "//deepvariant/small_model:make_small_model_examples",
         "//deepvariant/vendor:timer",
         "//third_party/nucleus/io:fasta",

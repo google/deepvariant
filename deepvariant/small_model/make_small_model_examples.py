@@ -68,18 +68,18 @@ IDENTIFYING_FEATURES = (
     SmallModelFeature.ALT_1,
 )
 TRUTH_FEATURE = SmallModelFeature.GENOTYPE
+MODEL_FEATURES = [
+    feature
+    for feature in SmallModelFeature
+    if feature not in IDENTIFYING_FEATURES and feature != TRUTH_FEATURE
+]
 
 
-def encode_genotype(genotype: Tuple[int, int]) -> int:
-  """Maps the given genotype to its encoding."""
-  if genotype == (0, 0):
-    return GenotypeEncoding.REF.value
-  elif genotype == (0, 1):
-    return GenotypeEncoding.HET.value
-  elif genotype == (1, 1):
-    return GenotypeEncoding.HOM_ALT.value
-  else:
-    raise KeyError(f'The small model does not accept "{genotype}" genotypes.')
+ENCODING_BY_GENOTYPE = {
+    (0, 0): GenotypeEncoding.REF.value,
+    (0, 1): GenotypeEncoding.HET.value,
+    (1, 1): GenotypeEncoding.HOM_ALT.value,
+}
 
 
 def _get_contig(candidate: deepvariant_pb2.DeepVariantCall) -> str:
@@ -147,12 +147,12 @@ def _pass_candidate_to_small_model(
   )
 
 
-def get_feature_from_candidate_or_label(
+def encode_feature(
     feature: SmallModelFeature,
     candidate: deepvariant_pb2.DeepVariantCall,
-    label: variant_labeler.VariantLabel,
+    label: Union[variant_labeler.VariantLabel, None],
 ) -> Union[int, str]:
-  """Maps the given feature to the right callable and returns the result.
+  """Encodes the given feature from a candidate or label.
 
   Args:
     feature: specifies which feature to extract
@@ -180,8 +180,8 @@ def get_feature_from_candidate_or_label(
     return _get_total_depth(candidate)
   elif feature == SmallModelFeature.VARIANT_ALLELE_FREQUENCY_1:
     return _get_variant_allele_frequency_1(candidate)
-  elif feature == SmallModelFeature.GENOTYPE:
-    return encode_genotype(label.genotype)
+  elif feature == SmallModelFeature.GENOTYPE and label:
+    return ENCODING_BY_GENOTYPE[label.genotype]
   else:
     raise ValueError(f'{feature} does not map to a callable.')
 
@@ -214,8 +214,41 @@ def generate_training_examples(
     if not _pass_candidate_to_small_model(candidate):
       continue
     candidate_example = [
-        get_feature_from_candidate_or_label(feature, candidate, label)
+        encode_feature(feature, candidate, label)
         for feature in SmallModelFeature
     ]
     candidate_examples.append(candidate_example)
   return candidate_examples
+
+
+def generate_inference_examples(
+    candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+) -> Tuple[
+    Sequence[deepvariant_pb2.DeepVariantCall],
+    Sequence[deepvariant_pb2.DeepVariantCall],
+    Sequence[Sequence[Union[str, int]]],
+]:
+  """Generates examples from the given candidates for inference.
+
+  Args:
+    candidates: List of candidates to be processed into a summary.
+
+  Returns:
+    A tuple containing:
+      A list of all candidates that were skipped.
+      A list of all candidates for which examples were generated.
+      A list of encoded candidate examples.
+  """
+  skipped_candidates = []
+  kept_candidates = []
+  examples = []
+  for candidate in candidates:
+    if not _pass_candidate_to_small_model(candidate):
+      skipped_candidates.append(candidate)
+      continue
+    kept_candidates.append(candidate)
+    candidate_example = [
+        encode_feature(feature, candidate, None) for feature in MODEL_FEATURES
+    ]
+    examples.append(candidate_example)
+  return skipped_candidates, kept_candidates, examples

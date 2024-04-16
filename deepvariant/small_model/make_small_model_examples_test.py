@@ -146,11 +146,9 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expected_value=make_small_model_examples.GenotypeEncoding.HET.value,
       ),
   )
-  def test_get_feature_from_candidate_or_label(
-      self, candidate, label, feature, expected_value
-  ):
+  def test_encode_feature(self, candidate, label, feature, expected_value):
     self.assertEqual(
-        make_small_model_examples.get_feature_from_candidate_or_label(
+        make_small_model_examples.encode_feature(
             feature,
             candidate,
             label,
@@ -211,6 +209,24 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     self.assertEqual(
         small_model_examples[0][-1],
         make_small_model_examples.GenotypeEncoding.HET.value,
+    )
+
+  def test_generate_inference_examples(self):
+    skipped, kept, examples = (
+        make_small_model_examples.generate_inference_examples(
+            [FAKE_VARIANT_CALL_HET]
+        )
+    )
+    self.assertEqual(skipped, [])
+    self.assertEqual(kept, [FAKE_VARIANT_CALL_HET])
+    self.assertEqual(
+        examples[0],
+        [
+            14,
+            16,
+            30,
+            87,
+        ],
     )
 
 

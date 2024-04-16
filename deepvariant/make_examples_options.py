@@ -637,6 +637,21 @@ _WRITE_SMALL_MODEL_EXAMPLES = flags.DEFINE_bool(
     False,
     'If True, write small model training examples to TSV files.',
 )
+_CALL_SMALL_MODEL_EXAMPLES = flags.DEFINE_bool(
+    'call_small_model_examples',
+    False,
+    'If True, use a smaller model to call SNPs.',
+)
+_SMALL_MODEL_GQ_THRESHOLD = flags.DEFINE_integer(
+    'small_model_gq_threshold',
+    30,
+    'Sets the minimum threshold for GQ scores for the small model.',
+)
+_TRAINED_SMALL_MODEL_PATH = flags.DEFINE_string(
+    'trained_small_model_path',
+    '',
+    'Path to a pickled, pre-trained small model.',
+)
 
 
 def shared_flags_to_options(
@@ -686,6 +701,9 @@ def shared_flags_to_options(
       output_sitelist=_OUTPUT_SITELIST.value,
       deterministic_serialization=_DETERMINISTIC_SERIALIZATION.value,
       write_small_model_examples=_WRITE_SMALL_MODEL_EXAMPLES.value,
+      call_small_model_examples=_CALL_SMALL_MODEL_EXAMPLES.value,
+      small_model_gq_threshold=_SMALL_MODEL_GQ_THRESHOLD.value,
+      trained_small_model_path=_TRAINED_SMALL_MODEL_PATH.value,
   )
 
   if add_flags:

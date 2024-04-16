@@ -95,6 +95,14 @@ flags.DEFINE_string(
         ' determine the sort order for the emitted variants and the VCF header.'
     ),
 )
+flags.DEFINE_string(
+    'small_model_cvo_records',
+    None,
+    (
+        'Optional. Path(s) to CallVariantOutput protos in TFRecord format that'
+        ' were called by the small model to include in postprocess .'
+    ),
+)
 flags.DEFINE_float(
     'qual_filter',
     1.0,
@@ -1304,6 +1312,13 @@ def main(argv=()):
 
     sample_name = get_sample_name()
     cvo_paths, cvo_record = get_cvo_paths_and_first_record()
+    small_model_cvo_paths = []
+    if FLAGS.small_model_cvo_records:
+      small_model_cvo_paths = (
+          sharded_file_utils.maybe_generate_sharded_filenames(
+              FLAGS.small_model_cvo_records
+          )
+      )
 
     if cvo_record is None:
       logging.info('call_variants_output is empty. Writing out empty VCF.')
@@ -1312,7 +1327,7 @@ def main(argv=()):
       temp = tempfile.NamedTemporaryFile()
       start_time = time.time()
       num_cvo_records = postprocess_variants_lib.process_single_sites_tfrecords(
-          contigs, cvo_paths, temp.name
+          contigs, cvo_paths + small_model_cvo_paths, temp.name
       )
 
       logging.info(

@@ -53,7 +53,7 @@ def _is_snp(variant: pysam.VariantRecord) -> bool:
 def _get_genotype_class(genotype: Tuple[int, int]) -> int:
   """Safely tries to encode the genotype class for the given genotype."""
   try:
-    return make_small_model_examples.encode_genotype(genotype)
+    return make_small_model_examples.ENCODING_BY_GENOTYPE[genotype]
   except KeyError:
     return -1
 
@@ -274,12 +274,7 @@ class ModelRunner:
     """
     if self.model_features is not None:
       return self.model_features
-    return [
-        f.value
-        for f in make_small_model_examples.SmallModelFeature
-        if f not in make_small_model_examples.IDENTIFYING_FEATURES
-        and f != make_small_model_examples.TRUTH_FEATURE
-    ]
+    return [f.value for f in make_small_model_examples.MODEL_FEATURES]
 
   def run(self) -> None:
     """Runs model training and evaluation."""

@@ -63,6 +63,7 @@ from deepvariant.python import allelecounter
 from deepvariant.python import direct_phasing
 from deepvariant.python import make_examples_native
 from deepvariant.realigner import realigner
+from deepvariant.small_model import inference as small_model_inference
 from deepvariant.small_model import make_small_model_examples
 from deepvariant.vendor import timer
 from google.protobuf import text_format
@@ -1092,6 +1093,7 @@ class OutputsWriter:
         'read_phases',
         'sitelist',
         'small_model_examples',
+        'call_variant_outputs',
     ]
     self._writers = {k: None for k in outputs}
     self.examples_filename = None
@@ -1125,6 +1127,14 @@ class OutputsWriter:
       if writer is not None:
         writer.__enter__()
         writer.write('\t'.join(RUNTIME_BY_REGION_COLUMNS) + '\n')
+
+    if options.call_small_model_examples:
+      self._add_writer(
+          'call_variant_outputs',
+          dv_utils.get_tf_record_writer(
+              self._add_suffix(self.examples_filename, 'call_variant_outputs')
+          ),
+      )
 
     if options.read_phases_output:
       self._add_writer(
@@ -1174,6 +1184,9 @@ class OutputsWriter:
 
   def write_candidates(self, *candidates):
     self._write('candidates', *candidates)
+
+  def write_call_variant_outputs(self, *call_variant_outputs):
+    self._write('call_variant_outputs', *call_variant_outputs)
 
   def write_site(
       self,
@@ -1303,6 +1316,14 @@ class RegionProcessor:
     self.contig_dict = ranges.contigs_dict(
         fasta.IndexedFastaReader(self.options.reference_filename).header.contigs
     )
+    self.small_model_variant_caller = None
+    if self.options.call_small_model_examples:
+      self.small_model_variant_caller = (
+          small_model_inference.SmallModelVariantCaller.from_model_path(
+              model_path=self.options.trained_small_model_path,
+              gq_threshold=self.options.small_model_gq_threshold,
+          )
+      )
 
   def _make_direct_phasing_obj(self) -> direct_phasing.DirectPhasing:
     return direct_phasing.DirectPhasing()
@@ -1668,6 +1689,47 @@ class RegionProcessor:
     runtimes['make small_model_examples'] = trim_runtime(
         time.time() - before_make_summaries
     )
+
+  def call_small_model_examples_in_region(
+      self,
+      candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      writer: OutputsWriter,
+      n_stats: Dict[str, int],
+      runtimes: Dict[str, float],
+  ) -> Sequence[deepvariant_pb2.DeepVariantCall]:
+    """Creates and calls small model examples on candidates in a region.
+
+    Args:
+      candidates: List of candidates to be processed into examples.
+      writer: A OutputsWriter used to write out examples.
+      n_stats: A dictionary that is used to accumulate counts for reporting.
+      runtimes: A dictionary that recorded runtime information for reporting.
+
+    Returns:
+      A list of all candidates to be passed to the regular model, either
+        because they were skipped or did not pass quality filters.
+    """
+    before_call_summaries = time.time()
+
+    # skip candidates not suitable for the small model, e.g. indels.
+    skipped_candidates, kept_candidates, examples = (
+        make_small_model_examples.generate_inference_examples(candidates)
+    )
+    if not kept_candidates:
+      return skipped_candidates
+
+    # filtered candidates did not pass the GQ threshold.
+    call_variant_outputs, filtered_candidates = (
+        self.small_model_variant_caller.call_variants(kept_candidates, examples)
+    )
+    writer.write_call_variant_outputs(*call_variant_outputs)
+
+    n_stats['n_small_model_calls'] += len(call_variant_outputs)
+    runtimes['call summaries'] = trim_runtime(
+        time.time() - before_call_summaries
+    )
+    # pass skipped and filtered candidates to the large model
+    return list(skipped_candidates) + list(filtered_candidates)
 
   def find_candidate_positions(self, region: range_pb2.Range) -> Iterator[int]:
     """Finds all candidate positions within a given region."""
@@ -2956,6 +3018,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       'n_candidates': 0,
       'n_examples': 0,
       'n_small_model_examples': 0,
+      'n_small_model_calls': 0,
   }
   example_shape = None
   region_n = 0
@@ -3001,8 +3064,20 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
         # Question: do we want to skip pileup image generation?
         continue
 
+      candidates_for_pileup_images = candidates_by_sample[role]
+      if options.call_small_model_examples:
+        candidates_not_called_by_small_model = (
+            region_processor.call_small_model_examples_in_region(
+                candidates_by_sample[role],
+                writer,
+                n_stats,
+                runtimes,
+            )
+        )
+        candidates_for_pileup_images = candidates_not_called_by_small_model
+
       region_example_shape = region_processor.writes_examples_in_region(
-          candidates_by_sample[role],
+          candidates_for_pileup_images,
           region,
           sample.options.order,
           n_stats,
@@ -3131,4 +3206,8 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   logging_with_options(
       options,
       'Created %s small model examples' % n_stats['n_small_model_examples'],
+  )
+  logging_with_options(
+      options,
+      'Small Model called %s candidates' % n_stats['n_small_model_calls'],
   )

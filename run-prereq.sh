@@ -150,6 +150,7 @@ pip3 install "${PIP_ARGS[@]}" 'altair==4.1.0'
 pip3 install "${PIP_ARGS[@]}" 'Pillow==9.5.0'
 pip3 install "${PIP_ARGS[@]}" 'ipython==8.22.2'
 pip3 install "${PIP_ARGS[@]}" 'pysam==0.20.0'
+pip3 install "${PIP_ARGS[@]}" 'scikit-learn==1.0.2'
 pip3 install "${PIP_ARGS[@]}" 'tensorflow-addons==0.21.0'
 # This is to avoid ERROR: No matching distribution found for opencv-python-headless==4.5.2.52.
 # TODO: Make this the same as ${DV_GCP_OPTIMIZED_TF_WHL_VERSION}" later
