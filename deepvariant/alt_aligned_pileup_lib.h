@@ -34,6 +34,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/io/reference.h"
