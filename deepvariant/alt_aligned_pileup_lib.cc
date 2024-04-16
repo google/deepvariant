@@ -249,7 +249,8 @@ std::vector<Read> TrimReads(const std::vector<const Read*>& reads,
   for (const Read* read : reads) {
     Read trimmed_read;
     trimmed_read = TrimRead(*read, region);
-    if (CalculateCigarLength(trimmed_read.alignment().cigar()) >= min_overlap) {
+    if (CalculateCigarLength(trimmed_read.alignment().cigar()) >= min_overlap
+        && !trimmed_read.aligned_sequence().empty()) {
       original_alignment_positions.push_back(
           read->alignment().position().position());
       ret.push_back(trimmed_read);
