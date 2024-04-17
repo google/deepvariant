@@ -77,6 +77,8 @@ struct Sample {
 
   SampleOptions sample_options;
   std::unique_ptr<nucleus::TFRecordWriter> writer;
+  bool needs_alt_alignment;
+  absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank;
 };
 
 // Cache of reads. Reads are passed from Python wrapped in ConstProtoPtr.
@@ -225,6 +227,9 @@ class ExamplesGenerator {
 
   // Returns true if the variant needs alt alignment.
   bool NeedAltAlignment(const nucleus::genomics::v1::Variant& variant) const;
+
+    // Returns true if the sample needs alt alignment.
+  bool SampleNeedsAltAlignment(const SampleOptions& sample_options) const;
 
   // Helper methods to extract reference bases for a given range.
   std::string GetReferenceBasesForPileup(

@@ -43,6 +43,7 @@
 
 #include "deepvariant/alt_aligned_pileup_lib.h"
 #include "deepvariant/pileup_image_native.h"
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -77,6 +78,14 @@ ExamplesGenerator::ExamplesGenerator(
   for (const auto& sample_options_for_one_sample : options_.sample_options()) {
     samples_[sample_options_for_one_sample.role()] =
         Sample(sample_options_for_one_sample);
+    samples_[sample_options_for_one_sample.role()].needs_alt_alignment =
+        SampleNeedsAltAlignment(sample_options_for_one_sample);
+    for (int i = 0;
+         i < sample_options_for_one_sample.channels_enum_to_blank_size(); ++i) {
+      samples_[sample_options_for_one_sample.role()]
+          .channels_enum_to_blank.insert(
+              sample_options_for_one_sample.channels_enum_to_blank(i));
+    }
   }
   half_width_ = (options_.pic_options().width() - 1) / 2;
   absl::flat_hash_map<absl::string_view, AltAlignedPileup>
@@ -478,6 +487,30 @@ std::string ExamplesGenerator::EncodeExample(
   return encoded_example;
 }
 
+bool ExamplesGenerator::SampleNeedsAltAlignment(
+    const SampleOptions& sample_options) const {
+  // Right now, if any of the alt aligned channels are listed in
+  // `channels_enum_to_blank` of the sample option, we'll skip alt alignment.
+  // In the future, we may consider a more fine-grained approach.
+  const std::vector<DeepVariantChannelEnum> alt_aligned_channels = {
+    DeepVariantChannelEnum::CH_DIFF_CHANNELS_ALTERNATE_ALLELE_1,
+    DeepVariantChannelEnum::CH_DIFF_CHANNELS_ALTERNATE_ALLELE_2,
+    DeepVariantChannelEnum::CH_BASE_CHANNELS_ALTERNATE_ALLELE_1,
+    DeepVariantChannelEnum::CH_BASE_CHANNELS_ALTERNATE_ALLELE_2
+  };
+  if (!sample_options.channels_enum_to_blank().empty()) {
+    for (const auto& channel_enum : alt_aligned_channels) {
+      for (const auto& channel_enum_to_blank :
+               sample_options.channels_enum_to_blank()) {
+        if (channel_enum_to_blank == channel_enum) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
 bool ExamplesGenerator::NeedAltAlignment(const Variant& variant) const {
   if (options_.pic_options().alt_aligned_pileup() == "none") {
     return false;
@@ -556,10 +589,13 @@ void ExamplesGenerator::CreateAltAlignedImages(
     // Build alt pileup with all channels. Although, we only need one
     // channel it is easier to call BuildPileupForOneSample for all
     // channels. The runtime penalty is very small (~1.5% of runtime).
+    auto sample_it =
+        samples_.find(options_.sample_options(sample_order).role());
     auto alt_image = pileup_image_.BuildPileupForOneSample(
         candidate, haplotype.substr(0, options_.pic_options().width()),
         realigned_reads_ptrs, image_start_pos, alt_combination,
-        options_.sample_options(sample_order), original_start_positions);
+        options_.sample_options(sample_order), original_start_positions,
+        sample_it->second.channels_enum_to_blank);
     // move alt_image to alt_images[2] array.
     for (auto& row : alt_image) {
       alt_images[alt_image_num].push_back(std::move(row));
@@ -592,9 +628,9 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     // We are at the edge of the contig, example cannot be created.
     return;
   }
-  bool need_alt_alignment = NeedAltAlignment(variant);
+  bool variant_needs_alt_alignment = NeedAltAlignment(variant);
   bool use_trimmed_reads =
-      options_.trim_reads_for_pileup() || need_alt_alignment ||
+      options_.trim_reads_for_pileup() || variant_needs_alt_alignment ||
       sample.sample_options.keep_only_window_spanning_reads();
   int min_trimming_overlap = kDefaultMinimumReadOverlap;
   for (const std::vector<std::string>& alt_combination :
@@ -629,21 +665,37 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
         }
       }
       // If trim_reads_for_pileup is set then trimmed_reads are used.
+      auto sample_it =
+          samples_.find(options_.sample_options(this_sample_order).role());
       auto ref_image = pileup_image_.BuildPileupForOneSample(
           candidate, reference_bases,
           use_trimmed_reads ? trimmed_reads_ptrs
                             : readers[this_sample_order].Query(region),
           image_start_pos, alt_combination,
           options_.sample_options(this_sample_order),
-          &original_start_positions);
+          &original_start_positions,
+          sample_it->second.channels_enum_to_blank);
       // Collect rows from all samples in ref_images.
       for (auto& row : ref_image) {
         ref_images.push_back(std::move(row));
       }
-      if (need_alt_alignment) {
-        CreateAltAlignedImages(candidate, alt_combination, trimmed_reads,
-                               this_sample_order, region, alt_images,
-                               &original_start_positions);
+      bool sample_needs_alt_alignment = sample_it->second.needs_alt_alignment;
+      if (variant_needs_alt_alignment) {
+        if (sample_needs_alt_alignment) {
+          CreateAltAlignedImages(candidate, alt_combination, trimmed_reads,
+                                this_sample_order, region, alt_images,
+                                &original_start_positions);
+        } else {
+          // If the sample does not need alt alignment, we still want to fill
+          // the corresponding area with 0s.
+          // NOTE: The easiest way to simulate this behavior is to use the same
+          // function, but to give it an empty list of reads.
+          // This might not be the cleanest way to write the logic, but it is
+          // a lot easier for human to understand.
+          CreateAltAlignedImages(candidate, alt_combination, {},
+                                this_sample_order, region, alt_images,
+                                nullptr);
+        }
       }
     }
     sample.writer->WriteRecord(EncodeExample(ref_images, alt_images, variant,

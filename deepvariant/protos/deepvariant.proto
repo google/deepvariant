@@ -564,7 +564,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
-// Next ID: 11.
+// Next ID: 14.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -613,6 +613,8 @@ message SampleOptions {
   // If True, trim reads to fit in the example window
   // This is experimental for pangenome integration
   bool keep_only_window_spanning_reads = 12;
+
+  repeated DeepVariantChannelEnum channels_enum_to_blank = 13;
 }
 
 // High-level options that encapsulates all of the parameters needed to run

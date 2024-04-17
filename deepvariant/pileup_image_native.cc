@@ -45,6 +45,7 @@
 
 #include "deepvariant/pileup_channel_lib.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
@@ -140,7 +141,8 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     const std::vector<const ::nucleus::genomics::v1::Read*>& reads,
     int image_start_pos, const vector<std::string>& alt_alleles,
     const SampleOptions& sample_options,
-    const std::vector<int64_t>* alignment_positions) {
+    const std::vector<int64_t>* alignment_positions,
+    absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank) {
   // The width of a pileup is defined by the length of ref_bases. ref_bases must
   // have the correct length.
   CHECK(alignment_positions == nullptr || alignment_positions->empty() ||
@@ -182,7 +184,8 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     }
     const Read& read = *reads[index];
     std::unique_ptr<ImageRow> image_row =
-        EncodeRead(dv_call, ref_bases, read, image_start_pos, alt_alleles);
+        EncodeRead(dv_call, ref_bases, read, image_start_pos, alt_alleles,
+                  channels_enum_to_blank);
     if (image_row == nullptr) {
       continue;
     }
@@ -247,7 +250,8 @@ int PileupImageEncoderNative::GetHapIndex(const Read& read) {
 
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
     const DeepVariantCall& dv_call, const string& ref_bases, const Read& read,
-    int image_start_pos, const vector<std::string>& alt_alleles) {
+    int image_start_pos, const vector<std::string>& alt_alleles,
+    const absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank) {
   int num_channels = AllChannelsEnum("").size();
   ImageRow img_row(ref_bases.size(), num_channels);
 
@@ -262,7 +266,8 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
   // Calculate Channels
   Channels channel_set{options_};
   bool ok = channel_set.CalculateChannels(
-      channel_enums_, read, ref_bases, dv_call, alt_alleles, image_start_pos);
+      channel_enums_, read, ref_bases, dv_call, alt_alleles, image_start_pos,
+      channels_enum_to_blank);
   // Bail out if we found an issue while calculating channels
   // (a low-quality base at the call site, mapping quality is too low, etc)
   if (!ok) {

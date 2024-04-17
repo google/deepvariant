@@ -173,6 +173,13 @@ def reads_and_pangenome_samples_from_flags(add_flags=True, flags_obj=None):
       skip_output_generation=True,
       pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT,
       keep_only_window_spanning_reads=flags_obj.keep_only_window_spanning_haplotypes,
+      channels_enum_to_blank=[
+          deepvariant_pb2.CH_HAPLOTYPE_TAG,
+          deepvariant_pb2.CH_DIFF_CHANNELS_ALTERNATE_ALLELE_1,
+          deepvariant_pb2.CH_DIFF_CHANNELS_ALTERNATE_ALLELE_2,
+          deepvariant_pb2.CH_BASE_QUALITY,
+          deepvariant_pb2.CH_MAPPING_QUALITY,
+      ],
   )
 
   if add_flags:
