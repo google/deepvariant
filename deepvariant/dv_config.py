@@ -110,14 +110,45 @@ def get_exome_config(config: ml_collections.ConfigDict):
   config.early_stopping_patience = 250
   config.learning_rate = 0.00008663001151624387
   config.learning_rate_num_epochs_per_decay = 2.25
-  config.learning_rate_decay_rate = 0.9999
+  config.learning_rate_decay_rate = 0.5
+  config.warmup_steps = 27249
+
+  config.backbone_dropout_rate = 0.0
+
+  # Exponential Moving Average
+  config.use_ema = True
+  config.ema_momentum = 0.9725254942104883
+
+
+def get_pacbio_config(config: ml_collections.ConfigDict):
+  """Training parameters."""
+  config.num_epochs = 5
+  config.num_validation_examples = 150_000
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = '/path/to/warmstart/checkpoint'
+
+  config.best_checkpoint_metric = 'tune/categorical_accuracy'
+  config.batch_size = 16384
+  config.num_epochs = 5
+  config.optimizer = 'adam'
+  config.beta_1 = 0.9651804083266324
+  config.beta_2 = 0.9665259112630292
+  config.adaptive_epsilon = True
+  config.weight_decay = 0.00004
+  config.optimizer_weight_decay = 0.0
+
+  config.early_stopping_patience = 100
+  config.learning_rate = 0.00008663001151624387
+  config.learning_rate_num_epochs_per_decay = 2.66
+  config.learning_rate_decay_rate = 0.8514735277962562
   config.warmup_steps = 0
 
   config.backbone_dropout_rate = 0.0
 
   # Exponential Moving Average
   config.use_ema = True
-  config.ema_momentum = 0.999
+  config.ema_momentum = 0.991463134331829
 
 
 # =====================#
@@ -251,6 +282,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_wgs_config(config)
   elif config_name == 'exome':
     get_exome_config(config)
+  elif config_name == 'pacbio':
+    get_pacbio_config(config)
   elif config_name == 'deepsomatic_wgs':
     get_deepsomatic_wgs_config(config)
   elif config_name == 'deepsomatic_wgs_tumor_only':
