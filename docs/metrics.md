@@ -9,11 +9,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 89m56.75s
-call_variants                    | 188m44.84s
-postprocess_variants (with gVCF) | 22m26.60s
-vcf_stats_report (optional)      | 7m12.57s
-total                            | 314m47.98s (5h14m47.98s)
+make_examples                    | 92m47.25s
+call_variants                    | 193m47.08s
+postprocess_variants (with gVCF) | 23m32.62s
+vcf_stats_report (optional)      | 7m44.14s
+total                            | 324m24.79s (5h24m24.79s)
 
 ### Accuracy
 
@@ -36,11 +36,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 5m47.57s
-call_variants                    | 1m17.44s
-postprocess_variants (with gVCF) | 0m42.33s
-vcf_stats_report (optional)      | 0m6.34s
-total                            | 8m12.60s
+make_examples                    | 5m49.05s
+call_variants                    | 1m17.92s
+postprocess_variants (with gVCF) | 0m42.23s
+vcf_stats_report (optional)      | 0m6.44s
+total                            | 8m16.12s
 
 ### Accuracy
 
@@ -63,11 +63,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 86m15.04s
-call_variants                    | 213m38.31s
-postprocess_variants (with gVCF) | 25m2.41s
-vcf_stats_report (optional)      | 7m57.53s
-total                            | 343m26.11s (5h43m26.11s)
+make_examples                    | 88m34.88s
+call_variants                    | 219m0.15s
+postprocess_variants (with gVCF) | 25m43.91s
+vcf_stats_report (optional)      | 8m19.42s
+total                            | 352m23.07s (5h352m23.07s)
 
 ### Accuracy
 
@@ -93,11 +93,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | 161m40.64s
-call_variants                    | 272m47.18s
-postprocess_variants (with gVCF) | 28m51.29s
-vcf_stats_report (optional)      | 8m41.07s
-total                            | 474m57.63s (7h54m57.63s)
+make_examples                    | 169m7.73s
+call_variants                    | 273m11.89s
+postprocess_variants (with gVCF) | 28m54.02s
+vcf_stats_report (optional)      | 8m39.29s
+total                            | 482m42.79s (8h2m42.79s)
 
 ### Accuracy
 
@@ -106,8 +106,8 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 441622   | 62879    | 41271    | 0.875364      | 0.917466         | 0.895921        |
-| SNP   | 3314061  | 13434    | 8137     | 0.995963      | 0.997552         | 0.996757        |
+| INDEL | 441622   | 62879    | 41272    | 0.875364      | 0.917464         | 0.89592         |
+| SNP   | 3314062  | 13433    | 8137     | 0.995963      | 0.997552         | 0.996757        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.7.0/ONT_R104/deepvariant.output.visual_report.html)
 
@@ -120,11 +120,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 121m18.93s
-call_variants                    | 186m13.20s
-postprocess_variants (with gVCF) | 17m30.18s
-vcf_stats_report (optional)      | 6m53.86s
-total                            | 342m47.30s (5h42m47.30s)
+make_examples                    | 124m34.33s
+call_variants                    | 191m4.17s
+postprocess_variants (with gVCF) | 18m13.86s
+vcf_stats_report (optional)      | 7m1.85s
+total                            | 351m40.52s (5h51m40.52s)
 
 ### Accuracy
 
