@@ -34,6 +34,7 @@ from absl.testing import parameterized
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import inference
 from deepvariant.small_model import make_small_model_examples
+from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 
 
@@ -84,6 +85,15 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
                     calls=[
                         variants_pb2.VariantCall(
                             genotype=(0, 1),
+                            info={
+                                "MID": struct_pb2.ListValue(
+                                    values=[
+                                        struct_pb2.Value(
+                                            string_value=inference.SMALL_MODEL_ID
+                                        )
+                                    ]
+                                )
+                            },
                         )
                     ],
                 ),

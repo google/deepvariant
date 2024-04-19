@@ -173,67 +173,82 @@ RESERVED_FORMAT_FIELDS = [
         id='AD',
         number='R',
         type=INTEGER_TYPE,
-        description='Read depth for each allele'),
+        description='Read depth for each allele',
+    ),
     variants_pb2.VcfFormatInfo(
         id='ADF',
         number='R',
         type=INTEGER_TYPE,
-        description='Read depth for each allele on the '
-        'forward strand'),
+        description='Read depth for each allele on the forward strand',
+    ),
     variants_pb2.VcfFormatInfo(
         id='ADR',
         number='R',
         type=INTEGER_TYPE,
-        description='Read depth for each allele on the '
-        'reverse strand'),
+        description='Read depth for each allele on the reverse strand',
+    ),
     variants_pb2.VcfFormatInfo(
-        id='DP', number='1', type=INTEGER_TYPE, description='Read depth'),
+        id='DP', number='1', type=INTEGER_TYPE, description='Read depth'
+    ),
     variants_pb2.VcfFormatInfo(
         id='EC',
         number='A',
         type=INTEGER_TYPE,
-        description='Expected alternate allele counts'),
+        description='Expected alternate allele counts',
+    ),
     variants_pb2.VcfFormatInfo(
         id='FT',
         number='1',
         type=STRING_TYPE,
-        description='Filter indicating if this genotype '
-        'was "called"'),
+        description='Filter indicating if this genotype was "called"',
+    ),
     variants_pb2.VcfFormatInfo(
-        id='GL',
-        number='G',
-        type=FLOAT_TYPE,
-        description='Genotype likelihoods'),
+        id='GL', number='G', type=FLOAT_TYPE, description='Genotype likelihoods'
+    ),
     variants_pb2.VcfFormatInfo(
         id='GP',
         number='G',
         type=FLOAT_TYPE,
-        description='Genotype posterior probabilities'),
+        description='Genotype posterior probabilities',
+    ),
     variants_pb2.VcfFormatInfo(
         id='GQ',
         number='1',
         type=INTEGER_TYPE,
-        description='Conditional genotype quality'),
+        description='Conditional genotype quality',
+    ),
     variants_pb2.VcfFormatInfo(
-        id='GT', number='1', type=STRING_TYPE, description='Genotype'),
+        id='GT', number='1', type=STRING_TYPE, description='Genotype'
+    ),
     variants_pb2.VcfFormatInfo(
-        id='HQ', number='2', type=INTEGER_TYPE,
-        description='Haplotype quality'),
+        id='HQ', number='2', type=INTEGER_TYPE, description='Haplotype quality'
+    ),
     variants_pb2.VcfFormatInfo(
         id='MQ',
         number='1',
         type=INTEGER_TYPE,
-        description='RMS mapping quality'),
+        description='RMS mapping quality',
+    ),
     variants_pb2.VcfFormatInfo(
         id='PL',
         number='G',
         type=INTEGER_TYPE,
-        description='Phred-scaled genotype likelihoods '
-        'rounded to the closest integer'),
+        description=(
+            'Phred-scaled genotype likelihoods rounded to the closest integer'
+        ),
+    ),
     variants_pb2.VcfFormatInfo(
-        id='PQ', number='1', type=INTEGER_TYPE, description='Phasing quality'),
+        id='PQ', number='1', type=INTEGER_TYPE, description='Phasing quality'
+    ),
     variants_pb2.VcfFormatInfo(
-        id='PS', number='1', type=INTEGER_TYPE, description='Phase set'),
+        id='PS', number='1', type=INTEGER_TYPE, description='Phase set'
+    ),
+    variants_pb2.VcfFormatInfo(
+        id='MID',
+        number='1',
+        type=STRING_TYPE,
+        description='Model ID: Identifies which model called this variant.',
+    ),
 ]
 
 # Map from field type to the function used to set struct_pb2.Value elements

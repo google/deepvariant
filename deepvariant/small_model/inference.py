@@ -35,7 +35,10 @@ import joblib
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.util import genomics_math
+from third_party.nucleus.util import variantcall_utils
 
+
+SMALL_MODEL_ID = "small_model"
 
 GENOTYPE_BY_ENCODING = {
     make_small_model_examples.GenotypeEncoding.REF.value: (0, 0),
@@ -64,7 +67,7 @@ class SmallModelVariantCaller:
   @classmethod
   def from_model_path(
       cls, model_path: str, gq_threshold: float
-  ) -> 'SmallModelVariantCaller':
+  ) -> "SmallModelVariantCaller":
     """Init class with a path to a pickled model."""
     return cls(joblib.load(model_path), gq_threshold)
 
@@ -83,7 +86,7 @@ class SmallModelVariantCaller:
     variant_call = candidate.variant.calls[0]
     del variant_call.genotype[:]
     variant_call.genotype.extend(GENOTYPE_BY_ENCODING[prediction])
-    # TODO: Tag CVO with small model ID.
+    variantcall_utils.set_model_id(variant_call, SMALL_MODEL_ID)
     del variant.calls[:]
     variant.calls.append(variant_call)
     variant.quality = genomics_math.ptrue_to_bounded_phred(max(probability))

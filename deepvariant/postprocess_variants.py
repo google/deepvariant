@@ -1362,10 +1362,12 @@ def main(argv=()):
       )
 
     add_info_candidates = FLAGS.debug_output_all_candidates == 'INFO'
+    include_model_id = FLAGS.small_model_cvo_records is not None
     header = dv_vcf_constants.deepvariant_header(
         contigs=contigs,
         sample_names=[sample_name],
         add_info_candidates=add_info_candidates,
+        include_model_id=include_model_id,
     )
     use_csi = _decide_to_use_csi(contigs)
 

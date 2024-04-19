@@ -199,6 +199,11 @@ def set_min_dp(variant_call, min_dp):
   struct_utils.set_int_field(variant_call.info, 'MIN_DP', min_dp)
 
 
+def set_model_id(variant_call, model_id):
+  """Sets the 'MID' field of the VariantCall."""
+  set_format(variant_call, 'MID', model_id)
+
+
 def get_min_dp(variant_call):
   """Gets the 'MIN_DP' field of the VariantCall."""
   return struct_utils.get_int_field(

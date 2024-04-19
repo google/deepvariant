@@ -45,13 +45,18 @@ DEEP_VARIANT_GERMLINE = 'GERMLINE'
 DEEP_VARIANT_MIN_DP_FORMAT = 'MIN_DP'
 DEEP_VARIANT_MED_DP_FORMAT = 'MED_DP'
 DEEP_VARIANT_VAF_FORMAT = 'VAF'
+DEEP_VARIANT_MODEL_ID_FORMAT = 'MID'
 
 # Genotype codes:
 UNCALLED_GENOTYPE = -1
 
 
 def deepvariant_header(
-    contigs, sample_names, add_info_candidates=False, include_med_dp=True
+    contigs,
+    sample_names,
+    add_info_candidates=False,
+    include_med_dp=True,
+    include_model_id=False,
 ):
   """Returns a VcfHeader used for writing VCF output.
 
@@ -67,6 +72,7 @@ def deepvariant_header(
     add_info_candidates: Adds the 'CANDIDATES' info field for debugging
       purposes.
     include_med_dp: boolean. If True, we will include MED_DP.
+    include_model_id: boolean, If True, tag variants by model that called them.
 
   Returns:
     A nucleus.genomics.v1.VcfHeader proto with known fixed headers and the given
@@ -118,6 +124,15 @@ def deepvariant_header(
                 'Median DP observed within the GVCF block '
                 'rounded to the nearest integer.'
             ),
+        )
+    )
+  if include_model_id:
+    formats.append(
+        variants_pb2.VcfFormatInfo(
+            id=DEEP_VARIANT_MODEL_ID_FORMAT,
+            number='1',
+            type=vcf_constants.STRING_TYPE,
+            description='Identifies which model called this variant.',
         )
     )
 
