@@ -374,7 +374,6 @@ def make_examples_pangenome_aware_dv_command(
     special_args['trim_reads_for_pileup'] = True
     special_args['keep_only_window_spanning_haplotypes'] = True
     special_args['keep_supplementary_alignments'] = True
-    special_args['turn_off_pangenome_hp_display'] = True
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   else:
     raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
