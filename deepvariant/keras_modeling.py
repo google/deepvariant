@@ -416,6 +416,9 @@ def create_state(
     early_stopping = tf.Variable(
         0, trainable=False, name='early_stopping', dtype=tf.int64
     )
+    best_checkpoint_value = tf.Variable(
+        0, trainable=False, name='best_checkpoint_value', dtype=tf.float64
+    )
 
     state = tf.train.Checkpoint(
         model,
@@ -424,6 +427,7 @@ def create_state(
         early_stopping=early_stopping,
         train_metrics=create_metrics(),
         tune_metrics=create_metrics(),
+        best_checkpoint_value=best_checkpoint_value,
     )
     ckpt_manager = tf.train.CheckpointManager(
         checkpoint=state,

@@ -48,7 +48,6 @@ from deepvariant import dv_utils
 from deepvariant import keras_modeling
 from official.modeling import optimization
 
-
 _LEADER = flags.DEFINE_string(
     'leader',
     'local',
@@ -413,7 +412,6 @@ def train(config: ml_collections.ConfigDict):
       every_secs=300,
       on_steps=[0, num_train_steps - 1],
   )
-  best_checkpoint_fname = None
 
   with strategy.scope():
 
@@ -423,8 +421,6 @@ def train(config: ml_collections.ConfigDict):
           f'tune/{x.name}' for x in state.tune_metrics
       ].index(config.best_checkpoint_metric)
       return state.tune_metrics[best_checkpoint_metric_idx].result().numpy()
-
-    best_checkpoint_metric_value = get_checkpoint_metric()
 
     with metric_writers.ensure_flushes(metric_writer):
 
@@ -476,11 +472,11 @@ def train(config: ml_collections.ConfigDict):
         ):
           logging.info('Performing initial evaluation of warmstart model.')
           run_tune(train_step, epoch, steps_per_tune)
-          best_checkpoint_metric_value = get_checkpoint_metric()
+          state.best_checkpoint_value = get_checkpoint_metric()
           logging.info(
               'Warmstart checkpoint best checkpoint metric: %s=%s',
               config.best_checkpoint_metric,
-              best_checkpoint_metric_value,
+              state.best_checkpoint_value,
           )
           # Reset tune metrics
           for metric in state.tune_metrics:
@@ -563,34 +559,25 @@ def train(config: ml_collections.ConfigDict):
             # Run tune using EMA model.
             original_weights = model.get_weights()
             optimizer.finalize_variable_values(model.trainable_weights)
+            run_tune(train_step, epoch, steps_per_tune)
             save_checkpoint(
                 os.path.join(
                     ema_checkpoint_path,
-                    f'checkpoint-{train_step}-{best_checkpoint_metric_value:.5f}',
+                    f'checkpoint-{train_step}-{get_checkpoint_metric():.5f}',
                 )
             )
+          else:
+            run_tune(train_step, epoch, steps_per_tune)
 
-          run_tune(train_step, epoch, steps_per_tune)
-
-          if is_last_step:
-            logging.info('Finalizing model weights.')
-            save_checkpoint(
-                os.path.join(
-                    last_checkpoint_path,
-                    f'checkpoint-{train_step}-{best_checkpoint_metric_value:.5f}',
-                )
-            )
-            break
-
-          if get_checkpoint_metric() > best_checkpoint_metric_value:
-            best_checkpoint_metric_value = get_checkpoint_metric()
-            best_checkpoint_fname = (
-                f'checkpoint-{train_step}-{best_checkpoint_metric_value:.5f}'
+          if get_checkpoint_metric() > state.best_checkpoint_value:
+            state.best_checkpoint_value = get_checkpoint_metric()
+            best_checkpoint_name = (
+                f'checkpoint-{train_step}-{state.best_checkpoint_value:.5f}'
             )
             save_checkpoint(
                 os.path.join(
                     best_checkpoint_path,
-                    best_checkpoint_fname,
+                    best_checkpoint_name,
                 )
             )
             # Reset early stopping counter
@@ -610,7 +597,7 @@ def train(config: ml_collections.ConfigDict):
               save_checkpoint(
                   os.path.join(
                       last_checkpoint_path,
-                      f'checkpoint-{train_step}-{best_checkpoint_metric_value:.5f}',
+                      f'checkpoint-{train_step}-{get_checkpoint_metric():.5f}',
                   )
               )
               break
@@ -619,7 +606,7 @@ def train(config: ml_collections.ConfigDict):
                 config.best_checkpoint_metric,
                 get_checkpoint_metric(),
                 config.best_checkpoint_metric,
-                best_checkpoint_metric_value,
+                state.best_checkpoint_value,
             )
             state.early_stopping.assign_add(1)
           if config.early_stopping_patience:
@@ -627,6 +614,16 @@ def train(config: ml_collections.ConfigDict):
                 train_step,
                 {'tune/early_stopping': state.early_stopping.value()},
             )
+
+          if is_last_step:
+            logging.info('Finalizing model weights.')
+            save_checkpoint(
+                os.path.join(
+                    last_checkpoint_path,
+                    f'checkpoint-{train_step}-{get_checkpoint_metric():.5f}',
+                )
+            )
+            break
 
           # Revert weights to original weights to resume training.
           if config.use_ema:
