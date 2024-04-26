@@ -130,8 +130,11 @@ def create_parse_example_fn(
           config.denovo_weight, dtype=tf.float32
       )
     elif 'label' in result and config.class_weights:
-      result['sample_weight'] = tf.cast(
-          tf.gather(class_weights, tf.cast(result['label'], tf.int32)), tf.int8
+      result['sample_weight'] = tf.squeeze(
+          tf.cast(
+              tf.gather(class_weights, tf.cast(result['label'], tf.int32)),
+              tf.float32,
+          )
       )
     else:
       result['sample_weight'] = tf.constant(1.0, dtype=tf.float32)
