@@ -33,28 +33,18 @@ training and evaluating germline calling accuracy.
 """
 
 import itertools
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Tuple, Union
 
 
 
 import ml_collections
 import tensorflow as tf
 
-from deepvariant import dv_constants
 from deepvariant import dv_utils
 from deepvariant.protos import deepvariant_pb2
 from google.protobuf import text_format
 from third_party.nucleus.io import sharded_file_utils
 
-
-# These are empirically determined to work well on TPU with our data sets,
-# where lots of buffering and concurrency is necessary to keep the device
-# busy.
-# These are settable in the constructor.
-_DEFAULT_INPUT_READ_THREADS = 32
-_DEFAULT_SHUFFLE_BUFFER_ELEMENTS = 100
-_DEFAULT_INITIAL_SHUFFLE_BUFFER_ELEMENTS = 1024
-_DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
 
 _PROTO_FEATURES = {
     'locus': tf.io.FixedLenFeature((), tf.string),
@@ -74,8 +64,9 @@ def _select_features(proto_features, features):
 def create_parse_example_fn(
     config: ml_collections.ConfigDict,
     mode: str,
+    input_shape: Tuple[int, int, int],
 ) -> Callable[
-    [tf.train.Example, Tuple[int, int, int]],
+    [tf.train.Example],
     Dict[str, tf.Tensor],
 ]:
   """Generates a function for parsing tf.train.Examples.
@@ -85,6 +76,7 @@ def create_parse_example_fn(
   Args:
     config: A DeepVariant configuration.
     mode: One of 'train', 'tune', 'predict' or 'debug'.
+    input_shape: The shape of the input image.
 
   Returns:
     Callable that returns dicts of DeepVariant tf.Examples.
@@ -119,8 +111,7 @@ def create_parse_example_fn(
 
   def parse_example(
       example: tf.train.Example,
-      input_shape: Tuple[int, int, int],
-  ) -> Dict[str, tf.Tensor]:
+  ) -> Union[Dict[str, tf.Tensor], Tuple[tf.Tensor, tf.Tensor, tf.Tensor]]:
     """Parses a serialized tf.Example, preprocesses the image, and one-hot encodes the label."""
 
     result = tf.io.parse_single_example(
@@ -128,32 +119,34 @@ def create_parse_example_fn(
     )
 
     image = tf.io.decode_raw(result['image/encoded'], tf.uint8)
-    del result['image/encoded']
-    image = tf.reshape(image, input_shape)
-    image = tf.cast(image, tf.float32)
+    result['image'] = tf.reshape(image, input_shape)
 
-    # Preprocess image
-    result['image'] = dv_utils.preprocess_images(image)
-
-    if 'label' in result:
-      result['label'] = tf.keras.layers.CategoryEncoding(
-          num_tokens=dv_constants.NUM_CLASSES, output_mode='one_hot'
-      )(result['label'])
+    # Image preprocessing and one-hot labeling takes place on accelerators to
+    # reduce memory usage and speed up training. Do not move those ops here.
 
     if config.denovo_enabled and result['denovo_label'][0] == 1:
       # If the example is denovo then set the denovo example weights for this.
       result['sample_weight'] = tf.constant(
           config.denovo_weight, dtype=tf.float32
       )
-    elif config.class_weights:
-      result['sample_weight'] = tf.gather(
-          class_weights,
-          tf.cast(tf.math.argmax(result['label'], axis=-1), dtype=tf.int32),
+    elif 'label' in result and config.class_weights:
+      result['sample_weight'] = tf.cast(
+          tf.gather(class_weights, tf.cast(result['label'], tf.int32)), tf.int8
       )
     else:
       result['sample_weight'] = tf.constant(1.0, dtype=tf.float32)
 
-    return result
+    if 'label' in result:
+      result['label'] = tf.cast(result['label'], dtype=tf.int8)
+    if mode in ['train', 'tune']:
+      return (
+          result['image'],
+          result['label'],
+          result['sample_weight'],
+      )
+    else:
+      del result['image/encoded']
+      return result
 
   return parse_example
 
@@ -189,10 +182,21 @@ def input_fn(
     raise ValueError(
         'Mode must be set to one of train, tune, predict, or debug'
     )
-  is_training = mode == 'train'
+  is_training = mode in ['train', 'tune']
 
   # Get input shape from input path.
   input_shape = dv_utils.get_shape_from_examples_path(path)
+
+  file_list = [
+      tf.io.gfile.glob(sharded_file_utils.normalize_to_sharded_file_pattern(x))
+      for x in path.split(',')
+  ]
+  file_list = list(itertools.chain(*file_list))
+
+  if is_training:
+    file_list = tf.random.shuffle(file_list)
+
+  ds = tf.data.Dataset.from_tensor_slices(file_list)
 
   def load_dataset(filename: str) -> tf.data.Dataset:
     return tf.data.TFRecordDataset(
@@ -200,16 +204,6 @@ def input_fn(
         buffer_size=config.prefetch_buffer_bytes,
         compression_type='GZIP',
     )
-
-  file_list = [
-      tf.io.gfile.glob(sharded_file_utils.normalize_to_sharded_file_pattern(x))
-      for x in path.split(',')
-  ]
-  file_list = list(itertools.chain(*file_list))
-  ds = tf.data.Dataset.from_tensor_slices(file_list)
-
-  if is_training:
-    ds = ds.shuffle(ds.cardinality(), reshuffle_each_iteration=True)
 
   ds = ds.interleave(
       load_dataset,
@@ -220,31 +214,29 @@ def input_fn(
 
   ds = ds.repeat()
 
+  # Retrieve preprocess function
+  parse_example = create_parse_example_fn(
+      config,
+      mode,
+      input_shape,
+  )
+
+  ds = ds.map(
+      map_func=parse_example,
+      num_parallel_calls=tf.data.AUTOTUNE,
+      deterministic=False,
+  )
+
   if is_training:
     ds = ds.shuffle(
         config.shuffle_buffer_elements, reshuffle_each_iteration=True
     )
 
-  # Retrieve preprocess function
-  parse_example = create_parse_example_fn(config, mode)
-
-  ds = ds.map(
-      map_func=lambda example: parse_example(example, input_shape),
-      num_parallel_calls=tf.data.AUTOTUNE,
+  ds = ds.batch(
+      batch_size=config.batch_size,
       deterministic=False,
+      drop_remainder=True,
   )
-  # Convert dict output to training tuple.
-  if mode in ['train', 'tune']:
-    ds = ds.map(
-        map_func=lambda x: (
-            x['image'],
-            x['label'],
-            x['sample_weight'],
-        ),
-        num_parallel_calls=tf.data.AUTOTUNE,
-        deterministic=False,
-    )
-  ds = ds.batch(batch_size=config.batch_size, drop_remainder=True)
 
   # Prefetch overlaps in-feed with training
   ds = ds.prefetch(tf.data.AUTOTUNE)

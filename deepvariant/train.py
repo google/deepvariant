@@ -44,6 +44,7 @@ from ml_collections.config_flags import config_flags
 import tensorflow as tf
 
 from deepvariant import data_providers
+from deepvariant import dv_constants
 from deepvariant import dv_utils
 from deepvariant import keras_modeling
 from official.modeling import optimization
@@ -257,6 +258,8 @@ def train(config: ml_collections.ConfigDict):
   def distributed_train_step(iterator, num_steps):
     def run_train_step(inputs):
       model_input, labels, sample_weight = inputs
+      model_input = dv_utils.preprocess_images(model_input)
+      labels = tf.squeeze(tf.one_hot(labels, dv_constants.NUM_CLASSES))
       with tf.GradientTape() as tape:
         probabilities = model(model_input, training=True)
         loss = compute_loss(
@@ -288,6 +291,8 @@ def train(config: ml_collections.ConfigDict):
     def run_tune_step(tune_inputs):
       """Single non-distributed tune step."""
       model_input, labels, sample_weight = tune_inputs
+      model_input = dv_utils.preprocess_images(model_input)
+      labels = tf.squeeze(tf.one_hot(labels, dv_constants.NUM_CLASSES))
       # The build_classification_head performs a softmax.
       probabilities = model(model_input, training=False)
       loss = compute_loss(

@@ -64,8 +64,12 @@ def get_golden_dataset(
 class ParseExampleTest(parameterized.TestCase):
 
   @parameterized.parameters(
-      dict(mode='train', expected_keys={'image', 'label', 'sample_weight'}),
-      dict(mode='tune', expected_keys={'image', 'label', 'sample_weight'}),
+      dict(
+          mode='train',
+      ),
+      dict(
+          mode='tune',
+      ),
       dict(
           mode='predict',
           expected_keys={
@@ -89,7 +93,7 @@ class ParseExampleTest(parameterized.TestCase):
           },
       ),
   )
-  def test_parse_example(self, mode, expected_keys):
+  def test_parse_example(self, mode, expected_keys=None):
     path = testdata.GOLDEN_TRAINING_EXAMPLES
     ds = tf.data.TFRecordDataset(path, compression_type='GZIP')
     item = ds.take(1).get_single_element()
@@ -98,10 +102,12 @@ class ParseExampleTest(parameterized.TestCase):
     parse_example = data_providers.create_parse_example_fn(
         config,
         mode,
+        input_shape,
     )
-    output = parse_example(item, input_shape)
-    self.assertIsInstance(output, dict)
-    self.assertSetEqual(set(output.keys()), expected_keys)
+    output = parse_example(item)
+    self.assertIsInstance(output, dict if expected_keys else tuple)
+    if expected_keys:
+      self.assertSetEqual(set(output.keys()), expected_keys)
 
 
 class ClassWeightsTest(absltest.TestCase):
@@ -179,10 +185,8 @@ class DataProviderTest(parameterized.TestCase):
 
     if labels is not None:
       self.assertEqual(config.batch_size, labels.shape[0])
-      # Check that our labels are the correct shape
-      self.assertTrue(dv_constants.NUM_CLASSES, labels.shape[1])
-      # Check that our labels are one-hot encoded
-      self.assertTrue(tf.reduce_all(tf.reduce_sum(labels, axis=1) == 1))
+      # Check that our labels don't exceed num classes
+      self.assertLess(tf.reduce_max(labels), dv_constants.NUM_CLASSES)
 
 
 if __name__ == '__main__':

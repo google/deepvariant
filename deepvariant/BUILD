@@ -829,6 +829,7 @@ py_binary(
     python_version = "PY3",
     deps = [
         ":data_providers",
+        ":dv_constants",
         ":dv_utils",
         ":keras_modeling",
         "@absl_py//absl:app",
@@ -1111,11 +1112,9 @@ py_library(
     srcs = ["data_providers.py"],
     srcs_version = "PY3",
     deps = [
-        ":dv_constants",
         ":dv_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:sharded_file_utils",
-        "@absl_py//absl/logging",
         "@com_google_protobuf//:protobuf_python",
     ],
 )

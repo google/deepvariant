@@ -266,7 +266,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Data Pipeline Options
   config.prefetch_buffer_bytes = 16 * 1000 * 1000
   config.shuffle_buffer_elements = 50_000
-  config.input_read_threads = 64
+  config.input_read_threads = 8
 
   # Placeholder value for limiting training examples. 0=No limit.
   config.limit = 0
