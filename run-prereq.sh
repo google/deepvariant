@@ -225,7 +225,7 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
         sudo tee /etc/apt/sources.list.d/cuda.list > /dev/null
       sudo -H NEEDRESTART_MODE=a apt-get update "${APT_ARGS[@]}"
       sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get full-upgrade "${APT_ARGS[@]}"
-      sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" cuda-11-8
+      sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" cuda-11-8
     fi
     echo "Checking for CUDNN..."
     if [[ ! -e /usr/local/cuda-11/include/cudnn.h ]]; then

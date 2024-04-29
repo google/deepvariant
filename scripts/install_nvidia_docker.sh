@@ -42,7 +42,7 @@ APT_ARGS=(
 # (1) Install nvidia driver:
 # https://linuxhint.com/install-cuda-ubuntu/
 sudo apt-get "${APT_ARGS[@]}" update
-sudo apt-get "${APT_ARGS[@]}" install \
+sudo NEEDRESTART_MODE=a apt-get "${APT_ARGS[@]}" install \
   build-essential \
   curl \
   "linux-headers-$(uname -r)" \
@@ -59,9 +59,9 @@ if ! dpkg-query -W cuda-11-8; then
   echo \
     "deb [signed-by=/usr/share/keyrings/nvidia-cuda-archive-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" | \
     sudo tee /etc/apt/sources.list.d/cuda.list > /dev/null
-  sudo -H apt-get update "${APT_ARGS[@]}"
-  sudo -H apt-get full-upgrade "${APT_ARGS[@]}"
-  sudo -H apt-get install "${APT_ARGS[@]}" cuda-11-8
+  sudo -H NEEDRESTART_MODE=a apt-get update "${APT_ARGS[@]}"
+  sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get full-upgrade "${APT_ARGS[@]}"
+  sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" cuda-11-8
 fi
 
 echo "Checking for CUDNN..."
@@ -75,6 +75,8 @@ if [[ ! -e /usr/local/cuda-11/include/cudnn.h ]]; then
   sudo chmod a+r /usr/local/cuda-11/lib64/libcudnn*
   sudo ldconfig
 fi
+# Tensorflow says to do this.
+sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libcupti-dev > /dev/null
 
 # (2) Install Docker CE:
 # https://docs.docker.com/engine/install/ubuntu/
@@ -89,7 +91,12 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get "${APT_ARGS[@]}" update
-sudo apt-get "${APT_ARGS[@]}" install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a \
+  apt-get "${APT_ARGS[@]}" install \
+  docker-ce docker-ce-cli \
+  containerd.io \
+  docker-buildx-plugin \
+  docker-compose-plugin
 
 # (3) Install nvidia docker:
 # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
@@ -99,7 +106,8 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
 sudo apt-get "${APT_ARGS[@]}" update
-sudo apt-get "${APT_ARGS[@]}" install nvidia-container-toolkit
+sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a \
+  apt-get "${APT_ARGS[@]}" install nvidia-container-toolkit
 
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
