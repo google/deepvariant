@@ -266,7 +266,18 @@ def find_matching_allele_frequency(
       end=variant.end + padding_bases,
   )
   # Convert to list because we'll look through cohort_variants more than once.
-  cohort_variants = list(population_vcf_reader.query(query_region))
+  try:
+    cohort_variants = list(population_vcf_reader.query(query_region))
+  except ValueError as e:
+    err_msg = str(e)
+    if err_msg.startswith("NOT_FOUND: Unknown reference_name '"):
+      # Split the message by single quotes (') to get the contig name
+      parts = err_msg.split("'")
+      contig_name = parts[1]
+      logging.warning('population_vcf does not have config %s', contig_name)
+      cohort_variants = []
+    else:
+      raise e
 
   # Init allele frequency dict using alt bases in the candidate.
   dict_allele_frequency = {}
