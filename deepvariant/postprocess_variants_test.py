@@ -319,6 +319,26 @@ class PostprocessVariantsTest(parameterized.TestCase):
       self.assertTrue(tf.io.gfile.exists(FLAGS.gvcf_outfile + '.tbi'))
 
   @flagsaver.flagsaver
+  def test_haploid_contigs(self):
+    FLAGS.infile = make_golden_dataset()
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.outfile = create_outfile('haploid_contigs.calls.vcf')
+    FLAGS.nonvariant_site_tfrecord_path = testdata.GOLDEN_POSTPROCESS_GVCF_INPUT
+    FLAGS.gvcf_outfile = create_outfile('haploid_contigs.gvcf_calls.vcf')
+    FLAGS.haploid_contigs = 'chr20'
+    FLAGS.cpus = 0
+    postprocess_variants.main(['postprocess_variants.py'])
+    vcf_output = testdata.GOLDEN_POSTPROCESS_OUTPUT_HAPLOID
+    self.assertEqual(
+        _read_contents(FLAGS.outfile),
+        _read_contents(vcf_output),
+    )
+    self.assertEqual(
+        _read_contents(FLAGS.gvcf_outfile),
+        _read_contents(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT_HAPLOID),
+    )
+
+  @flagsaver.flagsaver
   def test_group_variants(self):
     FLAGS.infile = testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
     FLAGS.ref = testdata.CHR20_FASTA
