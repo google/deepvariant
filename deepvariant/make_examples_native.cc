@@ -373,6 +373,43 @@ void UpdateStats(enum EncodedVariantType variant_type,
     stats["n_denovo"] += (label->is_denovo ? 1 : 0);
   }
 }
+
+std::string EncodeAltAlleles(
+    const Variant& variant,
+    const std::vector<std::string>& alt_combination,
+    absl::flat_hash_set<int>& alt_indices_set
+    ) {
+  absl::flat_hash_map<std::string, int> alt_indices;
+  int i = 0;
+  for (const std::string& alt : variant.alternate_bases()) {
+    alt_indices[alt] = i;
+    i++;
+  }
+  std::vector<int> indices;
+  indices.reserve(alt_combination.size());
+  for (const std::string& alt : alt_combination) {
+    indices.push_back(alt_indices[alt]);
+    alt_indices_set.insert(alt_indices[alt]);
+  }
+  CallVariantsOutput::AltAlleleIndices alt_indices_proto;
+  for (const auto& idx : indices) {
+    alt_indices_proto.mutable_indices()->Add(idx);
+  }
+  std::string alt_indices_encoded;
+  alt_indices_proto.SerializeToString(&alt_indices_encoded);
+  return alt_indices_encoded;
+}
+
+std::string EncodeVariant(const Variant& variant, const VariantLabel* label) {
+  std::string encoded_variant;
+  if (label == nullptr) {
+    variant.SerializeToString(&encoded_variant);
+  } else {  // For train examples the variant from label is used.
+    label->variant.SerializeToString(&encoded_variant);
+  }
+  return encoded_variant;
+}
+
 }  // namespace
 
 std::string ExamplesGenerator::EncodeExample(
@@ -399,25 +436,9 @@ std::string ExamplesGenerator::EncodeExample(
   image_shape[2] = options_.pic_options().channels().size();  // Num channels.
 
   // Encode alt allele indices.
-  absl::flat_hash_map<std::string, int> alt_indices;
   absl::flat_hash_set<int> alt_indices_set;
-  int i = 0;
-  for (const std::string& alt : variant.alternate_bases()) {
-    alt_indices[alt] = i;
-    i++;
-  }
-  std::vector<int> indices;
-  indices.reserve(alt_combination.size());
-  for (const std::string& alt : alt_combination) {
-    indices.push_back(alt_indices[alt]);
-    alt_indices_set.insert(alt_indices[alt]);
-  }
-  std::string alt_indices_encoded;
-  CallVariantsOutput::AltAlleleIndices alt_indices_proto;
-  for (const auto& idx : indices) {
-    alt_indices_proto.mutable_indices()->Add(idx);
-  }
-  alt_indices_proto.SerializeToString(&alt_indices_encoded);
+  std::string alt_indices_encoded =
+      EncodeAltAlleles(variant, alt_combination, alt_indices_set);
 
   // Encode variant range.
   Range variant_range;
@@ -433,19 +454,13 @@ std::string ExamplesGenerator::EncodeExample(
 
   // Ecode features of the example.
   tensorflow::Example example;
-  std::string ecoded_variant;
-  if (label == nullptr) {
-    variant.SerializeToString(&ecoded_variant);
-  } else {  // For train examples the variant from label is used.
-    label->variant.SerializeToString(&ecoded_variant);
-  }
   enum EncodedVariantType variant_type = EncodedVariantType(variant);
   (*example.mutable_features()->mutable_feature())["locus"]
       .mutable_bytes_list()
-      ->add_value(variant_range_encoded);
+      ->add_value(std::move(variant_range_encoded));
   (*example.mutable_features()->mutable_feature())["variant/encoded"]
       .mutable_bytes_list()
-      ->add_value(ecoded_variant);
+      ->add_value(EncodeVariant(variant, label.get()));
   (*example.mutable_features()->mutable_feature())["variant_type"]
       .mutable_int64_list()
       ->add_value(static_cast<int64_t>(variant_type));
