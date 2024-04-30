@@ -60,6 +60,7 @@ import copy
 import enum
 import heapq
 import itertools
+import operator
 
 from absl import logging
 
@@ -86,7 +87,7 @@ _MAX_SEPARATION_WITHIN_VARIANT_GROUP = 30
 _MAX_GT_OPTIONS_PRODUCT = 100000
 
 # The variants that are within this value will be forcefully grouped together.
-# This is to ensure that we don't decouple a candidate with it's truth variant
+# This is to ensure that we don't decouple a candidate with its truth variant
 # in variant dense regions.
 # The value of this is set to 0bp because 1bp creates a lot of overhead.
 # Context about the value: internal#comment3
@@ -128,7 +129,7 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
     Raises:
       ValueError: if vcf_reader is None.
     """
-    super(HaplotypeLabeler, self).__init__(
+    super().__init__(
         truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions
     )
     if confident_regions is None:
@@ -464,6 +465,31 @@ def group_variants(
           for g in group
       )
 
+  def _include_group_by_end_in_variant_group(
+      group, group_by_end, new_gt_options_product
+  ):
+    for variant in group_by_end:
+      if not _include_in_variant_group(group, variant, new_gt_options_product):
+        return False
+    return True
+
+  def _regroup_by_end(current_group, force_group_within_bp):
+    """Regroups variants by end positions, if force_group_within_bp >= 0."""
+    # If force_group_within_bp is negative, we don't need to group variants
+    # by .end. Each variant should be in its own group.
+    if force_group_within_bp < 0:
+      return [[v] for v in current_group]
+
+    # Group the elements based on the 'variant.end' attribute.
+    # Here, I didn't sort by variant.end. The list should be sorted by
+    # variant.start already, and I'm using that order.
+    new_groups = []
+    for _, group_items in itertools.groupby(
+        current_group, key=operator.attrgetter('variant.end')
+    ):
+      new_groups.append(list(group_items))
+    return new_groups
+
   # Convert our lists of variant protos into _VariantToGroup tuples compatible
   # with the heapq API (sorts on tuples), so we get a single iterable of
   # variants with marked types and sorted by start position (first element of
@@ -473,30 +499,38 @@ def group_variants(
       to_grouped_variants(truths, _TRUTH_MARKER),
   )
 
-  # Go through out groupable_variants and split them up into groups according to
-  # the predicate _include_in_variant_group.
+  # Go through groupable_variants:
+  # First, group by variant.end if force_group_within_bp >= 0. Because any
+  # variant that has the same end has to be in the same group anyway.
+  # Then, consider each group, and merge them into groups according to
+  # the predicate _include_group_by_end_in_variant_group.
   groups = []
   current_group = []
   current_gt_options_product = 1
   previous_pos_end = 0
-  for group_variant in groupable_variants:
-    new_gt_options_product = current_gt_options_product * _num_genotypes(
-        group_variant.variant
-    )
-    distance_from_prev_variant = group_variant.variant.end - previous_pos_end
+  variants_groups_by_end = _regroup_by_end(
+      groupable_variants, force_group_within_bp
+  )
+  for group_by_end in variants_groups_by_end:
+    new_gt_options_product = current_gt_options_product
+    for group_variant in group_by_end:
+      new_gt_options_product *= _num_genotypes(group_variant.variant)
+    distance_from_prev_variant = group_by_end[0].variant.end - previous_pos_end
     if (
-        _include_in_variant_group(
-            current_group, group_variant, new_gt_options_product
+        _include_group_by_end_in_variant_group(
+            current_group, group_by_end, new_gt_options_product
         )
         or distance_from_prev_variant <= force_group_within_bp
     ):
-      current_group.append(group_variant)
+      current_group.extend(group_by_end)
       current_gt_options_product = new_gt_options_product
     else:
       groups.append(current_group)
-      current_group = [group_variant]
-      current_gt_options_product = _num_genotypes(group_variant.variant)
-    previous_pos_end = group_variant.variant.end
+      current_group = group_by_end
+      current_gt_options_product = 1
+      for v in group_by_end:
+        current_gt_options_product *= _num_genotypes(v.variant)
+    previous_pos_end = group_by_end[0].variant.end
   if current_group:
     groups.append(current_group)
 
@@ -889,7 +923,7 @@ def build_haplotype(variants, allele_indices, ref, ref_start, ref_end):
   return ''.join(parts)
 
 
-class HaplotypeMatch(object):
+class HaplotypeMatch:
   """DataClass holding information about a matching of variants.
 
   The haplotype labeling algorithm, at its core, searches for an assignment of

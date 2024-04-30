@@ -368,6 +368,17 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
           force_group_within_bp=-1,
           expected_group_split=[1] * 8,
       ),
+      # The 8 variants each have #GT: 10, 6, 6, 3, 15, 15, 6, 6.
+      # Combining any of them will be more than max_gt_options_product=10.
+      # However, because two of the candidates have the same variant.end,
+      # When I set force_group_within_bp to 0, they are grouped together.
+      # So two of the variants are grouped together, and the rest are grouped
+      # separately.
+      dict(
+          max_gt_options_product=10,
+          force_group_within_bp=0,
+          expected_group_split=[1, 2, 1, 1, 1, 1, 1],
+      ),
   )
   def test_group_variants_exceeds_max_gt_options_product(
       self, max_gt_options_product, force_group_within_bp, expected_group_split
@@ -391,6 +402,21 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         max_gt_options_product=max_gt_options_product,
         force_group_within_bp=force_group_within_bp,
     )
+    # Check the end of each variant:
+    self.assertEqual(
+        [c.end for c in candidates],
+        [
+            36206922,
+            36206927,
+            36206927,
+            36206928,
+            36206931,
+            36206932,
+            36206935,
+            36206938,
+        ],
+    )
+
     self.assertLen(grouped, len(expected_group_split))
     self.assertEqual([len(g[0]) for g in grouped], expected_group_split)
 
