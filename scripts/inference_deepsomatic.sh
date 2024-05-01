@@ -531,17 +531,15 @@ function setup_args() {
   else
     run echo "No custom model specified."
   fi
+  if [[ -n "${POPULATION_VCFS}" ]]; then
+    MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS:+${MAKE_EXAMPLES_ARGS},}population_vcfs=/input/$(basename "$POPULATION_VCFS")"
+  fi
   if [[ -n "${MAKE_EXAMPLES_ARGS}" ]]; then
     # In order to use proposed variants, we have to pass vcf_candidate_importer
     # to make_examples_extra_args, so we know that we will enter this if
     # statement.
     if [[ -n "${PROPOSED_VARIANTS}" ]]; then
       MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},proposed_variants=/input/$(basename "$PROPOSED_VARIANTS")"
-    fi
-    # In order to use population_vcfs, use_allele_frequency has to be set,
-    # so it's also ok to put this if statement inside.
-    if [[ -n "${POPULATION_VCFS}" ]]; then
-      MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},population_vcfs=/input/$(basename "$POPULATION_VCFS")"
     fi
     extra_args+=( --make_examples_extra_args "\"${MAKE_EXAMPLES_ARGS}\"")
   fi
