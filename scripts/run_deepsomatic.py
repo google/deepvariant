@@ -86,6 +86,8 @@ _READS_NORMAL = flags.DEFINE_string(
         'Required. Aligned, sorted, indexed BAM file containing the reads from'
         ' the normal sample. Should be aligned to a reference genome '
         'compatible with --ref.'
+        'NOTE: It is possible to not provide this flag. However, it is not '
+        'officially supported yet.'
     ),
 )
 _OUTPUT_VCF = flags.DEFINE_string(
@@ -346,7 +348,8 @@ def make_examples_somatic_command(
   command.extend(['--mode', 'calling'])
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--reads_tumor', '"{}"'.format(reads_tumor)])
-  command.extend(['--reads_normal', '"{}"'.format(reads_normal)])
+  if reads_normal:
+    command.extend(['--reads_normal', '"{}"'.format(reads_normal)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
 
@@ -667,13 +670,17 @@ def main(_):
       'model_type',
       'ref',
       'reads_tumor',
-      'reads_normal',
       'output_vcf',
   ]:
     if FLAGS.get_flag_value(flag_key, None) is None:
       sys.stderr.write('--{} is required.\n'.format(flag_key))
       sys.stderr.write('Pass --helpshort or --helpfull to see help on flags.\n')
       sys.exit(1)
+
+  for flag_key in ['reads_normal']:
+    if FLAGS.get_flag_value(flag_key, None) is None:
+      sys.stderr.write('--{} is not set.\n'.format(flag_key))
+      sys.stderr.write('WARNING: This is not officially supported.\n')
 
   intermediate_results_dir = check_or_create_intermediate_results_dir(
       _INTERMEDIATE_RESULTS_DIR.value
