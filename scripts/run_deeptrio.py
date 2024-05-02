@@ -558,6 +558,7 @@ def _make_examples_command(
     special_args['parse_sam_aux_fields'] = True
     special_args['discard_non_dna_regions'] = True
     special_args['max_reads_for_dynamic_bases_per_region'] = 200
+    special_args['trim_reads_for_pileup'] = True
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   if _MODEL_TYPE.value == 'ONT':
@@ -581,6 +582,7 @@ def _make_examples_command(
     special_args['discard_non_dna_regions'] = True
     special_args['max_reads_for_dynamic_bases_per_region'] = 200
     special_args['max_reads_per_partition'] = 500
+    special_args['trim_reads_for_pileup'] = True
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   if _MODEL_TYPE.value == 'WES':

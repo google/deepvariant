@@ -282,7 +282,7 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--pileup_image_height_child "60" '
           + '--pileup_image_height_parent "40" --pileup_image_width "199" '
           + '--norealign_reads --sort_by_haplotypes '
-          + '--track_ref_reads '
+          + '--track_ref_reads --trim_reads_for_pileup '
           + '--vsc_min_fraction_indels "0.12" ',
       ),
       (
@@ -369,7 +369,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       ' "60" --pileup_image_height_parent "40" --pileup_image_width'
       ' "199" '
       + '--norealign_reads --sort_by_haplotypes '
-      + '--track_ref_reads '
+      + '--track_ref_reads --trim_reads_for_pileup '
       + '--vsc_min_fraction_indels "0.12" '
       + '--task {}',
       # # make_examples command with call mode
@@ -397,7 +397,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--pileup_image_height_child "60" '
       + '--pileup_image_height_parent "40" --pileup_image_width "199" '
       + '--norealign_reads --sort_by_haplotypes '
-      + '--track_ref_reads '
+      + '--track_ref_reads --trim_reads_for_pileup '
       + '--vsc_min_fraction_indels "0.12" '
       + '--task {}',
   ))
@@ -451,7 +451,7 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--pileup_image_height_child "60" '
           + '--pileup_image_height_parent "40" --pileup_image_width "199" '
           + '--norealign_reads --sort_by_haplotypes '
-          + '--track_ref_reads '
+          + '--track_ref_reads --trim_reads_for_pileup '
           + '--vsc_min_fraction_indels "0.12" ',
       ),
   )
@@ -502,7 +502,7 @@ class RunDeeptrioTest(parameterized.TestCase):
               ' --partition_size "10000" --phase_reads'
               ' --pileup_image_height_child "60" --pileup_image_height_parent'
               ' "40" --pileup_image_width "199" --norealign_reads'
-              ' --sort_by_haplotypes --track_ref_reads'
+              ' --sort_by_haplotypes --track_ref_reads --trim_reads_for_pileup'
               ' --vsc_min_fraction_indels "0.12" '
           ),
           None,
@@ -520,7 +520,7 @@ class RunDeeptrioTest(parameterized.TestCase):
               ' --partition_size "10000" --phase_reads'
               ' --pileup_image_height_child "60" --pileup_image_height_parent'
               ' "40" --pileup_image_width "199" --norealign_reads'
-              ' --sort_by_haplotypes --track_ref_reads'
+              ' --sort_by_haplotypes --track_ref_reads --trim_reads_for_pileup'
               ' --vsc_min_fraction_indels "0.03" '
           ),
           # Because PacBio uses candidate_sweep, make_examples got run twice.
