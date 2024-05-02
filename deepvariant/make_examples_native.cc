@@ -234,95 +234,6 @@ std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
   return absl::StrCat(prefix, alt, suffix);
 }
 
-// Converting a vector<ImageRow> into a 3-d vector where channels are stored in
-// the lowest dimension. Special processing is required for alt aligned
-// channels.
-// * --alt_aligned_pileup=diff_channels Add channel 5 (base differs
-// from ref) of both alts as channels
-// * --alt_aligned_pileup=base_channels Add channel 0 (bases ATCG) of both alts
-// as channels.
-// * --alt_aligned_pileup=rows alt aligned data is stored as extra rows.
-//
-void FillPileupArray(
-    const std::vector<std::unique_ptr<ImageRow>>& image,
-    const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
-    const AltAlignedPileup alt_aligned_representation,
-    std::vector<unsigned char>* pileup_array) {
-  // TODO Although channels 0 and 5 should not change we need to set
-  // channel number programmatically.
-  int alt_channel_index = 0;
-  switch (alt_aligned_representation) {
-    case AltAlignedPileup::kDiffChannels:
-      alt_channel_index = 5;
-      break;
-    case AltAlignedPileup::kBaseChannels:
-      alt_channel_index = 0;
-      break;
-    default:
-      alt_channel_index = 0;
-  }
-  // TODO Prefill the pileup_array beforehand to make the code
-  // cleaner and more efficient.
-  for (int row = 0; row < image.size(); row++) {
-    for (int column = 0; column < image[row]->Width(); column++) {
-      if (!image[row]->channel_data.empty()) {
-        // Lower dimension is a channel data. Here we iterate all channels to
-        // fill one position of the pileup image.
-        for (int channel = 0; channel < image[row]->channel_data.size();
-             channel++) {
-          pileup_array->push_back(image[row]->channel_data[channel][column]);
-        }
-        // Fill alt aligned channels if needed.
-        if (alt_aligned_representation == AltAlignedPileup::kBaseChannels ||
-            alt_aligned_representation == AltAlignedPileup::kDiffChannels) {
-          CHECK_EQ(alt_image.size(), 2);
-          unsigned char alt_aligned_channel_1_value = 0;
-          if (!alt_image[0].empty() &&
-              !alt_image[0][row]->channel_data.empty()) {
-            alt_aligned_channel_1_value =
-                alt_image[0][row]->channel_data[alt_channel_index][column];
-          }
-          // Fill alt aligned channel 1.
-          pileup_array->push_back(alt_aligned_channel_1_value);
-          // Fill alt aligned channel 2.
-          if (alt_image[1].empty() || alt_image[1][row]->channel_data.empty()) {
-            // Fill with alt aligned channel 1 if alt2 is empty.
-            pileup_array->push_back(alt_aligned_channel_1_value);
-          } else {
-            pileup_array->push_back(
-                alt_image[1][row]->channel_data[alt_channel_index][column]);
-          }
-        }  // if need_alt_alignment
-      }  // if !channel_data.empty()
-    }  // for row->Width
-  }  // for row
-
-  // Fill alt aligned channels as rows if AltAlignedPileup::kRows
-  if (alt_aligned_representation == AltAlignedPileup::kRows) {
-    for (const auto& one_alt_image : alt_image) {
-      if (one_alt_image.empty()) {
-        pileup_array->insert(
-            pileup_array->end(),
-            image.size() * image[0]->Width() * image[0]->channel_data.size(),
-            0);
-        continue;
-      }
-      for (int row = 0; row < one_alt_image.size(); row++) {
-        for (int column = 0; column < one_alt_image[row]->Width(); column++) {
-          if (!one_alt_image[row]->channel_data.empty()) {
-            // Lower dimension is a channel data. Here we iterate all channels
-            // to fill one position of the pileup image.
-            for (int channel = 0;
-                 channel < one_alt_image[row]->channel_data.size(); channel++) {
-              pileup_array->push_back(
-                  one_alt_image[row]->channel_data[channel][column]);
-            }
-          }
-        }
-      }
-    }
-  }
-}
 
 // Calculates the variant type to be encoded in a TensorFlow example.
 EncodedVariantType EncodedVariantType(const Variant& variant) {
@@ -418,11 +329,6 @@ std::string ExamplesGenerator::EncodeExample(
     const Variant& variant, const std::vector<std::string>& alt_combination,
     std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
     const std::unique_ptr<VariantLabel>& label) const {
-  // TODO Once we know the number of channels in advance we should
-  // allocate data with the correct size to avoid vector resizing when data is
-  // filled.
-  std::vector<unsigned char> data;
-  FillPileupArray(image, alt_image, alt_aligned_pileup_, &data);
   // if AltAlignedPileup::kRows is set then number of
   // rows equals: (image.size + alt_image_1.size + alt_image_2.size) or
   //   image.size * 3.
@@ -434,6 +340,10 @@ std::string ExamplesGenerator::EncodeExample(
   }
   image_shape[1] = image[0]->Width();              // Width of the pileup.
   image_shape[2] = options_.pic_options().channels().size();  // Num channels.
+
+  std::vector<unsigned char> data(
+      image_shape[0] * image_shape[1] * image_shape[2], 0);
+  FillPileupArray(image, alt_image, alt_aligned_pileup_, &data, 0);
 
   // Encode alt allele indices.
   absl::flat_hash_set<int> alt_indices_set;
@@ -684,7 +594,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
           samples_.find(options_.sample_options(this_sample_order).role());
       auto ref_image = pileup_image_.BuildPileupForOneSample(
           candidate, reference_bases,
-          use_trimmed_reads ? trimmed_reads_ptrs
+          use_trimmed_reads ? std::move(trimmed_reads_ptrs)
                             : readers[this_sample_order].Query(region),
           image_start_pos, alt_combination,
           options_.sample_options(this_sample_order),

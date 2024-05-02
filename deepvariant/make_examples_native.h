@@ -291,11 +291,115 @@ nucleus::genomics::v1::Range MakeRange(const std::string& ref_name,
 std::string GetExamplesFilename(const MakeExamplesOptions& options,
                                 const Sample& sample, bool add_suffix = false);
 
+// Converting a vector<ImageRow> into a 3-d vector where channels are stored in
+// the lowest dimension. Special processing is required for alt aligned
+// channels.
+// * --alt_aligned_pileup=diff_channels Add channel 5 (base differs
+// from ref) of both alts as channels
+// * --alt_aligned_pileup=base_channels Add channel 0 (bases ATCG) of both alts
+// as channels.
+// * --alt_aligned_pileup=rows alt aligned data is stored as extra rows.
+//
+// TODO: Consolidate streaming examples and normal examples so
+// that we don't need to use the template anymore.
+template <class T>
 void FillPileupArray(
     const std::vector<std::unique_ptr<ImageRow>>& image,
     const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
     AltAlignedPileup alt_aligned_representation,
-    std::vector<unsigned char>* pileup_array);
+    T* pileup_array,
+    int buffer_pos = 0) {
+  auto buffer_size = pileup_array->size();
+  // TODO Although channels 0 and 5 should not change we need to set
+  // channel number programmatically.
+  int alt_channel_index = 0;
+  switch (alt_aligned_representation) {
+    case AltAlignedPileup::kDiffChannels:
+      alt_channel_index = 5;
+      break;
+    case AltAlignedPileup::kBaseChannels:
+      alt_channel_index = 0;
+      break;
+    default:
+      alt_channel_index = 0;
+  }
+  for (int row = 0; row < image.size(); row++) {
+    for (int column = 0; column < image[row]->Width(); column++) {
+      if (!image[row]->channel_data.empty()) {
+        // Lower dimension is a channel data. Here we iterate all channels to
+        // fill one position of the pileup image.
+        for (int channel = 0; channel < image[row]->channel_data.size();
+             channel++) {
+          CHECK_LT(buffer_pos, buffer_size);
+          (*pileup_array)[buffer_pos] =
+              image[row]->channel_data[channel][column];
+          buffer_pos++;
+        }
+        // Fill alt aligned channels if needed.
+        if (alt_aligned_representation == AltAlignedPileup::kBaseChannels ||
+            alt_aligned_representation == AltAlignedPileup::kDiffChannels) {
+          CHECK_EQ(alt_image.size(), 2);
+          unsigned char alt_aligned_channel_1_value = 0;
+          if (!alt_image[0].empty() &&
+              !alt_image[0][row]->channel_data.empty()) {
+            alt_aligned_channel_1_value =
+                alt_image[0][row]->channel_data[alt_channel_index][column];
+          }
+          CHECK_LT(buffer_pos, buffer_size);
+          // Fill alt aligned channel 1.
+          (*pileup_array)[buffer_pos] = alt_aligned_channel_1_value;
+          buffer_pos++;
+          // Fill alt aligned channel 2.
+          if (alt_image[1].empty() || alt_image[1][row]->channel_data.empty()) {
+            // Fill with alt aligned channel 1 if alt2 is empty.
+            CHECK_LT(buffer_pos, buffer_size);
+            (*pileup_array)[buffer_pos] = alt_aligned_channel_1_value;
+            buffer_pos++;
+          } else {
+            CHECK_LT(buffer_pos, buffer_size);
+            (*pileup_array)[buffer_pos] =
+                alt_image[1][row]->channel_data[alt_channel_index][column];
+            buffer_pos++;
+          }
+        }  // if need_alt_alignment
+      }  // if !channel_data.empty()
+    }  // for row->Width
+  }  // for row
+
+  // Fill alt aligned channels as rows if AltAlignedPileup::kRows
+  if (alt_aligned_representation == AltAlignedPileup::kRows) {
+    for (const auto& one_alt_image : alt_image) {
+      if (one_alt_image.empty()) {
+        CHECK_LT(buffer_pos, buffer_size);
+        auto buffer_end = buffer_pos + image.size() * image[0]->Width() *
+                                           image[0]->channel_data.size();
+        CHECK_LE(buffer_end, buffer_size);
+        std::fill(
+            &(*pileup_array)[buffer_pos],
+            &(*pileup_array)[buffer_end],
+            (unsigned char)0);
+        buffer_pos +=
+            image.size() * image[0]->Width() * image[0]->channel_data.size();
+        continue;
+      }
+      for (int row = 0; row < one_alt_image.size(); row++) {
+        for (int column = 0; column < one_alt_image[row]->Width(); column++) {
+          if (!one_alt_image[row]->channel_data.empty()) {
+            // Lower dimension is a channel data. Here we iterate all channels
+            // to fill one position of the pileup image.
+            for (int channel = 0;
+                 channel < one_alt_image[row]->channel_data.size(); channel++) {
+              CHECK_LT(buffer_pos, buffer_size);
+              (*pileup_array)[buffer_pos] =
+                  one_alt_image[row]->channel_data[channel][column];
+              buffer_pos++;
+            }
+          }
+        }
+      }
+    }
+  }
+}
 
 }  // namespace deepvariant
 }  // namespace genomics

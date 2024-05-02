@@ -805,22 +805,28 @@ TEST(FillPileupArray, TestCases) {
   };
 
   // alt_aligned_pileup = none
-  std::vector<unsigned char> pileup_image;
+  std::vector<unsigned char> pileup_image(
+      input.size() * width * num_channels, 0);
   FillPileupArray(input, {}, AltAlignedPileup::kNone, &pileup_image);
   EXPECT_THAT(pileup_image, testing::ElementsAreArray(expected_alt_align_none));
 
   pileup_image.clear();
+  pileup_image.resize(input.size() * width * num_channels, 0);
   FillPileupArray(input, alt_rows, AltAlignedPileup::kNone, &pileup_image);
   EXPECT_THAT(pileup_image, UnorderedElementsAreArray(expected_alt_align_none));
 
   // alt_aligned_pileup = diff_channels
   pileup_image.clear();
+  // Because of diff_channels, add two channels.
+  pileup_image.resize(input.size() * width * (num_channels+2), 0);
   FillPileupArray(input, alt_rows, AltAlignedPileup::kDiffChannels,
                   &pileup_image);
   EXPECT_THAT(pileup_image, UnorderedElementsAreArray(expected_alt_align_diff));
 
   // alt_aligned_pileup = base_channels
   pileup_image.clear();
+  // Because of base_channels, add two channels.
+  pileup_image.resize(input.size() * width * (num_channels+2), 0);
   FillPileupArray(input, alt_rows, AltAlignedPileup::kBaseChannels,
                   &pileup_image);
   EXPECT_THAT(pileup_image, UnorderedElementsAreArray(expected_alt_align_base));
