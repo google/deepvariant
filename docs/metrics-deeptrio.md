@@ -122,6 +122,8 @@ vcf_stats_report(optional):HG003 | 0m8.04s
 vcf_stats_report(optional):HG003 | 0m8.15s
 total                            | 32m24.97s
 
+### Accuracy
+
 We report hap.py results on HG002/HG003/HG004 trio (chr20, using NIST v4.2.1
 truth), which was held out while training.
 
