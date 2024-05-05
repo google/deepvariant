@@ -26,7 +26,6 @@
 ### Colab notebooks
 
 *   [Colab example: visualizing pileup images/tensors](visualizing_examples.ipynb)
-*   [Can you beat DeepVariant?: A look inside the classification task](cybdv_notebook.ipynb)
 *   [Google Developer Codelab: Variant Calling on a Rice genome with DeepVariant](https://codelabs.developers.google.com/codelabs/genomics-deepvariant)
 
 ## (Advanced) Training
