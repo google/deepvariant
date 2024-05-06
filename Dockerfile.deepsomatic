@@ -23,8 +23,8 @@ RUN conda config --add channels defaults && \
     conda config --add channels bioconda && \
     conda config --add channels conda-forge
 RUN conda create -n bio \
-                    bioconda::bcftools=1.10 \
-                    bioconda::samtools=1.10 \
+                    bioconda::bcftools=1.15 \
+                    bioconda::samtools=1.15 \
     && conda clean -a
 
 FROM ${FROM_IMAGE} as builder
