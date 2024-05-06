@@ -73,7 +73,7 @@ USE_GPU=false
 SAVE_INTERMEDIATE_RESULTS=false
 SKIP_SOMPY=false
 # Strings; sorted alphabetically.
-BAM_NORMAL=""
+unset BAM_NORMAL
 BAM_TUMOR=""
 DOCKER_SOURCE="google/deepsomatic"
 BIN_VERSION="1.6.1"
@@ -265,7 +265,12 @@ if [[ "${MODEL_PRESET}" = "WGS" ]]; then
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  BAM_NORMAL="${BAM_NORMAL:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_N_1.bwa.dedup.bam}"
+  # Only use the default if BAM_NORMAL is unset.
+  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
+  # tumor-only model
+  if [[ "${BAM_NORMAL+set}" != set ]]; then
+    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_N_1.bwa.dedup.bam"
+  fi
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_T_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
@@ -274,7 +279,12 @@ elif [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  BAM_NORMAL="${BAM_NORMAL:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-pacbio-case-study/HCC1395-BL.pacbio.normal.GRCh38.bam}"
+  # Only use the default if BAM_NORMAL is unset.
+  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
+  # tumor-only model
+  if [[ "${BAM_NORMAL+set}" != set ]]; then
+    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-pacbio-case-study/HCC1395-BL.pacbio.normal.GRCh38.bam"
+  fi
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-pacbio-case-study/HCC1395.pacbio.tumor.GRCh38.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
@@ -285,10 +295,17 @@ else
   fi
 fi
 
-# Sanity check: at least check the BAM files.
-if [[ -z "${BAM_NORMAL}" ]] || [[ -z "${BAM_TUMOR}" ]]; then
-  echo "Error: Need to set input BAMs" >&2
+# Sanity check: Tumor BAM is required.
+if [[ -z "${BAM_TUMOR}" ]]; then
+  echo "Error: Need to set --bam_tumor" >&2
   exit 1
+fi
+
+# Print a warning if BAM_NORMAL is unset or empty.
+if [[ "${BAM_NORMAL+set}" != set ]] || [[ -z "${BAM_NORMAL}" ]]; then
+  echo "--bam_normal is not specified. Please make sure you use a model that was trained with corresponding tumor-only mode."
+  # Set BAM_NORMAL to empty string here, in case it's unset.
+  BAM_NORMAL=""
 fi
 
 INPUT_DIR="${BASE}/input/data"
@@ -393,8 +410,11 @@ function copy_data() {
   copy_gs_or_http_file "${TRUTH_BED}" "${INPUT_DIR}"
   copy_gs_or_http_file "${TRUTH_VCF}" "${INPUT_DIR}"
   copy_gs_or_http_file "${TRUTH_VCF}.tbi" "${INPUT_DIR}"
-  copy_gs_or_http_file "${BAM_NORMAL}" "${INPUT_DIR}"
-  copy_correct_index_file "${BAM_NORMAL}" "${INPUT_DIR}"
+  # Only copy the BAM_NORMAL files if BAM_NORMAL file is not empty.
+  if [[ ! -z "${BAM_NORMAL}" ]]; then
+    copy_gs_or_http_file "${BAM_NORMAL}" "${INPUT_DIR}"
+    copy_correct_index_file "${BAM_NORMAL}" "${INPUT_DIR}"
+  fi
   copy_gs_or_http_file "${BAM_TUMOR}" "${INPUT_DIR}"
   copy_correct_index_file "${BAM_TUMOR}" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gz" "${INPUT_DIR}"
@@ -569,6 +589,9 @@ function setup_args() {
 function run_deepsomatic_with_docker() {
   run echo "Run DeepSomatic..."
   run echo "using IMAGE=${IMAGE}"
+  if [[ ! -z "${BAM_NORMAL}" ]]; then
+    extra_args+=( --reads_normal "/input/$(basename "$BAM_NORMAL")" )
+  fi
   # shellcheck disable=SC2027
   # shellcheck disable=SC2046
   # shellcheck disable=SC2068
@@ -582,7 +605,6 @@ function run_deepsomatic_with_docker() {
     run_deepsomatic \
     --model_type="${MODEL_TYPE}" \
     --ref="/input/$(basename $REF).gz" \
-    --reads_normal="/input/$(basename $BAM_NORMAL)" \
     --reads_tumor="/input/$(basename $BAM_TUMOR)" \
     --output_vcf="/output/${OUTPUT_VCF}" \
     --output_gvcf="/output/${OUTPUT_GVCF}" \
