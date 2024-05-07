@@ -136,6 +136,26 @@ bazel build  -c opt \
   ${DV_COPT_FLAGS} \
   :licenses_zip
 
+# Building Tensorflow stream_examples operation. It cannot be built correctly
+# with the default bazel setup, so we build it manually.
+TF_CFLAGS=( $(python3 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
+TF_LFLAGS=( $(python3 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
+
+# shellcheck disable=SC2068
+g++ -std=c++14 -shared \
+        deepvariant/stream_examples_kernel.cc  \
+        deepvariant/stream_examples_ops.cc \
+        -o bazel-bin/deepvariant/examples_from_stream.so \
+        -fPIC \
+        -l:libtensorflow_framework.so.2  \
+        -I/home/koles/deepvariant \
+        ${TF_CFLAGS[@]} \
+        ${TF_LFLAGS[@]} \
+        -D_GLIBCXX_USE_CXX11_ABI=1 \
+        --std=c++17 \
+        -DEIGEN_MAX_ALIGN_BYTES=64 \
+        -O2
+
 # Bazel understandably doesn't like it when its output files are edited, so
 # make sure all the builds are done before we fix things.
 
