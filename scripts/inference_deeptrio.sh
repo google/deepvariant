@@ -674,7 +674,7 @@ function setup_args() {
       run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".data-00000-of-00001 "${INPUT_DIR}/child_model/model.ckpt.data-00000-of-00001"
       run gcloud storage cp "${CUSTOMIZED_MODEL_CHILD}".index "${INPUT_DIR}/child_model/model.ckpt.index"
       CUSTOMIZED_MODEL_CHILD_DIR="$(dirname "${CUSTOMIZED_MODEL_CHILD}")"
-      run "gcloud storage cp ${CUSTOMIZED_MODEL_CHILD_DIR}/example_info.json ${INPUT_DIR}/example_info.json"
+      run "gcloud storage cp ${CUSTOMIZED_MODEL_CHILD_DIR}/example_info.json ${INPUT_DIR}/child_model/example_info.json"
       extra_args+=( --customized_model_child "/input/child_model/model.ckpt")
     fi
   fi
@@ -693,7 +693,7 @@ function setup_args() {
       run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".data-00000-of-00001 "${INPUT_DIR}/parent_model/model.ckpt.data-00000-of-00001"
       run gcloud storage cp "${CUSTOMIZED_MODEL_PARENT}".index "${INPUT_DIR}/parent_model/model.ckpt.index"
       CUSTOMIZED_MODEL_PARENT_DIR="$(dirname "${CUSTOMIZED_MODEL_PARENT}")"
-      run "gcloud storage cp ${CUSTOMIZED_MODEL_PARENT_DIR}/example_info.json ${INPUT_DIR}/example_info.json"
+      run "gcloud storage cp ${CUSTOMIZED_MODEL_PARENT_DIR}/example_info.json ${INPUT_DIR}/parent_model/example_info.json"
       extra_args+=( --customized_model_parent "/input/parent_model/model.ckpt")
     fi
   fi
