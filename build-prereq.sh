@@ -30,7 +30,7 @@ set -euo pipefail
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-echo ========== This script is only maintained for Ubuntu 20.04.
+echo ========== This script is only maintained for Ubuntu 22.04.
 echo ========== Load config settings.
 
 source settings.sh
