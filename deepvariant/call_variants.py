@@ -40,6 +40,8 @@ from absl import logging
 import numpy as np
 import tensorflow as tf
 
+
+dv_stream_dataset = tf.load_op_library("deepvariant/examples_from_stream.so")
 from deepvariant import dv_utils
 from deepvariant import keras_modeling as modeling
 from deepvariant import logging_level
@@ -187,6 +189,17 @@ flags.DEFINE_integer(
 )
 _LIMIT = flags.DEFINE_integer(
     'limit', 0, 'If set to > 0, limit processing to <= limit examples.'
+)
+_NUM_INPUT_SHARDS = flags.DEFINE_integer(
+    'num_input_shards',
+    None,
+    'Number of input shards. This flag is required when examples are'
+    ' streammed.',
+)
+_SHM_PREFIX = flags.DEFINE_string(
+    'shm_prefix',
+    'deepvariant',
+    'Shared memory files prefix.',
 )
 
 
@@ -361,6 +374,51 @@ def _create_cvo_proto(
       debug_info=debug_info,
   )
   return call_variants_output
+
+
+# This calss implements the stream dataset.
+class FromStreamDataset(tf.data.Dataset):
+  """Dataset implementation for streaming examples from shared memory."""
+
+  def __init__(self, shm_prefix, num_shards):
+    resource = dv_stream_dataset.stream_examples_init(shm_prefix, num_shards)
+    self._resource = resource
+    self.num_empty = tf.Variable(0)
+    self.num_examples = tf.Variable(0, dtype=tf.int64)
+    self.num_shards = tf.Variable(num_shards)
+
+    # Generates consecutive numbers.
+    dataset = tf.data.Dataset.counter()
+    # Stream is stopped once all make_examples shards are processed.
+    dataset = dataset.take_while(
+        lambda v: tf.less(self.num_empty, self.num_shards)
+    )
+    # Retrieving examples from the stream.
+    dataset = dataset.map(
+        lambda i: dv_stream_dataset.stream_examples_next(self._resource, i),
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
+    # Filter operation keeps the counter of completed shards.
+    dataset = dataset.filter(self.filter_fn)
+    # Unbatching is needed because examples are streammed in a variable size
+    # batches.
+    dataset = dataset.unbatch()
+
+    self._dataset = dataset
+    super().__init__(self._dataset._variant_tensor)
+
+  def filter_fn(self, x):
+    if tf.equal(tf.shape(x.image)[0], 0):
+      self.num_empty.assign_add(1)
+      return False
+    return True
+
+  def _inputs(self):
+    return []
+
+  @property
+  def element_spec(self):
+    return self._dataset.element_spec
 
 
 # TODO: Consider creating one data loading function to re-use simliar

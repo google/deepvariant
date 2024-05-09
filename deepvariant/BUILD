@@ -811,6 +811,9 @@ py_test(
 py_binary(
     name = "call_variants",
     srcs = ["call_variants.py"],
+    data = [
+       "examples_from_stream.so",
+    ],
     python_version = "PY3",
     deps = [
         "call_variants_lib",

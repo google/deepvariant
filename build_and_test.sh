@@ -40,6 +40,28 @@ if ! bazel; then
   PATH="$HOME/bin:$PATH"
 fi
 
+# Building examples_from_stream.so C++ library. It cannot be built correctly
+# with the default bazel setup, so we build it manually.
+# examples_from_stream.so is used by call_variants target therefore it has to
+# be built before :binaries.
+TF_CFLAGS=( $(python3 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
+TF_LFLAGS=( $(python3 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
+
+# shellcheck disable=SC2068
+g++ -std=c++14 -shared \
+        deepvariant/stream_examples_kernel.cc  \
+        deepvariant/stream_examples_ops.cc \
+        -o deepvariant/examples_from_stream.so \
+        -fPIC \
+        -l:libtensorflow_framework.so.2  \
+        -I/home/koles/deepvariant \
+        ${TF_CFLAGS[@]} \
+        ${TF_LFLAGS[@]} \
+        -D_GLIBCXX_USE_CXX11_ABI=1 \
+        --std=c++17 \
+        -DEIGEN_MAX_ALIGN_BYTES=64 \
+        -O2
+
 # Run all deepvariant tests.  Take bazel options from args, if any.
 # Note: If running with GPU, tests must be executed serially due to a GPU
 # contention issue.
