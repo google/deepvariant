@@ -277,7 +277,6 @@ def train(config: ml_collections.ConfigDict):
         metric.update_state(
             y_pred=probabilities,
             y_true=labels,
-            sample_weight=sample_weight,
         )
       state.train_metrics[-1].update_state(train_loss)
       return train_loss
@@ -307,7 +306,6 @@ def train(config: ml_collections.ConfigDict):
         metric.update_state(
             y_pred=probabilities,
             y_true=labels,
-            sample_weight=sample_weight,
         )
         state.tune_metrics[-1].update_state(tune_loss)
       return tune_loss
