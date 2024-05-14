@@ -157,6 +157,15 @@ _CUSTOMIZED_MODEL = flags.DEFINE_string(
         ' step. If not set, the default for each --model_type will be used'
     ),
 )
+# TODO: Update once we have default trained small models.
+_CUSTOMIZED_SMALL_MODEL = flags.DEFINE_string(
+    'customized_small_model',
+    None,
+    (
+        'Optional. A path to a small model checkpoint to call variants during '
+        'the `make_examples` step. If not set, the small model is not used.'
+    ),
+)
 # Optional flags for make_examples.
 _NUM_SHARDS = flags.DEFINE_integer(
     'num_shards', 1, 'Optional. Number of shards for make_examples step.'
@@ -404,6 +413,12 @@ def make_examples_command(
   elif _MODEL_TYPE.value == 'HYBRID_PACBIO_ILLUMINA':
     special_args['trim_reads_for_pileup'] = True
 
+  if _CUSTOMIZED_SMALL_MODEL.value:
+    special_args['trained_small_model_path'] = _CUSTOMIZED_SMALL_MODEL.value
+    special_args['call_small_model_examples'] = True
+    # Note that the default GQ threshold can be overwritten by extra_args.
+    special_args['small_model_gq_threshold'] = 30
+
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
@@ -444,7 +459,12 @@ def call_variants_command(
 
 
 def postprocess_variants_command(
-    ref: str, infile: str, outfile: str, extra_args: str, **kwargs
+    ref: str,
+    infile: str,
+    outfile: str,
+    small_model_cvo_records: str,
+    extra_args: str,
+    **kwargs,
 ) -> Tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   cpus = _POSTPROCESS_CPUS.value
@@ -455,6 +475,11 @@ def postprocess_variants_command(
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--cpus', '"{}"'.format(cpus)])
+  if _CUSTOMIZED_SMALL_MODEL.value:
+    command.extend(
+        ['--small_model_cvo_records', '"{}"'.format(small_model_cvo_records)]
+    )
+
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
@@ -582,6 +607,12 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
       intermediate_results_dir,
       'make_examples.tfrecord@{}.gz'.format(_NUM_SHARDS.value),
   )
+  small_model_cvo_records = os.path.join(
+      intermediate_results_dir,
+      'make_examples_call_variant_outputs.tfrecord@{}.gz'.format(
+          _NUM_SHARDS.value
+      ),
+  )
 
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
     runtime_directory = os.path.join(
@@ -636,6 +667,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           ref=_REF.value,
           infile=call_variants_output,
           outfile=_OUTPUT_VCF.value,
+          small_model_cvo_records=small_model_cvo_records,
           extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,
