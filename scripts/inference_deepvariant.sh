@@ -610,9 +610,9 @@ function setup_args() {
       happy_args+=( -l "${REGIONS}")
     fi
   fi
-  if [[ "${BUILD_DOCKER}" = true ]] || [[ "${BIN_VERSION}" =~ ^1\.[2-9]\.[0-9]$ ]]; then
-    extra_args+=( --runtime_report )
-  fi
+  # If you're running an older version (before 1.2) that doesn't have this flag,
+  # you'll need to comment out this line.
+  extra_args+=( --runtime_report )
 }
 
 function run_deepvariant_with_docker() {
