@@ -41,7 +41,11 @@ import numpy as np
 import tensorflow as tf
 
 
-dv_stream_dataset = tf.load_op_library("deepvariant/examples_from_stream.so")
+# pylint: disable=C0301
+from bazel_tools.tools.python.runfiles import runfiles
+r = runfiles.Create()
+filename = os.path.join(r.Rlocation('com_google_deepvariant/deepvariant/examples_from_stream.so'))
+dv_stream_dataset = tf.load_op_library(filename)
 from deepvariant import dv_utils
 from deepvariant import keras_modeling as modeling
 from deepvariant import logging_level

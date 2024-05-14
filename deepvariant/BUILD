@@ -888,6 +888,7 @@ py_library(
         ":dv_utils",
         ":keras_modeling",
         ":logging_level",
+        "@bazel_tools//tools/python/runfiles",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tfrecord",
