@@ -42,6 +42,7 @@ Flags:
 --docker_source Where to pull the Docker image from. Default: google/deepvariant.
 --bin_version Version of DeepVariant model to use
 --customized_model Path to checkpoint directory containing model checkpoint.
+--customized_small_model Path to checkpoint directory containing small model checkpoint.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
@@ -84,6 +85,7 @@ BIN_VERSION="1.6.1"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
+CUSTOMIZED_SMALL_MODEL=""
 MAIN_BINARY_NAME="run_deepvariant"
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
@@ -245,6 +247,11 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --customized_small_model)
+      CUSTOMIZED_SMALL_MODEL="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     --help)
       echo "$USAGE" >&2
       exit 1
@@ -369,6 +376,7 @@ echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
 echo "CAPTURE_BED: ${CAPTURE_BED}"
 echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
+echo "CUSTOMIZED_SMALL_MODEL: ${CUSTOMIZED_SMALL_MODEL}"
 echo "MAIN_BINARY_NAME: ${MAIN_BINARY_NAME}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
@@ -571,6 +579,12 @@ function setup_args() {
     fi
   else
     run echo "No custom model specified."
+  fi
+  if [[ -n "${CUSTOMIZED_SMALL_MODEL}" ]]; then
+    echo "Using customized small model"
+    run echo "Copy from gs:// path ${CUSTOMIZED_SMALL_MODEL} to ${INPUT_DIR}/"
+    run "gcloud storage cp ${CUSTOMIZED_SMALL_MODEL} ${INPUT_DIR}/small_model.pkl"
+    extra_args+=( --customized_small_model "/input/small_model.pkl")
   fi
   if [[ -n "${POPULATION_VCFS}" ]]; then
     MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS:+${MAKE_EXAMPLES_ARGS},}population_vcfs=/input/$(basename "$POPULATION_VCFS")"
