@@ -498,7 +498,7 @@ flags.DEFINE_bool(
 flags.DEFINE_string(
     'channels',
     None,
-    '(DEPRECATED) Use `channel_list` flag instaed',
+    '(DEPRECATED) Use `channel_list` flag instead',
 )
 
 flags.DEFINE_string(
@@ -651,6 +651,22 @@ _TRAINED_SMALL_MODEL_PATH = flags.DEFINE_string(
     'trained_small_model_path',
     '',
     'Path to a pickled, pre-trained small model.',
+)
+_STREAM_EXAMPLES = flags.DEFINE_bool(
+    'stream_examples',
+    False,
+    'If True, stream examples to shared memory buffer.',
+)
+_SHM_PREFIX = flags.DEFINE_string(
+    'shm_prefix',
+    '',
+    'shared memory files prefix.',
+)
+
+_SHM_BUFFER_SIZE = flags.DEFINE_integer(
+    'shm_buffer_size',
+    10485760,
+    'shared memory files buffer size.',
 )
 
 
@@ -986,6 +1002,21 @@ def shared_flags_to_options(
     options.customized_classes_labeler_info_field_name = (
         flags_obj.customized_classes_labeler_info_field_name
     )
+    options.stream_examples = _STREAM_EXAMPLES.value
+    options.shm_prefix = _SHM_PREFIX.value
+    options.shm_buffer_size = _SHM_BUFFER_SIZE.value
+    if _STREAM_EXAMPLES.value:
+      if _SHM_BUFFER_SIZE.value < 200000 or _SHM_BUFFER_SIZE.value > 1073741824:
+        errors.log_and_raise(
+            '--shm_buffer_size must be between 200KB and 1GiB.',
+            errors.CommandLineError,
+        )
+      if not _SHM_PREFIX.value:
+        errors.log_and_raise(
+            '--shm_prefix must be set to non empty str'
+            'if --stream_examples is set.',
+            errors.CommandLineError,
+        )
 
   options.discard_non_dna_regions = _DISCARD_NON_DNA_REGIONS.value
 

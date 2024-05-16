@@ -619,7 +619,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 67.
+// Next ID: 70.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -850,6 +850,17 @@ message MakeExamplesOptions {
   int32 small_model_gq_threshold = 65;
   // Path to the pickled small model.
   string trained_small_model_path = 66;
+
+  // Following 3 attribute are for the fast pipeline.
+
+  // Stream examples to shared memory buffer instead of writing them to disk.
+  bool stream_examples = 67;
+
+  // Shared memory objects name prefix.
+  string shm_prefix = 68;
+
+  // Size of the shared memory buffer per each shard.
+  int32 shm_buffer_size = 69;
 }
 
 // Config describe information needed for a dataset that can be used for
