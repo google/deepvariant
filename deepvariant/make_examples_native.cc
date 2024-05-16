@@ -343,7 +343,7 @@ std::string ExamplesGenerator::EncodeExample(
 
   std::vector<unsigned char> data(
       image_shape[0] * image_shape[1] * image_shape[2], 0);
-  FillPileupArray(image, alt_image, alt_aligned_pileup_, &data, 0);
+  FillPileupArray(image, alt_image, alt_aligned_pileup_, &data, data.size());
 
   // Encode alt allele indices.
   absl::flat_hash_set<int> alt_indices_set;
