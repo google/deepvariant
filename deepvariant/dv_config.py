@@ -176,10 +176,34 @@ def get_deepsomatic_wes_config(
 
 
 def get_deepsomatic_pacbio_config(config: ml_collections.ConfigDict):
-  get_pacbio_config(config)
+  """Training parameters."""
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
+
+  config.batch_size = 8192
+  config.best_checkpoint_metric = 'tune/f1_homalt'
+  config.class_weights = '1,1,1'
+  config.num_epochs = 7
+  config.num_validation_examples = 10_000_000
+  config.optimizer = 'adam'
+  config.beta_1 = 0.9651804083266324
+  config.beta_2 = 0.9665259112630292
+  config.adaptive_epsilon = True
+  config.weight_decay = 0.00004
+  config.optimizer_weight_decay = 0.0
+
+  config.early_stopping_patience = 100
+  config.learning_rate = 0.000044603734890673705
+  config.learning_rate_num_epochs_per_decay = 2.66
+  config.learning_rate_decay_rate = 0.901947342606225
+  config.warmup_steps = 7877
+
+  config.backbone_dropout_rate = 0.0
+
+  # Exponential Moving Average
+  config.use_ema = True
+  config.ema_momentum = 0.991463134331829
 
 
 def get_deepsomatic_wgs_tumor_only_config(config: ml_collections.ConfigDict):
