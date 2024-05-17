@@ -40,6 +40,7 @@
 
 #include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/stream_examples.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
@@ -123,11 +124,11 @@ struct VariantLabel {
 struct CustomizedClassesLabel : public VariantLabel {
   CustomizedClassesLabel() = default;
   explicit CustomizedClassesLabel(
-      bool is_confident, const nucleus::genomics::v1::Variant& variant,
+      bool is_confident_p, const nucleus::genomics::v1::Variant& variant_p,
       const nucleus::genomics::v1::Variant& truth_variant,
       const std::unordered_map<std::string, int>& classes_dict,
       const std::string& info_field_name)
-      : VariantLabel(is_confident, variant, {}, false),
+      : VariantLabel(is_confident_p, variant_p, {}, false),
         truth_variant(truth_variant),
         classes_dict(classes_dict),
         info_field_name(info_field_name) {}
@@ -244,6 +245,9 @@ class ExamplesGenerator {
   AltAlignedPileup alt_aligned_pileup_;
 
   std::vector<std::unique_ptr<VariantLabel>> labels_;
+
+  // StreamExamples class handles the output to shared memory buffer.
+  std::unique_ptr<StreamExamples> stream_examples_;
 };
 
 // Helper class to allow unit testing of some private methods.

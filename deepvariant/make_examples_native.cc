@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Google LLC.
+ * Copyright 2024 Google LLC.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,6 +44,7 @@
 #include "deepvariant/alt_aligned_pileup_lib.h"
 #include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/stream_examples.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -69,6 +70,7 @@ using Read = nucleus::genomics::v1::Read;
 
 constexpr int kDefaultMinimumReadOverlap = 15;
 
+// ExamplesGenerator is inialized once per each make_examples instance.
 ExamplesGenerator::ExamplesGenerator(
     const MakeExamplesOptions& options,
     const std::unordered_map<std::string, std::string>& example_filenames,
@@ -115,37 +117,47 @@ ExamplesGenerator::ExamplesGenerator(
   ref_reader_ = std::move(
       nucleus::IndexedFastaReader::FromFile(fasta_path, fai_path).ValueOrDie());
 
-  // Initialize TFRecord writers for each sample.
-  int samples_that_need_writers = 0;
-  for (auto& [role, sample] : samples_) {
-    if (!sample.sample_options.skip_output_generation()) {
-      samples_that_need_writers++;
+
+  if (options_.stream_examples()) {
+    stream_examples_ = std::make_unique<StreamExamples>(options_,
+                                                        alt_aligned_pileup_);
+  } else {
+    // Initialize TFRecord writers for each sample.
+    // TFRecord writers are not used if examples are streamed.
+    int samples_that_need_writers = 0;
+    for (auto& [role, sample] : samples_) {
+      if (!sample.sample_options.skip_output_generation()) {
+        samples_that_need_writers++;
+      }
     }
-  }
-  for (auto& [role, sample] : samples_) {
-    if (sample.sample_options.skip_output_generation()) {
-      continue;
-    }
-    auto it = example_filenames.find(role);
-    if (it == example_filenames.end()) {
-      LOG(INFO) << "Example filename not found for role: " << role;
-      continue;
-    }
-    // TFRecrd examples are always compressed as it is also in call_variants.
-    sample.writer = nucleus::TFRecordWriter::New(it->second, "GZIP");
-    if (sample.writer == nullptr) {
-      LOG(FATAL) << "Failed to create TFRecord writer for " << it->second;
+    for (auto& [role, sample] : samples_) {
+      if (sample.sample_options.skip_output_generation()) {
+        continue;
+      }
+      auto it = example_filenames.find(role);
+      if (it == example_filenames.end()) {
+        LOG(INFO) << "Example filename not found for role: " << role;
+        continue;
+      }
+      // TFRecrd examples are always compressed as it is also in
+      // call_variants.
+      sample.writer = nucleus::TFRecordWriter::New(it->second, "GZIP");
+      if (sample.writer == nullptr) {
+        LOG(FATAL) << "Failed to create TFRecord writer for " << it->second;
+      }
     }
   }
 }
 
 ExamplesGenerator::~ExamplesGenerator() {
-  for (auto& [role, sample] : samples_) {
-    if (sample.sample_options.skip_output_generation()) {
-      continue;
-    }
-    if (sample.writer != nullptr) {
-      sample.writer->Close();
+  if (!options_.stream_examples()) {
+    for (auto& [role, sample] : samples_) {
+      if (sample.sample_options.skip_output_generation()) {
+        continue;
+      }
+      if (sample.writer != nullptr) {
+        sample.writer->Close();
+      }
     }
   }
 }
@@ -285,11 +297,9 @@ void UpdateStats(enum EncodedVariantType variant_type,
   }
 }
 
-std::string EncodeAltAlleles(
-    const Variant& variant,
-    const std::vector<std::string>& alt_combination,
-    absl::flat_hash_set<int>& alt_indices_set
-    ) {
+std::string EncodeAltAlleles(const Variant& variant,
+                             const std::vector<std::string>& alt_combination,
+                             absl::flat_hash_set<int>* alt_indices_set) {
   absl::flat_hash_map<std::string, int> alt_indices;
   int i = 0;
   for (const std::string& alt : variant.alternate_bases()) {
@@ -300,7 +310,9 @@ std::string EncodeAltAlleles(
   indices.reserve(alt_combination.size());
   for (const std::string& alt : alt_combination) {
     indices.push_back(alt_indices[alt]);
-    alt_indices_set.insert(alt_indices[alt]);
+    if (alt_indices_set != nullptr) {
+      alt_indices_set->insert(alt_indices[alt]);
+    }
   }
   CallVariantsOutput::AltAlleleIndices alt_indices_proto;
   for (const auto& idx : indices) {
@@ -348,7 +360,7 @@ std::string ExamplesGenerator::EncodeExample(
   // Encode alt allele indices.
   absl::flat_hash_set<int> alt_indices_set;
   std::string alt_indices_encoded =
-      EncodeAltAlleles(variant, alt_combination, alt_indices_set);
+      EncodeAltAlleles(variant, alt_combination, &alt_indices_set);
 
   // Encode variant range.
   Range variant_range;
@@ -623,9 +635,17 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
         }
       }
     }
-    sample.writer->WriteRecord(EncodeExample(ref_images, alt_images, variant,
-                                             alt_combination, stats,
-                                             image_shape, label));
+    if (options_.stream_examples()) {
+      stream_examples_->StreamExample(
+          ref_images, alt_images, alt_aligned_pileup_,
+          EncodeAltAlleles(variant, alt_combination, nullptr),
+          EncodeVariant(variant, nullptr));
+      UpdateStats(EncodedVariantType(variant), nullptr, 0, stats);
+    } else {
+      sample.writer->WriteRecord(EncodeExample(ref_images, alt_images, variant,
+                                               alt_combination, stats,
+                                               image_shape, label));
+    }
   }
 }
 
@@ -657,6 +677,12 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
   for (const auto& reads : reads_per_sample) {
     readers.push_back(InMemoryReader(InMemoryReader(reads)));
   }
+  // Acquire mutex until all examples are written or no space left in the
+  // buffer.
+  if (options_.stream_examples()) {
+    stream_examples_->StartStreaming();
+  }
+
   for (int i = 0; i < candidates.size(); i++) {
     if (labels_.empty()) {
       CreateAndWriteExamplesForCandidate(*(candidates[i].p_), sample_it->second,
@@ -668,6 +694,12 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
                                          *image_shape, labels_[i]);
     }
   }
+  // Write zero to indicate the end of the examples only if we had any examples
+  // created.
+  if (options_.stream_examples()) {
+    stream_examples_->EndStreaming(!candidates.empty());
+  }
+
   labels_.clear();
   return stats;
 }

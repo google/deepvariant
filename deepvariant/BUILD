@@ -1566,6 +1566,7 @@ cc_library(
     deps = [
         ":alt_aligned_pileup_lib",
         ":pileup_image_native",
+        ":stream_examples",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",
         "//third_party/nucleus/io:tfrecord_writer",
@@ -1654,5 +1655,20 @@ cc_test(
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
+    name = "stream_examples",
+    srcs = ["stream_examples.cc"],
+    hdrs = ["stream_examples.h"],
+    deps = [
+        ":pileup_image_native",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
     ],
 )
