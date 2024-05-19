@@ -663,8 +663,9 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
   CHECK(labels_.empty() || candidates.size() == labels_.size());
   auto sample_it = samples_.find(role);
   CHECK(sample_it != samples_.end()) << "Role " << role << " not found.";
-  CHECK(sample_it->second.writer != nullptr) << "Role " << role
-      << " does not have a writer.";
+  CHECK(sample_it->second.writer != nullptr || options_.stream_examples())
+      << "Role " << role << " does not have a writer.";
+
   // image_shape is the return parameter that is passed to Python. The memory
   // is handled by Pyhon.
   image_shape->resize(3);

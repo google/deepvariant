@@ -1672,3 +1672,17 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_binary(
+    name = "fast_pipeline",
+    srcs = [
+        "fast_pipeline.cc",
+        "fast_pipeline.h",
+    ],
+    deps = [
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/strings",
+    ],
+)
