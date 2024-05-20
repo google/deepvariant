@@ -395,8 +395,10 @@ def make_examples_somatic_command(
     special_args['realign_reads'] = False
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.6
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.6
     special_args['vsc_min_fraction_snps'] = 0.05
-    special_args['vsc_min_fraction_indels'] = 0.08
+    special_args['vsc_min_fraction_indels'] = 0.1
     special_args['trim_reads_for_pileup'] = True
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   else:

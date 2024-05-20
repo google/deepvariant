@@ -295,9 +295,26 @@ elif [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-pacbio-case-study/HCC1395.pacbio.tumor.GRCh38.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
+  MODEL_TYPE="ONT_R104"
+  BASE="${HOME}/deepsomatic-case-studies"
+
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  # Only use the default if BAM_NORMAL is unset.
+  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
+  # tumor-only model
+  # TODO: Update to a path in gs://deepvariant.
+  if [[ "${BAM_NORMAL+set}" != set ]]; then
+    BAM_NORMAL="gs://brain-genomics/nanopore-somatic-nygc/ONT/minimap2_grch38_bams/minimap2_grch38_bams/1395_Normal_ONT.GRCh38.sorted.bam"
+  fi
+
+  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/nanopore-somatic-nygc/ONT/minimap2_grch38_bams/minimap2_grch38_bams/1395_Tumor_ONT.GRCh38.sorted.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+
 else
   if [[ -n "${MODEL_PRESET}" ]]; then
-    echo "Error: --model_preset must be one of WGS or PACBIO." >&2
+    echo "Error: --model_preset must be one of WGS, PACBIO, or ONT_R104." >&2
     exit 1
   fi
 fi
