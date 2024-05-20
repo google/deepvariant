@@ -33,6 +33,7 @@ LABEL maintainer="https://github.com/google/deepvariant/issues"
 
 ARG DV_GPU_BUILD
 ENV DV_GPU_BUILD=${DV_GPU_BUILD}
+ENV DV_BIN_PATH=/opt/deepvariant/bin
 
 # Copying DeepVariant source code
 COPY . /opt/deepvariant
