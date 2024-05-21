@@ -51,6 +51,7 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
@@ -105,11 +106,11 @@ int DeletionSize(const Allele& allele) {
 // AlleleCount. But if one of the alt_alleles is a deletion, we need to
 // use those bases as our reference.  And if there are multiple deletions
 // at a site, we need to use the longest deletion allele.
-std::string CalcRefBases(const std::string& ref_bases,
+std::string CalcRefBases(absl::string_view ref_bases,
                          const std::vector<Allele>& alt_alleles) {
   if (alt_alleles.empty()) {
     // We don't have any alternate alleles, so used the provided ref_bases.
-    return ref_bases;
+    return std::string(ref_bases);
   }
 
   const auto max_elt =
@@ -118,7 +119,7 @@ std::string CalcRefBases(const std::string& ref_bases,
                          return DeletionSize(allele1) < DeletionSize(allele2);
                        });
   if (max_elt->type() != AlleleType::DELETION) {
-    return ref_bases;
+    return std::string(ref_bases);
   } else {
     // Deletion alleles may have an anchor base that is the reference or some
     // other base, but a Variant must have a reference sequence that starts with
@@ -206,7 +207,7 @@ bool IsAllelesTheSame(const Allele& allele1, const Allele& allele2) {
 // IsGoodAltAllele().
 std::vector<Allele> VariantCaller::SelectAltAlleles(
     const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    const std::string& target_sample) const {
+    absl::string_view target_sample) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
   const AlleleCount& target_sample_allele_count =
@@ -336,7 +337,7 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
 }
 
 AlleleMap RemoveInvalidDels(const AlleleMap& allele_map,
-                            const std::string& ref_bases) {
+                            absl::string_view ref_bases) {
   AlleleMap allele_map_mod;
   absl::btree_map<Allele, int, OrderAllele> read_counts;
   int num_of_dels = 0;
