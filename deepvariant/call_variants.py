@@ -50,6 +50,7 @@ from deepvariant import dv_utils
 from deepvariant import keras_modeling as modeling
 from deepvariant import logging_level
 from deepvariant.protos import deepvariant_pb2
+from tensorflow.python.platform import gfile
 from absl import app
 import multiprocessing
 from third_party.nucleus.io import sharded_file_utils
@@ -80,7 +81,7 @@ _DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string(
+_EXAMPLES = flags.DEFINE_string(
     'examples',
     None,
     (
@@ -90,7 +91,7 @@ flags.DEFINE_string(
         ' wildcard characters.'
     ),
 )
-flags.DEFINE_string(
+_OUTFILE = flags.DEFINE_string(
     'outfile',
     None,
     (
@@ -99,7 +100,7 @@ flags.DEFINE_string(
         ' CallVariantsOutput protos.'
     ),
 )
-flags.DEFINE_string(
+_CHECKPOINT = flags.DEFINE_string(
     'checkpoint',
     None,
     (
@@ -107,7 +108,7 @@ flags.DEFINE_string(
         'candidate variant calls.'
     ),
 )
-flags.DEFINE_integer(
+_BATCH_SIZE = flags.DEFINE_integer(
     'batch_size',
     1024,
     (
@@ -116,25 +117,25 @@ flags.DEFINE_integer(
         ' efficient.'
     ),
 )
-flags.DEFINE_integer(
+_MAX_BATCHES = flags.DEFINE_integer(
     'max_batches', None, 'Max. batches to evaluate. Defaults to all.'
 )
-flags.DEFINE_integer(
+_NUM_READERS = flags.DEFINE_integer(
     'num_readers', 8, 'Number of parallel readers to create for examples.'
 )
-flags.DEFINE_boolean(
+_INCLUDE_DEBUG_INFO = flags.DEFINE_boolean(
     'include_debug_info',
     False,
     'If true, include extra debug info in the output, including the original '
     'image_encoded.',
 )
-flags.DEFINE_list(
+_ACTIVATION_LAYERS = flags.DEFINE_list(
     'activation_layers',
     [],
     'A list of activation layer names which we add to the debug info output.'
     ' Needs include_debug_info flag to be True.',
 )
-flags.DEFINE_boolean(
+_DEBUGGING_TRUE_LABEL_MODE = flags.DEFINE_boolean(
     'debugging_true_label_mode',
     False,
     (
@@ -145,7 +146,7 @@ flags.DEFINE_boolean(
         '--include_debug_info is set to true.'
     ),
 )
-flags.DEFINE_string(
+_EXECUTION_HARDWARE = flags.DEFINE_string(
     'execution_hardware',
     'auto',
     (
@@ -158,7 +159,7 @@ flags.DEFINE_string(
         ' TensorFlow.  In tpu mode, use and require TPU.'
     ),
 )
-flags.DEFINE_string(
+_CONFIG_STRING = flags.DEFINE_string(
     'config_string',
     None,
     (
@@ -168,7 +169,7 @@ flags.DEFINE_string(
         ' {per_process_gpu_memory_fraction: 0.5}".'
     ),
 )
-flags.DEFINE_string(
+_KMP_BLOCKTIME = flags.DEFINE_string(
     'kmp_blocktime',
     '0',
     (
@@ -180,7 +181,7 @@ flags.DEFINE_string(
         ' variable.'
     ),
 )
-flags.DEFINE_integer(
+_WRITER_THREADS = flags.DEFINE_integer(
     'writer_threads',
     0,
     (
@@ -204,6 +205,11 @@ _SHM_PREFIX = flags.DEFINE_string(
     'shm_prefix',
     'deepvariant',
     'Shared memory files prefix.',
+)
+_STREAM_EXAMPLES = flags.DEFINE_boolean(
+    'stream_examples',
+    False,
+    'If true, examples are streammed from make_example processes.',
 )
 
 
@@ -554,6 +560,130 @@ def post_processing(
   writer.close()
 
 
+def load_model_and_check_shape(
+    checkpoint_path: str,
+    examples_filename: str,
+    output_file: str,
+    use_saved_model: bool,
+    use_examples_from_stream: bool,
+) -> tuple[Any, Any]:
+  """Ensure that the example shape matches the model shape."""
+
+  example_shape = []
+  example_info_json: str = ''
+  input_example_shape = []
+  if not use_examples_from_stream:
+    first_example = dv_utils.get_one_example_from_examples_path(
+        examples_filename
+    )
+    if first_example is None:
+      logging.warning(
+          'Unable to read any records from %s. Output shards will contain zero'
+          ' records.',
+          examples_filename,
+      )
+      # Write empty shards
+      total_writer_process = 1
+      output_file = output_file.replace(
+          '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
+      )
+      paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
+      for path in paths:
+        tfrecord.write_tfrecords([], path, compression_type='GZIP')
+      return example_shape, None
+
+    example_info_json = dv_utils.get_example_info_json_filename(
+        examples_filename, 0
+    )
+    example_shape, _ = dv_utils.get_shape_and_channels_from_json(
+        example_info_json
+    )
+
+    if example_shape is None:
+      logging.info(
+          (
+              'Unable to read shape information from %s. Directly read from '
+              'examples instead.'
+          ),
+          example_info_json,
+      )
+      example_shape = dv_utils.example_image_shape(first_example)
+  # end of (if use_examples_from_stream)
+
+  if use_saved_model:
+    model = tf.saved_model.load(checkpoint_path)
+    model_example_info_json = f'{checkpoint_path}/example_info.json'
+    model_example_shape = dv_utils.get_shape_and_channels_from_json(
+        model_example_info_json
+    )
+    # This usually happens in multi-sample cases where the sample_name
+    # is added to the prefix, so we remove it.
+    if use_examples_from_stream:
+      example_shape = model_example_shape
+    else:
+      if not tf.io.gfile.exists(example_info_json):
+        # Find the sample name by finding file prefix and then the last bit
+        # would be the sample name.
+        filename_prefix = os.path.basename(example_info_json).split('.')[0]
+        sample_name = filename_prefix.split('_')[-1]
+        expected_filename = example_info_json.replace('_' + sample_name, '')
+        if not tf.io.gfile.exists(expected_filename):
+          raise ValueError(
+              f'File {example_info_json} or {expected_filename} not found.'
+              'Please check make_examples output.'
+          )
+        example_info_json = expected_filename
+
+      input_example_shape = dv_utils.get_shape_and_channels_from_json(
+          example_info_json
+      )
+    # These checks make sure we are using the right model with right input.
+    if not use_examples_from_stream:
+      if model_example_shape[0] != input_example_shape[0]:
+        # The following has been changed from ValueError to Warning because of
+        # internal
+        logging.warning(
+            'Input shape %s and model shape %s does not match.',
+            str(input_example_shape[0]),
+            str(model_example_shape[0]),
+        )
+      if model_example_shape[1] != input_example_shape[1]:
+        # The following has been changed from ValueError to Warning because of
+        # internal
+        logging.warning(
+            'Input channels %s and model channels %s do not match.',
+            str(input_example_shape[1]),
+            str(model_example_shape[1]),
+        )
+  else:
+    model_example_info_json = None
+    # If example_shape could not be inferred from the examples, then we try to
+    # infer it from the model directory. This is the case when examples from
+    # stream is used.
+    if not example_shape:
+      model_dir = os.path.dirname(checkpoint_path)
+      for dirname, subdir, fnames in gfile.Walk(model_dir):
+        if subdir:
+          continue
+        for fname in fnames:
+          if fname.endswith('example_info.json'):
+            model_example_info_json = f'{dirname}/{fname}'
+            break
+      if model_example_info_json:
+        example_shape, _ = dv_utils.get_shape_and_channels_from_json(
+            f'{model_example_info_json}'
+        )
+      else:
+        raise ValueError(
+            'Could not infer example shape from examples or model directory.'
+            'example_info.json was not found in the model directory.'
+        )
+    model = modeling.inceptionv3(
+        example_shape, init_backbone_with_imagenet=False
+    )
+  return example_shape, model
+
+
 def call_variants(
     examples_filename: str,
     checkpoint_path: str,
@@ -566,22 +696,6 @@ def call_variants(
     activation_layers: Sequence[str],
 ):
   """Main driver of call_variants."""
-  first_example = dv_utils.get_one_example_from_examples_path(examples_filename)
-  if first_example is None:
-    logging.warning(
-        'Unable to read any records from %s. Output shards will contain zero'
-        ' records.',
-        examples_filename,
-    )
-    # Write empty shards
-    total_writer_process = 1
-    output_file = output_file.replace(
-        '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
-    )
-    paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
-    for path in paths:
-      tfrecord.write_tfrecords([], path, compression_type='GZIP')
-    return
 
   # See if GPU is available
   is_gpu_available = True if tf.config.list_physical_devices('GPU') else False
@@ -633,173 +747,123 @@ def call_variants(
         3, 'Set KMP_BLOCKTIME to {}'.format(os.environ['KMP_BLOCKTIME'])
     )
 
-  example_info_json = dv_utils.get_example_info_json_filename(
-      examples_filename, 0
-  )
-  example_shape = dv_utils.get_shape_and_channels_from_json(example_info_json)[
-      0
-  ]
-
-  if example_shape is None:
-    logging.info(
-        (
-            'Unable to read shape information from %s. Directly read from '
-            'examples instead.'
-        ),
-        example_info_json,
-    )
-    example_shape = dv_utils.example_image_shape(first_example)
-
-  logging.info('Shape of input examples: %s', str(example_shape))
   use_saved_model = tf.io.gfile.exists(checkpoint_path) and tf.io.gfile.exists(
       f'{checkpoint_path}/saved_model.pb'
   )
   logging.info('Use saved model: %s', str(use_saved_model))
 
-  if checkpoint_path is not None:
-    if use_saved_model:
-      model = tf.saved_model.load(checkpoint_path)
-      model_example_info_json = f'{checkpoint_path}/example_info.json'
-      model_example_shape = dv_utils.get_shape_and_channels_from_json(
-          model_example_info_json
-      )
-      # This usually happens in multi-sample cases where the sample_name
-      # is added to the prefix, so we remove it.
-      if not tf.io.gfile.exists(example_info_json):
-        # Find the sample name by finding file prefix and then the last bit
-        # would be the sample name.
-        filename_prefix = os.path.basename(example_info_json).split('.')[0]
-        sample_name = filename_prefix.split('_')[-1]
-        expected_filename = example_info_json.replace('_' + sample_name, '')
-        if not tf.io.gfile.exists(expected_filename):
-          raise ValueError(
-              f'File {example_info_json} or {expected_filename} not found.'
-              'Please check make_examples output.'
-          )
-        example_info_json = expected_filename
+  if checkpoint_path is None:
+    raise ValueError('Checkpoint filename must be specified.')
 
-      input_example_shape = dv_utils.get_shape_and_channels_from_json(
-          example_info_json
-      )
-      # These checks make sure we are using the right model with right input.
-      if model_example_shape[0] != input_example_shape[0]:
-        # The following has been changed from ValueError to Warning because of
-        # internal
-        logging.warning(
-            'Input shape %s and model shape %s does not match.',
-            str(input_example_shape[0]),
-            str(model_example_shape[0]),
-        )
-      if model_example_shape[1] != input_example_shape[1]:
-        # The following has been changed from ValueError to Warning because of
-        # internal
-        logging.warning(
-            'Input channels %s and model channels %s do not match.',
-            str(input_example_shape[1]),
-            str(model_example_shape[1]),
-        )
-    else:
-      model = modeling.inceptionv3(
-          example_shape, init_backbone_with_imagenet=False
-      )
-      model.load_weights(checkpoint_path).expect_partial()
+  example_shape, model = load_model_and_check_shape(
+      checkpoint_path,
+      examples_filename,
+      output_file,
+      use_saved_model,
+      _STREAM_EXAMPLES.value,
+  )
 
-    enc_image_variant_alt_allele_ds = get_dataset(
-        examples_filename,
-        example_shape,
-        batch_size,
-        include_debug_info,
-        debugging_true_label_mode,
+  if not example_shape:
+    raise ValueError(
+        'Could not infer example shape from examples or model directory.'
     )
 
-    activation_model = model
+  enc_image_variant_alt_allele_ds = get_dataset(
+      examples_filename,
+      example_shape,
+      batch_size,
+      include_debug_info,
+      debugging_true_label_mode,
+  )
+
+  activation_model = model
+  if include_debug_info and activation_layers:
+    if not use_saved_model:
+      activation_model = modeling.get_activations_model(
+          model, activation_layers
+      )
+
+  batch_no = 0
+  n_examples = 0
+  n_batches = 0
+  start_time = time.time()
+  for (
+      image_encodes,
+      images_in_batch,
+      variants,
+      alt_allele_indices_list,
+      optional_label_list,
+  ) in enc_image_variant_alt_allele_ds:
+    # These elements per iteration are read from the `get_dataset` function,
+    # specifically the `_parse_example` function within it.
+    if use_saved_model:
+      predictions = model.signatures['serving_default'](images_in_batch)
+      predictions = predictions['classification'].numpy()
+    else:
+      if not is_gpu_available:
+        # This is faster on CPU but slower on GPU.
+        predictions = model.predict_on_batch(images_in_batch)
+      else:
+        # This is faster on GPU but slower on CPU.
+        predictions = model(images_in_batch, training=False).numpy()
+
+    layer_outputs = {}
     if include_debug_info and activation_layers:
       if not use_saved_model:
-        activation_model = modeling.get_activations_model(
-            model, activation_layers
+        if not is_gpu_available:
+          # This is faster on CPU but slower on GPU.
+          layer_outputs = activation_model.predict_on_batch(images_in_batch)
+        else:
+          # This is faster on GPU but slower on CPU.
+          layer_outputs = activation_model(images_in_batch, training=False)
+          layer_outputs = {
+              layer_name: output.numpy()
+              for layer_name, output in layer_outputs.items()
+          }
+      else:
+        logging.warning(
+            'Activation layers: %s are not saved in CVO. Change to ckpt'
+            'model file to get activation layers outputs.',
+            ','.join(activation_layers),
         )
 
-    batch_no = 0
-    n_examples = 0
-    n_batches = 0
-    start_time = time.time()
-    for (
+    pileup_curation_in_batch = None
+    if include_debug_info:
+      pileup_curation_in_batch = [
+          vis.curate_pileup(
+              vis.split_3d_array_into_channels(
+                  dv_utils.unpreprocess_images(image.numpy())
+              )
+          )
+          for image in images_in_batch
+      ]
+    batch_no += 1
+    duration = time.time() - start_time
+    n_examples += len(predictions)
+    n_batches += 1
+    logging.log_every_n(
+        logging.INFO,
+        'Predicted %s examples in %s batches [%.3f sec per 100].',
+        _LOG_EVERY_N_BATCHES,
+        n_examples,
+        n_batches,
+        (100 * duration) / n_examples,
+    )
+    output_queue.put((
+        predictions,
         image_encodes,
-        images_in_batch,
         variants,
         alt_allele_indices_list,
         optional_label_list,
-    ) in enc_image_variant_alt_allele_ds:
-      # These elements per iteration are read from the `get_dataset` function,
-      # specifically the `_parse_example` function within it.
-      if use_saved_model:
-        predictions = model.signatures['serving_default'](images_in_batch)
-        predictions = predictions['classification'].numpy()
-      else:
-        if not is_gpu_available:
-          # This is faster on CPU but slower on GPU.
-          predictions = model.predict_on_batch(images_in_batch)
-        else:
-          # This is faster on GPU but slower on CPU.
-          predictions = model(images_in_batch, training=False).numpy()
+        layer_outputs,
+        pileup_curation_in_batch,
+    ))
 
-      layer_outputs = {}
-      if include_debug_info and activation_layers:
-        if not use_saved_model:
-          if not is_gpu_available:
-            # This is faster on CPU but slower on GPU.
-            layer_outputs = activation_model.predict_on_batch(images_in_batch)
-          else:
-            # This is faster on GPU but slower on CPU.
-            layer_outputs = activation_model(images_in_batch, training=False)
-            layer_outputs = {
-                layer_name: output.numpy()
-                for layer_name, output in layer_outputs.items()
-            }
-        else:
-          logging.warning(
-              'Activation layers: %s are not saved in CVO. Change to ckpt'
-              'model file to get activation layers outputs.',
-              ','.join(activation_layers),
-          )
-
-      pileup_curation_in_batch = None
-      if include_debug_info:
-        pileup_curation_in_batch = [
-            vis.curate_pileup(
-                vis.split_3d_array_into_channels(
-                    dv_utils.unpreprocess_images(image.numpy())
-                )
-            )
-            for image in images_in_batch
-        ]
-      batch_no += 1
-      duration = time.time() - start_time
-      n_examples += len(predictions)
-      n_batches += 1
-      logging.log_every_n(
-          logging.INFO,
-          'Predicted %s examples in %s batches [%.3f sec per 100].',
-          _LOG_EVERY_N_BATCHES,
-          n_examples,
-          n_batches,
-          (100 * duration) / n_examples,
-      )
-      output_queue.put((
-          predictions,
-          image_encodes,
-          variants,
-          alt_allele_indices_list,
-          optional_label_list,
-          layer_outputs,
-          pileup_curation_in_batch,
-      ))
-
-    # Put none values in the queue so the running processes can terminate.
-    for _ in range(0, total_writer_process):
-      output_queue.put(None)
-    for post_processing_process in all_processes:
-      post_processing_process.join()
+  # Put none values in the queue so the running processes can terminate.
+  for _ in range(0, total_writer_process):
+    output_queue.put(None)
+  for post_processing_process in all_processes:
+    post_processing_process.join()
 
 
 def main(argv=()):
@@ -816,31 +880,38 @@ def main(argv=()):
     del argv  # Unused.
     proto_utils.uses_fast_cpp_protos_or_die()
 
+    if not _CHECKPOINT.value:
+      raise ValueError('Checkpoint filename must be specified.')
+
     logging_level.set_from_flag()
     # Make sure output filename is consistent and can be used for multi-writing.
+    outfile = _OUTFILE.value
+    if not outfile:
+      raise ValueError('Output filename must be specified.')
+
     if not sharded_file_utils.is_sharded_filename(
-        FLAGS.outfile
-    ) and not FLAGS.outfile.endswith('.tfrecord.gz'):
+        outfile
+    ) and not outfile.endswith('.tfrecord.gz'):
       raise ValueError('Output filename must end with .tfrecord.gz')
 
-    if FLAGS.activation_layers:
-      if not FLAGS.include_debug_info:
+    if _ACTIVATION_LAYERS.value:
+      if not _INCLUDE_DEBUG_INFO.value:
         logging.warning(
             '"--include_debug_info" need to be set True to have the input'
             ' activation_layers: %s included in CVO.',
-            ','.join(FLAGS.activation_layers),
+            ','.join(_ACTIVATION_LAYERS.value),
         )
 
     call_variants(
-        examples_filename=FLAGS.examples,
-        checkpoint_path=FLAGS.checkpoint,
-        output_file=FLAGS.outfile,
-        writer_threads=FLAGS.writer_threads,
-        kmp_blocktime=FLAGS.kmp_blocktime,
-        batch_size=FLAGS.batch_size,
-        include_debug_info=FLAGS.include_debug_info,
-        debugging_true_label_mode=FLAGS.debugging_true_label_mode,
-        activation_layers=FLAGS.activation_layers,
+        examples_filename=_EXAMPLES.value,
+        checkpoint_path=_CHECKPOINT.value,
+        output_file=_OUTFILE.value,
+        writer_threads=_WRITER_THREADS.value,
+        kmp_blocktime=_KMP_BLOCKTIME.value,
+        batch_size=_BATCH_SIZE.value,
+        include_debug_info=_INCLUDE_DEBUG_INFO.value,
+        debugging_true_label_mode=_DEBUGGING_TRUE_LABEL_MODE.value,
+        activation_layers=_ACTIVATION_LAYERS.value,
     )
     logging.info('Complete: call_variants.')
 
