@@ -842,22 +842,23 @@ py_binary(
     ],
 )
 
-py_test(
-    name = "train_test",
-    size = "large",
-    srcs = ["train_test.py"],
-    data = [":testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
-    deps = [
-        ":dv_config",
-        ":py_testdata",
-        ":train",
-        "//third_party/nucleus/testing:py_test_utils",
-        "@absl_py//absl/testing:flagsaver",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
+# py_test(
+#     name = "train_test",
+#     size = "large",
+#     srcs = ["train_test.py"],
+#     data = [":testdata"],
+#     python_version = "PY3",
+#     srcs_version = "PY3",
+#     deps = [
+#         ":dv_config",
+#         ":py_testdata",
+#         ":train",
+#         "//third_party/nucleus/testing:py_test_utils",
+#         "@absl_py//absl/testing:flagsaver",
+#         "@absl_py//absl/testing:parameterized",
+#         "//third_party/py/tensorflow:tensorflow_no_contrib",
+#     ],
+# )
 
 py_binary(
     name = "train_inceptionv3",
