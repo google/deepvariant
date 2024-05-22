@@ -76,7 +76,6 @@ from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
-from third_party.nucleus.util import cigar
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import utils
@@ -594,7 +593,6 @@ def build_calling_regions(
     contigs: Sequence[reference_pb2.ContigInfo],
     regions_to_include: Sequence[str],
     regions_to_exclude: Sequence[str],
-    # TODO: Use X | None instead.
     ref_n_regions: Optional[Sequence[range_pb2.Range]],
 ) -> ranges.RangeSet:
   """Builds a RangeSet containing the regions we should call variants in.
@@ -2414,148 +2412,6 @@ class RegionProcessor:
         'alt_alignments': alignments_by_haplotype,
         'alt_sequences': sequences_by_haplotype,
     }
-
-  def create_pileup_examples(
-      self,
-      dv_call: deepvariant_pb2.DeepVariantCall,
-      sample_order: Optional[List[int]] = None,
-  ) -> List[example_pb2.Example]:
-    """Creates a tf.Example for DeepVariantCall.
-
-    This function calls PileupImageCreator.create_pileup_images on dv_call to
-    get raw image tensors for each alt_allele option (see docs for details).
-    These tensors are encoded as pngs, and all of the key information is encoded
-    as a tf.Example via a call to dv_utils_using_clif.make_example.
-
-    Args:
-      dv_call: A DeepVariantCall.
-      sample_order: A list of indices representing the order in which samples
-        should be represented in the pileup image. Example: [1,0,2] to swap the
-        first and second samples. This is None by default which puts the samples
-        in order.
-
-    Returns:
-      A list of tf.Example protos.
-    """
-    # Create a range spanning the whole example window
-    # This range will be used for trimming haplotypes
-    # and keeping only the haplotypes spanning the window
-    # completely
-    if (
-        isinstance(dv_call.variant.start, int)
-        and isinstance(dv_call.variant.reference_name, str)
-        and dv_call.variant.reference_name in self.contig_dict
-    ):
-      padding_fraction = int((self.options.pic_options.width - 1) / 2)
-      dv_region_literal = (
-          f'{dv_call.variant.reference_name}:{dv_call.variant.start}'
-      )
-      dv_region = ranges.parse_literal(
-          dv_region_literal, contig_map=self.contig_dict
-      )
-      example_window = ranges.expand(
-          dv_region, padding_fraction, self.contig_dict
-      )
-    else:
-      example_window = None
-    # The main motivation to add the following code block for trimming
-    # reads (or haplotypes) is because of the preprocessing that was done on the
-    # input pangenome bam file. The preprocessing made fragmented alignments for
-    # speeding up the image generation process but the fragmented
-    # alignments of the same original alignment might have overlaps
-    # so in order to keep only one instance of each haplotype in each image
-    # and remove redundancy the following trimming is necessary.
-    # With GBZ integration we might remove the following code block in
-    # the future.
-    # This trimming is disabled by default and it's only enabled
-    # with --keep_only_window_spanning_reads so it shouldn't interfere
-    # with the current test modules.
-    reads_for_samples = []
-    # More information here internal#comment5
-    for sample in self.samples:
-      reads = self.pic.get_reads(
-          dv_call.variant, sam_reader=sample.in_memory_sam_reader
-      )
-      if (
-          sample.options.keep_only_window_spanning_reads
-          and example_window is not None
-      ):
-        trimmed_reads = [
-            realigner.trim_read(read, example_window) for read in reads
-        ]
-        reads = [
-            read
-            for read in trimmed_reads
-            if cigar.alignment_length(read.alignment.cigar)
-            >= self.options.pic_options.width
-        ]
-      reads_for_samples.append(reads)
-
-    logging.vlog(
-        3,
-        'create_pileup_examples for variant: {}:{}_{}'.format(
-            dv_call.variant.reference_name,
-            dv_call.variant.start,
-            dv_call.variant.reference_bases,
-        ),
-    )
-
-    # Decide whether each candidate needs ALT-alignment.
-    alt_align_this_variant = False
-    if self.options.pic_options.alt_aligned_pileup != 'none':
-      if self.options.pic_options.types_to_alt_align == 'indels':
-        alt_align_this_variant = variant_utils.is_indel(dv_call.variant)
-      else:  # types_to_alt_align can only be 'all' or 'indels'.
-        alt_align_this_variant = True
-
-    haplotype_alignments_for_samples = None
-    haplotype_sequences = None
-    if alt_align_this_variant:
-      # Align the reads against each alternate allele, saving the sequences of
-      # those alleles along with the alignments for pileup images.
-      alt_info_for_samples = [
-          self.align_to_all_haplotypes(dv_call.variant, reads)
-          for reads in reads_for_samples
-      ]
-      # Each sample has different reads and thus different alt-alignments.
-      haplotype_alignments_for_samples = [
-          sample['alt_alignments'] for sample in alt_info_for_samples
-      ]
-      # All samples share the same alt sequences, so select the first one.
-      haplotype_sequences = alt_info_for_samples[0]['alt_sequences']
-
-
-    pileup_images = self.pic.create_pileup_images(
-        dv_call=dv_call,
-        reads_for_samples=reads_for_samples,
-        sample_order=sample_order,
-        haplotype_alignments_for_samples=haplotype_alignments_for_samples,
-        haplotype_sequences=haplotype_sequences,
-    )
-
-    if pileup_images is None:
-      # We cannot build a PileupImage for dv_call, issue a warning.
-      logging.warning(
-          'Could not create PileupImage for candidate at %s:%s',
-          dv_call.variant.reference_name,
-          dv_call.variant.start,
-      )
-      return []
-
-    examples = []
-    for alt_alleles, image_tensor in pileup_images:
-      encoded_tensor, shape = self._encode_tensor(image_tensor)
-      examples.append(
-          dv_utils_using_clif.make_example(
-              dv_call.variant,
-              alt_alleles,
-              encoded_tensor,
-              shape=shape,
-              sequencing_type=self.options.pic_options.sequencing_type,
-              deterministic=self.options.deterministic_serialization,
-          )
-      )
-    return examples
 
   def get_channels(self) -> List[int]:
     # All the example would have the same list of channels based on `self.pic`.

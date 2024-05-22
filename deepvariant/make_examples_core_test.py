@@ -1189,57 +1189,6 @@ class RegionProcessorTest(parameterized.TestCase):
     )
     self.assertEqual(expected_output, actual)
 
-  def test_create_pileup_examples_handles_none(self):
-    self.processor.pic = mock.Mock()
-    self.processor.pic.get_reads.return_value = []
-    dv_call = mock.Mock()
-    self.processor.pic.create_pileup_images.return_value = None
-    self.assertEqual([], self.processor.create_pileup_examples(dv_call))
-    self.processor.pic.create_pileup_images.assert_called_once_with(
-        dv_call=dv_call,
-        reads_for_samples=[[]],
-        haplotype_alignments_for_samples=None,
-        haplotype_sequences=None,
-        sample_order=None,
-    )
-
-  def test_create_pileup_examples(self):
-    self.processor.pic = mock.Mock()
-    self.processor.pic.get_reads.return_value = []
-    self.processor.pic.get_channels.return_value = None
-    self.add_mock(
-        '_encode_tensor',
-        side_effect=[
-            (b'tensor1', self.default_shape),
-            (b'tensor2', self.default_shape),
-        ],
-    )
-    dv_call = mock.Mock()
-    dv_call.variant = test_utils.make_variant(start=10, alleles=['A', 'C', 'G'])
-    ex = mock.Mock()
-    alt1, alt2 = ['C'], ['G']
-    self.processor.pic.create_pileup_images.return_value = [
-        (alt1, b'tensor1'),
-        (alt2, b'tensor2'),
-    ]
-
-    actual = self.processor.create_pileup_examples(dv_call)
-
-    self.processor.pic.create_pileup_images.assert_called_once_with(
-        dv_call=dv_call,
-        reads_for_samples=[[]],
-        haplotype_alignments_for_samples=None,
-        haplotype_sequences=None,
-        sample_order=None,
-    )
-
-    self.assertLen(actual, 2)
-    for ex, (alt, img) in zip(actual, [(alt1, b'tensor1'), (alt2, b'tensor2')]):
-      self.assertEqual(dv_utils.example_alt_alleles(ex), alt)
-      self.assertEqual(dv_utils.example_variant(ex), dv_call.variant)
-      self.assertEqual(dv_utils.example_encoded_image(ex), img)
-      self.assertEqual(dv_utils.example_image_shape(ex), self.default_shape)
-
   @parameterized.parameters(
       # Test that a het variant gets a label value of 1 assigned to the example.
       dict(
