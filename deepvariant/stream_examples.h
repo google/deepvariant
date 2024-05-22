@@ -57,6 +57,7 @@ class StreamExamples {
 
   void StartStreaming();
   void EndStreaming(bool data_written);
+  void SignalShardFinished();
 
   // Helper methods to write bytes to shared memory.
   void WriteBytesToShm(const void* bytes, int len);

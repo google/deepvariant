@@ -3199,6 +3199,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
           fout,
       )
 
+  region_processor.make_examples_native.signal_shard_finished()
   logging_with_options(
       options, 'Found %s candidate variants' % n_stats['n_candidates']
   )

@@ -63,3 +63,5 @@ from "deepvariant/make_examples_native.h":
         role: str) -> (n_stats: dict<str, int>, image_shape: list<int>)
 
       def `AppendLabel` as append_label(self, label: VariantLabel)
+
+      def `SignalShardFinished` as signal_shard_finished(self)

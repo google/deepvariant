@@ -173,6 +173,14 @@ class ExamplesGenerator {
     labels_.push_back(std::move(label));
   }
 
+  void SignalShardFinished() {
+    LOG(INFO) << "Received shard finished.";
+    // This ensures that the last examples are consumed by the recipient.
+    if (stream_examples_) {
+      stream_examples_->SignalShardFinished();
+    }
+  }
+
  private:
   friend class ExamplesGeneratorPeer;
 

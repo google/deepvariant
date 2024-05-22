@@ -167,6 +167,11 @@ void StreamExamples::EndStreaming(bool data_written) {
   }
 }
 
+void StreamExamples::SignalShardFinished() {
+    buffer_empty_->lock();
+    shard_finished_->unlock();
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
