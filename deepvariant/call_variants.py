@@ -439,6 +439,9 @@ def get_dataset(
     batch_size,
     include_debug_info,
     debugging_true_label_mode,
+    use_data_from_stream=False,
+    shm_prefix=None,
+    num_shards=None,
 ):
   """Parse TFRecords, do image preprocessing, and return the image dataset for inference and the variant/alt-allele dataset for writing the variant calls."""
 
@@ -469,34 +472,56 @@ def get_dataset(
       optional_label = parsed_features['label']
     return image_encoded, image, variant, alt_allele_indices, optional_label
 
-  ds = tf.data.TFRecordDataset.list_files(
-      sharded_file_utils.normalize_to_sharded_file_pattern(path), shuffle=False
-  )
+  def _parse_example_from_stream(blob):
+    """Parses a data from shared memory buffer."""
+    image = tf.io.decode_raw(blob.image, tf.uint8)
+    image = tf.reshape(image, example_shape)
+    image = dv_utils.preprocess_images(image)
+    variant = blob.variant
+    alt_allele_indices = blob.alt_allele_idx
+    return b'', image, variant, alt_allele_indices, None
 
-  def load_dataset(filename):
-    dataset = tf.data.TFRecordDataset(
-        filename,
-        buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
-        compression_type='GZIP',
+  # Dataset from stream.
+  if use_data_from_stream:
+    ds = FromStreamDataset(shm_prefix, num_shards)
+    enc_image_variant_alt_allele_ds = ds.map(
+        map_func=_parse_example_from_stream, num_parallel_calls=tf.data.AUTOTUNE
     )
-    return dataset
+    enc_image_variant_alt_allele_ds = enc_image_variant_alt_allele_ds.batch(
+        batch_size=batch_size
+    ).prefetch(tf.data.AUTOTUNE)
+    return enc_image_variant_alt_allele_ds
+  # Dataset from TFRecord files.
+  else:
+    ds = tf.data.TFRecordDataset.list_files(
+        sharded_file_utils.normalize_to_sharded_file_pattern(path),
+        shuffle=False,
+    )
 
-  ds = ds.interleave(
-      load_dataset,
-      cycle_length=_DEFAULT_INPUT_READ_THREADS,
-      num_parallel_calls=tf.data.AUTOTUNE,
-  )
-  if _LIMIT.value > 0:
-    ds = ds.take(_LIMIT.value)
+    def load_dataset(filename):
+      dataset = tf.data.TFRecordDataset(
+          filename,
+          buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
+          compression_type='GZIP',
+      )
+      return dataset
 
-  enc_image_variant_alt_allele_ds = ds.map(
-      map_func=_parse_example, num_parallel_calls=tf.data.AUTOTUNE
-  )
+    ds = ds.interleave(
+        load_dataset,
+        cycle_length=_DEFAULT_INPUT_READ_THREADS,
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
+    if _LIMIT.value > 0:
+      ds = ds.take(_LIMIT.value)
 
-  enc_image_variant_alt_allele_ds = enc_image_variant_alt_allele_ds.batch(
-      batch_size=batch_size
-  ).prefetch(tf.data.AUTOTUNE)
-  return enc_image_variant_alt_allele_ds
+    enc_image_variant_alt_allele_ds = ds.map(
+        map_func=_parse_example, num_parallel_calls=tf.data.AUTOTUNE
+    )
+
+    enc_image_variant_alt_allele_ds = enc_image_variant_alt_allele_ds.batch(
+        batch_size=batch_size
+    ).prefetch(tf.data.AUTOTUNE)
+    return enc_image_variant_alt_allele_ds
 
 
 def post_processing(
@@ -613,7 +638,7 @@ def load_model_and_check_shape(
   if use_saved_model:
     model = tf.saved_model.load(checkpoint_path)
     model_example_info_json = f'{checkpoint_path}/example_info.json'
-    model_example_shape = dv_utils.get_shape_and_channels_from_json(
+    model_example_shape, _ = dv_utils.get_shape_and_channels_from_json(
         model_example_info_json
     )
     # This usually happens in multi-sample cases where the sample_name
@@ -634,7 +659,7 @@ def load_model_and_check_shape(
           )
         example_info_json = expected_filename
 
-      input_example_shape = dv_utils.get_shape_and_channels_from_json(
+      input_example_shape, _ = dv_utils.get_shape_and_channels_from_json(
           example_info_json
       )
     # These checks make sure we are using the right model with right input.
@@ -694,6 +719,9 @@ def call_variants(
     include_debug_info: bool,
     debugging_true_label_mode: bool,
     activation_layers: Sequence[str],
+    use_dataset_from_stream: bool,
+    shm_prefix: str,
+    num_shards: int,
 ):
   """Main driver of call_variants."""
 
@@ -768,12 +796,16 @@ def call_variants(
         'Could not infer example shape from examples or model directory.'
     )
 
+  logging.info('example_shape: %s', example_shape)
   enc_image_variant_alt_allele_ds = get_dataset(
       examples_filename,
       example_shape,
       batch_size,
       include_debug_info,
       debugging_true_label_mode,
+      use_dataset_from_stream,
+      shm_prefix,
+      num_shards,
   )
 
   activation_model = model
@@ -912,13 +944,15 @@ def main(argv=()):
         include_debug_info=_INCLUDE_DEBUG_INFO.value,
         debugging_true_label_mode=_DEBUGGING_TRUE_LABEL_MODE.value,
         activation_layers=_ACTIVATION_LAYERS.value,
+        use_dataset_from_stream=_STREAM_EXAMPLES.value,
+        shm_prefix=_SHM_PREFIX.value,
+        num_shards=_NUM_INPUT_SHARDS.value,
     )
     logging.info('Complete: call_variants.')
 
 
 if __name__ == '__main__':
   flags.mark_flags_as_required([
-      'examples',
       'outfile',
       'checkpoint',
   ])

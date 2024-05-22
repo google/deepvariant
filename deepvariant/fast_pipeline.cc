@@ -173,6 +173,7 @@ void FastPipeline::SpawnCallVariants() {
   call_variants_bin /= "call_variants";
   LOG(INFO) << "call_variants_bin: " << call_variants_bin;
   call_variants_flags_.push_back(absl::StrCat("--shm_prefix=", shm_prefix_));
+  call_variants_flags_.push_back("--stream_examples");
   call_variants_flags_.push_back(
       absl::StrCat("--num_input_shards=", num_shards_));
   LOG(INFO) << "Spawning call_variants process";

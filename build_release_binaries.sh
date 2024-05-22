@@ -56,7 +56,7 @@ function fix_zip_file {
   unzip -qq "${BN}.zip"
 
   # Step 3: Restore the symbolic links.
-  find "runfiles/com_google_deepvariant" -name '*.so' -exec ln --force -s --relative "runfiles/com_google_protobuf/python/google/protobuf/pyext/_message.so" {} \;
+  find "runfiles/com_google_deepvariant" -name '*.so' ! -name 'examples_from_stream.so' -exec ln --force -s --relative "runfiles/com_google_protobuf/python/google/protobuf/pyext/_message.so" {} \;
 
   # Step 4: Fix the __main__.py's use of zipfile, which can't handle
   # symbolic links.  Replace it with an invocation of unzip, which can.
