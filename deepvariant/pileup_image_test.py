@@ -47,7 +47,6 @@ from third_party.nucleus.io import fasta
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
-from third_party.nucleus.util import ranges
 
 
 MAX_PIXEL_FLOAT = 254.0
@@ -875,12 +874,6 @@ class PileupImageCreatorTest(parameterized.TestCase):
     ]
 
     self.pic = self._make_pic()
-    self.reads_for_samples = [
-        self.pic.get_reads(
-            self.dv_call.variant, sam_reader=sample.in_memory_sam_reader
-        )
-        for sample in self.samples
-    ]
 
   def _make_pic(self, **kwargs):
     return pileup_image.PileupImageCreator(
@@ -889,46 +882,6 @@ class PileupImageCreatorTest(parameterized.TestCase):
         samples=self.samples,
         **kwargs,
     )
-
-  @parameterized.parameters(
-      ('A', ['C'], [['C']]),
-      ('A', ['C', 'G'], [['C'], ['G'], ['C', 'G']]),
-  )
-  def test_alt_combinations(self, ref, alts, expected):
-    variant = variants_pb2.Variant(reference_bases=ref, alternate_bases=alts)
-    self.assertEqual(expected, list(self.pic._alt_allele_combinations(variant)))
-
-  @parameterized.parameters(
-      ('A', ['C'], [['C']]),
-      ('A', ['C', 'G'], [['C'], ['G']]),
-  )
-  def test_alt_combinations_no_het_alt(self, ref, alts, expected):
-    options = pileup_image.default_options()
-    options.multi_allelic_mode = (
-        deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES
-    )
-    pic = pileup_image.PileupImageCreator(
-        options=options, ref_reader=self.mock_ref_reader, samples=self.samples
-    )
-    variant = variants_pb2.Variant(reference_bases=ref, alternate_bases=alts)
-    self.assertEqual(expected, list(pic._alt_allele_combinations(variant)))
-
-  def test_get_reference_bases_good_region(self):
-    self.dv_call.variant.start = 10
-    region = ranges.make_range(self.variant.reference_name, 8, 13)
-
-    actual = self.pic.get_reference_bases(self.variant)
-    self.assertEqual('ACGT', actual)
-    self.mock_ref_reader.is_valid.assert_called_once_with(region)
-    self.mock_ref_reader.query.assert_called_once_with(region)
-
-  def test_get_reference_bases_bad_region_returns_none(self):
-    self.mock_ref_reader.is_valid.return_value = False
-    self.dv_call.variant.start = 3
-
-    self.assertIsNone(self.pic.get_reference_bases(self.variant))
-    test_utils.assert_called_once_workaround(self.mock_ref_reader.is_valid)
-    self.mock_ref_reader.query.assert_not_called()
 
   @parameterized.parameters(
       ((100, 221, 6), 'rows', (300, 221, 6)),

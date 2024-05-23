@@ -28,8 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Encodes reference and read data into a PileupImage for DeepVariant."""
 
-import itertools
-from typing import Iterable, List, Optional
+from typing import List
 
 
 
@@ -40,10 +39,7 @@ from deepvariant import sample as sample_lib
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
 from third_party.nucleus.io import fasta
-from third_party.nucleus.io import sam
 from third_party.nucleus.protos import reads_pb2
-from third_party.nucleus.protos import variants_pb2
-from third_party.nucleus.util import ranges
 
 
 def default_options(read_requirements=None):
@@ -85,10 +81,6 @@ def default_options(read_requirements=None):
       min_non_zero_allele_frequency=0.00001,
       use_allele_frequency=False,
   )
-
-
-def _compute_half_width(width):
-  return int((width - 1) / 2)
 
 
 def _represent_alt_aligned_pileups(representation, ref_image, alt_images):
@@ -240,92 +232,5 @@ class PileupImageCreator(object):
     """Gets attributes from self._options as though they are our attributes."""
     return self._options.__getattribute__(attr)
 
-  @property
-  def half_width(self):
-    return _compute_half_width(self._options.width)
-
   def get_channels(self):
     return self._channels_enum
-
-  def get_reads(
-      self, variant: variants_pb2.Variant, sam_reader: sam.InMemorySamReader
-  ) -> List[reads_pb2.Read]:
-    """Gets the reads used to construct the pileup image around variant.
-
-    Args:
-      variant: A third_party.nucleus.protos.Variant proto describing the variant
-        we are creating the pileup image of.
-      sam_reader: Nucleus sam_reader from which to query.
-
-    Returns:
-      A list of third_party.nucleus.protos.Read protos.
-    """
-    query_start = variant.start - self._options.read_overlap_buffer_bp
-    query_end = variant.end + self._options.read_overlap_buffer_bp
-    region = ranges.make_range(variant.reference_name, query_start, query_end)
-    return list(sam_reader.query(region))
-
-  def get_reference_bases(self, variant: variants_pb2.Variant) -> Optional[str]:
-    """Gets the reference bases used to make the pileup image around variant.
-
-    Args:
-      variant: A third_party.nucleus.protos.Variant proto describing the variant
-        we are creating the pileup image of.
-
-    Returns:
-      A string of reference bases or None. Returns None if the reference
-      interval for variant isn't valid for some reason.
-    """
-    start = variant.start - self.half_width
-    end = start + self._options.width
-    region = ranges.make_range(variant.reference_name, start, end)
-    if self._ref_reader.is_valid(region):
-      return self._ref_reader.query(region)
-    else:
-      return None
-
-  def _alt_allele_combinations(
-      self, variant: variants_pb2.Variant
-  ) -> Iterable[List[str]]:
-    """Yields the set of all alt_alleles for variant.
-
-    This function computes the sets of alt_alleles we want to use to cover all
-    genotype likelihood calculations we need for n alt alleles (see class docs
-    for background). The easiest way to do this is to calculate all combinations
-    of 2 alleles from ref + alts and then strip away the reference alleles,
-    leaving us with the set of alts for the pileup image encoder. The sets are
-    converted to sorted lists at the end for downstream consistency.
-
-    Args:
-      variant: third_party.nucleus.protos.Variant to generate the alt allele
-        combinations for.
-
-    Yields:
-      A series of lists containing the alt alleles we want to use for a single
-      pileup image. The entire series covers all combinations of alt alleles
-      needed for variant.
-
-    Raises:
-      ValueError: if options.multi_allelic_mode is UNSPECIFIED.
-    """
-    ref = variant.reference_bases
-    alts = list(variant.alternate_bases)
-
-    if (
-        self.multi_allelic_mode
-        == deepvariant_pb2.PileupImageOptions.UNSPECIFIED
-    ):
-      raise ValueError('multi_allelic_mode cannot be UNSPECIFIED')
-    elif (
-        self.multi_allelic_mode
-        == deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES
-    ):
-      for alt in alts:
-        yield sorted([alt])
-    else:
-      for combination in itertools.combinations([ref] + alts, 2):
-        yield sorted(list(set(combination) - {ref}))
-
-  def _empty_image_row(self) -> np.ndarray:
-    """Creates an empty image row as an uint8 np.array."""
-    return np.zeros((1, self.width, len(self.get_channels())), dtype=np.uint8)
