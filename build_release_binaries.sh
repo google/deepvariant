@@ -124,6 +124,10 @@ g++ -std=c++14 -shared \
 
 # shellcheck disable=SC2086
 bazel build -c opt \
+  //deepvariant:fast_pipeline
+
+# shellcheck disable=SC2086
+bazel build -c opt \
   --output_filter=DONT_MATCH_ANYTHING \
   --noshow_loading_progress \
   --show_result=0 \
