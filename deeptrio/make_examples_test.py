@@ -1618,62 +1618,6 @@ class RegionProcessorTest(parameterized.TestCase):
     ):
       make_examples.check_options_are_valid(options)
 
-  @parameterized.parameters(
-      [
-          dict(window_width=221),
-          dict(window_width=1001),
-      ],
-  )
-  def test_align_to_all_haplotypes(self, window_width):
-    # align_to_all_haplotypes() will pull from the reference, so choose a
-    # real variant.
-    region = ranges.parse_literal('20:10,046,000-10,046,400')
-    nist_reader = vcf.VcfReader(testdata.TRUTH_VARIANTS_VCF)
-    nist_variants = list(nist_reader.query(region))
-    # We picked this region to have exactly one known variant:
-    # reference_bases: "AAGAAAGAAAG"
-    # alternate_bases: "A", a deletion of 10 bp
-    # start: 10046177
-    # end: 10046188
-    # reference_name: "chr20"
-
-    variant = nist_variants[0]
-
-    self.processor.pic = mock.Mock()
-    self.processor.pic.width = window_width
-    self.processor.pic.half_width = int((window_width - 1) / 2)
-
-    self.processor.realigner = mock.Mock()
-    # Using a real ref_reader to test that the reference allele matches
-    # between the variant and the reference at the variant's coordinates.
-    self.processor.realigner.ref_reader = self.ref_reader
-
-    read = test_utils.make_read(
-        'A' * 101, start=10046100, cigar='101M', quals=[30] * 101
-    )
-
-    self.processor.realigner.align_to_haplotype = mock.Mock()
-    alt_info = self.processor.align_to_all_haplotypes(variant, [read])
-    hap_alignments = alt_info['alt_alignments']
-    hap_sequences = alt_info['alt_sequences']
-
-    # Both outputs are keyed by alt allele.
-    self.assertCountEqual(hap_alignments.keys(), ['A'])
-    self.assertCountEqual(hap_sequences.keys(), ['A'])
-
-    # Sequence must be the length of the window.
-    self.assertLen(hap_sequences['A'], self.processor.pic.width)
-
-    # align_to_haplotype should be called once for each alt (1 alt here).
-    self.processor.realigner.align_to_haplotype.assert_called_once()
-
-    # If variant reference_bases are wrong, it should raise a ValueError.
-    variant.reference_bases = 'G'
-    with self.assertRaisesRegex(
-        ValueError, 'does not match the bases in the reference'
-    ):
-      self.processor.align_to_all_haplotypes(variant, [read])
-
 
 if __name__ == '__main__':
   absltest.main()

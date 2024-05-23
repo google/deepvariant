@@ -3604,6 +3604,7 @@ options {
   denovo_regions_filename: "deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.denovo_regions.bed"
   deterministic_serialization: true
   small_model_gq_threshold: 30
+  shm_buffer_size: 10485760
 }
 labeling_metrics {
   n_truth_variant_sites: 40
@@ -3622,13 +3623,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 6
-  cpu_frequency_mhz: 4118.783083333333
+  cpu_frequency_mhz: 3416.4934166666667
   total_memory_mb: 63900
-  wall_time_seconds: 67.6465072631836
-  cpu_user_time_seconds: 35.802826
-  cpu_system_time_seconds: 1.723566
-  memory_peak_rss_mb: 1035
-  read_bytes: 4096
+  wall_time_seconds: 16.636067390441895
+  cpu_user_time_seconds: 21.899335
+  cpu_system_time_seconds: 0.560905
+  memory_peak_rss_mb: 1018
   write_bytes: 12288
 }
 stats {
