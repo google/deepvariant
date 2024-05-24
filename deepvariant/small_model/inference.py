@@ -30,6 +30,7 @@
 
 from typing import Any, Sequence, Tuple, Union
 
+from etils import epath
 import joblib
 
 from deepvariant.protos import deepvariant_pb2
@@ -69,7 +70,8 @@ class SmallModelVariantCaller:
       cls, model_path: str, gq_threshold: float
   ) -> "SmallModelVariantCaller":
     """Init class with a path to a pickled model."""
-    return cls(joblib.load(model_path), gq_threshold)
+    with epath.Path(model_path).open("rb") as f:
+      return cls(joblib.load(f), gq_threshold)
 
   def _accept_call_result(self, probability) -> bool:
     """Determine if the given probability is above the GQ threshold."""
