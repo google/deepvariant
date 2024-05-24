@@ -37,9 +37,9 @@ from third_party.nucleus.util import variant_utils
 
 
 class GenotypeEncoding(enum.Enum):
-  REF = 1
-  HET = 2
-  HOM_ALT = 3
+  REF = 0
+  HET = 1
+  HOM_ALT = 2
 
 
 class SmallModelFeature(enum.Enum):

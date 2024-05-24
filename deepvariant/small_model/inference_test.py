@@ -33,7 +33,6 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import inference
-from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 
@@ -57,10 +56,6 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
     super().setUp()
     self.mock_classifier = mock.MagicMock()
     self.mock_classifier.predict.return_value = [
-        make_small_model_examples.GenotypeEncoding.HET.value,
-        make_small_model_examples.GenotypeEncoding.HOM_ALT.value,
-    ]
-    self.mock_classifier.predict_proba.return_value = [
         (0.0, 0.999, 0.0),
         (0.0, 0.0, 0.1),
     ]

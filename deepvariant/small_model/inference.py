@@ -26,12 +26,12 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Module for calling variants on examples using a trained scikit model."""
+"""Module for calling variants on examples using a trained keras model."""
 
-from typing import Any, Sequence, Tuple, Union
+from typing import Sequence, Tuple, Union
 
-from etils import epath
-import joblib
+import numpy as np
+import tensorflow as tf
 
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import make_small_model_examples
@@ -59,7 +59,7 @@ class SmallModelVariantCaller:
 
   def __init__(
       self,
-      classifier: Any,
+      classifier: tf.keras.Model,
       gq_threshold: float,
   ):
     self.classifier = classifier
@@ -70,8 +70,7 @@ class SmallModelVariantCaller:
       cls, model_path: str, gq_threshold: float
   ) -> "SmallModelVariantCaller":
     """Init class with a path to a pickled model."""
-    with epath.Path(model_path).open("rb") as f:
-      return cls(joblib.load(f), gq_threshold)
+    return cls(tf.keras.models.load_model(model_path), gq_threshold)
 
   def _accept_call_result(self, probability) -> bool:
     """Determine if the given probability is above the GQ threshold."""
@@ -110,15 +109,13 @@ class SmallModelVariantCaller:
       Sequence[deepvariant_pb2.DeepVariantCall],
   ]:
     """Calls variants on the given examples."""
-    predictions = self.classifier.predict(examples)
-    probabilities = self.classifier.predict_proba(examples)
+    probabilities = self.classifier.predict(examples, verbose=0)
 
     call_variant_outputs = []
     filtered_candidates = []
-    for candidate, prediction, probability in zip(
-        candidates, predictions, probabilities
-    ):
+    for candidate, probability in zip(candidates, probabilities):
       if self._accept_call_result(probability):
+        prediction = np.argmax(probability)
         call_variant_outputs.append(
             self._get_call_variant_outputs(candidate, prediction, probability)
         )

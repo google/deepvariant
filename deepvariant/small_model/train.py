@@ -30,31 +30,22 @@
 
 from absl import app
 from absl import flags
-import joblib
-from sklearn import neural_network
+from ml_collections.config_flags import config_flags
 
 from deepvariant import logging_level
 from deepvariant.small_model import train_utils
 
 
-_TSV_DIRECTORY = flags.DEFINE_string(
-    "tsv_directory",
-    None,
-    "Path to directory containing TSV files.",
-    required=True,
+_CONFIG = config_flags.DEFINE_config_file(
+    "config", None, "Training configuration."
 )
 _MODEL_PATH = flags.DEFINE_string(
-    "model_path", None, "Path to the pickled model.", required=True
+    "model_path",
+    None,
+    "Path to where keras model will be saved.",
+    required=True,
 )
 _TRUTH_VCF = flags.DEFINE_string("truth_vcf", None, "Path to truth VCF file.")
-_MAX_CANDIDATES = flags.DEFINE_integer(
-    "max_candidates",
-    1_000_000,
-    "Max number of candidates to use for training/testing.",
-)
-_TEST_FRACTION = flags.DEFINE_float(
-    "test_fraction", 0.2, "Fraction of candidates to use for testing."
-)
 _CALCULATE_FEATURE_IMPORTANCE = flags.DEFINE_boolean(
     "calculate_feature_importance",
     False,
@@ -69,10 +60,11 @@ _SHOW_MISTAKES_ABOVE_GQ_THRESHOLD = flags.DEFINE_integer(
 
 def main(unused_argv):
   logging_level.set_from_flag()
+  config = _CONFIG.value
 
   # Load training data
   candidates = train_utils.load_training_data(
-      _TSV_DIRECTORY.value, _MAX_CANDIDATES.value
+      config.tsv_directory, config.max_training_samples
   )
   # Remove mislabels if truth VCF is provided.
   if _TRUTH_VCF.value:
@@ -80,28 +72,24 @@ def main(unused_argv):
 
   # Split into training and test data
   df_train, df_test = train_utils.split_training_data(
-      candidates, _TEST_FRACTION.value
+      candidates, config.test_fraction
   )
 
-  # Set model & hyperparameters
-  params = {
-      "activation": "relu",
-      "alpha": 0.0001,
-      "hidden_layer_sizes": (
-          100,
-          100,
-      ),
-      "learning_rate": "adaptive",
-      "solver": "adam",
-  }
-  clf = neural_network.MLPClassifier(**params)
+  # Init keras model
+  model = train_utils.keras_mlp_model(config.model_params)
 
   # Run training
-  model_runner = train_utils.ModelRunner(clf, df_train, df_test)
+  model_runner = train_utils.ModelRunner(
+      model,
+      df_train,
+      df_test,
+      epochs=config.epochs,
+      batch_size=config.batch_size,
+  )
   model_runner.run()
 
-  # Pickle & dump the trained model to file.
-  joblib.dump(clf, _MODEL_PATH.value)
+  # Save model
+  model.save(f"{_MODEL_PATH.value}.keras", save_format="tf")
 
   # Optional: run post-training analysis.
   if _CALCULATE_FEATURE_IMPORTANCE.value:

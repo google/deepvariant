@@ -34,11 +34,12 @@ from typing import Any, Sequence, Tuple, Union
 
 from absl import logging
 import matplotlib.pyplot as plt
+import ml_collections
 import numpy as np
 import pandas as pd
 import pysam
 from sklearn import ensemble
-from sklearn import metrics
+import tensorflow as tf
 
 from deepvariant.small_model import make_small_model_examples
 from io import fileio
@@ -180,10 +181,10 @@ def load_training_data(
 ) -> pd.DataFrame:
   """Loads data from a set of TSV files and truncates to size."""
   logging.info("Loading candidates from TSV")
-  candidates = load_files_from_directory_tree(tsv_directory)
+  candidates = load_files_from_directory_tree(tsv_directory, max_num_records)
   logging.info("Num candidates: %s", len(candidates))
   df = candidates
-  if len(candidates) > max_num_records:
+  if max_num_records and len(candidates) > max_num_records:
     df = candidates.sample(n=max_num_records)
   return df
 
@@ -199,14 +200,53 @@ def split_training_data(
   return df_train, df_test
 
 
+def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
+  """Creates a Keras MLP model."""
+  model = tf.keras.Sequential()
+  input_shape = len(make_small_model_examples.MODEL_FEATURES)
+  hidden_layers = model_params.hidden_layer_sizes
+  model.add(
+      tf.keras.layers.Dense(
+          hidden_layers[0],
+          activation=model_params.activation,
+          input_shape=(input_shape,),
+      )
+  )
+  if len(hidden_layers) > 1:
+    for layer_size in hidden_layers[1:]:
+      model.add(
+          tf.keras.layers.Dense(layer_size, activation=model_params.activation)
+      )
+  output_shape = len(make_small_model_examples.ENCODING_BY_GENOTYPE)
+  model.add(tf.keras.layers.Dense(output_shape, activation="softmax"))
+
+  model.summary()
+  model.compile(
+      optimizer=model_params.optimizer,
+      loss="categorical_crossentropy",
+      metrics=["accuracy"],
+  )
+  return model
+
+
+def one_hot_encode_truth(truth: pd.Series) -> np.ndarray:
+  """Converts a series of encoded genotype values to one-hot encoding."""
+  one_hot_encoded_truth = np.zeros(shape=(len(truth), 3))
+  for index, encoded_genotype in enumerate(truth):
+    one_hot_encoded_truth[index][encoded_genotype - 1] = 1
+  return one_hot_encoded_truth
+
+
 class ModelRunner:
   """Run model training and evaluation."""
 
   def __init__(
       self,
-      model,
-      training_df,
-      test_df,
+      model: tf.keras.Model,
+      training_df: pd.DataFrame,
+      test_df: pd.DataFrame,
+      epochs: int,
+      batch_size: int,
       name="",
       model_features=None,
   ):
@@ -218,21 +258,29 @@ class ModelRunner:
     self.training_time = 0
     self.model_features = model_features
     self.inference_time = 0
+    self.epochs = epochs
+    self.batch_size = batch_size
 
   def train(self) -> None:
     """Trains the model."""
     x_train = self.training_df[self.get_model_features()]
     y_train = self.training_df[make_small_model_examples.TRUTH_FEATURE.value]
+    y_train_one_hot = one_hot_encode_truth(y_train)
     time_before_train = time.time()
-    self.model.fit(x_train.values, y_train.values)
+    self.model.fit(
+        x_train.values,
+        y_train_one_hot,
+        epochs=self.epochs,
+        batch_size=self.batch_size,
+    )
     self.training_time = time.time() - time_before_train
 
   def test(self) -> np.ndarray:
     """Runs the inference and adds predictions to test_df_mut."""
     before_predictions = time.time()
     testing_df = self.test_df[self.get_model_features()]
-    predictions = self.model.predict(testing_df.values)
-    probabilities = self.model.predict_proba(testing_df.values)
+    probabilities = self.model.predict(testing_df.values)
+    predictions = np.array([np.argmax(p) for p in probabilities])
     self.inference_time = time.time() - before_predictions
     self.test_df_mut["gt_predicted"] = predictions
     self.test_df_mut["gq"] = [
@@ -243,21 +291,16 @@ class ModelRunner:
   def assess(self, predictions: np.ndarray) -> None:
     """Runs quick analysis on model performance."""
     y_test = self.test_df[make_small_model_examples.TRUTH_FEATURE.value]
-    self.accuracy = metrics.accuracy_score(y_test, predictions)
+    cm = tf.math.confusion_matrix(labels=y_test, predictions=predictions)
     model_metrics = [
         f"Name: {self.get_experiment_name()}",
-        f"Accuracy, {self.accuracy}",
+        f"Accuracy, {self.model.metrics[1].result()}",
         f"Num Training Candidates, {len(self.training_df)}",
         f"Num Inference Candidates, {len(self.test_df)}",
         f"Training Runtime, {self.training_time:.4f}s",
         f"Inference Runtime, {self.inference_time:.4f}s",
         "Confusion Matrix:",
-        str(metrics.confusion_matrix(y_test, predictions)),
-        (
-            "Precision:"
-            f" {metrics.precision_score(y_test, predictions, average=None)}"
-        ),
-        f"Recall: {metrics.recall_score(y_test, predictions, average=None)}",
+        str(cm),
     ]
     logging.info("\n".join(model_metrics))
 
