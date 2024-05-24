@@ -237,8 +237,92 @@ def one_hot_encode_truth(truth: pd.Series) -> np.ndarray:
   return one_hot_encoded_truth
 
 
+class SmallModelExampleSequence(tf.keras.utils.Sequence):
+  """Class for iterating over many data .tsv files efficiently."""
+
+  def __init__(
+      self,
+      tsv_directory,
+      batch_size,
+      num_samples,
+      num_parallel_reads=20,
+  ):
+    self.batch_size = batch_size
+    self.num_samples = num_samples
+    self.num_parallel_reads = num_parallel_reads
+    self.model_features = [
+        f.value for f in make_small_model_examples.MODEL_FEATURES
+    ]
+    self.dataset = tf.data.experimental.make_csv_dataset(
+        file_pattern=f"{tsv_directory}/*small_model.tsv",
+        batch_size=batch_size,
+        field_delim="\t",
+        num_parallel_reads=self.num_parallel_reads,
+        shuffle_buffer_size=10000,
+        shuffle=True,
+    )
+    self.iterator = self.dataset.as_numpy_iterator()
+
+  def __getitem__(self, index):
+    batch = next(self.iterator)
+    df = pd.DataFrame(batch)
+    x_batch = df[self.model_features]
+    y_batch = one_hot_encode_truth(
+        df[make_small_model_examples.TRUTH_FEATURE.value]
+    )
+    return x_batch.values, y_batch
+
+  def __len__(self):
+    return self.num_samples // self.batch_size
+
+  def on_epoch_end(self):
+    self.iterator = self.dataset.as_numpy_iterator()
+
+
+class KerasSequenceModelRunner:
+  """Runs training on a data sequence."""
+
+  def __init__(
+      self,
+      model: tf.keras.Model,
+      train_tsv_directory: str,
+      num_train_samples: int,
+      epochs: int,
+      batch_size: int,
+      tune_tsv_directory: str = "",
+      num_tune_samples: int = 0,
+  ):
+    self.model = model
+    self.train_sequence = SmallModelExampleSequence(
+        train_tsv_directory,
+        batch_size=batch_size,
+        num_samples=num_train_samples,
+    )
+    self.epochs = epochs
+    self.batch_size = batch_size
+    self.tune_sequence = None
+    if tune_tsv_directory:
+      self.tune_sequence = SmallModelExampleSequence(
+          tune_tsv_directory,
+          batch_size=batch_size,
+          num_samples=num_tune_samples,
+      )
+
+  def train(self) -> None:
+    """Trains the model."""
+    self.model.fit(
+        self.train_sequence,
+        epochs=self.epochs,
+        batch_size=self.batch_size,
+        validation_data=self.tune_sequence,
+    )
+
+
 class ModelRunner:
-  """Run model training and evaluation."""
+  """Run model training and evaluation.
+
+  Should be used for local training and experimentation.
+  """
 
   def __init__(
       self,

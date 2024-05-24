@@ -45,6 +45,11 @@ _MODEL_PATH = flags.DEFINE_string(
     "Path to where keras model will be saved.",
     required=True,
 )
+_USE_SEQUENCE_RUNNER = flags.DEFINE_boolean(
+    "use_sequence_runner",
+    True,
+    "Whether to use the sequence runner, which loads the tsv files lazily.",
+)
 _TRUTH_VCF = flags.DEFINE_string("truth_vcf", None, "Path to truth VCF file.")
 _CALCULATE_FEATURE_IMPORTANCE = flags.DEFINE_boolean(
     "calculate_feature_importance",
@@ -62,9 +67,26 @@ def main(unused_argv):
   logging_level.set_from_flag()
   config = _CONFIG.value
 
+  # Init keras model
+  model = train_utils.keras_mlp_model(config.model_params)
+
+  if _USE_SEQUENCE_RUNNER.value:
+    model_runner = train_utils.KerasSequenceModelRunner(
+        model,
+        train_tsv_directory=config.train_tsv_directory,
+        num_train_samples=config.num_train_samples,
+        batch_size=config.batch_size,
+        epochs=config.epochs,
+        tune_tsv_directory=config.tune_tsv_directory,
+        num_tune_samples=config.num_tune_samples,
+    )
+    model_runner.train()
+    model.save(f"{_MODEL_PATH.value}.keras", save_format="tf")
+    return
+
   # Load training data
   candidates = train_utils.load_training_data(
-      config.tsv_directory, config.max_training_samples
+      config.train_tsv_directory, config.num_train_samples
   )
   # Remove mislabels if truth VCF is provided.
   if _TRUTH_VCF.value:
@@ -74,10 +96,6 @@ def main(unused_argv):
   df_train, df_test = train_utils.split_training_data(
       candidates, config.test_fraction
   )
-
-  # Init keras model
-  model = train_utils.keras_mlp_model(config.model_params)
-
   # Run training
   model_runner = train_utils.ModelRunner(
       model,

@@ -33,21 +33,24 @@ import ml_collections
 
 def set_wgs_config(config: ml_collections.ConfigDict) -> None:
   # TODO: update training data
-  config.tsv_directory = "/cns/oz-d/home/brain-genomics/shafin/deepvariant_wgs/b338442845_wgs_small_model/ttl=14d/"
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/shafin/deepvariant_wgs/b338442845_wgs_small_model/ttl=14d/"
+  config.num_train_samples = 10_000_000
 
 
 def set_ont_config(config: ml_collections.ConfigDict) -> None:
   # TODO: update training data
-  config.tsv_directory = (
+  config.train_tsv_directory = (
       "/cns/oz-d/home/brain-genomics/lucasbrambrink/smallmodel/examples/ont/"
   )
+  config.num_train_samples = 1_000_000
 
 
 def set_pacbio_config(config: ml_collections.ConfigDict) -> None:
   # TODO: update training data
-  config.tsv_directory = (
+  config.train_tsv_directory = (
       "/cns/oz-d/home/brain-genomics/lucasbrambrink/smallmodel/examples/pacbio/"
   )
+  config.num_train_samples = 1_000_000
 
 
 def get_config(config_name: str) -> ml_collections.ConfigDict:
@@ -64,7 +67,10 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.epochs = 5
   config.batch_size = 32
   config.logging_frequency = 8192
-  config.max_training_samples = 0
+  config.train_tsv_directory = ""
+  config.num_train_samples = 1_000_000
+  config.tune_tsv_directory = ""
+  config.num_tune_samples = 10_000
   config.test_fraction = 0.2
 
   if config_name == "wgs":
