@@ -284,6 +284,12 @@ message DeepVariantCall {
   map<string, SupportingReadsExt> allele_support_ext = 5;
 
   SupportingReadsExt ref_support_ext = 6;
+
+  // This is to see if candidate is called by small model.
+  bool is_small_model_callable = 7;
+
+  // This is to see if small model's gq was above the confidence threshold.
+  bool is_small_model_above_confidence_threshold = 8;
 }
 
 // Options to control how our AlleleCounter code works.
