@@ -331,7 +331,7 @@ class FastPassAligner {
   // realigned_reads param is eventually passed to Python wrapped in unique_ptr
   // as per clif requirements.
   void RealignReadsToReference(
-      const std::vector<nucleus::genomics::v1::Read>& reads,
+      absl::Span<const nucleus::genomics::v1::Read> reads,
       std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>*
           realigned_reads);
 

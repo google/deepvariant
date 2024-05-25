@@ -48,6 +48,7 @@
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "re2/re2.h"
@@ -507,7 +508,7 @@ bool FastPassAligner::IsAlignmentNormalized(
 }
 
 void FastPassAligner::RealignReadsToReference(
-    const std::vector<nucleus::genomics::v1::Read>& reads,
+    absl::Span<const nucleus::genomics::v1::Read> reads,
     std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>*
         realigned_reads) {
   // Loop through all reads
