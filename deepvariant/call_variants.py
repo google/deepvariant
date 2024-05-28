@@ -706,6 +706,7 @@ def load_model_and_check_shape(
     model = modeling.inceptionv3(
         example_shape, init_backbone_with_imagenet=False
     )
+    model.load_weights(checkpoint_path).expect_partial()
   return example_shape, model
 
 
