@@ -220,7 +220,6 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
           break;
         }
         shard = (shard + 1) % num_shards_;
-        // LOG(INFO) << "Could not acquire items_available";
       }
     }
     // Add records as strings to the output
@@ -240,7 +239,6 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
           alt_allele_idx_records[i];
       image_tensor->flat<tensorflow::tstring>()(i) = image_records[i];
     }
-    LOG(INFO) << "Done";
     return tensorflow::Status();
   }
 
@@ -307,7 +305,6 @@ class StreamExamplesNextOp : public tensorflow::OpKernel {
   }
 
   void Compute(tensorflow::OpKernelContext* context) override {
-    LOG(INFO) << "Next::Compute()";
     StreamExamplesResource* resource;
     OP_REQUIRES_OK(context,
                    GetResourceFromContext(context, "input", &resource));
@@ -316,7 +313,6 @@ class StreamExamplesNextOp : public tensorflow::OpKernel {
     const tensorflow::Tensor* index_tensor;
     OP_REQUIRES_OK(context, context->input("index", &index_tensor));
     const int64_t index = index_tensor->scalar<int64_t>()();
-    LOG(INFO) << "index=" << index;
 
     OP_REQUIRES_OK(
         context,
