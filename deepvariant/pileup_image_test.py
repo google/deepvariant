@@ -29,7 +29,6 @@
 """Tests for deepvariant.pileup_image."""
 
 import itertools
-from unittest import mock
 
 
 
@@ -40,7 +39,6 @@ import numpy.testing as npt
 
 from deepvariant import dv_constants
 from deepvariant import pileup_image
-from deepvariant import sample as sample_lib
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
 from third_party.nucleus.protos import reads_pb2
@@ -130,14 +128,6 @@ def _make_encoder_with_hp_channel(
     options.hp_tag_for_assembly_polishing = hp_tag_for_assembly_polishing
   options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
   return pileup_image_native.PileupImageEncoderNative(options)
-
-
-def _make_image_creator(ref_reader, samples, **kwargs):
-  options = pileup_image.default_options()
-  options.MergeFrom(deepvariant_pb2.PileupImageOptions(**kwargs))
-  return pileup_image.PileupImageCreator(
-      options=options, ref_reader=ref_reader, samples=samples
-  )
 
 
 class PileupImageEncoderTest(parameterized.TestCase):
@@ -673,181 +663,6 @@ class PileupImageEncoderTest(parameterized.TestCase):
         dv_call, 'TAT', read, dv_call.variant.start - 1, [alt_allele]
     )
     self.assertEqual(actual[0, 1, 4], expected_color)
-
-
-class PileupImageCreatorEncodePileupTest(parameterized.TestCase):
-  """Tests of PileupImageCreator build_pileup routine."""
-
-  def setUp(self):
-    super(PileupImageCreatorEncodePileupTest, self).setUp()
-    self.alt_allele = 'C'
-    self.dv_call = _make_dv_call(ref_bases='G', alt_bases=self.alt_allele)
-    samples = [
-        sample_lib.Sample(
-            options=deepvariant_pb2.SampleOptions(role='any_sample_role')
-        )
-    ]
-    self.pic = _make_image_creator(
-        ref_reader=None,
-        samples=samples,
-        width=3,
-        height=4,
-        reference_band_height=2,
-    )
-    self.ref = 'AGC'
-    self.read1 = test_utils.make_read('AGC', start=0, cigar='3M', name='read1')
-    self.read2 = test_utils.make_read('AGC', start=1, cigar='3M', name='read2')
-    self.read3 = test_utils.make_read('AGC', start=2, cigar='3M', name='read3')
-    self.read4 = test_utils.make_read('AGC', start=3, cigar='3M', name='read4')
-
-    self.expected_rows = {
-        'ref': np.asarray(
-            range(0, 3 * self.pic.num_channels), np.uint8
-        ).reshape(1, 3, self.pic.num_channels),
-        'empty': np.zeros((1, 3, self.pic.num_channels), dtype=np.uint8),
-        'read1': np.full((1, 3, self.pic.num_channels), 1, dtype=np.uint8),
-        'read2': np.full((1, 3, self.pic.num_channels), 2, dtype=np.uint8),
-        'read3': None,
-        'read4': np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
-        'read5': np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
-        'read6': np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
-    }
-
-    # Setup our shared mocks.
-    mock_encoder = mock.Mock(spec=['encode_read', 'encode_reference'])
-    mock_encoder.encode_reference.return_value = self.expected_rows['ref']
-
-    # pylint: disable=unused-argument
-    def get_read_row(dv_call, refbases, read, pos, alt_allele):
-      return self.expected_rows[read.fragment_name]
-
-    mock_encoder.encode_read.side_effect = get_read_row
-
-    self.mock_enc_ref = mock_encoder.encode_reference
-    self.mock_enc_read = mock_encoder.encode_read
-
-    self.pic._encoder = mock_encoder
-
-  def assertImageMatches(self, actual_image, *row_names):
-    """Checks that actual_image matches an image from constructed row_names."""
-    self.assertEqual(
-        actual_image.shape,
-        (self.pic.height, self.pic.width, self.pic.num_channels),
-    )
-    expected_image = np.vstack([self.expected_rows[name] for name in row_names])
-    npt.assert_equal(actual_image, expected_image)
-
-
-class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
-  """Tests of PileupImageCreator build_pileup routine for Trio."""
-
-  def setUp(self):
-    super(PileupImageForTrioCreatorEncodePileupTest, self).setUp()
-    self.alt_allele = 'C'
-    self.dv_call = _make_dv_call(ref_bases='G', alt_bases=self.alt_allele)
-    samples = [
-        sample_lib.Sample(
-            options=deepvariant_pb2.SampleOptions(role='sample_1')
-        ),
-        sample_lib.Sample(
-            options=deepvariant_pb2.SampleOptions(role='sample_2')
-        ),
-        sample_lib.Sample(
-            options=deepvariant_pb2.SampleOptions(role='sample_3')
-        ),
-    ]
-    self.pic = _make_image_creator(
-        ref_reader=None,
-        samples=samples,
-        width=3,
-        height=4,
-        reference_band_height=2,
-        sequencing_type=deepvariant_pb2.PileupImageOptions.TRIO,
-    )
-    self.ref = 'AGC'
-
-    self.read1 = test_utils.make_read('AGC', start=0, cigar='3M', name='read1')
-    self.read2 = test_utils.make_read('AGC', start=1, cigar='3M', name='read2')
-    self.read3 = test_utils.make_read('AGC', start=2, cigar='3M', name='read3')
-    self.read4 = test_utils.make_read('AGC', start=3, cigar='3M', name='read4')
-
-    self.read1_parent1 = test_utils.make_read(
-        'TGC', start=0, cigar='3M', name='read1'
-    )
-    self.read2_parent1 = test_utils.make_read(
-        'TGC', start=1, cigar='3M', name='read2'
-    )
-    self.read3_parent1 = test_utils.make_read(
-        'AGC', start=2, cigar='3M', name='read3'
-    )
-    self.read4_parent1 = test_utils.make_read(
-        'AGC', start=3, cigar='3M', name='read4'
-    )
-
-    self.read1_parent2 = test_utils.make_read(
-        'AGC', start=0, cigar='3M', name='read1'
-    )
-    self.read2_parent2 = test_utils.make_read(
-        'AGC', start=1, cigar='3M', name='read2'
-    )
-    self.read3_parent2 = test_utils.make_read(
-        'AGC', start=2, cigar='3M', name='read3'
-    )
-    self.read4_parent2 = test_utils.make_read(
-        'AGC', start=3, cigar='3M', name='read4'
-    )
-
-    self.expected_rows = {
-        'ref': np.asarray(
-            range(0, 3 * self.pic.num_channels), np.uint8
-        ).reshape(1, 3, self.pic.num_channels),
-        'empty': np.zeros((1, 3, self.pic.num_channels), dtype=np.uint8),
-        'read1_parent1': np.full(
-            (1, 3, self.pic.num_channels), 1, dtype=np.uint8
-        ),
-        'read2_parent1': np.full(
-            (1, 3, self.pic.num_channels), 2, dtype=np.uint8
-        ),
-        'read3_parent1': None,
-        'read4_parent1': np.full(
-            (1, 3, self.pic.num_channels), 3, dtype=np.uint8
-        ),
-        'read1': np.full((1, 3, self.pic.num_channels), 1, dtype=np.uint8),
-        'read2': np.full((1, 3, self.pic.num_channels), 2, dtype=np.uint8),
-        'read3': None,
-        'read4': np.full((1, 3, self.pic.num_channels), 3, dtype=np.uint8),
-        'read1_parent2': np.full(
-            (1, 3, self.pic.num_channels), 1, dtype=np.uint8
-        ),
-        'read2_parent2': np.full(
-            (1, 3, self.pic.num_channels), 2, dtype=np.uint8
-        ),
-        'read3_parent2': None,
-        'read4_parent2': np.full(
-            (1, 3, self.pic.num_channels), 3, dtype=np.uint8
-        ),
-    }
-
-    # Setup our shared mocks.
-    mock_encoder = mock.Mock(spec=['encode_read', 'encode_reference'])
-    mock_encoder.encode_reference.return_value = self.expected_rows['ref']
-
-    # pylint: disable=unused-argument
-    def get_read_row(dv_call, refbases, read, pos, alt_allele):
-      return self.expected_rows[read.fragment_name]
-
-    mock_encoder.encode_read.side_effect = get_read_row
-
-    self.mock_enc_ref = mock_encoder.encode_reference
-    self.mock_enc_read = mock_encoder.encode_read
-
-    self.pic._encoder = mock_encoder
-
-  def assertImageMatches(self, actual_image, *row_names):
-    """Checks that actual_image matches an image from constructed row_names."""
-    expected_image = np.vstack([self.expected_rows[name] for name in row_names])
-    self.assertEqual(actual_image.shape, expected_image.shape)
-    npt.assert_equal(actual_image, expected_image)
 
 
 class PileupCustomChannels(absltest.TestCase):
