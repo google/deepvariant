@@ -40,7 +40,7 @@ Flags:
 --dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
 --docker_source Where to pull the Docker image from. Default: google/deepsomatic.
---bin_version Version of DeepSomatic model to use
+--bin_version Version of DeepSomatic docker to use
 --customized_model Path to checkpoint directory containing model checkpoint.
 --regions Regions passed into both variant calling and som.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
