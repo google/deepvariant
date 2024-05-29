@@ -119,8 +119,6 @@ vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
     }
   }
 
-  // Then, in pileup_image.py, _represent_alt_aligned_pileups can potentially
-  // add two more channels.
   if (alt_aligned_representation == "diff_channels") {
     channels_list.push_back(
         DeepVariantChannelEnum::CH_DIFF_CHANNELS_ALTERNATE_ALLELE_1);

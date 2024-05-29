@@ -32,8 +32,6 @@ from typing import List
 
 
 
-import numpy as np
-
 from deepvariant import dv_constants
 from deepvariant import sample as sample_lib
 from deepvariant.protos import deepvariant_pb2
@@ -81,76 +79,6 @@ def default_options(read_requirements=None):
       min_non_zero_allele_frequency=0.00001,
       use_allele_frequency=False,
   )
-
-
-def _represent_alt_aligned_pileups(representation, ref_image, alt_images):
-  """Combines ref and alt-aligned pileup images according to the representation.
-
-  Args:
-    representation: string, one of "rows", "base_channels", "diff_channels".
-    ref_image: 3D numpy array. The original pileup image.
-    alt_images: list of either one or two 3D numpy arrays, both of the same
-      dimensions as ref_image. Pileup image(s) of the same reads aligned to the
-      alternate haplotype(s).
-
-  Returns:
-    One 3D numpy array containing a selection of data from the input arrays.
-  """
-
-  # If there is only one alt, duplicate it to make all pileups the same size.
-  if len(alt_images) == 1:
-    alt_images = alt_images + alt_images
-  if len(alt_images) != 2:
-    raise ValueError('alt_images must contain exactly one or two arrays.')
-
-  # Ensure that all three pileups have the same width and height.
-  if (
-      not ref_image.shape[:2]
-      == alt_images[0].shape[:2]
-      == alt_images[1].shape[:2]
-  ):
-    raise ValueError(
-        'Pileup images must have the same width and height to be combined. '
-        'ref_image.shape is {}. alt_images[0].shape is {}. '
-        'alt_images[1].shape is {}.'.format(
-            ref_image.shape, alt_images[0].shape, alt_images[1].shape
-        )
-    )
-
-  if representation == 'rows':
-    # For row representation, additionally check that all three pileups have the
-    # same number of channels
-    if (
-        not ref_image.shape[2]
-        == alt_images[0].shape[2]
-        == alt_images[1].shape[2]
-    ):
-      raise ValueError(
-          'Pileup images must have the number of channels to be combined. '
-          'ref_image.shape is {}. alt_images[0].shape is {}. '
-          'alt_images[1].shape is {}.'.format(
-              ref_image.shape, alt_images[0].shape, alt_images[1].shape
-          )
-      )
-
-    # Combine all images: [ref, alt1, alt2].
-    return np.concatenate([ref_image] + alt_images, axis=0)
-  elif representation == 'base_channels':
-    # Add channel 0 (bases ATCG) of both alts as channels.
-    alt_base_1 = np.expand_dims(alt_images[0][:, :, 0], axis=2)
-    alt_base_2 = np.expand_dims(alt_images[1][:, :, 0], axis=2)
-    return np.concatenate((ref_image, alt_base_1, alt_base_2), axis=2)
-  elif representation == 'diff_channels':
-    # Add channel 5 (base differs from ref) of both alts as channels.s
-    alt_diff_1 = np.expand_dims(alt_images[0][:, :, 5], axis=2)
-    alt_diff_2 = np.expand_dims(alt_images[1][:, :, 5], axis=2)
-    return np.concatenate((ref_image, alt_diff_1, alt_diff_2), axis=2)
-  else:
-    raise ValueError(
-        '_represent_alt_aligned_pileups received invalid value for '
-        'representation: "{}". Must be one of '
-        'rows, base_channels, or diff_channels.'.format(representation)
-    )
 
 
 class PileupImageCreator(object):

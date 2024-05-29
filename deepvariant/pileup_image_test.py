@@ -883,57 +883,6 @@ class PileupImageCreatorTest(parameterized.TestCase):
         **kwargs,
     )
 
-  @parameterized.parameters(
-      ((100, 221, 6), 'rows', (300, 221, 6)),
-      ((100, 221, 6), 'base_channels', (100, 221, 8)),
-      ((100, 221, 6), 'diff_channels', (100, 221, 8)),
-  )
-  def test_represent_alt_aligned_pileups_outputs_correct_shape(
-      self, input_shape, representation, expected_output_shape
-  ):
-    ref_image = np.zeros(input_shape)
-    alt_image1 = np.zeros(input_shape)
-    alt_image2 = np.zeros(input_shape)
-
-    # Test with one alt image.
-    output = pileup_image._represent_alt_aligned_pileups(
-        representation, ref_image, [alt_image1]
-    )
-    self.assertEqual(output.shape, expected_output_shape)
-
-    # Test with two alt images.
-    output = pileup_image._represent_alt_aligned_pileups(
-        representation, ref_image, [alt_image1, alt_image2]
-    )
-    self.assertEqual(output.shape, expected_output_shape)
-
-  def test_represent_alt_aligned_pileups_raises_on_invalid_representation(self):
-    # Representation must be one of the valid options.
-    ref_image = np.zeros((100, 221, 6))
-    alt_image = np.zeros((100, 221, 6))
-    with self.assertRaises(ValueError):
-      pileup_image._represent_alt_aligned_pileups(
-          'invalid', ref_image, [alt_image]
-      )
-
-  def test_represent_alt_aligned_pileups_raises_on_different_shapes(self):
-    # Different shapes of input images should raise error.
-    ref_image = np.zeros((100, 221, 6))
-    alt_image = np.zeros((500, 221, 6))
-    with self.assertRaises(ValueError):
-      pileup_image._represent_alt_aligned_pileups(
-          'rows', ref_image, [alt_image]
-      )
-
-  def test_represent_alt_aligned_pileups_raises_on_too_many_alt_images(self):
-    # Different shapes of input images should raise error.
-    ref_image = np.zeros((100, 221, 6))
-    alt_image = np.zeros((100, 221, 6))
-    with self.assertRaises(ValueError):
-      pileup_image._represent_alt_aligned_pileups(
-          'rows', ref_image, [alt_image, alt_image, alt_image]
-      )
-
 
 class PileupCustomChannels(absltest.TestCase):
 
