@@ -48,7 +48,6 @@ from deepvariant import dv_constants
 from deepvariant import dv_utils
 from deepvariant import dv_utils_using_clif
 from deepvariant import dv_vcf_constants
-from deepvariant import pileup_image
 from deepvariant import resources
 from deepvariant import sample as sample_lib
 from deepvariant import variant_caller as vc_base
@@ -62,6 +61,7 @@ from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.python import direct_phasing
 from deepvariant.python import make_examples_native
+from deepvariant.python import pileup_image_native
 from deepvariant.realigner import realigner
 from deepvariant.small_model import inference as small_model_inference
 from deepvariant.small_model import make_small_model_examples
@@ -1303,7 +1303,6 @@ class RegionProcessor:
     self.initialized = False
     self.ref_reader = None
     self.realigner = None
-    self.pic = None
     self.labeler = None
     self.population_vcf_readers = None
     self.make_examples_native = None
@@ -1440,11 +1439,9 @@ class RegionProcessor:
           shared_header=input_bam_header,
       )
 
-    self.pic = pileup_image.PileupImageCreator(
-        ref_reader=self.ref_reader,
-        options=self.options.pic_options,
-        samples=self.samples,
-    )
+    self._channels_enum = pileup_image_native.PileupImageEncoderNative(
+        self.options.pic_options
+    ).all_channels_enum(self.options.pic_options.alt_aligned_pileup)
 
     if in_training_mode(self.options):
       self.labeler = self._make_labeler_from_options()
@@ -2323,8 +2320,8 @@ class RegionProcessor:
     return candidates, gvcfs
 
   def get_channels(self) -> List[int]:
-    # All the example would have the same list of channels based on `self.pic`.
-    return self.pic.get_channels()
+    # All the example would have the same list of channels.
+    return self._channels_enum
 
   def label_candidates(
       self,

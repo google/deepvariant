@@ -35,7 +35,6 @@ from typing import List
 from deepvariant import dv_constants
 from deepvariant import sample as sample_lib
 from deepvariant.protos import deepvariant_pb2
-from deepvariant.python import pileup_image_native
 from third_party.nucleus.io import fasta
 from third_party.nucleus.protos import reads_pb2
 
@@ -149,16 +148,9 @@ class PileupImageCreator(object):
       samples: List[sample_lib.Sample],
   ):
     self._options = options
-    self._encoder = pileup_image_native.PileupImageEncoderNative(self._options)
-    self._channels_enum = self._encoder.all_channels_enum(
-        options.alt_aligned_pileup
-    )
     self._ref_reader = ref_reader
     self._samples = samples
 
   def __getattr__(self, attr):
     """Gets attributes from self._options as though they are our attributes."""
     return self._options.__getattribute__(attr)
-
-  def get_channels(self):
-    return self._channels_enum
