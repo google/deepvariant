@@ -43,7 +43,6 @@ from deepvariant import pileup_image
 from deepvariant import sample as sample_lib
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import pileup_image_native
-from third_party.nucleus.io import fasta
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
@@ -144,7 +143,7 @@ def _make_image_creator(ref_reader, samples, **kwargs):
 class PileupImageEncoderTest(parameterized.TestCase):
 
   def setUp(self):
-    super(PileupImageEncoderTest, self).setUp()
+    super().setUp()
     self.options = pileup_image.default_options()
     for channel in dv_constants.PILEUP_DEFAULT_CHANNELS:
       self.options.channels.append(channel)
@@ -849,39 +848,6 @@ class PileupImageForTrioCreatorEncodePileupTest(parameterized.TestCase):
     expected_image = np.vstack([self.expected_rows[name] for name in row_names])
     self.assertEqual(actual_image.shape, expected_image.shape)
     npt.assert_equal(actual_image, expected_image)
-
-
-class PileupImageCreatorTest(parameterized.TestCase):
-
-  def setUp(self):
-    super(PileupImageCreatorTest, self).setUp()
-    self.options = pileup_image.default_options()
-    self.options.width = 5
-    self.mock_ref_reader = mock.MagicMock(spec=fasta.IndexedFastaReader)
-    self.mock_ref_reader.query.return_value = 'ACGT'
-    self.mock_ref_reader.is_valid.return_value = True
-    self.mock_sam_reader = mock.MagicMock()
-    self.mock_sam_reader.query.return_value = ['read1', 'read2']
-    self.dv_call = _make_dv_call()
-    self.variant = self.dv_call.variant
-
-    self.samples = [
-        sample_lib.Sample(
-            options=deepvariant_pb2.SampleOptions(role='any_sample'),
-            sam_readers=self.mock_sam_reader,
-            in_memory_sam_reader=self.mock_sam_reader,
-        )
-    ]
-
-    self.pic = self._make_pic()
-
-  def _make_pic(self, **kwargs):
-    return pileup_image.PileupImageCreator(
-        options=self.options,
-        ref_reader=self.mock_ref_reader,
-        samples=self.samples,
-        **kwargs,
-    )
 
 
 class PileupCustomChannels(absltest.TestCase):
