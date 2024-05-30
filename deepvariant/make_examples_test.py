@@ -824,6 +824,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
         'num reads',
         'num candidates',
         'num examples',
+        'small model generate examples',
+        'small model call examples',
+        'small model write variants',
+        'small model total',
     ]
 
     with gfile.Open(expected_output_path, 'r') as fin:

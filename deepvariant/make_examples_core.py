@@ -95,6 +95,10 @@ RUNTIME_BY_REGION_COLUMNS = (
     'num reads',
     'num candidates',
     'num examples',
+    'small model generate examples',
+    'small model call examples',
+    'small model write variants',
+    'small model total',
 )
 
 # For --read_phases_output, these columns will be written out in this order.
@@ -1704,24 +1708,35 @@ class RegionProcessor:
       A list of all candidates to be passed to the regular model, either
         because they were skipped or did not pass quality filters.
     """
-    before_call_summaries = time.time()
+    before_generate_small_model_examples = time.time()
 
     # skip candidates not suitable for the small model, e.g. indels.
     skipped_candidates, kept_candidates, examples = (
         make_small_model_examples.generate_inference_examples(candidates)
     )
+    runtimes['small model generate examples'] = trim_runtime(
+        time.time() - before_generate_small_model_examples
+    )
     if not kept_candidates:
       return skipped_candidates
 
     # filtered candidates did not pass the GQ threshold.
+    before_call_small_model_examples = time.time()
     call_variant_outputs, filtered_candidates = (
         self.small_model_variant_caller.call_variants(kept_candidates, examples)
     )
+    runtimes['small model call examples'] = trim_runtime(
+        time.time() - before_call_small_model_examples
+    )
+    before_write_variants = time.time()
     writer.write_call_variant_outputs(*call_variant_outputs)
+    runtimes['small model write variants'] = trim_runtime(
+        time.time() - before_write_variants
+    )
 
     n_stats['n_small_model_calls'] += len(call_variant_outputs)
-    runtimes['call summaries'] = trim_runtime(
-        time.time() - before_call_summaries
+    runtimes['small model total'] = trim_runtime(
+        time.time() - before_generate_small_model_examples
     )
     # pass skipped and filtered candidates to the large model
     return list(skipped_candidates) + list(filtered_candidates)
