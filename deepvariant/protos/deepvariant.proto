@@ -625,7 +625,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 70.
+// Next ID: 72.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -786,6 +786,9 @@ message MakeExamplesOptions {
 
   // A list of VCF or VCF.gz files that specify allele frequency information.
   repeated string population_vcf_filenames = 35;
+
+  string exclude_variants_vcf_filename = 70;
+  float exclude_variants_af_threshold = 71;
 
   // Path to output optional runtime profiling by region.
   string runtime_by_region = 36;

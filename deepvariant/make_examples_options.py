@@ -669,6 +669,21 @@ _SHM_BUFFER_SIZE = flags.DEFINE_integer(
     'shared memory files buffer size.',
 )
 
+_EXCLUDE_VARIANTS_VCF_FILENAME = flags.DEFINE_string(
+    'exclude_variants_vcf_filename',
+    None,
+    'Optional. Population VCF (with AF) to exclude variants from. In our use '
+    'case, this is currently only used for DeepSomatic tumor-only training '
+    'examples creation.',
+)
+
+_EXCLUDE_VARIANTS_AF_THRESHOLD = flags.DEFINE_float(
+    'exclude_variants_af_threshold',
+    0.05,
+    'Only used when exclude_variants_vcf_filename is set. We exclude '
+    'candidates with alts below this threshold.',
+)
+
 
 def shared_flags_to_options(
     add_flags,
@@ -1019,6 +1034,12 @@ def shared_flags_to_options(
         )
 
   options.discard_non_dna_regions = _DISCARD_NON_DNA_REGIONS.value
+
+  if _EXCLUDE_VARIANTS_VCF_FILENAME.value:
+    options.exclude_variants_vcf_filename = _EXCLUDE_VARIANTS_VCF_FILENAME.value
+
+  if _EXCLUDE_VARIANTS_AF_THRESHOLD.value:
+    options.exclude_variants_af_threshold = _EXCLUDE_VARIANTS_AF_THRESHOLD.value
 
   return options
 

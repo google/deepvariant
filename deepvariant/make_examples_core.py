@@ -1426,6 +1426,10 @@ class RegionProcessor:
       )
       self.population_vcf_readers = population_vcf_readers
 
+    if self.options.exclude_variants_vcf_filename:
+      self.exclude_variants_vcf_reader = vcf.VcfReader(
+          self.options.exclude_variants_vcf_filename
+      )
     initialize_raligner = (
         self.options.realigner_enabled
         or self.options.pic_options.alt_aligned_pileup != 'none'
@@ -1817,6 +1821,22 @@ class RegionProcessor:
     # Mark the end of partition
     yield END_OF_PARTITION
 
+  def _only_contains_alts_above_threshold(
+      self, variant: variants_pb2.Variant, threshold: float
+  ) -> bool:
+    """Returns True if the variant only contains alts above the threshold."""
+    dict_allele_frequency = allele_frequency.find_matching_allele_frequency(
+        variant=variant,
+        population_vcf_reader=self.exclude_variants_vcf_reader,
+        ref_reader=self.ref_reader,
+    )
+    alt_afs = [dict_allele_frequency[alt] for alt in variant.alternate_bases]
+    if not alt_afs:
+      return True
+    elif min(alt_afs) >= threshold:
+      return True
+    return False
+
   def process(
       self, region: range_pb2.Range, region_n: Optional[int] = None
   ) -> Tuple[
@@ -1910,6 +1930,19 @@ class RegionProcessor:
         candidates = list(
             filter_candidates(candidates, self.options.select_variant_types)
         )
+
+      if (
+          hasattr(self, 'exclude_variants_vcf_reader')
+          and self.exclude_variants_vcf_reader is not None
+      ):
+        candidates = [
+            candidate
+            for candidate in candidates
+            if not self._only_contains_alts_above_threshold(
+                candidate.variant, self.options.exclude_variants_af_threshold
+            )
+        ]
+
       runtimes['find candidates'] = trim_runtime(
           time.time() - before_find_candidates
       )
