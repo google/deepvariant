@@ -41,6 +41,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "deepvariant/fast_pipeline_utils.h"
 
 namespace learning {
 namespace genomics {
@@ -61,7 +62,7 @@ StreamExamples::StreamExamples(
   }
   absl::string_view shm_prefix = options.shm_prefix();
   // Name of the shared memory buffer.
-  shm_name_ = absl::StrCat(shm_prefix, "_shm_", options_.task_id());
+  shm_name_ = GetShmBufferName(shm_prefix, options_.task_id());
   shm_buffer_size_ = options_.shm_buffer_size();
 
   // Open an existing shared memory buffer.
@@ -78,16 +79,16 @@ StreamExamples::StreamExamples(
   LOG(INFO) << "Creating buffer_empty mutex";
   buffer_empty_ = std::make_unique<boost::interprocess::named_mutex>(
       boost::interprocess::open_only,
-      absl::StrCat(shm_prefix, "_buffer_empty_", options_.task_id()).data());
+      GetBufferEmptyMutexName(shm_prefix, options_.task_id()).data());
   LOG(INFO) << "Creating items_available mutex";
   items_available_ = std::make_unique<boost::interprocess::named_mutex>(
       boost::interprocess::open_only,
-      absl::StrCat(shm_prefix, "_items_available_", options_.task_id()).data());
+      GetItemsAvailableMutexName(shm_prefix, options_.task_id()).data());
   items_available_->lock();
   LOG(INFO) << "Creating shard_finished mutex";
   shard_finished_ = std::make_unique<boost::interprocess::named_mutex>(
       boost::interprocess::open_only,
-      absl::StrCat(shm_prefix, "_shard_finished_", options_.task_id()).data());
+      GetShardFinishedMutexName(shm_prefix, options_.task_id()).data());
   shard_finished_->lock();
 }
 

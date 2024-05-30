@@ -1566,6 +1566,7 @@ cc_library(
     hdrs = ["make_examples_native.h"],
     deps = [
         ":alt_aligned_pileup_lib",
+        ":fast_pipeline_utils",
         ":pileup_image_native",
         ":stream_examples",
         "//deepvariant/protos:deepvariant_cc_pb2",
@@ -1664,6 +1665,7 @@ cc_library(
     srcs = ["stream_examples.cc"],
     hdrs = ["stream_examples.h"],
     deps = [
+        ":fast_pipeline_utils",
         ":pileup_image_native",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
@@ -1681,9 +1683,19 @@ cc_binary(
         "fast_pipeline.h",
     ],
     deps = [
+        ":fast_pipeline_utils",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "fast_pipeline_utils",
+    srcs = ["fast_pipeline_utils.h"],
+    hdrs = ["fast_pipeline_utils.h"],
+    deps = [
         "@com_google_absl//absl/strings",
     ],
 )

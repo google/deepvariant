@@ -114,7 +114,7 @@ g++ -std=c++14 -shared \
         -o deepvariant/examples_from_stream.so \
         -fPIC \
         -l:libtensorflow_framework.so.2  \
-        -I/home/koles/deepvariant \
+        -I. \
         ${TF_CFLAGS[@]} \
         ${TF_LFLAGS[@]} \
         -D_GLIBCXX_USE_CXX11_ABI=1 \

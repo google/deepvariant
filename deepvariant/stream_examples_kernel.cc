@@ -61,13 +61,14 @@
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/tsl/platform/errors.h"
 #include "tensorflow/tsl/platform/thread_annotations.h"
+#include "deepvariant/fast_pipeline_utils.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
 // This class implements a custom TensorFlow op that reads data from shared
-// memory files and returns a batch of examples. Batches are variable length.
+// memory buffers and returns a batch of examples. Batches are variable length.
 // Examples are read from shared memory buffers (one for each shard).
 // Examples are written in the following format:
 //   int: length of alt_indices_encoded
@@ -98,11 +99,10 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
     make_examples_shard_finished_.resize(num_shards);
     num_shards_ = num_shards;
     for (int shard = 0; shard < num_shards; shard++) {
-      // TODO Move name generation into a shared function.
-      std::string shm_name = absl::StrCat(shm_prefix, "_shm_", shard);
       shm_[shard] = std::make_unique<boost::interprocess::shared_memory_object>(
           boost::interprocess::shared_memory_object(
-              boost::interprocess::open_only, shm_name.data(),
+              boost::interprocess::open_only,
+              GetShmBufferName(shm_prefix, shard).data(),
               boost::interprocess::read_write));
       shm_region_[shard] = std::make_unique<boost::interprocess::mapped_region>(
           *shm_[shard], boost::interprocess::read_write);
@@ -112,18 +112,15 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
       // Init mutexes
       buffer_empty_[shard] = std::make_unique<boost::interprocess::named_mutex>(
           boost::interprocess::open_only,
-          // TODO Move name generation into a shared function.
-          absl::StrCat(shm_prefix, "_buffer_empty_", shard).data());
+          GetBufferEmptyMutexName(shm_prefix, shard).data());
       items_available_[shard] =
           std::make_unique<boost::interprocess::named_mutex>(
               boost::interprocess::open_only,
-              // TODO Move name generation into a shared function.
-              absl::StrCat(shm_prefix, "_items_available_", shard).data());
+              GetItemsAvailableMutexName(shm_prefix, shard).data());
       make_examples_shard_finished_[shard] =
           std::make_unique<boost::interprocess::named_mutex>(
               boost::interprocess::open_only,
-              // TODO Move name generation into a shared function.
-              absl::StrCat(shm_prefix, "_shard_finished_", shard).data());
+              GetShardFinishedMutexName(shm_prefix, shard).data());
     }
 
     return tensorflow::Status();

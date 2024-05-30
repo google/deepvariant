@@ -29,55 +29,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_FAST_PIPELINE_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_FAST_PIPELINE_H_
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_FAST_PIPELINE_UTILS_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_FAST_PIPELINE_UTILS_H_
 
 #include <string>
-#include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "boost/interprocess/shared_memory_object.hpp" // NOLINT
-#include "boost/interprocess/sync/named_mutex.hpp" // NOLINT
-#include "boost/process.hpp" // NOLINT
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-class FastPipeline {
- public:
-  FastPipeline(int num_shards, int buffer_size, absl::string_view shm_prefix,
-               absl::string_view path_to_make_examples_flags,
-               absl::string_view path_to_call_variants_flags,
-               absl::string_view dv_bin_path);
-  void SetGlobalObjects();
-  void SpawnMakeExamples();
-  void SpawnCallVariants();
-  void WaitForProcesses();
-  void ClearGlobalObjects();
+inline std::string GetShmBufferName(absl::string_view prefix, int shard) {
+  return absl::StrCat(prefix, "_shm_", shard);
+}
 
- private:
-  int num_shards_;
-  int buffer_size_;
-  absl::string_view shm_prefix_;
-  absl::string_view dv_bin_path_;
-  std::vector<std::unique_ptr<boost::interprocess::shared_memory_object>> shm_;
+inline std::string GetBufferEmptyMutexName(absl::string_view prefix,
+                                           int shard) {
+  return absl::StrCat(prefix, "_buffer_empty_", shard);
+}
 
-  std::vector<std::unique_ptr<boost::interprocess::named_mutex>> buffer_empty_;
-  std::vector<std::unique_ptr<boost::interprocess::named_mutex>>
-      items_available_;
-  std::vector<std::unique_ptr<boost::interprocess::named_mutex>>
-      make_examples_shard_finished_;
+inline std::string GetItemsAvailableMutexName(absl::string_view prefix,
+                                              int shard) {
+  return absl::StrCat(prefix, "_items_available_", shard);
+}
 
-  std::vector<std::unique_ptr<boost::process::child>> make_examples_processes_;
-  std::vector<std::unique_ptr<boost::process::child>> call_variants_processes_;
-
-  std::vector<std::string> make_examples_flags_;
-  std::vector<std::string> call_variants_flags_;
-};
+inline std::string GetShardFinishedMutexName(absl::string_view prefix,
+                                             int shard) {
+  return absl::StrCat(prefix, "_shard_finished_", shard);
+}
 
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_FAST_PIPELINE_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_FAST_PIPELINE_UTILS_H_

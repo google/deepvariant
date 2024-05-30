@@ -39,6 +39,7 @@
 #include <string>
 
 
+#include "deepvariant/fast_pipeline_utils.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/log/log.h"
@@ -54,9 +55,6 @@
 #include "boost/process.hpp" // NOLINT
 #include "boost/process/search_path.hpp" // NOLINT
 
-namespace bp = boost::process;
-namespace bi = boost::interprocess;
-
 ABSL_FLAG(std::string, make_example_flags, "",
           "file containing make_examples flags");
 ABSL_FLAG(std::string, call_variants_flags, "",
@@ -65,6 +63,13 @@ ABSL_FLAG(std::string, shm_prefix, "", "prefix for shared memory objects");
 ABSL_FLAG(int, num_shards, 0, "number of make_examples shards");
 ABSL_FLAG(int, buffer_size, 10485760,
           "Shared memory buffer size for each shard, default is 10MB");
+
+namespace learning {
+namespace genomics {
+namespace deepvariant {
+
+namespace bp = boost::process;
+namespace bi = boost::interprocess;
 
 FastPipeline::FastPipeline(int num_shards, int buffer_size,
                            absl::string_view shm_prefix,
@@ -106,7 +111,7 @@ FastPipeline::FastPipeline(int num_shards, int buffer_size,
 void FastPipeline::SetGlobalObjects() {
   for (int shard = 0; shard < num_shards_; ++shard) {
     // Create shared memory buffers.
-    std::string shard_shm_name = absl::StrCat(shm_prefix_, "_shm_", shard);
+    std::string shard_shm_name = GetShmBufferName(shm_prefix_, shard);
     shm_[shard] =
         std::make_unique<bi::shared_memory_object>(bi::shared_memory_object(
             bi::open_or_create, shard_shm_name.data(), bi::read_write));
@@ -115,17 +120,17 @@ void FastPipeline::SetGlobalObjects() {
     LOG(INFO) << "Creating buffer_empty mutex";
     buffer_empty_[shard] = std::make_unique<bi::named_mutex>(
         bi::open_or_create,
-        absl::StrCat(shm_prefix_, "_buffer_empty_", shard).data());
+        GetBufferEmptyMutexName(shm_prefix_, shard).data());
     // Create mutex signalling that items are available in the buffer.
     LOG(INFO) << "Creating items_available mutex";
     items_available_[shard] = std::make_unique<bi::named_mutex>(
         bi::open_or_create,
-        absl::StrCat(shm_prefix_, "_items_available_", shard).data());
+        GetItemsAvailableMutexName(shm_prefix_, shard).data());
     // Create mutex signalling that shard is finished.
     LOG(INFO) << "Creating shard_finished mutex";
     make_examples_shard_finished_[shard] = std::make_unique<bi::named_mutex>(
         bi::open_or_create,
-        absl::StrCat(shm_prefix_, "_shard_finished_", shard).data());
+        GetShardFinishedMutexName(shm_prefix_, shard).data());
   }
 }
 
@@ -135,13 +140,13 @@ void FastPipeline::ClearGlobalObjects() {
     buffer_empty_[shard].release();
     items_available_[shard].release();
     make_examples_shard_finished_[shard].release();
-    shm_[shard]->remove(absl::StrCat(shm_prefix_, "_shm_", shard).data());
+    shm_[shard]->remove(GetShmBufferName(shm_prefix_, shard).data());
     buffer_empty_[shard]->remove(
-        absl::StrCat(shm_prefix_, "_buffer_empty_", shard).data());
+        GetBufferEmptyMutexName(shm_prefix_, shard).data());
     items_available_[shard]->remove(
-        absl::StrCat(shm_prefix_, "_items_available_", shard).data());
+        GetItemsAvailableMutexName(shm_prefix_, shard).data());
     make_examples_shard_finished_[shard]->remove(
-        absl::StrCat(shm_prefix_, "_shard_finished_", shard).data());
+        GetShardFinishedMutexName(shm_prefix_, shard).data());
   }
 }
 
@@ -206,6 +211,10 @@ void RunFastPipeline(absl::string_view dv_bin_path) {
   fast_pipeline.ClearGlobalObjects();
 }
 
+}  // namespace deepvariant
+}  // namespace genomics
+}  // namespace learning
+
 int main(int argc, char** argv) {
 
   absl::ParseCommandLine(argc, argv);
@@ -224,5 +233,6 @@ int main(int argc, char** argv) {
   // 5. call_variants_flags file exists
   // 6. No SHM files with the same prefix exist.
 
-  RunFastPipeline(dv_bin_path);
+  learning::genomics::deepvariant::RunFastPipeline(dv_bin_path);
+  return EXIT_SUCCESS;
 }
