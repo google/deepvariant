@@ -51,6 +51,7 @@ Flags:
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
+--sompy_docker_source Where to pull the som.py Docker image from. Default: pkrusche/hap.py.
 --skip_sompy (true|false) If True, skip the som.py evaluation.
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
 
@@ -91,6 +92,7 @@ PROPOSED_VARIANTS=""
 REF=""
 REGIONS=""
 REPORT_TITLE=""
+SOMPY_DOCKER_SOURCE="pkrusche/hap.py"
 TRUTH_BED=""
 TRUTH_VCF=""
 
@@ -241,6 +243,11 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --sompy_docker_source)
+      SOMPY_DOCKER_SOURCE="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     --help)
       echo "$USAGE" >&2
       exit 1
@@ -378,6 +385,7 @@ echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
 echo "REF: ${REF}"
 echo "REGIONS: ${REGIONS}"
 echo "REPORT_TITLE: ${REPORT_TITLE}"
+echo "SOMPY_DOCKER_SOURCE: ${SOMPY_DOCKER_SOURCE}"
 echo "TRUTH_BED: ${TRUTH_BED}"
 echo "TRUTH_VCF: ${TRUTH_VCF}"
 echo "========================="
@@ -552,8 +560,8 @@ function get_docker_image() {
   if [[ "${SKIP_SOMPY}" == "false" ]]; then
     SOMPY_VERSION="v0.3.9"
     # Pulling twice in case the first one times out.
-    run "sudo docker pull pkrusche/hap.py:${SOMPY_VERSION} || \
-      (sleep 5 ; sudo docker pull pkrusche/hap.py:${SOMPY_VERSION})"
+    run "sudo docker pull ${SOMPY_DOCKER_SOURCE}:${SOMPY_VERSION} || \
+      (sleep 5 ; sudo docker pull ${SOMPY_DOCKER_SOURCE}:${SOMPY_VERSION})"
   fi
 }
 
@@ -698,7 +706,7 @@ function run_sompy() {
   run "( sudo docker run -i \
   -v "${INPUT_DIR}:${INPUT_DIR}" \
   -v "${OUTPUT_DIR}:${OUTPUT_DIR}" \
-  pkrusche/hap.py:${SOMPY_VERSION} /opt/hap.py/bin/som.py \
+  ${SOMPY_DOCKER_SOURCE}:${SOMPY_VERSION} /opt/hap.py/bin/som.py \
     "${INPUT_DIR}/$(basename $TRUTH_VCF)" \
     "${OUTPUT_DIR}/$1" \
     --restrict-regions "${INPUT_DIR}/$(basename $TRUTH_BED)" \
@@ -720,7 +728,7 @@ function main() {
   # Get or build Docker image first, before downloading data.
   # They're independent steps, but might be nice to know if the Docker soource
   # doesn't exist.
-  if [[ ${DOCKER_SOURCE} =~ ^gcr.io ]]; then
+  if [[ ${DOCKER_SOURCE} =~ ^gcr.io ]] || [[ ${SOMPY_DOCKER_SOURCE} =~ ^gcr.io ]]; then
     run "gcloud auth print-access-token | sudo docker login -u oauth2accesstoken --password-stdin https://gcr.io"
   fi
   get_docker_image
