@@ -184,7 +184,7 @@ def get_deepsomatic_pacbio_config(config: ml_collections.ConfigDict):
   config.batch_size = 8192
   config.best_checkpoint_metric = 'tune/f1_homalt'
   config.class_weights = '1,1,1'
-  config.num_epochs = 7
+  config.num_epochs = 8
   config.num_validation_examples = 10_000_000
   config.optimizer = 'adam'
   config.beta_1 = 0.9651804083266324
@@ -194,10 +194,10 @@ def get_deepsomatic_pacbio_config(config: ml_collections.ConfigDict):
   config.optimizer_weight_decay = 0.0
 
   config.early_stopping_patience = 100
-  config.learning_rate = 0.000044603734890673705
+  config.learning_rate = 0.00009625413129605571
   config.learning_rate_num_epochs_per_decay = 2.66
-  config.learning_rate_decay_rate = 0.901947342606225
-  config.warmup_steps = 7877
+  config.learning_rate_decay_rate = 0.6571177145365408
+  config.warmup_steps = 8165
 
   config.backbone_dropout_rate = 0.0
 
