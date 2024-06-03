@@ -175,7 +175,9 @@ def get_deepsomatic_wes_config(
   config.early_stopping_patience = 10
 
 
-def get_deepsomatic_pacbio_config(config: ml_collections.ConfigDict):
+def get_deepsomatic_pacbio_tumor_normal_config(
+    config: ml_collections.ConfigDict,
+):
   """Training parameters."""
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
@@ -206,8 +208,8 @@ def get_deepsomatic_pacbio_config(config: ml_collections.ConfigDict):
   config.ema_momentum = 0.991463134331829
 
 
-def get_deepsomatic_ont_config(config: ml_collections.ConfigDict):
-  get_pacbio_config(config)
+def get_deepsomatic_ont_tumor_normal_config(config: ml_collections.ConfigDict):
+  get_deepsomatic_pacbio_tumor_normal_config(config)
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
@@ -332,10 +334,10 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_deepsomatic_wgs_ffpe_config(config)
   elif config_name == 'deepsomatic_wes_ffpe':
     get_deepsomatic_wes_ffpe_config(config)
-  elif config_name == 'deepsomatic_pacbio':
-    get_deepsomatic_pacbio_config(config)
-  elif config_name == 'deepsomatic_ont':
-    get_deepsomatic_ont_config(config)
+  elif config_name == 'deepsomatic_pacbio_tumor_normal':
+    get_deepsomatic_pacbio_tumor_normal_config(config)
+  elif config_name == 'deepsomatic_ont_tumor_normal':
+    get_deepsomatic_ont_tumor_normal_config(config)
   elif config_name == 'base':
     # Use the base config.
     pass
