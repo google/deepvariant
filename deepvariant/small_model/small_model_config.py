@@ -55,7 +55,6 @@ def set_pacbio_config(config: ml_collections.ConfigDict) -> None:
 
 def get_config(config_name: str) -> ml_collections.ConfigDict:
   """Returns the default configuration as instance of ConfigDict."""
-
   # Model hyperparameters
   model_params = ml_collections.ConfigDict()
   model_params.activation = "relu"
@@ -72,6 +71,10 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.tune_tsv_directory = ""
   config.num_tune_samples = 10_000
   config.test_fraction = 0.2
+
+  # Training environment
+  config.tensorboard_directory = None
+  config.is_xmanager_run = False
 
   if config_name == "wgs":
     set_wgs_config(config)
