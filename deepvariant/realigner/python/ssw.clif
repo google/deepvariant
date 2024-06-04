@@ -85,6 +85,6 @@ from "deepvariant/realigner/ssw.h":
 
       # Align query against previously set reference sequence.
       # Prefer this method if aligning many queries to a single reference.
-      def `Align` as align(self, query: bytes, filter: Filter)
+      def `Align` as align(self, query: bytes, filter: Filter, mask_len: int)
           -> (accuracy: int, alignment: Alignment):
           return ValueErrorOnInaccurate(...)

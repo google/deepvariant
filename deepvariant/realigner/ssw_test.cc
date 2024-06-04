@@ -51,7 +51,7 @@ int Gcc54Bug() {
   Filter f;
   Alignment x;
   a.SetReferenceSequence("tttt");
-  int accuracy = a.Align("ttAtt", f, &x);
+  int accuracy = a.Align("ttAtt", f, 16, &x);
   if (accuracy != 0) return 1;
   absl::PrintF("accuracy=%d cigar=%s\n", accuracy, x.cigar_string);
   if (x.cigar_string != "2=1I2=") return 1;

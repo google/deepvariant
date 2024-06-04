@@ -57,7 +57,7 @@ class SswGccTest(absltest.TestCase):
     filter_ = ssw.Filter()
     length = aligner.set_reference_sequence(ref)
     self.assertLen(ref, length)
-    alignment = aligner.align(query, filter_)
+    alignment = aligner.align(query, filter_, 16)
     p(alignment)
     self.assertEqual(b'2=1I2=', alignment.cigar_string)
 
@@ -78,7 +78,7 @@ class SswGccTest(absltest.TestCase):
     filter_ = ssw.Filter()
     length = aligner.set_reference_sequence(ref)
     self.assertLen(ref, length)
-    alignment = aligner.align(query, filter_)
+    alignment = aligner.align(query, filter_, 16)
     p(alignment)
     self.assertEqual(b'2=1I15=', alignment.cigar_string)
 

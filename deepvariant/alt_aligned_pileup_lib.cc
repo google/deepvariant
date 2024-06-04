@@ -276,8 +276,10 @@ std::vector<Read> RealignReadsToHaplotype(
     const MakeExamplesOptions& options) {
   FastPassAligner realigner;
   AlignerOptions aln_config = options.realigner_options().aln_config();
-  if (!reads.empty()) {
+  if (!reads.empty() && reads[0].aligned_sequence().size() > 15) {
     aln_config.set_read_size(reads[0].aligned_sequence().size());
+  } else {
+    aln_config.set_read_size(200);
   }
   aln_config.set_force_alignment(true);
   realigner.set_options(aln_config);

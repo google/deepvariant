@@ -66,10 +66,10 @@ int Aligner::SetReferenceSequence(const string& reference) {
       reference.c_str(), reference.length());
 }
 
-int Aligner::Align(const string& query, const Filter& filter,
+int Aligner::Align(const string& query, const Filter& filter, int maskLen,
                     Alignment* alignment) const {
   return StripedSmithWaterman::Aligner::Align(
-      query.c_str(), filter, alignment, query.length());
+      query.c_str(), filter, alignment, maskLen);
 }
 
 }  // namespace deepvariant
