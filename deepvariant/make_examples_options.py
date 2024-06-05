@@ -360,6 +360,18 @@ _VSC_MAX_FRACTION_SNPS_FOR_NON_TARGET_SAMPLE = flags.DEFINE_float(
         'Default is 0.0 which means no max is set.'
     ),
 )
+
+_DOWNSAMPLE_CLASSES = flags.DEFINE_list(
+    'downsample_classes',
+    [],
+    (
+        'If set, downsample training examples for each specified class. '
+        'For example, if set to 0.5,0.5,1.0 then class 0 and 1 will be '
+        'downsampled to 50% of the original number of examples, and class 3 '
+        'will be left unchanged. This flag is only used in training mode.'
+    ),
+)
+
 flags.DEFINE_float(
     'training_random_emit_ref_sites',
     NO_RANDOM_REF,
@@ -735,6 +747,7 @@ def shared_flags_to_options(
       call_small_model_examples=_CALL_SMALL_MODEL_EXAMPLES.value,
       small_model_gq_threshold=_SMALL_MODEL_GQ_THRESHOLD.value,
       trained_small_model_path=_TRAINED_SMALL_MODEL_PATH.value,
+      downsample_classes=list(map(float, _DOWNSAMPLE_CLASSES.value)),
   )
 
   if add_flags:

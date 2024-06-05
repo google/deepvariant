@@ -60,6 +60,13 @@ class CustomizedClassesVariantLabel(variant_labeler.VariantLabel):
     self.variant = variant
     self.truth_variant = truth_variant
 
+  def get_class(self):
+    """Returns the class of the label."""
+    try:
+      return self.classes_dict[self.get_class_status(self.truth_variant.info)]
+    except ValueError:
+      return 0
+
   def label_for_alt_alleles(self, alt_alleles_indices):
     """Computes the label value for an example.
 

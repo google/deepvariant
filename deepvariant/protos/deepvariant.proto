@@ -625,7 +625,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 72.
+// Next ID: 73.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -870,6 +870,9 @@ message MakeExamplesOptions {
 
   // Size of the shared memory buffer per each shard.
   int32 shm_buffer_size = 69;
+
+  // Proportion of examples to keep when in training mode.
+  repeated float downsample_classes = 72;
 }
 
 // Config describe information needed for a dataset that can be used for

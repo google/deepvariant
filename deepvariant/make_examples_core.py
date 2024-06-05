@@ -32,6 +32,7 @@ import collections
 import itertools
 import json
 import os
+import random
 import time
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
 
@@ -855,6 +856,7 @@ def filter_regions_by_vcf(
     filtered_regions: a list of Range objects, each of which appeared in the
         input regions and contains at least one of the input variants.
   """
+
   def dict_by_chromosome(
       list_of_ranges: List[range_pb2.Range],
   ) -> Dict[str, List[range_pb2.Range]]:
@@ -972,7 +974,7 @@ def reservoir_sample_reads(
     k: int,
     region: range_pb2.Range,
     max_bases_to_cover: int,
-    random: Optional[np.random.RandomState] = None,
+    random_generator: Optional[np.random.RandomState] = None,
 ) -> List[reads_pb2.Read]:
   """Samples k reads (or cover up to `max_bases_to_cover`) uniformly.
 
@@ -983,7 +985,7 @@ def reservoir_sample_reads(
       many bases are covered in the region.
     max_bases_to_cover: If this maximum number of bases is reached, the
       samplling will stop.
-    random: A random number generator or None.
+    random_generator: A random number generator or None.
 
   Returns:
     A list containing the sample reads.
@@ -994,7 +996,7 @@ def reservoir_sample_reads(
   # If `max_bases_to_cover` is not set, use the simpler
   # reservoir_sample implementation.
   if not max_bases_to_cover:
-    return utils.reservoir_sample(iterable_of_reads, k, random)
+    return utils.reservoir_sample(iterable_of_reads, k, random_generator)
 
   if k < 0:
     raise ValueError('k must be nonnegative, but got {}'.format(k))
@@ -1004,8 +1006,8 @@ def reservoir_sample_reads(
     # number (meaning not limiting on that).
     k = float('inf')
 
-  if random is None:
-    random = np.random
+  if random_generator is None:
+    random_generator = np.random
 
   sampled_reads = []
   # Keep a list of the number of bases each `sampled_reads` have in the region.
@@ -1019,7 +1021,7 @@ def reservoir_sample_reads(
       sampled_reads_overlap_len.append(overlap_len)
       bases_covered += overlap_len
     else:
-      j = random.randint(0, i + 1)
+      j = random_generator.randint(0, i + 1)
       if j < len(sampled_reads):
         # Because this replaces the read at sampled_reads[j], subtract first.
         bases_covered -= sampled_reads_overlap_len[j]
@@ -2405,6 +2407,17 @@ class RegionProcessor:
     # Remove any candidates we couldn't label, yielding candidate, label pairs.
     for candidate, label in zip(candidates, labels):
       if label.is_confident:
+        # Downsample candidates if enabled.
+        if (
+            self.options.mode
+            == deepvariant_pb2.MakeExamplesOptions.Mode.TRAINING
+            and self.options.downsample_classes
+        ):
+          if (
+              random.random()
+              > self.options.downsample_classes[label.get_class()]
+          ):
+            continue
         yield candidate, label
 
   def add_label_to_example(
@@ -2591,7 +2604,6 @@ def processing_regions_from_options(
     regions calculated from intersection of input regions, confident regions
     and regions to exclude.
   """
-
   # Load candidate_positions if the flag is set. Partitioning logic will depend
   # on whether candidate_positions is set.
   candidate_positions = None

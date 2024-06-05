@@ -31,10 +31,12 @@
 import abc
 
 
+
 from absl import logging
+
+from deepvariant import dv_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
-from deepvariant import dv_utils
 
 # ---------------------------------------------------------------------------
 # VariantLabel
@@ -96,6 +98,14 @@ class VariantLabel(object):
     alt_alleles_indices = dv_utils.example_alt_alleles_indices(example)
     # Set the label of the example to the # alts given our alt_alleles_indices.
     return self.label_for_alt_alleles(alt_alleles_indices)
+
+  def get_class(self):
+    """Returns the class of a given label.
+
+    This function does not consider multi-allelic variants. It is used for the
+    purpose of downsampling.
+    """
+    raise NotImplementedError
 
   def set_variant_genotype(self, variant):
     if not variant.calls:
