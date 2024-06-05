@@ -47,10 +47,10 @@ def set_ont_config(config: ml_collections.ConfigDict) -> None:
 
 def set_pacbio_config(config: ml_collections.ConfigDict) -> None:
   # TODO: update training data
-  config.train_tsv_directory = (
-      "/cns/oz-d/home/brain-genomics/lucasbrambrink/smallmodel/examples/pacbio/"
-  )
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b343751283-pacbio/ttl=14d/b343751283-pacbio_train_ME_0-*-of-00150.tfrecord.gz.small_model.tsv"
   config.num_train_samples = 1_000_000
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b343751283-pacbio/ttl=14d/b343751283-pacbio_tune_ME_0-*-of-00150.tfrecord.gz.small_model.tsv"
+  config.num_tune_samples = 100_000
 
 
 def get_config(config_name: str) -> ml_collections.ConfigDict:
@@ -67,9 +67,11 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.batch_size = 32
   config.logging_frequency = 8192
   config.train_tsv_directory = ""
-  config.num_train_samples = 1_000_000
+  config.num_train_samples = 0
   config.tune_tsv_directory = ""
-  config.num_tune_samples = 10_000
+  config.num_tune_samples = 0
+
+  # Local training only
   config.test_fraction = 0.2
 
   # Training environment
