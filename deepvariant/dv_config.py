@@ -215,6 +215,14 @@ def get_deepsomatic_ont_tumor_normal_config(config: ml_collections.ConfigDict):
   config.init_checkpoint = ''
 
 
+def get_deepsomatic_pacbio_tumor_only_config(config: ml_collections.ConfigDict):
+  """Training parameters."""
+  get_pacbio_config(config)
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = ''
+
+
 def get_deepsomatic_wgs_tumor_only_config(config: ml_collections.ConfigDict):
   get_wgs_config(config)
   config.class_weights = '1,1,10'
@@ -338,6 +346,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_deepsomatic_pacbio_tumor_normal_config(config)
   elif config_name == 'deepsomatic_ont_tumor_normal':
     get_deepsomatic_ont_tumor_normal_config(config)
+  elif config_name == 'deepsomatic_pacbio_tumor_only':
+    get_deepsomatic_pacbio_tumor_only_config(config)
   elif config_name == 'base':
     # Use the base config.
     pass
