@@ -365,7 +365,7 @@ class FastPassAligner {
   // Expected read length. It is needed for sanity checking. Actual reads may
   // be different sizes. Although, actual read sizes should be close to
   // read_size.
-  int read_size_;
+  int read_size_ = 100;
 
   int max_num_of_mismatches_ = 2;
 
