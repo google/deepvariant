@@ -2883,7 +2883,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
             n_stats,
             runtimes,
         )
-        # Question: do we want to skip pileup image generation?
+      if options.skip_pileup_image_generation:
         continue
 
       candidates_for_pileup_images = candidates_by_sample[role]

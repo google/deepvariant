@@ -649,6 +649,12 @@ _WRITE_SMALL_MODEL_EXAMPLES = flags.DEFINE_bool(
     False,
     'If True, write small model training examples to TSV files.',
 )
+_SKIP_PILEUP_IMAGE_GENERATION = flags.DEFINE_bool(
+    'skip_pileup_image_generation',
+    False,
+    'If True, skips generating pile up images. Should be set only if'
+    ' write_small_model_examples is true.',
+)
 _CALL_SMALL_MODEL_EXAMPLES = flags.DEFINE_bool(
     'call_small_model_examples',
     False,
@@ -1053,6 +1059,15 @@ def shared_flags_to_options(
 
   if _EXCLUDE_VARIANTS_AF_THRESHOLD.value:
     options.exclude_variants_af_threshold = _EXCLUDE_VARIANTS_AF_THRESHOLD.value
+
+  if _SKIP_PILEUP_IMAGE_GENERATION.value:
+    if not _WRITE_SMALL_MODEL_EXAMPLES.value:
+      errors.log_and_raise(
+          '--skip_pileup_image_generation can only be set when generating small'
+          ' model examples.',
+          errors.CommandLineError,
+      )
+    options.skip_pileup_image_generation = _SKIP_PILEUP_IMAGE_GENERATION.value
 
   return options
 
