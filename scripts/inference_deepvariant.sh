@@ -355,6 +355,11 @@ if [[ "${MODEL_TYPE}" = "WES" ]]; then
     exit 1
   fi
   extra_args+=( --regions "/input/$(basename $CAPTURE_BED)")
+fi
+
+# CAPTURE_BED can be specified even when it's not WES.
+# But for now, we only use this in hap.py if it's not WES.
+if [[ -n "${CAPTURE_BED}" ]]; then
   happy_args+=( -T "${INPUT_DIR}/$(basename $CAPTURE_BED)")
 fi
 
@@ -452,7 +457,7 @@ function copy_data() {
   copy_gs_or_http_file "${REF}.gz.gzi" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gzi" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.fai" "${INPUT_DIR}"
-  if [[ "${MODEL_TYPE}" = "WES" ]]; then
+  if [[ -n "${CAPTURE_BED}" ]]; then
     copy_gs_or_http_file "${CAPTURE_BED}" "${INPUT_DIR}"
   fi
   if [[ -n "${PROPOSED_VARIANTS}" ]]; then
