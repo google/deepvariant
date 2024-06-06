@@ -78,6 +78,7 @@ MODEL_FEATURES = [
 ENCODING_BY_GENOTYPE = {
     (0, 0): GenotypeEncoding.REF.value,
     (0, 1): GenotypeEncoding.HET.value,
+    (1, 0): GenotypeEncoding.HET.value,
     (1, 1): GenotypeEncoding.HOM_ALT.value,
 }
 
