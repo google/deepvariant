@@ -28,29 +28,69 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Model configs for small model training."""
 
+import enum
 import ml_collections
 
 
+class PresetConfig(enum.Enum):
+  """Enum of preset configs."""
+
+  WGS = "wgs"
+  WES = "wes"
+  PACBIO = "pacbio"
+  ONT = "ont"
+  HYBRID = "hybrid"
+
+
 def set_wgs_config(config: ml_collections.ConfigDict) -> None:
-  # TODO: update training data
-  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/shafin/deepvariant_wgs/b338442845_wgs_small_model/ttl=14d/"
-  config.num_train_samples = 10_000_000
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b345306347_wgs/ttl=14d/b345306347_wgs_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b345306347_wgs/ttl=14d/b345306347_wgs_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 34162936
+  config.num_tune_samples = 973886
 
 
-def set_ont_config(config: ml_collections.ConfigDict) -> None:
-  # TODO: update training data
-  config.train_tsv_directory = (
-      "/cns/oz-d/home/brain-genomics/lucasbrambrink/smallmodel/examples/ont/"
-  )
-  config.num_train_samples = 1_000_000
+def set_wes_config(config: ml_collections.ConfigDict) -> None:
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_exome/b345306347_exome/ttl=14d/b345306347_exome_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_exome/b345306347_exome/ttl=14d/b345306347_exome_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 539986
+  config.num_tune_samples = 20752
 
 
 def set_pacbio_config(config: ml_collections.ConfigDict) -> None:
-  # TODO: update training data
-  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b343751283-pacbio/ttl=14d/b343751283-pacbio_train_ME_0-*-of-00150.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 1_000_000
-  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b343751283-pacbio/ttl=14d/b343751283-pacbio_tune_ME_0-*-of-00150.tfrecord.gz.small_model.tsv"
-  config.num_tune_samples = 100_000
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 48123335
+  config.num_tune_samples = 1290029
+
+
+def set_ont_config(config: ml_collections.ConfigDict) -> None:
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b345306347_ont/ttl=14d/b345306347_ont_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b345306347_ont/ttl=14d/b345306347_ont_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 72360798
+  config.num_tune_samples = 1948621
+
+
+def set_hybrid_config(config: ml_collections.ConfigDict) -> None:
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_hybrid/b345306347_hybrid_pacbio_illumina/ttl=14d/b345306347_hybrid_pacbio_illumina_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_hybrid/b345306347_hybrid_pacbio_illumina/ttl=14d/b345306347_hybrid_pacbio_illumina_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 31325720
+  config.num_tune_samples = 861825
+
+
+def set_preset_config(
+    preset_config: PresetConfig, config: ml_collections.ConfigDict
+) -> None:
+  """Sets the config for a given preset."""
+  if preset_config == PresetConfig.WGS:
+    set_wgs_config(config)
+  elif preset_config == PresetConfig.WES:
+    set_wes_config(config)
+  elif preset_config == PresetConfig.PACBIO:
+    set_pacbio_config(config)
+  elif preset_config == PresetConfig.ONT:
+    set_ont_config(config)
+  elif preset_config == PresetConfig.HYBRID:
+    set_hybrid_config(config)
 
 
 def get_config(config_name: str) -> ml_collections.ConfigDict:
@@ -78,14 +118,11 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.tensorboard_directory = None
   config.is_xmanager_run = False
 
-  if config_name == "wgs":
-    set_wgs_config(config)
-  elif config_name == "ont":
-    set_ont_config(config)
-  elif config_name == "pacbio":
-    set_pacbio_config(config)
-  else:
-    raise ValueError(f"Unknown config name: {config_name}")
+  try:
+    preset_config = PresetConfig(config_name)
+    set_preset_config(preset_config, config)
+  except ValueError as e:
+    raise ValueError(f"Unknown preset config name: {config_name}") from e
 
   config.model_params = model_params
 
