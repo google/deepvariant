@@ -32,11 +32,15 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_STREAM_EXAMPLES_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_STREAM_EXAMPLES_H_
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "boost/interprocess/managed_shared_memory.hpp" // NOLINT
-#include "boost/interprocess/shared_memory_object.hpp" // NOLINT
-#include "boost/interprocess/sync/named_mutex.hpp" // NOLINT
+#include "boost/interprocess/managed_shared_memory.hpp"  // NOLINT
+#include "boost/interprocess/shared_memory_object.hpp"  // NOLINT
+#include "boost/interprocess/sync/named_mutex.hpp"  // NOLINT
 
 namespace learning {
 namespace genomics {

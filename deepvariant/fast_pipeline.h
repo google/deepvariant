@@ -32,6 +32,7 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_FAST_PIPELINE_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_FAST_PIPELINE_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
