@@ -28,7 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant.make_examples_core."""
 
-import copy
 from unittest import mock
 
 
@@ -40,12 +39,9 @@ from absl.testing import parameterized
 import numpy as np
 
 from deepvariant import dv_constants
-from deepvariant import dv_utils
-from deepvariant import dv_utils_using_clif
 from deepvariant import make_examples
 from deepvariant import make_examples_core
 from deepvariant import testdata
-from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.protos import realigner_pb2
 from third_party.nucleus.io import fasta
@@ -53,7 +49,6 @@ from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
-from third_party.nucleus.util import variant_utils
 
 FLAGS = flags.FLAGS
 
@@ -1185,78 +1180,6 @@ class RegionProcessorTest(parameterized.TestCase):
         {'main_sample': ['gvcf'] if include_gvcfs else []},
     )
     self.assertEqual(expected_output, actual)
-
-  @parameterized.parameters(
-      # Test that a het variant gets a label value of 1 assigned to the example.
-      dict(
-          label=variant_labeler.VariantLabel(
-              is_confident=True,
-              variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
-              genotype=(0, 1),
-          ),
-          expected_label_value=1,
-      ),
-      # Test that a reference variant gets a label value of 0 in the example.
-      dict(
-          label=variant_labeler.VariantLabel(
-              is_confident=True,
-              variant=test_utils.make_variant(start=10, alleles=['A', '.']),
-              genotype=(0, 0),
-          ),
-          expected_label_value=0,
-      ),
-  )
-  def test_add_label_to_example(self, label, expected_label_value):
-    example = self._example_for_variant(label.variant)
-    labeled = copy.deepcopy(example)
-    actual = self.processor.add_label_to_example(
-        labeled, label, denovo_label=0, denovo_enabled=False
-    )
-
-    # The add_label_to_example command modifies labeled and returns it.
-    self.assertIs(actual, labeled)
-
-    # Check that all keys from example are present in labeled.
-    for key, value in example.features.feature.items():
-      if key != 'variant/encoded':  # Special case tested below.
-        self.assertEqual(value, labeled.features.feature[key])
-
-    # The genotype of our example_variant should be set to the true genotype
-    # according to our label.
-    self.assertEqual(expected_label_value, dv_utils.example_label(labeled))
-    labeled_variant = dv_utils.example_variant(labeled)
-    call = variant_utils.only_call(labeled_variant)
-    self.assertEqual(tuple(call.genotype), label.genotype)
-
-    # The original variant and labeled_variant from out tf.Example should be
-    # equal except for the genotype field, since this is set by
-    # add_label_to_example.
-    label.variant.calls[0].genotype[:] = []
-    call.genotype[:] = []
-    self.assertEqual(label.variant, labeled_variant)
-
-  def test_label_variant_raises_for_non_confident_variant(self):
-    label = variant_labeler.VariantLabel(
-        is_confident=False,
-        variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
-        genotype=(0, 1),
-    )
-    example = self._example_for_variant(label.variant)
-    with self.assertRaisesRegex(
-        ValueError, 'Cannot add a non-confident label to an example'
-    ):
-      self.processor.add_label_to_example(
-          example, label, denovo_label=0, denovo_enabled=False
-      )
-
-  def _example_for_variant(self, variant):
-    return dv_utils_using_clif.make_example(
-        variant,
-        list(variant.alternate_bases),
-        b'foo',
-        self.default_shape,
-        deterministic=True,
-    )
 
   @parameterized.parameters('sort_by_haplotypes', 'use_original_quality_scores')
   def test_flags_strictly_needs_sam_aux_fields(

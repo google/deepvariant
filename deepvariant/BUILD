@@ -513,8 +513,6 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":dv_constants",
-        ":dv_utils",
-        ":dv_utils_using_clif",
         ":make_examples_core",
         ":make_examples_lib",
         ":py_testdata",

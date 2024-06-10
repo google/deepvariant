@@ -28,7 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deeptrio.make_examples."""
 
-import copy
 import errno
 import json
 import platform
@@ -49,9 +48,7 @@ from deeptrio import make_examples
 from deeptrio import testdata
 from deepvariant import dv_constants
 from deepvariant import dv_utils
-from deepvariant import dv_utils_using_clif
 from deepvariant import make_examples_core
-from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import fasta
@@ -1474,98 +1471,7 @@ class RegionProcessorTest(parameterized.TestCase):
     in_memory_sam_reader = self.processor.samples[1].in_memory_sam_reader
     in_memory_sam_reader.replace_reads.assert_called_once_with([r1, r2])
 
-  @parameterized.parameters(
-      # Test that a het variant gets a label value of 1 assigned to the example.
-      dict(
-          label=variant_labeler.VariantLabel(
-              is_confident=True,
-              variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
-              genotype=(0, 1),
-          ),
-          denovo_label=0,
-          expected_label_value=1,
-          denovo_enabled=True,
-      ),
-      # Test that a reference variant gets a label value of 0 in the example.
-      dict(
-          label=variant_labeler.VariantLabel(
-              is_confident=True,
-              variant=test_utils.make_variant(start=10, alleles=['A', '.']),
-              genotype=(0, 0),
-          ),
-          denovo_label=1,
-          expected_label_value=0,
-          denovo_enabled=True,
-      ),
-      dict(
-          label=variant_labeler.VariantLabel(
-              is_confident=True,
-              variant=test_utils.make_variant(start=10, alleles=['A', '.']),
-              genotype=(0, 0),
-          ),
-          denovo_label=None,
-          expected_label_value=0,
-          denovo_enabled=False,
-      ),
-  )
-  def test_add_label_to_example(
-      self, label, denovo_label, expected_label_value, denovo_enabled
-  ):
-    example = self._example_for_variant(label.variant)
-    labeled = copy.deepcopy(example)
-    actual = self.processor.add_label_to_example(
-        labeled, label, denovo_label, denovo_enabled
-    )
-
-    # The add_label_to_example command modifies labeled and returns it.
-    self.assertIs(actual, labeled)
-
-    # Check that all keys from example are present in labeled.
-    for key, value in example.features.feature.items():
-      if key != 'variant/encoded':  # Special case tested below.
-        self.assertEqual(value, labeled.features.feature[key])
-
-    # The genotype of our example_variant should be set to the true genotype
-    # according to our label.
-    self.assertEqual(expected_label_value, dv_utils.example_label(labeled))
-    if denovo_enabled:
-      self.assertEqual(denovo_label, dv_utils.example_denovo_label(labeled))
-    else:
-      self.assertIsNone(dv_utils.example_denovo_label(labeled))
-    labeled_variant = dv_utils.example_variant(labeled)
-    call = variant_utils.only_call(labeled_variant)
-    self.assertEqual(tuple(call.genotype), label.genotype)
-
-    # The original variant and labeled_variant from out tf.Example should be
-    # equal except for the genotype field, since this is set by
-    # add_label_to_example.
-    label.variant.calls[0].genotype[:] = []
-    call.genotype[:] = []
-    self.assertEqual(label.variant, labeled_variant)
-
-  def test_label_variant_raises_for_non_confident_variant(self):
-    label = variant_labeler.VariantLabel(
-        is_confident=False,
-        variant=test_utils.make_variant(start=10, alleles=['A', 'C']),
-        genotype=(0, 1),
-    )
-    example = self._example_for_variant(label.variant)
-    with self.assertRaisesRegex(
-        ValueError, 'Cannot add a non-confident label to an example'
-    ):
-      self.processor.add_label_to_example(
-          example, label, denovo_label=0, denovo_enabled=False
-      )
-
-  def _example_for_variant(self, variant):
-    return dv_utils_using_clif.make_example(
-        variant,
-        list(variant.alternate_bases),
-        b'foo',
-        self.default_shape,
-        deterministic=True,
-    )
-
+  @flagsaver.flagsaver
   def test_use_original_quality_scores_without_parse_sam_aux_fields(self):
     FLAGS.mode = 'calling'
     FLAGS.ref = testdata.CHR20_FASTA

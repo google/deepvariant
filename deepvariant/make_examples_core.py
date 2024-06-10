@@ -2420,48 +2420,6 @@ class RegionProcessor:
             continue
         yield candidate, label
 
-  def add_label_to_example(
-      self,
-      example: example_pb2.Example,
-      label: Any,
-      denovo_label: int,
-      denovo_enabled: bool = False,
-  ) -> example_pb2.Example:
-    """Adds label information about the assigned label to our example.
-
-    Args:
-      example: A tf.Example proto. We will write truth_variant and label into
-        this proto.
-      label: A variant_labeler.Label object containing the labeling information
-        to add to our example.
-      denovo_label: An int value defining the denovo label for the example.
-      denovo_enabled: If true a denovo label will be added to the proto.
-
-    Returns:
-      The example proto with label fields added.
-
-    Raises:
-      ValueError: if label isn't confident.
-    """
-    if not label.is_confident:
-      raise ValueError(
-          'Cannot add a non-confident label to an example', example, label
-      )
-    alt_alleles_indices = dv_utils.example_alt_alleles_indices(example)
-
-    dv_utils.example_set_variant(
-        example, label.variant, self.options.deterministic_serialization
-    )
-
-    # Set the label of the example to the # alts given our alt_alleles_indices.
-    dv_utils.example_set_label(
-        example, label.label_for_alt_alleles(alt_alleles_indices)
-    )
-
-    if denovo_enabled:
-      dv_utils.example_set_denovo_label(example, denovo_label)
-    return example
-
 
 def move_to_the_next_non_exhausted_shard(
     shard_index: int, i_th_index: List[int], position_arrays: List[Any]

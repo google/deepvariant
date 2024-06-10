@@ -91,7 +91,6 @@ py_test(
         ":py_testdata",
         "//deepvariant:dv_constants",
         "//deepvariant:dv_utils",
-        "//deepvariant:dv_utils_using_clif",
         "//deepvariant:make_examples_core",
         "//deepvariant/labeler:variant_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
