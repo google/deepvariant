@@ -47,7 +47,6 @@ import numpy as np
 from deepvariant import allele_frequency
 from deepvariant import dv_constants
 from deepvariant import dv_utils
-from deepvariant import dv_utils_using_clif
 from deepvariant import dv_vcf_constants
 from deepvariant import resources
 from deepvariant import sample as sample_lib
@@ -82,7 +81,6 @@ from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import utils
 from third_party.nucleus.util import variant_utils
 # pylint: disable=g-direct-tensorflow-import
-from tensorflow.core.example import example_pb2
 from tensorflow.python.lib.io import tf_record
 # pylint: enable=g-direct-tensorflow-import
 
@@ -2676,36 +2674,6 @@ def processing_regions_from_options(
     return filtered_regions, None
 
   return region_list, calling_regions
-
-
-def _write_example_and_update_stats(
-    example: example_pb2.Example,
-    writer: OutputsWriter,
-    runtimes: Dict[str, float],
-    labels: Optional[Dict[Union[int, None], int]] = None,
-    labels_denovo: Optional[Dict[Union[int, None], int]] = None,
-    types: Optional[Dict[dv_utils_using_clif.EncodedVariantType, int]] = None,
-    denovo_enabled: bool = False,
-):
-  """Writes out the example using writer; updates labels and types as needed."""
-  writer.write_examples(example)
-  if runtimes:
-    if 'num examples' not in runtimes:
-      runtimes['num examples'] = 0
-    runtimes['num examples'] += 1
-  if labels is not None:
-    example_label = dv_utils.example_label(example)
-    labels[example_label] += 1
-  if labels_denovo is not None:
-    example_denovo_label = 0
-    if denovo_enabled:
-      example_denovo_label = dv_utils.example_denovo_label(example)
-    labels_denovo[example_denovo_label] += 1
-  if types is not None:
-    example_type = dv_utils_using_clif.encoded_variant_type(
-        dv_utils.example_variant(example)
-    )
-    types[example_type] += 1
 
 
 def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
