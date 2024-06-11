@@ -186,8 +186,8 @@ def get_deepsomatic_pacbio_tumor_normal_config(
   config.batch_size = 8192
   config.best_checkpoint_metric = 'tune/f1_homalt'
   config.class_weights = '1,1,1'
-  config.num_epochs = 8
-  config.num_validation_examples = 10_000_000
+  config.num_epochs = 4
+  config.num_validation_examples = 15_000_000
   config.optimizer = 'adam'
   config.beta_1 = 0.9651804083266324
   config.beta_2 = 0.9665259112630292
@@ -196,10 +196,10 @@ def get_deepsomatic_pacbio_tumor_normal_config(
   config.optimizer_weight_decay = 0.0
 
   config.early_stopping_patience = 100
-  config.learning_rate = 0.00009625413129605571
+  config.learning_rate = 0.00004850252247279374
   config.learning_rate_num_epochs_per_decay = 2.66
-  config.learning_rate_decay_rate = 0.6571177145365408
-  config.warmup_steps = 8165
+  config.learning_rate_decay_rate = 0.8011670994484517
+  config.warmup_steps = 8607
 
   config.backbone_dropout_rate = 0.0
 
