@@ -36,7 +36,22 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/allele_frequency_channel.h"
+#include "deepvariant/avg_base_quality_channel.h"
+#include "deepvariant/blank_channel.h"
+#include "deepvariant/channel.h"
+#include "deepvariant/gap_compressed_identity_channel.h"
+#include "deepvariant/gc_content_channel.h"
+#include "deepvariant/haplotype_tag_channel.h"
+#include "deepvariant/homopolymer_weighted_channel.h"
+#include "deepvariant/identity_channel.h"
+#include "deepvariant/insert_size_channel.h"
+#include "deepvariant/is_homopolymer_channel.h"
+#include "deepvariant/mapping_quality_channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/read_mapping_percent_channel.h"
+#include "deepvariant/read_supports_variant_channel.h"
+#include "deepvariant/strand_channel.h"
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/flat_hash_set.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
@@ -145,34 +160,35 @@ TEST(StrandColor, PositiveStrand) {
   PileupImageOptions options{};
   options.set_positive_strand_color(10);
   options.set_negative_strand_color(20);
-  Channels channel_set{options};
-  std::uint8_t sc = channel_set.StrandColor(true, options);
+  StrandChannel channel(/*width=*/100, options);
+  std::uint8_t sc = channel.StrandColor(true);
   EXPECT_EQ(sc, 10);
 }
 
 TEST(StrandColor, NegativeStrand) {
   PileupImageOptions options{};
+
   options.set_positive_strand_color(10);
   options.set_negative_strand_color(20);
-  Channels channel_set{options};
-  std::uint8_t sc = channel_set.StrandColor(false, options);
+  StrandChannel channel(/*width=*/100, options);
+  std::uint8_t sc = channel.StrandColor(false);
   EXPECT_EQ(sc, 20);
 }
 
 TEST(ReadSupportsAlt, AlleleUnsupporting) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  ReadSupportsVariantChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"});
   DeepVariantCall dv_call = DeepVariantCall::default_instance();
   std::vector<std::string> alt_alleles = {};
 
-  std::uint8_t rsa = channel_set.ReadSupportsAlt(dv_call, read, alt_alleles);
+  std::uint8_t rsa = channel.ReadSupportsAlt(dv_call, read, alt_alleles);
   EXPECT_EQ(rsa, 0);
 }
 
 TEST(ReadSupportsAlt, AlleleSupporting) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  ReadSupportsVariantChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"}, "FRAG1");
   read.set_read_number(1);
 
@@ -190,13 +206,13 @@ TEST(ReadSupportsAlt, AlleleSupporting) {
 
   std::vector<std::string> alt_alleles = {"GGGCGCATT"};
 
-  std::uint8_t rsa = channel_set.ReadSupportsAlt(dv_call, read, alt_alleles);
+  std::uint8_t rsa = channel.ReadSupportsAlt(dv_call, read, alt_alleles);
   EXPECT_EQ(rsa, 1);
 }
 
 TEST(ReadSupportsAlt, OtherAlleleSupporting) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  ReadSupportsVariantChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"}, "FRAG2");
   read.set_read_number(2);
 
@@ -214,7 +230,7 @@ TEST(ReadSupportsAlt, OtherAlleleSupporting) {
 
   std::vector<std::string> alt_alleles = {};
 
-  std::uint8_t rsa = channel_set.ReadSupportsAlt(dv_call, read, alt_alleles);
+  std::uint8_t rsa = channel.ReadSupportsAlt(dv_call, read, alt_alleles);
   EXPECT_EQ(rsa, 2);
 }
 
@@ -238,163 +254,162 @@ TEST(MatchesRefColor, BaseMistmatch) {
 
 TEST(SupportsAltColor, AlleleSupporting) {
   PileupImageOptions options{};
-  Channels channel_set{options};
   options.set_allele_unsupporting_read_alpha(1.0);
   options.set_allele_supporting_read_alpha(0.0);
   options.set_other_allele_supporting_read_alpha(0.0);
-  std::uint8_t sac = channel_set.SupportsAltColor(0, options);
+  ReadSupportsVariantChannel channel(/*width=*/100, options);
+  std::uint8_t sac = channel.SupportsAltColor(0);
   EXPECT_EQ(sac, kMaxPixelValueAsFloat);
 }
 
 TEST(SupportsAltColor, AlleleUnsupporting) {
   PileupImageOptions options{};
-  Channels channel_set{options};
   options.set_allele_unsupporting_read_alpha(0.0);
   options.set_allele_supporting_read_alpha(1.0);
   options.set_other_allele_supporting_read_alpha(0.0);
-  std::uint8_t sac = channel_set.SupportsAltColor(1, options);
+  ReadSupportsVariantChannel channel(/*width=*/100, options);
+  std::uint8_t sac = channel.SupportsAltColor(1);
   EXPECT_EQ(sac, kMaxPixelValueAsFloat);
 }
 
 TEST(SupportsAltColor, OtherAlleleSupporting) {
   PileupImageOptions options{};
-  Channels channel_set{options};
   options.set_allele_unsupporting_read_alpha(0.0);
   options.set_allele_supporting_read_alpha(0.0);
   options.set_other_allele_supporting_read_alpha(1.0);
-  std::uint8_t sac = channel_set.SupportsAltColor(2, options);
+  ReadSupportsVariantChannel channel(/*width=*/100, options);
+  std::uint8_t sac = channel.SupportsAltColor(2);
   EXPECT_EQ(sac, kMaxPixelValueAsFloat);
 }
 
 TEST(ReadMappingPercentTest, BasicCase) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  ReadMappingPercentChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"5M", "5D"});
-  std::uint8_t rmp = channel_set.ReadMappingPercent(read);
+  std::uint8_t rmp = channel.ReadMappingPercent(read);
   EXPECT_EQ(rmp, 50);
 }
 
 TEST(AvgBaseQualityTest, BasicCase) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  AvgBaseQualityChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"10M"});
   for (size_t i = 0; i < read.aligned_sequence().size(); ++i) {
     read.set_aligned_quality(i, i + 1);
   }
-  std::uint8_t rmp = channel_set.AvgBaseQuality(read);
+  std::uint8_t rmp = channel.AvgBaseQuality(read);
   EXPECT_EQ(rmp, 5);
 }
 
 TEST(AvgBaseQualityTest, BaseQualityTooHigh) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  AvgBaseQualityChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"10M"});
   for (size_t i = 0; i < read.aligned_sequence().size(); ++i) {
     read.set_aligned_quality(i, 100);
   }
-  EXPECT_DEATH(channel_set.AvgBaseQuality(read),
+  EXPECT_DEATH(channel.AvgBaseQuality(read),
                "Encountered base quality outside of bounds");
 }
 
 TEST(IdentityTest, BasicCase) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  IdentityChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"5M", "1I", "4M"});
-  std::uint8_t id = channel_set.Identity(read);
+  std::uint8_t id = channel.Identity(read);
   EXPECT_EQ(id, 90);
 }
 
 TEST(IdentityTest, PacBioStyleCigar) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  IdentityChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"5=", "1X", "4="});
-  std::uint8_t id = channel_set.Identity(read);
+  std::uint8_t id = channel.Identity(read);
   EXPECT_EQ(id, 90);
 }
 
 TEST(GapCompressedIdentityTest, InsertionCase) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  GapCompressedIdentityChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"3M", "4I", "3M"});
-  std::uint8_t id = channel_set.GapCompressedIdentity(read);
+  std::uint8_t id = channel.GapCompressedIdentity(read);
   EXPECT_EQ(id, 85);
 }
 
 TEST(GapCompressedIdentityTest, DeletionCase) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  GapCompressedIdentityChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"3M", "4D", "3M"});
-  std::uint8_t id = channel_set.GapCompressedIdentity(read);
+  std::uint8_t id = channel.GapCompressedIdentity(read);
   EXPECT_EQ(id, 85);
 }
 
 TEST(GapCompressedIdentityTest, PacBioStyleCigar) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  GapCompressedIdentityChannel channel(/*width=*/100, options);
   Read read =
       nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"3=", "2X", "2I", "3="});
-  std::uint8_t id = channel_set.GapCompressedIdentity(read);
+  std::uint8_t id = channel.GapCompressedIdentity(read);
   EXPECT_EQ(id, 66);
 }
 
 TEST(GcContestTest, AllGc) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  GcContentChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GGGGGCCCCC", {"10M"});
-  std::uint8_t gc = channel_set.GcContent(read);
+  std::uint8_t gc = channel.GcContent(read);
   EXPECT_EQ(gc, 100);
 }
 
 TEST(GcContestTest, HalfGc) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  GcContentChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GGGGGTTTTT", {"10M"});
-  std::uint8_t gc = channel_set.GcContent(read);
+  std::uint8_t gc = channel.GcContent(read);
   EXPECT_EQ(gc, 50);
 }
 
 TEST(IsHomoPolymerTest, IsHomopolymerBeginning) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  IsHomopolymerChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GGGATAATA", {"9M"});
-  std::vector<std::uint8_t> is_homopolymer = channel_set.IsHomoPolymer(read);
+  std::vector<std::uint8_t> is_homopolymer = channel.IsHomopolymer(read);
   std::vector<std::uint8_t> expected{1, 1, 1, 0, 0, 0, 0, 0, 0};
   EXPECT_EQ(is_homopolymer, expected);
 }
 
 TEST(IsHomoPolymerTest, IsHomopolymerMiddle) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  IsHomopolymerChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "ATTGGGTTA", {"9M"});
-  std::vector<std::uint8_t> is_homopolymer = channel_set.IsHomoPolymer(read);
+  std::vector<std::uint8_t> is_homopolymer = channel.IsHomopolymer(read);
   std::vector<std::uint8_t> expected{0, 0, 0, 1, 1, 1, 0, 0, 0};
   EXPECT_EQ(is_homopolymer, expected);
 }
 
 TEST(IsHomoPolymerTest, IsHomopolymerEnd) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  IsHomopolymerChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "ATAATAGGG", {"9M"});
-  std::vector<std::uint8_t> is_homopolymer = channel_set.IsHomoPolymer(read);
+  std::vector<std::uint8_t> is_homopolymer = channel.IsHomopolymer(read);
   std::vector<std::uint8_t> expected{0, 0, 0, 0, 0, 0, 1, 1, 1};
   EXPECT_EQ(is_homopolymer, expected);
 }
 
 TEST(IsHomoPolymerTest, IsHomopolymerAll) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  IsHomopolymerChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAAAAAA", {"9M"});
-  std::vector<std::uint8_t> is_homopolymer = channel_set.IsHomoPolymer(read);
+  std::vector<std::uint8_t> is_homopolymer = channel.IsHomopolymer(read);
   std::vector<std::uint8_t> expected{1, 1, 1, 1, 1, 1, 1, 1, 1};
   EXPECT_EQ(is_homopolymer, expected);
 }
 
 TEST(HomoPolymerWeightedTest, BasicCase) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  HomopolymerWeightedChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GATTGGGCCCCAAAAA", {"15M"});
-  std::vector<std::uint8_t> w_homopolymer =
-      channel_set.HomoPolymerWeighted(read);
+  std::vector<std::uint8_t> w_homopolymer = channel.HomopolymerWeighted(read);
   std::vector<std::uint8_t> expected{1, 1, 2, 2, 3, 3, 3, 4,
                                      4, 4, 4, 5, 5, 5, 5, 5};
   EXPECT_EQ(w_homopolymer, expected);
@@ -402,13 +417,12 @@ TEST(HomoPolymerWeightedTest, BasicCase) {
 
 TEST(HomoPolymerWeightedTest, WeightedHomoPolymerMax) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  HomopolymerWeightedChannel channel(/*width=*/100, options);
   std::string bases;
   bases.insert(0, 20, 'A');
   bases.insert(0, 10, 'G');
   Read read = nucleus::MakeRead("chr1", 1, bases, {"60M"});
-  std::vector<std::uint8_t> w_homopolymer =
-      channel_set.HomoPolymerWeighted(read);
+  std::vector<std::uint8_t> w_homopolymer = channel.HomopolymerWeighted(read);
   std::vector<std::uint8_t> expected;
   expected.insert(expected.begin(), 20, 20);
   expected.insert(expected.begin(), 10, 10);
@@ -417,10 +431,10 @@ TEST(HomoPolymerWeightedTest, WeightedHomoPolymerMax) {
 
 TEST(ReadInsertSizeTest, BasicCase) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  InsertSizeChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GATTGGGCCCCAAAAA", {"15M"});
   read.set_fragment_length(22);
-  std::vector<std::uint8_t> w_insert_size = channel_set.ReadInsertSize(read);
+  std::vector<std::uint8_t> w_insert_size = channel.ReadInsertSize(read);
   std::vector<std::uint8_t> expected{5, 5, 5, 5, 5, 5, 5, 5,
                                      5, 5, 5, 5, 5, 5, 5, 5};
   EXPECT_EQ(w_insert_size, expected);
@@ -428,10 +442,10 @@ TEST(ReadInsertSizeTest, BasicCase) {
 
 TEST(ReadInsertSizeTest, NegativeValueCase) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  InsertSizeChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GATTGGGCCCCAAAAA", {"15M"});
   read.set_fragment_length(-22);
-  std::vector<std::uint8_t> w_insert_size = channel_set.ReadInsertSize(read);
+  std::vector<std::uint8_t> w_insert_size = channel.ReadInsertSize(read);
   std::vector<std::uint8_t> expected{5, 5, 5, 5, 5, 5, 5, 5,
                                      5, 5, 5, 5, 5, 5, 5, 5};
   EXPECT_EQ(w_insert_size, expected);
@@ -439,10 +453,10 @@ TEST(ReadInsertSizeTest, NegativeValueCase) {
 
 TEST(ReadInsertSizeTest, ExceedsLimit) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  InsertSizeChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GATTGGGCCCCAAAAA", {"15M"});
   read.set_fragment_length(1001);
-  std::vector<std::uint8_t> w_insert_size = channel_set.ReadInsertSize(read);
+  std::vector<std::uint8_t> w_insert_size = channel.ReadInsertSize(read);
   std::vector<std::uint8_t> expected{254, 254, 254, 254, 254, 254, 254, 254,
                                      254, 254, 254, 254, 254, 254, 254, 254};
   EXPECT_EQ(w_insert_size, expected);
@@ -450,9 +464,9 @@ TEST(ReadInsertSizeTest, ExceedsLimit) {
 
 TEST(ReadInsertSizeTest, NoValue) {
   PileupImageOptions options{};
-  Channels channel_set{options};
+  InsertSizeChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "GATTGGGCCCCAAAAA", {"15M"});
-  std::vector<std::uint8_t> w_insert_size = channel_set.ReadInsertSize(read);
+  std::vector<std::uint8_t> w_insert_size = channel.ReadInsertSize(read);
   std::vector<std::uint8_t> expected{0, 0, 0, 0, 0, 0, 0, 0,
                                      0, 0, 0, 0, 0, 0, 0, 0};
   EXPECT_EQ(w_insert_size, expected);

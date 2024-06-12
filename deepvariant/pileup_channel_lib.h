@@ -33,9 +33,11 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
@@ -117,6 +119,12 @@ class Channels {
 
   constexpr bool isBaseLevelChannel(DeepVariantChannelEnum channelEnum);
 
+  // Given a channel enum for a read-level channel instantiates a corresponding
+  // channel object, containing the methods to populate that channel.
+  std::unique_ptr<Channel> ChannelEnumToObject(
+      DeepVariantChannelEnum channel_enum, int width,
+      const learning::genomics::deepvariant::PileupImageOptions& options);
+
   // Scales an input value to pixel range 0-254.
   std::uint8_t ScaleColor(int value, float max_val);
 
@@ -131,61 +139,15 @@ class Channels {
   std::vector<std::uint8_t> BaseColorVector(const std::string& bases,
                                             const PileupImageOptions& options);
 
-  int StrandColor(bool on_positive_strand, const PileupImageOptions& options);
-
-  int SupportsAltColor(int read_supports_alt,
-                       const PileupImageOptions& options);
-
-  // Does this read support ref, one of the alternative alleles, or an allele we
-  // aren't considering?
-  int ReadSupportsAlt(const DeepVariantCall& dv_call,
-                      const nucleus::genomics::v1::Read& read,
-                      const std::vector<std::string>& alt_alleles);
-
   // Returns a value based on whether the current read base matched the
   // reference base it was compared to.
   int MatchesRefColor(bool base_matches_ref, const PileupImageOptions& options);
 
-  //-----------------------//
-  // Experimental Channels //
-  //-----------------------//
-  std::vector<std::uint8_t> ReadInsertSize(
-      const nucleus::genomics::v1::Read& read);
-
-  // normalizes a Read's `fragment_length` to a pixel value
-  int normalizeFragmentLength(const Read& read);
-
   bool channel_exists(std::vector<std::string>& channels,
                       absl::string_view channel_name);
 
-  std::vector<std::uint8_t> Blank(const Read& read);
-  std::vector<std::uint8_t> HomoPolymerWeighted(
-      const nucleus::genomics::v1::Read& read);
-  std::vector<std::uint8_t> IsHomoPolymer(
-      const nucleus::genomics::v1::Read& read);
-  int GcContent(const nucleus::genomics::v1::Read& read);
-  // Gap Compressed Identity: Ins/Del treated as individual events.
-  int GapCompressedIdentity(const nucleus::genomics::v1::Read& read);
-  // Identity: Similar to mapping percent but with a slightly different def.
-  int Identity(const nucleus::genomics::v1::Read& read);
-  // Average Base Quality: Averages base quality over length of read.
-  int AvgBaseQuality(const nucleus::genomics::v1::Read& read);
-  // Read Mapping Percent: Calculates percentage of bases mapped to reference.
-  int ReadMappingPercent(const nucleus::genomics::v1::Read& read);
-
  public:
   static DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel);
-  static int GetHPValueForHPChannel(const nucleus::genomics::v1::Read& read,
-                                    int hp_tag_for_assembly_polishing);
-  // Get allele frequency color for a read.
-  // Convert a frequency value in float to color intensity (int) and normalize.
-  static unsigned char AlleleFrequencyColor(float allele_frequency,
-                                            const PileupImageOptions& options);
-
-  // Get the allele frequency of the alt allele that is carried by a read.
-  static float ReadAlleleFrequency(const DeepVariantCall& dv_call,
-                                   const nucleus::genomics::v1::Read& read,
-                                   const std::vector<std::string>& alt_alleles);
 
   const PileupImageOptions& options_;
   std::vector<std::vector<unsigned char>> ref_data_;
