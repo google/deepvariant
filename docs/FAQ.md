@@ -99,13 +99,10 @@ DeepVariant, which is a germline caller.
 
 ## Can I use DeepVariant for somatic (non-germline) calling?
 
-We do not recommend using DeepVariant for somatic calling. We do have a
-prototype implementation for somatic calling, which can take a tumor and normal
-BAM and call subclonal variants. However, we don't yet have enough confidence in
-the available truth sets, and that they come from a diverse enough sampling of
-cancers with mutational profiles, for us to be certain in releasing something of
-high quality. We're watching developments in the area of these truth sets and
-hope to be able to further develop the somatic caller in the future.
+We have released DeepSomatic for somatic variant calling:
+https://github.com/google/deepsomatic.
+
+We do not recommend using DeepVariant for somatic calling.
 
 ## Can I use DeepVariant on plant genomes?
 
@@ -125,6 +122,22 @@ reference, which don't have much meaning in a tetraploid genome, for example.
 
 See this
 [blog post](https://google.github.io/deepvariant/posts/2018-12-05-improved-non-human-variant-calling-using-species-specific-deepvariant-models/).
+
+There has been many use cases that successfully used DeepVariant on non-human
+species. We welcome your feedback, and would love to know if you use DeepVariant
+on non-human species.
+
+## Why are the variants in my DeepVariant VCF not phased?
+
+DeepVariant uses the haplotagging information of reads to improve the quality of
+the variants. It will not produce a phased VCF. You can read
+[this manuscript](https://doi.org/10.1101/2023.09.07.556731) for more
+information.
+
+If you want to get a phased VCF, please use tools like
+[margin](https://github.com/UCSC-nanopore-cgl/margin) or
+[whatshap](https://whatshap.readthedocs.io/en/latest/) on the output of
+DeepVariant to get a phased VCF.
 
 ## How do I build/run DeepVariant?
 
