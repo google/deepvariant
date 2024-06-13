@@ -34,6 +34,7 @@ import numpy as np
 import tensorflow as tf
 
 from deepvariant.protos import deepvariant_pb2
+from deepvariant.small_model import keras_config
 from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import variantcall_utils
@@ -70,7 +71,7 @@ class SmallModelVariantCaller:
       cls, model_path: str, gq_threshold: float
   ) -> "SmallModelVariantCaller":
     """Init class with a path to a pickled model."""
-    return cls(tf.keras.models.load_model(model_path), gq_threshold)
+    return cls(keras_config.load_keras_model(model_path), gq_threshold)
 
   def _accept_call_result(self, probability) -> bool:
     """Determine if the given probability is above the GQ threshold."""

@@ -57,10 +57,10 @@ def set_wes_config(config: ml_collections.ConfigDict) -> None:
 
 
 def set_pacbio_config(config: ml_collections.ConfigDict) -> None:
-  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_train_ME_*.tfrecord.gz.small_model.tsv"
-  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_tune_ME_*.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 48123335
-  config.num_tune_samples = 1290029
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_train_ME_0-*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_tune_ME_0-*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 100_000  # 48123335
+  config.num_tune_samples = 10_000  # 1290029
 
 
 def set_ont_config(config: ml_collections.ConfigDict) -> None:

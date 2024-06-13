@@ -33,10 +33,20 @@ py_test(
 )
 
 py_library(
+    name = "keras_config",
+    srcs = ["keras_config.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":make_small_model_examples",
+    ],
+)
+
+py_library(
     name = "inference",
     srcs = ["inference.py"],
     srcs_version = "PY3",
     deps = [
+        ":keras_config",
         ":make_small_model_examples",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/util:genomics_math",
