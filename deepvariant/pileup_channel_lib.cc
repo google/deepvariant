@@ -488,7 +488,10 @@ std::unique_ptr<Channel> Channels::ChannelEnumToObject(
     case DeepVariantChannelEnum::CH_INSERT_SIZE:
       return std::unique_ptr<Channel>(new InsertSizeChannel(width, options));
     default:
-      return nullptr;
+      LOG(FATAL) << "Channel '"
+                 << DeepVariantChannelEnum_Name(channel_enum)
+                 << "' is unimplemented and should have a corresponding "
+                    "implementation.";
   }
 }
 
