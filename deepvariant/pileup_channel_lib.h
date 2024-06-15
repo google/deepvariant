@@ -86,6 +86,7 @@ static const auto& ch_base_channels_alternate_allele_1 =
     "base_channels_alternate_allele_1";
 static const auto& ch_base_channels_alternate_allele_2 =
     "base_channels_alternate_allele_2";
+static const auto& ch_mean_coverage = "mean_coverage";
 
 //-------------------//
 // Channels Accessor //

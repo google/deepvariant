@@ -570,7 +570,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
-// Next ID: 14.
+// Next ID: 15.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -620,12 +620,16 @@ message SampleOptions {
   // This is experimental for pangenome integration
   bool keep_only_window_spanning_reads = 12;
 
+  // The mean number of reads aligned to any given position or base in the
+  // genome per sample. Used in CH_MEAN_COVERAGE channel.
+  float mean_coverage = 14;
+
   repeated DeepVariantChannelEnum channels_enum_to_blank = 13;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 74.
+// Next ID: 75.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -1085,7 +1089,7 @@ message MakeExamplesRunInfo {
   MakeExamplesStats stats = 4;
 }
 
-// Next ID: 22.
+// Next ID: 23.
 enum DeepVariantChannelEnum {
   // Default should be unspecified.
   CH_UNSPECIFIED = 0;
@@ -1125,4 +1129,5 @@ enum DeepVariantChannelEnum {
   CH_HOMOPOLYMER_WEIGHTED = 17;
   CH_BLANK = 18;
   CH_INSERT_SIZE = 19;
+  CH_MEAN_COVERAGE = 22;
 }

@@ -50,7 +50,8 @@ using std::string;
 
 constexpr int NUM_CHANNELS = 6;
 constexpr int NUM_SEQ_TYPE = PileupImageOptions::SequencingType_ARRAYSIZE;
-
+constexpr unsigned char kChannelValue255 = 255;
+constexpr unsigned char kChannelValue200 = 200;
 // Different ways alt aligned reads can be expressed.
 // This enum matches flag values in make_example_options.
 // It helps to avoid string comparison in performance critical parts.
@@ -94,7 +95,7 @@ class PileupImageEncoderNative {
       const DeepVariantCall& dv_call, const string& ref_bases,
       const std::vector<const ::nucleus::genomics::v1::Read*>& reads,
       int image_start_pos, const std::vector<std::string>& alt_alleles,
-      const SampleOptions& sample_options,
+      const SampleOptions& sample_options, float mean_coverage,
       // Contains original alignment positions for trimmed reads. This array has
       // the same order as reads.
       const std::vector<int64_t>* alignment_positions = nullptr,
@@ -118,9 +119,9 @@ class PileupImageEncoderNative {
     for (const auto& wrapped_read : wrapped_reads) {
       reads.emplace_back(wrapped_read.p_);
     }
-    return BuildPileupForOneSample(*(wrapped_dv_call.p_), ref_bases,
-                                   reads, image_start_pos, alt_alleles,
-                                   sample_options);
+    return BuildPileupForOneSample(*(wrapped_dv_call.p_), ref_bases, reads,
+                                   image_start_pos, alt_alleles, sample_options,
+                                   /*mean_coverage=*/0.0);
   }
 
   // Encode one read into a row of pixels for our image.

@@ -167,6 +167,7 @@ class ExamplesGenerator {
       // PyClif restrictions.
       const std::string& role,
       // const std::vector<VariantLabel>& labels,
+      const std::vector<float>& mean_coverage_per_sample,
       std::vector<int>* image_shape);
 
   void AppendLabel(std::unique_ptr<VariantLabel> label) {
@@ -214,6 +215,7 @@ class ExamplesGenerator {
       const std::vector<InMemoryReader>& readers,
       std::unordered_map<std::string, int>& stats,
       std::vector<int>& image_shape,
+      const std::vector<float>& mean_coverage_per_sample,
       const std::unique_ptr<VariantLabel>& label);
 
   void CreateAltAlignedImages(
@@ -222,6 +224,7 @@ class ExamplesGenerator {
       const std::vector<nucleus::genomics::v1::Read>& trimmed_reads,
       int sample_order, const nucleus::genomics::v1::Range& region,
       std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images,
+      float mean_coverage,
       std::vector<int64_t>* original_start_positions = nullptr);
 
   // Returns true if the variant needs alt alignment.

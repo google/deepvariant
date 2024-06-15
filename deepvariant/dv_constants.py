@@ -103,6 +103,7 @@ CHANNELS = [
     'insert_size',
     'base_channels_alternate_allele_1',
     'base_channels_alternate_allele_2',
+    'mean_coverage',
 ]
 
 ALT_ALIGNED_PILEUP_CHANNELS = [
@@ -148,6 +149,7 @@ CHANNEL_ENUM_TO_STRING = {
     deepvariant_pb2.CH_BASE_CHANNELS_ALTERNATE_ALLELE_2: (
         'base_channels_alternate_allele_2'
     ),
+    deepvariant_pb2.CH_MEAN_COVERAGE: 'mean_coverage',
 }
 
 # Used only when phasing is on (phase_reads=true). It allows to set the

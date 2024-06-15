@@ -487,6 +487,10 @@ std::unique_ptr<Channel> Channels::ChannelEnumToObject(
       return std::unique_ptr<Channel>(new BlankChannel(width, options));
     case DeepVariantChannelEnum::CH_INSERT_SIZE:
       return std::unique_ptr<Channel>(new InsertSizeChannel(width, options));
+    case DeepVariantChannelEnum::CH_MEAN_COVERAGE:
+      // Return a blank channel which will be filled in later after joining and
+      // sorting reads by position.
+      return std::unique_ptr<Channel>(new BlankChannel(width, options));
     default:
       LOG(FATAL) << "Channel '"
                  << DeepVariantChannelEnum_Name(channel_enum)
@@ -532,6 +536,9 @@ DeepVariantChannelEnum Channels::ChannelStrToEnum(const std::string& channel) {
     return DeepVariantChannelEnum::CH_UNSPECIFIED;
   if (channel == ch_base_channels_alternate_allele_2)
     return DeepVariantChannelEnum::CH_UNSPECIFIED;
+  if (channel == ch_mean_coverage) {
+    return DeepVariantChannelEnum::CH_MEAN_COVERAGE;
+  }
   CHECK(false) << "Channel '" << channel << "' should have a corresponding "
                << "enum in DeepVariantChannelEnum.";
 }

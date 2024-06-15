@@ -1326,6 +1326,38 @@ class RegionProcessor:
           )
       )
 
+  def _get_mean_coverage_per_sample(self) -> List[float]:
+    """Returns the mean coverage per sample if set in options.
+
+    Fetches the per sample mean coverage if provided in the options with
+    downsample fraction applied. The default is 0.0 for all samples if not set.
+
+    Returns:
+      A list of floats representing mean coverages per sample.
+    """
+    if not any([
+        sample_options.mean_coverage > 0
+        for sample_options in self.options.sample_options
+    ]):
+      # If no mean coverage is set, return 0.0 for all samples.
+      if 'mean_coverage' in self.options.channel_list:
+        logging.warning(
+            'No mean coverage is set in options but "mean_coverage" is in'
+            ' channel_list. This is not expected. Mean coverage will be set to'
+            ' the default value of 0.0.'
+        )
+      return [0.0] * len(self.samples)
+
+    mean_coverage_per_sample = []
+    for sample in self.samples:
+      cur_sample_mean_coverage = sample.options.mean_coverage
+      # Apply downsample fraction to mean coverage if applicable.
+      if sample.options.downsample_fraction:
+        cur_sample_mean_coverage *= sample.options.downsample_fraction
+      mean_coverage_per_sample.append(cur_sample_mean_coverage)
+
+    return mean_coverage_per_sample
+
   def _make_direct_phasing_obj(self) -> direct_phasing.DirectPhasing:
     return direct_phasing.DirectPhasing()
 
@@ -1618,7 +1650,11 @@ class RegionProcessor:
 
       n_stats_one_region, example_shape_one = (
           self.make_examples_native.write_examples_in_region(
-              candidates_list, reads_per_sample, sample_order, role
+              candidates_list,
+              reads_per_sample,
+              sample_order,
+              role,
+              self._get_mean_coverage_per_sample(),
           )
       )
 
@@ -1641,7 +1677,11 @@ class RegionProcessor:
 
       n_stats_one_region, example_shape_one = (
           self.make_examples_native.write_examples_in_region(
-              candidates, reads_per_sample, sample_order, role
+              candidates,
+              reads_per_sample,
+              sample_order,
+              role,
+              self._get_mean_coverage_per_sample(),
           )
       )
 

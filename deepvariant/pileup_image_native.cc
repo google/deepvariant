@@ -138,7 +138,7 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     const DeepVariantCall& dv_call, const string& ref_bases,
     const std::vector<const ::nucleus::genomics::v1::Read*>& reads,
     int image_start_pos, const vector<std::string>& alt_alleles,
-    const SampleOptions& sample_options,
+    const SampleOptions& sample_options, const float mean_coverage,
     const std::vector<int64_t>* alignment_positions,
     absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank) {
   // The width of a pileup is defined by the length of ref_bases. ref_bases must
@@ -212,6 +212,29 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     for (int i = 0; i < empty_rows; i++) {
       rows.push_back(std::make_unique<ImageRow>(
           ImageRow(ref_bases.size(), num_channels)));
+    }
+  }
+
+  // Add average coverage information after reads are added and sorted.
+  vector<DeepVariantChannelEnum> channels = AllChannelsEnum("");
+  auto it = std::find(channel_enums_.begin(), channel_enums_.end(),
+                      DeepVariantChannelEnum::CH_MEAN_COVERAGE);
+  if (it != channel_enums_.end()) {
+    int coverage_channel_index = it - channel_enums_.begin();
+    int pileup_width = ref_bases.size();
+    for (int i = 0; i < std::min(static_cast<int>(mean_coverage) +
+                                     options_.reference_band_height(),
+                                 pileup_height);
+         i++) {
+      if (i < options_.reference_band_height()) {
+        // Reference band at the top of the image.
+        rows[i]->channel_data[coverage_channel_index].assign(pileup_width,
+                                                             kChannelValue255);
+      } else {
+        // Main part of the image representing mean coverage.
+        rows[i]->channel_data[coverage_channel_index].assign(pileup_width,
+                                                             kChannelValue200);
+      }
     }
   }
 

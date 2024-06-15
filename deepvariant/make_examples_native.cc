@@ -492,7 +492,7 @@ void ExamplesGenerator::CreateAltAlignedImages(
     const std::vector<Read>& trimmed_reads, int sample_order,
     const Range& region,
     std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images,
-    std::vector<int64_t>* original_start_positions) {
+    const float mean_coverage, std::vector<int64_t>* original_start_positions) {
   const auto& variant = candidate.variant();
   int image_start_pos = variant.start() - half_width_;
   int alt_image_num = 0;
@@ -531,8 +531,8 @@ void ExamplesGenerator::CreateAltAlignedImages(
     auto alt_image = pileup_image_.BuildPileupForOneSample(
         candidate, haplotype.substr(0, options_.pic_options().width()),
         realigned_reads_ptrs, image_start_pos, alt_combination,
-        options_.sample_options(sample_order), original_start_positions,
-        sample_it->second.channels_enum_to_blank);
+        options_.sample_options(sample_order), mean_coverage,
+        original_start_positions, sample_it->second.channels_enum_to_blank);
     // move alt_image to alt_images[2] array.
     for (auto& row : alt_image) {
       alt_images[alt_image_num].push_back(std::move(row));
@@ -550,6 +550,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     const std::vector<int>& sample_order,
     const std::vector<InMemoryReader>& readers,
     std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
+    const std::vector<float>& mean_coverage_per_sample,
     const std::unique_ptr<VariantLabel>& label) {
   const auto& variant = candidate.variant();
   int image_start_pos = variant.start() - half_width_;
@@ -601,6 +602,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
           trimmed_reads_ptrs.push_back(&read);
         }
       }
+      auto mean_coverage = mean_coverage_per_sample[this_sample_order];
       // If trim_reads_for_pileup is set then trimmed_reads are used.
       auto sample_it =
           samples_.find(options_.sample_options(this_sample_order).role());
@@ -609,9 +611,8 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
           use_trimmed_reads ? std::move(trimmed_reads_ptrs)
                             : readers[this_sample_order].Query(region),
           image_start_pos, alt_combination,
-          options_.sample_options(this_sample_order),
-          &original_start_positions,
-          sample_it->second.channels_enum_to_blank);
+          options_.sample_options(this_sample_order), mean_coverage,
+          &original_start_positions, sample_it->second.channels_enum_to_blank);
       // Collect rows from all samples in ref_images.
       for (auto& row : ref_image) {
         ref_images.push_back(std::move(row));
@@ -620,8 +621,8 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       if (variant_needs_alt_alignment) {
         if (sample_needs_alt_alignment) {
           CreateAltAlignedImages(candidate, alt_combination, trimmed_reads,
-                                this_sample_order, region, alt_images,
-                                &original_start_positions);
+                                 this_sample_order, region, alt_images,
+                                 mean_coverage, &original_start_positions);
         } else {
           // If the sample does not need alt alignment, we still want to fill
           // the corresponding area with 0s.
@@ -630,8 +631,8 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
           // This might not be the cleanest way to write the logic, but it is
           // a lot easier for human to understand.
           CreateAltAlignedImages(candidate, alt_combination, {},
-                                this_sample_order, region, alt_images,
-                                nullptr);
+                                 this_sample_order, region, alt_images,
+                                 mean_coverage, nullptr);
         }
       }
     }
@@ -659,6 +660,7 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
         reads_per_sample,
     const std::vector<int>& sample_order, const std::string& role,
     // const std::vector<VariantLabel>& labels,
+    const std::vector<float>& mean_coverage_per_sample,
     std::vector<int>* image_shape) {
   CHECK(labels_.empty() || candidates.size() == labels_.size());
   auto sample_it = samples_.find(role);
@@ -667,7 +669,7 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
       << "Role " << role << " does not have a writer.";
 
   // image_shape is the return parameter that is passed to Python. The memory
-  // is handled by Pyhon.
+  // is handled by Python.
   image_shape->resize(3);
   // Load reads.
   std::vector<InMemoryReader> readers;
@@ -686,13 +688,13 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
 
   for (int i = 0; i < candidates.size(); i++) {
     if (labels_.empty()) {
-      CreateAndWriteExamplesForCandidate(*(candidates[i].p_), sample_it->second,
-                                         sample_order, readers, stats,
-                                         *image_shape, nullptr);
+      CreateAndWriteExamplesForCandidate(
+          *(candidates[i].p_), sample_it->second, sample_order, readers, stats,
+          *image_shape, mean_coverage_per_sample, nullptr);
     } else {
-      CreateAndWriteExamplesForCandidate(*(candidates[i].p_), sample_it->second,
-                                         sample_order, readers, stats,
-                                         *image_shape, labels_[i]);
+      CreateAndWriteExamplesForCandidate(
+          *(candidates[i].p_), sample_it->second, sample_order, readers, stats,
+          *image_shape, mean_coverage_per_sample, labels_[i]);
     }
   }
   // Write zero to indicate the end of the examples only if we had any examples

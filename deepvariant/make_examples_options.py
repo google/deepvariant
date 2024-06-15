@@ -552,6 +552,14 @@ flags.DEFINE_bool(
         'frequency information gathered from population callsets.'
     ),
 )
+_MEAN_COVERAGE_PER_SAMPLE = flags.DEFINE_list(
+    'mean_coverage_per_sample',
+    [],
+    'Optional. The mean number of reads aligned to any given position or base'
+    ' in the regions of interest. Used in CH_MEAN_COVERAGE channel.'
+    ' If this value is unset an approximation will be used using an online'
+    ' streaming algorithm for the mean coverage channel.',
+)
 flags.DEFINE_string(
     'runtime_by_region',
     None,
@@ -1053,6 +1061,12 @@ def shared_flags_to_options(
         )
 
   options.discard_non_dna_regions = _DISCARD_NON_DNA_REGIONS.value
+
+  mean_coverage_per_sample = list(map(float, _MEAN_COVERAGE_PER_SAMPLE.value))
+  if mean_coverage_per_sample:
+    for sample_index, sample_options in enumerate(options.sample_options):
+      if sample_index < len(mean_coverage_per_sample):
+        sample_options.mean_coverage = mean_coverage_per_sample[sample_index]
 
   if _EXCLUDE_VARIANTS_VCF_FILENAME.value:
     options.exclude_variants_vcf_filename = _EXCLUDE_VARIANTS_VCF_FILENAME.value
