@@ -9,15 +9,15 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 358m41.88s
-call_variants: HG002             | 371m20.17s
-call_variants: HG003             | 375m57.41s
-call_variants: HG004             | 374m18.63s
-postprocess_variants (parallel)  | 47m21.31s; 49m4.97s; 49m24.06s
-vcf_stats_report(optional):HG002 | 9m32.26s
-vcf_stats_report(optional):HG003 | 9m43.99s
-vcf_stats_report(optional):HG003 | 10m1.37s
-total                            | 1540m27.85s (25h40m27.85s)
+make_examples                    | 364m28.72s
+call_variants: HG002             | 365m9.19s
+call_variants: HG003             | 368m36.39s
+call_variants: HG004             | 366m3.66s
+postprocess_variants (parallel)  | 42m59.06s; 45m2.60s; 45m30.99s
+vcf_stats_report(optional):HG002 | 9m13.71s
+vcf_stats_report(optional):HG003 | 9m22.33s
+vcf_stats_report(optional):HG003 | 9m47.16s
+total                            | 1520m32.25s (25h20m32.25s)
 
 ### Accuracy
 
@@ -63,15 +63,15 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 49m35.25s+605m53.88s
-call_variants: HG002             | 375m17.22s
-call_variants: HG003             | 375m29.55s
-call_variants: HG004             | 382m30.66s
-postprocess_variants (parallel)  | 59m38.61s; 67m56.74s; 69m15.34s
-vcf_stats_report(optional):HG002 | 9m53.77s
-vcf_stats_report(optional):HG003 | 10m22.43s
-vcf_stats_report(optional):HG003 | 10m32.42s
-total                            | 1871m44.75s (31h11m44.75s)
+make_examples                    | 53m0.29s+624m47.59s
+call_variants: HG002             | 377m44.61s
+call_variants: HG003             | 379m47.08s
+call_variants: HG004             | 385m32.43s
+postprocess_variants (parallel)  | 56m18.53s; 65m34.23s; 67m3.97s
+vcf_stats_report(optional):HG002 | 9m18.13s
+vcf_stats_report(optional):HG003 | 9m34.69s
+vcf_stats_report(optional):HG003 | 9m53.27s
+total                            | 1901m13.19s (31h41m13.19s)
 
 * See VCF stats report (for all chromosomes)
   - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.7.0/PACBIO/HG002.output.visual_report.html)
@@ -112,15 +112,15 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Wall time (minutes)
 -------------------------------- | --------------
-make_examples                    | 14m30.21s
-call_variants: HG002             | 5m29.36s
-call_variants: HG003             | 5m33.41s
-call_variants: HG004             | 5m32.59s
-postprocess_variants (parallel)  | 0m53.02s; 0m53.46s; 0m53.64s
-vcf_stats_report(optional):HG002 | 0m7.96s
-vcf_stats_report(optional):HG003 | 0m8.04s
-vcf_stats_report(optional):HG003 | 0m8.15s
-total                            | 32m24.97s
+make_examples                    | 14m38.94s
+call_variants: HG002             | 5m19.57s
+call_variants: HG003             | 5m21.76s
+call_variants: HG004             | 5m23.18s
+postprocess_variants (parallel)  | 0m49.66s; 0m50.04s; 0m51.58s
+vcf_stats_report(optional):HG002 | 0m7.86s
+vcf_stats_report(optional):HG003 | 0m8.25s
+vcf_stats_report(optional):HG003 | 0m10.33s
+total                            | 32m1.56s
 
 ### Accuracy
 
