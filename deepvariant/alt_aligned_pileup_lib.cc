@@ -238,9 +238,8 @@ int CalculateCigarLength(const google::protobuf::RepeatedPtrField<CigarUnit>& ci
 
 // Helper function to trim a vector of reads. For the general use case we don't
 // want to keep reads that are less than 15 bases long after trimming.
-// original_alignment_positions is a vector where read alignment starting
-// positions before trimming are stored.
-// TODO Add unit test for this function.
+// original_alignment_positions is an output vector where read alignment
+// starting positions before trimming are stored.
 std::vector<Read> TrimReads(const std::vector<const Read*>& reads,
                             const Range& region,
                             std::vector<int64_t>& original_alignment_positions,

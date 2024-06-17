@@ -376,6 +376,103 @@ INSTANTIATE_TEST_SUITE_P(
          {MakeVariant("A", {"C"}, 40), 20,
           nucleus::MakeRange("chr1", 20, 43)}})));
 
+
+// TrimReads testing.
+struct TrimReadsTestData {
+  std::vector<nucleus::genomics::v1::Read> input_reads;
+  std::vector<nucleus::genomics::v1::Read> expected_reads;
+  std::vector<int64_t> expected_alignment_positions;
+  int min_overlap;
+  nucleus::genomics::v1::Range region;
+};
+
+class TrimReadsTest
+    : public testing::TestWithParam<TrimReadsTestData> {};
+
+TEST_P(TrimReadsTest, TrimReadsTestCases) {
+  const TrimReadsTestData& param = GetParam();
+
+  std::vector<const nucleus::genomics::v1::Read*> input_reads;
+  for (const auto& read : param.input_reads) {
+    input_reads.push_back(&read);
+  }
+  std::vector<int64_t> alignment_positions;
+  EXPECT_THAT(
+      TrimReads(input_reads, param.region, alignment_positions,
+                param.min_overlap),
+      testing::Pointwise(nucleus::EqualsProto(), param.expected_reads));
+  EXPECT_THAT(alignment_positions,
+      testing::ElementsAreArray(param.expected_alignment_positions));
+};
+
+INSTANTIATE_TEST_SUITE_P(
+    TrimReadsTestSuite, TrimReadsTest,
+    testing::ValuesIn(std::vector<TrimReadsTestData>(
+        {
+          // Reads fit into the region.
+          {
+          /*input_reads=*/{
+            MakeRead(1, "TTTTTTTTTACGTACGTAAA", {"20M"}),
+            MakeRead(1, "CCCCCAAAAAAGTGTGATCC", {"20M"})
+          },
+          /*output_reads=*/{
+            MakeRead(1, "TTTTTTTTTACGTACGTAAA", {"20M"}),
+            MakeRead(1, "CCCCCAAAAAAGTGTGATCC", {"20M"})
+          },
+          {1, 1}, 15, nucleus::MakeRange("chr1", 1, 22)
+          }
+
+          // One read fits one read is trimmed.
+          , {
+          /*input_reads=*/{
+            MakeRead(1, "TTTTTTTTTACGTACGTAAA", {"20M"}),
+            MakeRead(1, "CCCCCAAAAAAGTGTGATCCCCCGTA", {"26M"})
+          },
+          /*output_reads=*/{
+            MakeRead(1, "TTTTTTTTTACGTACGTAAA", {"20M"}),
+            MakeRead(1, "CCCCCAAAAAAGTGTGATCCC", {"21M"})
+          },
+          {1, 1}, 15, nucleus::MakeRange("chr1", 1, 22)
+          }
+
+          // If reads is less than min_overlap it is dropped.
+          , {
+          /*input_reads=*/{
+            MakeRead(1, "TTTTTTTTTACGTACGTAAA", {"20M"}),
+            MakeRead(10, "CCCCCAAAAAAGTGTGATCCCCCGTA", {"26M"})
+          },
+          /*output_reads=*/{
+            MakeRead(1, "TTTTTTTTTACGTACGTAAA", {"20M"}),
+          },
+          {1}, 15, nucleus::MakeRange("chr1", 1, 22)
+          }
+
+          // alignment_positions are correct after trimming.
+          , {
+          /*input_reads=*/{
+            MakeRead(1, "TTTTTTTTTACGTACGTAAA", {"20M"}),
+            MakeRead(2, "CCCCCAAAAAAGTGTGATCCCCCGTA", {"26M"})
+          },
+          /*output_reads=*/{
+            MakeRead(5, "TTTTTACGTACGTAAA", {"16M"}),
+            MakeRead(5, "CCAAAAAAGTGTGATCC", {"17M"})
+          },
+          {1, 2}, 15, nucleus::MakeRange("chr1", 5, 22)
+          }
+
+          // Read is dropped if trim region overlaps a large deletion.
+          , {
+          /*input_reads=*/{
+            MakeRead(1, "TTTTTTTTTACGTACGTAAA", {"20M"}),
+            MakeRead(1, "CCCCCAAAAAAGTGTGATCCCCCGTA", {"3M", "20D", "23M"})
+          },
+          /*output_reads=*/{
+            MakeRead(5, "TTTTTACGTACGTAAA", {"16M"}),
+          },
+          {1}, 15, nucleus::MakeRange("chr1", 5, 22)
+          }
+        })));
+
 }  // namespace
 }  // namespace deepvariant
 }  // namespace genomics
