@@ -30,8 +30,8 @@
 
 from typing import Sequence, Tuple, Union
 
+import keras
 import numpy as np
-import tensorflow as tf
 
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import keras_config
@@ -60,7 +60,7 @@ class SmallModelVariantCaller:
 
   def __init__(
       self,
-      classifier: tf.keras.Model,
+      classifier: keras.Model,
       gq_threshold: float,
   ):
     self.classifier = classifier

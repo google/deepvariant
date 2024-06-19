@@ -32,13 +32,14 @@ This module is used by the training and inference libraries.
 """
 import os
 from typing import Sequence
+import keras
 import ml_collections
 import tensorflow as tf
 import tensorflow_addons.metrics as tfa_metrics
 from deepvariant.small_model import make_small_model_examples
 
 
-@tf.keras.utils.register_keras_serializable(package="small_model")
+@keras.utils.register_keras_serializable(package="small_model")
 class F1ScorePerClass(tfa_metrics.F1Score):
   """Reports F1 Score for a target class.
 
@@ -61,23 +62,23 @@ class F1ScorePerClass(tfa_metrics.F1Score):
     return super().result()[self.target_class]
 
 
-def keras_model_metrics() -> list[tf.keras.metrics.Metric]:
+def keras_model_metrics() -> list[keras.metrics.Metric]:
   """Returns a list of Keras model metrics."""
   return [
-      tf.keras.metrics.CategoricalAccuracy(),
-      tf.keras.metrics.CategoricalCrossentropy(),
-      tf.keras.metrics.TruePositives(),
-      tf.keras.metrics.TrueNegatives(),
-      tf.keras.metrics.FalsePositives(),
-      tf.keras.metrics.FalseNegatives(),
-      tf.keras.metrics.Precision(),
-      tf.keras.metrics.Precision(name="precision_homref", class_id=0),
-      tf.keras.metrics.Precision(name="precision_het", class_id=1),
-      tf.keras.metrics.Precision(name="precision_homalt", class_id=2),
-      tf.keras.metrics.Recall(),
-      tf.keras.metrics.Recall(name="recall_homref", class_id=0),
-      tf.keras.metrics.Recall(name="recall_het", class_id=1),
-      tf.keras.metrics.Recall(name="recall_homalt", class_id=2),
+      keras.metrics.CategoricalAccuracy(),
+      keras.metrics.CategoricalCrossentropy(),
+      keras.metrics.TruePositives(),
+      keras.metrics.TrueNegatives(),
+      keras.metrics.FalsePositives(),
+      keras.metrics.FalseNegatives(),
+      keras.metrics.Precision(),
+      keras.metrics.Precision(name="precision_homref", class_id=0),
+      keras.metrics.Precision(name="precision_het", class_id=1),
+      keras.metrics.Precision(name="precision_homalt", class_id=2),
+      keras.metrics.Recall(),
+      keras.metrics.Recall(name="recall_homref", class_id=0),
+      keras.metrics.Recall(name="recall_het", class_id=1),
+      keras.metrics.Recall(name="recall_homalt", class_id=2),
       tfa_metrics.F1Score(
           num_classes=3, average="weighted", name="f1_weighted"
       ),
@@ -89,13 +90,13 @@ def keras_model_metrics() -> list[tf.keras.metrics.Metric]:
   ]
 
 
-def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
+def keras_mlp_model(model_params: ml_collections.ConfigDict) -> keras.Model:
   """Creates a Keras MLP model."""
-  model = tf.keras.Sequential()
+  model = keras.Sequential()
   input_shape = len(make_small_model_examples.MODEL_FEATURES)
   hidden_layers = model_params.hidden_layer_sizes
   model.add(
-      tf.keras.layers.Dense(
+      keras.layers.Dense(
           hidden_layers[0],
           activation=model_params.activation,
           input_shape=(input_shape,),
@@ -104,10 +105,10 @@ def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
   if len(hidden_layers) > 1:
     for layer_size in hidden_layers[1:]:
       model.add(
-          tf.keras.layers.Dense(layer_size, activation=model_params.activation)
+          keras.layers.Dense(layer_size, activation=model_params.activation)
       )
   output_shape = len(make_small_model_examples.GenotypeEncoding)
-  model.add(tf.keras.layers.Dense(output_shape, activation="softmax"))
+  model.add(keras.layers.Dense(output_shape, activation="softmax"))
 
   model.summary()
   model.compile(
@@ -118,23 +119,9 @@ def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
   return model
 
 
-def load_keras_model(checkpoint_path: str) -> tf.keras.Model:
+def load_keras_model(checkpoint_path: str) -> keras.Model:
   """Loads a Keras model from the given checkpoint path."""
-  return tf.keras.models.load_model(checkpoint_path)
-
-
-class LegacyFormatModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
-  """Checkpoint callback that saves the model in the legacy "tf" format.
-
-  This is required because OSS and g3 have different TF versions.
-  """
-
-  def _save_handler(self, filepath):
-    if not filepath.endswith(".keras"):
-      raise ValueError(
-          "The filepath should end with .keras. Got: %s" % filepath
-      )
-    self.model.save(filepath, overwrite=True, save_format="tf")
+  return keras.models.load_model(checkpoint_path)
 
 
 def get_keras_training_callbacks(
@@ -144,13 +131,13 @@ def get_keras_training_callbacks(
     logging_frequency: int,
     batch_size: int,
     num_train_samples: int,
-) -> Sequence[tf.keras.callbacks.Callback]:
+) -> Sequence[keras.callbacks.Callback]:
   """If provisioned, provides a callback to log metrics to Xmanager/TB."""
   metric_loggers = []
   checkpoint_path_template = (
       "%s_epoch:{epoch:02d}_val_loss:{val_loss:.5f}.keras" % checkpoint_filepath
   )
-  model_checkpoint_callback = LegacyFormatModelCheckpoint(
+  model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
       filepath=checkpoint_path_template,
       monitor="val_accuracy",
       mode="max",
