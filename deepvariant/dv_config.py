@@ -158,8 +158,13 @@ def get_pacbio_config(config: ml_collections.ConfigDict):
 
 def get_deepsomatic_wgs_config(config: ml_collections.ConfigDict):
   get_wgs_config(config)
-  config.train_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepsomatic/deepsomatic-insert/deepsomatic-insert_train.dataset_config.pbtxt'
-  config.tune_dataset_pbtxt = '/placer/prod/home/brain-genomics/pichuan/deepsomatic/deepsomatic-insert/deepsomatic-insert_tune.dataset_config.pbtxt'
+  config.learning_rate = 0.00009483389877395854
+  config.learning_rate_decay_rate = 0.5
+  config.warmup_steps = 10000
+  config.num_epochs = 10
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = '/path/to/warmstart/checkpoint'
 
 
 def get_deepsomatic_wes_config(
