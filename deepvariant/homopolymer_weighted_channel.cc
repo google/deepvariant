@@ -60,7 +60,7 @@ std::vector<std::uint8_t> HomopolymerWeightedChannel::HomopolymerWeighted(
   // ATCGGGAA
   // 11133322
   std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size());
-  auto seq = read.aligned_sequence();
+  const auto& seq = read.aligned_sequence();
   homopolymer[0] = 1;
   int current_weight = 1;
   for (int i = 1; i <= seq.size(); i++) {

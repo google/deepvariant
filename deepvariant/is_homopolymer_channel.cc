@@ -60,7 +60,7 @@ std::vector<std::uint8_t> IsHomopolymerChannel::IsHomopolymer(
   // ATCGGGAG
   // 00011100
   std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size());
-  auto seq = read.aligned_sequence();
+  const auto& seq = read.aligned_sequence();
   for (int i = 2; i < seq.size(); i++) {
     if (seq[i] == seq[i - 1] && seq[i - 1] == seq[i - 2]) {
       homopolymer[i] = 1;
