@@ -34,6 +34,7 @@ import itertools
 import os
 import tempfile
 import time
+from typing import Iterator
 
 
 
@@ -213,6 +214,18 @@ _PROCESS_SOMATIC = flags.DEFINE_boolean(
     'process_somatic',
     False,
     'Optional. If specified the input is treated as somatic.',
+)
+
+_PON_FILTERING = flags.DEFINE_string(
+    'pon_filtering',
+    None,
+    (
+        'Optional. Only used if --process_somatic is true. '
+        'A VCF file with Panel of Normals (PON) data.'
+        'If set, the output VCF will be filtered: any variants that appear in '
+        'PON will be marked with a PON filter, and PASS filter value will be '
+        'removed.'
+    ),
 )
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
@@ -975,7 +988,49 @@ def merge_predictions(
     return canonical_variant, normalized_predictions
 
 
-def write_variants_to_vcf(variant_iterable, output_vcf_path, header):
+def should_filter(
+    variant: variants_pb2.Variant,
+    pon_vcf_reader: vcf.VcfReader,
+    padding_bases: int = 0,
+) -> bool:
+  """Returns True if the variant should be filtered based on PON."""
+  if pon_vcf_reader is None:
+    return False
+  query_region = ranges.make_range(
+      chrom=variant.reference_name,
+      start=variant.start - padding_bases,
+      end=variant.end + padding_bases,
+  )
+  pon_variants = list(pon_vcf_reader.query(query_region))
+  if not pon_variants:
+    return False
+  # TODO: Consider improving this logic to directly match the
+  # contig name, the position, and REF and ALT directly.
+  variant_key = variant_utils.variant_key(variant)
+  for pon_variant in pon_variants:
+    if variant_key == variant_utils.variant_key(pon_variant):
+      return True
+  return False
+
+
+def add_pon_filter(
+    variant_generator: Iterator[variants_pb2.Variant],
+    pon_vcf_reader: vcf.VcfReader,
+) -> Iterator[variants_pb2.Variant]:
+  for variant in variant_generator:
+    if dv_vcf_constants.DEEP_VARIANT_PASS in variant.filter and should_filter(
+        variant, pon_vcf_reader
+    ):
+      variant.filter.remove(dv_vcf_constants.DEEP_VARIANT_PASS)
+      variant.filter.append(dv_vcf_constants.DEEP_VARIANT_PON)
+    yield variant
+
+
+def write_variants_to_vcf(
+    variant_iterable: Iterator[variants_pb2.Variant],
+    output_vcf_path: str,
+    header: variants_pb2.VcfHeader,
+):
   """Writes Variant protos to a VCF file.
 
   Args:
@@ -1360,6 +1415,10 @@ def main(argv=()):
       variant_generator = haplotypes.maybe_resolve_conflicting_variants(
           independent_variants
       )
+    pon_reader = (
+        vcf.VcfReader(_PON_FILTERING.value) if _PON_FILTERING.value else None
+    )
+    variant_generator = add_pon_filter(variant_generator, pon_reader)
 
     add_info_candidates = FLAGS.debug_output_all_candidates == 'INFO'
     include_model_id = FLAGS.small_model_cvo_records is not None
@@ -1376,6 +1435,18 @@ def main(argv=()):
           variants_pb2.VcfFilterInfo(
               id=dv_vcf_constants.DEEP_VARIANT_GERMLINE,
               description='Non somatic variants',
+          )
+      )
+
+    if _PON_FILTERING.value:
+      if not _PROCESS_SOMATIC.value:
+        raise ValueError(
+            'PON filtering is only supported for somatic variant calling.'
+        )
+      header.filters.append(
+          variants_pb2.VcfFilterInfo(
+              id=dv_vcf_constants.DEEP_VARIANT_PON,
+              description='Filtered by Panel of Normals (PON)',
           )
       )
 

@@ -47,7 +47,7 @@ Flags:
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
 --model_preset Preset case study to run: WGS, or PACBIO.
---pon_filtering Path to PON (panel of normal) VCF. If set, run an additional bcftools to filter VCF, and run an additional som.py.
+--pon_filtering Path to PON (panel of normal) VCF. If set, pass --pon_filtering to postprocess_variants.
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
@@ -342,7 +342,6 @@ fi
 INPUT_DIR="${BASE}/input/data"
 OUTPUT_DIR="${BASE}/output"
 OUTPUT_VCF="deepsomatic.output.vcf.gz"
-PON_FILTERED_OUTPUT_VCF="deepsomatic.output.pon_filtering.vcf.gz"
 OUTPUT_GVCF="deepsomatic.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
@@ -630,6 +629,9 @@ function run_deepsomatic_with_docker() {
   if [[ ! -z "${BAM_NORMAL}" ]]; then
     extra_args+=( --reads_normal "/input/$(basename "$BAM_NORMAL")" )
   fi
+  if [[ ! -z "${PON_FILTERING}" ]]; then
+    extra_args+=( --pon_filtering "/input/$(basename "$PON_FILTERING")" )
+  fi
   # shellcheck disable=SC2027
   # shellcheck disable=SC2046
   # shellcheck disable=SC2068
@@ -652,41 +654,6 @@ function run_deepsomatic_with_docker() {
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepsomatic_runtime.log""
   echo
 }
-
-function filter_vcf_with_pon() {
-  PON="/input/$(basename "$PON_FILTERING")"
-  # shellcheck disable=SC2027
-  # shellcheck disable=SC2046
-  # shellcheck disable=SC2068
-  # shellcheck disable=SC2086
-  # shellcheck disable=SC2145
-  run "sudo docker run \
-    -v "${INPUT_DIR}":/input \
-    -v "${OUTPUT_DIR}":/output \
-    ${docker_args[@]-} \
-    "${IMAGE}" \
-    bcftools \
-    filter --threads=$(nproc) \
-    --mode + \
-    --soft-filter PON \
-    --output-type z \
-    --mask-file ${PON} \
-    "/output/${OUTPUT_VCF}" \
-    -o "/output/${PON_FILTERED_OUTPUT_VCF}""
-
-  # shellcheck disable=SC2027
-  # shellcheck disable=SC2046
-  # shellcheck disable=SC2068
-  # shellcheck disable=SC2086
-  # shellcheck disable=SC2145
-  run "sudo docker run \
-    -v "${INPUT_DIR}":"/input" \
-    -v "${OUTPUT_DIR}:/output" \
-    ${docker_args[@]-} \
-    "${IMAGE}" \
-    bcftools index --tbi --threads=$(nproc) /output/${PON_FILTERED_OUTPUT_VCF}"
-}
-
 
 function run_sompy() {
   ## Evaluation: run som.py
@@ -740,14 +707,6 @@ function main() {
       run_sompy "${OUTPUT_VCF}" "sompy"
     else
       run_sompy "${OUTPUT_VCF}" "sompy" 2>&1 | tee "${LOG_DIR}/sompy.log"
-    fi
-  fi
-  if [[ ! -z "${PON_FILTERING}" ]]; then
-    filter_vcf_with_pon
-    if [[ "${DRY_RUN}" == "true" ]]; then
-      run_sompy "${PON_FILTERED_OUTPUT_VCF}" "sompy.pon_filtering"
-    else
-      run_sompy "${PON_FILTERED_OUTPUT_VCF}" "sompy.pon_filtering" 2>&1 | tee "${LOG_DIR}/sompy.pon_filtering.log"
     fi
   fi
 }

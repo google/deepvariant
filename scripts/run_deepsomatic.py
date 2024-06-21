@@ -230,6 +230,18 @@ _PROCESS_SOMATIC = flags.DEFINE_boolean(
     'Optional. Is specified the input is treated as somatic.',
 )
 
+_PON_FILTERING = flags.DEFINE_string(
+    'pon_filtering',
+    None,
+    (
+        'Optional. Only used if --process_somatic is true. '
+        'A VCF file with Panel of Normals (PON) data.'
+        'If set, the output VCF will be filtered: any variants that appear in '
+        'PON will be marked with a PON filter, and PASS filter value will be '
+        'removed.'
+    ),
+)
+
 
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/deepsomatic/wgs',
@@ -447,6 +459,7 @@ def postprocess_variants_command(
     infile: str,
     outfile: str,
     process_somatic: bool,
+    pon_filtering: str,
     extra_args: str,
     **kwargs,
 ) -> Tuple[str, Optional[str]]:
@@ -460,6 +473,8 @@ def postprocess_variants_command(
     command.extend(['--process_somatic=true'])
   else:
     command.extend(['--noprocess_somatic'])
+  if pon_filtering:
+    command.extend(['--pon_filtering', '"{}"'.format(pon_filtering)])
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
@@ -640,6 +655,7 @@ def create_all_commands_and_logfiles(
           infile=call_variants_output,
           outfile=_OUTPUT_VCF.value,
           process_somatic=_PROCESS_SOMATIC.value,
+          pon_filtering=_PON_FILTERING.value,
           extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,
