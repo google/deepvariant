@@ -861,7 +861,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.exclude_regions = 'chr20:10,010,000-10,100,000'
 
     options = make_examples.default_options(add_flags=True)
-    _, regions_from_options = (
+    _, _, regions_from_options = (
         make_examples_core.processing_regions_from_options(options)
     )
     self.assertCountEqual(
@@ -890,7 +890,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
         + bed_path
     )
     options = make_examples.default_options(add_flags=True)
-    _, regions_from_options = (
+    _, _, regions_from_options = (
         make_examples_core.processing_regions_from_options(options)
     )
     self.assertCountEqual(
@@ -912,7 +912,7 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.discard_non_dna_regions = True
 
     options = make_examples.default_options(add_flags=True)
-    _, regions_from_options = (
+    _, _, regions_from_options = (
         make_examples_core.processing_regions_from_options(options)
     )
     self.assertCountEqual(

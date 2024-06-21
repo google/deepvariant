@@ -629,7 +629,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 75.
+// Next ID: 76.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -879,6 +879,11 @@ message MakeExamplesOptions {
 
   // Proportion of examples to keep when in training mode.
   repeated float downsample_classes = 72;
+
+  // If true, the mean coverage is calculated on the calling regions, rather
+  // than on the whole genome. This is useful in the case of WES where the
+  // regions that have reads are 2 percent of the genome.
+  bool sample_mean_coverage_on_calling_regions = 75;
 }
 
 // Config describe information needed for a dataset that can be used for

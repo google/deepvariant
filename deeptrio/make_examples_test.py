@@ -1392,7 +1392,7 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     FLAGS.exclude_regions = '20:10,010,000-10,100,000'
 
     options = make_examples.default_options(add_flags=True)
-    _, regions_from_options = (
+    _, _, regions_from_options = (
         make_examples_core.processing_regions_from_options(options)
     )
     self.assertCountEqual(

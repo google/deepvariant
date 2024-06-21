@@ -560,6 +560,13 @@ _MEAN_COVERAGE_PER_SAMPLE = flags.DEFINE_list(
     ' If this value is unset an approximation will be used using an online'
     ' streaming algorithm for the mean coverage channel.',
 )
+_SAMPLE_MEAN_COVERAGE_ON_CALLING_REGIONS = flags.DEFINE_bool(
+    'sample_mean_coverage_on_calling_regions',
+    False,
+    'Optional. If True, the mean coverage is calculated on the calling regions,'
+    ' rather than on the whole genome. This is useful in the case of WES where'
+    ' the regions that have reads are 2 percent of the genome.',
+)
 flags.DEFINE_string(
     'runtime_by_region',
     None,
@@ -762,6 +769,7 @@ def shared_flags_to_options(
       small_model_gq_threshold=_SMALL_MODEL_GQ_THRESHOLD.value,
       trained_small_model_path=_TRAINED_SMALL_MODEL_PATH.value,
       downsample_classes=list(map(float, _DOWNSAMPLE_CLASSES.value)),
+      sample_mean_coverage_on_calling_regions=_SAMPLE_MEAN_COVERAGE_ON_CALLING_REGIONS.value,
   )
 
   if add_flags:

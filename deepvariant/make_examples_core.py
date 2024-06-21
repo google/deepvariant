@@ -121,6 +121,12 @@ MAX_PARTITION_LEN = 1000000
 # Non DNA regions larger than this value are excluded from processing.
 MIN_NON_DNA_REGION = 300000
 
+# Number of regions to use for computing mean coverage.
+NUM_REGIONS_FOR_MEAN_COVERAGE = 1500
+
+# Number of loci to use for computing mean coverage.
+NUM_LOCI_FOR_MEAN_COVERAGE = 10
+
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
 # ---------------------------------------------------------------------------
@@ -1304,6 +1310,7 @@ class RegionProcessor:
     self.samples = [
         sample_lib.Sample(options=x) for x in self.options.sample_options
     ]
+    self.mean_coverage_per_sample = None
     self.initialized = False
     self.ref_reader = None
     self.realigner = None
@@ -1335,6 +1342,9 @@ class RegionProcessor:
     Returns:
       A list of floats representing mean coverages per sample.
     """
+    if self.mean_coverage_per_sample:
+      return self.mean_coverage_per_sample
+
     if not any([
         sample_options.mean_coverage > 0
         for sample_options in self.options.sample_options
@@ -1602,6 +1612,7 @@ class RegionProcessor:
         region. If the region contains no examples, return None.
     """
     before_make_pileup_images = time.time()
+    mean_coverage_per_sample = self._get_mean_coverage_per_sample()
     example_shape = None
     # Create A tf.Example proto, which includes the candidate variant, the
     # pileup image, and, if in training mode, the truth variants and labels
@@ -1654,7 +1665,7 @@ class RegionProcessor:
               reads_per_sample,
               sample_order,
               role,
-              self._get_mean_coverage_per_sample(),
+              mean_coverage_per_sample,
           )
       )
 
@@ -1681,7 +1692,7 @@ class RegionProcessor:
               reads_per_sample,
               sample_order,
               role,
-              self._get_mean_coverage_per_sample(),
+              mean_coverage_per_sample,
           )
       )
 
@@ -1860,6 +1871,74 @@ class RegionProcessor:
       yield pos
     # Mark the end of partition
     yield END_OF_PARTITION
+
+  def precompute_mean_coverage_per_sample(
+      self, sample_regions: List[range_pb2.Range]
+  ):
+    """Precomputes the estimation of mean coverage per sample.
+
+    If the value is already provided via flag, it will be used instead of
+    computing it.
+
+    Args:
+      sample_regions: List of regions to use for estimating mean coverage.
+    """
+    start = time.time()
+
+    self.mean_coverage_per_sample = [0 for _ in self.samples]
+    if not self.initialized:
+      self.initialize()
+
+    n_positions = [0 for _ in self.samples]
+    n_reads_per_sample = [0 for _ in self.samples]
+    for sample_index, sample in enumerate(self.samples):
+      # Do not recompute mean coverage if it is already provided via flag.
+      if self.samples[sample_index].options.mean_coverage:
+        continue
+      logging_with_options(
+          self.options,
+          'Mean_coverage not set for sample %s. Estimating mean coverage...'
+          % self.samples[sample_index].options.name,
+      )
+      logging_with_options(
+          self.options,
+          'Using %d regions to estimate mean coverage.' % len(sample_regions),
+      )
+      for region in sample_regions:
+        allele_counter = self._make_allele_counter_for_region(region, [])
+        if sample.in_memory_sam_reader is not None:
+          for read in self.region_reads_norealign(
+              region=region,
+              sam_readers=sample.sam_readers,
+              reads_filenames=sample.options.reads_filenames,
+          ):
+            allele_counter.add(read, sample.options.name)
+
+        summary_counts = allele_counter.summary_counts()
+        positions_in_region = len(summary_counts)
+        reads_in_region = sum(
+            [summary.total_read_count for summary in summary_counts]
+        )
+        if reads_in_region > 0:
+          n_positions[sample_index] += positions_in_region
+          n_reads_per_sample[sample_index] += reads_in_region
+        if n_positions[sample_index] > 0:
+          self.mean_coverage_per_sample[sample_index] = (
+              n_reads_per_sample[sample_index] / n_positions[sample_index]
+          )
+      logging_with_options(
+          self.options,
+          'Mean coverage estimation for sample %s: %f'
+          % (
+              self.samples[sample_index].options.name,
+              self.mean_coverage_per_sample[sample_index],
+          ),
+      )
+    logging_with_options(
+        self.options,
+        'Overhead for precomputing mean coverage: %d seconds'
+        % (time.time() - start),
+    )
 
   def _only_contains_alts_above_threshold(
       self, variant: variants_pb2.Variant, threshold: float
@@ -2580,7 +2659,9 @@ def load_candidate_positions(candidate_path: Any) -> List[int]:
 
 def processing_regions_from_options(
     options: deepvariant_pb2.MakeExamplesOptions,
-) -> Tuple[List[range_pb2.Range], Optional[ranges.RangeSet]]:
+) -> Tuple[
+    List[range_pb2.Range], List[range_pb2.Range], Optional[ranges.RangeSet]
+]:
   """Computes the calling regions from our options.
 
   This function does all of the work needed to read our input files and region
@@ -2595,10 +2676,14 @@ def processing_regions_from_options(
     ValueError: if the regions to call is empty.
 
   Returns:
-    Two values. The first is a list of nucleus.genomics.v1.Range protos of the
-    regions we should process. The second is a RangeSet containing the calling
-    regions calculated from intersection of input regions, confident regions
-    and regions to exclude.
+    A tuple of three values, (regions, sample_regions, calling_regions).
+    regions: a list of nucleus.genomics.v1.Range protos of the regions we should
+    process.
+    sample_regions: a list of nucleus.genomics.v1.Range protos of the regions we
+    should sample on to calculate global information over the genome such as
+    mean coverage.
+    calling_regions: a RangeSet containing the calling regions calculated from
+    intersection of input regions, confident regions and regions to exclude.
   """
   # Load candidate_positions if the flag is set. Partitioning logic will depend
   # on whether candidate_positions is set.
@@ -2678,6 +2763,53 @@ def processing_regions_from_options(
   )
 
   region_list = list(regions)
+
+  sample_regions = regions_to_process(
+      contigs=contigs,
+      partition_size=options.allele_counter_options.partition_size,
+      calling_regions=calling_regions
+      if options.sample_mean_coverage_on_calling_regions
+      else None,
+      task_id=None,
+      num_shards=None,
+      candidates=None,
+  )
+  sample_regions_list = list(sample_regions)
+  if (
+      len(sample_regions_list) < NUM_REGIONS_FOR_MEAN_COVERAGE
+      and 'mean_coverage' in options.pic_options.channels
+  ):
+    logging.warning(
+        'calling_regions has %d regions, which is less than %d. '
+        'This may result in inaccurate mean coverage if estimated.',
+        len(sample_regions_list),
+        NUM_REGIONS_FOR_MEAN_COVERAGE,
+    )
+  else:
+    # Sample regions to calculate mean coverage by random sampling
+    # NUM_LOCI_FOR_MEAN_COVERAGE places in the genome and expanding
+    # consecutively to reach NUM_REGIONS_FOR_MEAN_COVERAGE regions.
+    # See internal#comment46 for more details.
+    random_generator = np.random.RandomState(options.random_seed)
+
+    num_regions_per_locus = int(
+        NUM_REGIONS_FOR_MEAN_COVERAGE / NUM_LOCI_FOR_MEAN_COVERAGE
+    )
+    sample_regions_indexes = []
+    for sample_start_positions in random_generator.choice(
+        range(len(sample_regions_list)), NUM_LOCI_FOR_MEAN_COVERAGE
+    ):
+      sample_regions_indexes += list(
+          range(
+              sample_start_positions,
+              min(
+                  sample_start_positions + num_regions_per_locus,
+                  len(sample_regions_list),
+              ),
+          )
+      )
+    sample_regions_list = np.take(sample_regions_list, sample_regions_indexes)
+
   # When using VcfCandidateImporter, it is safe to skip regions without
   # candidates as long as gVCF output is not needed. There is a tradeoff
   # though because it takes time to read the VCF, which is only worth it if
@@ -2711,9 +2843,8 @@ def processing_regions_from_options(
             trim_runtime(time_elapsed), len(region_list), len(filtered_regions)
         ),
     )
-    return filtered_regions, None
-
-  return region_list, calling_regions
+    return filtered_regions, sample_regions_list, None
+  return region_list, sample_regions_list, calling_regions
 
 
 def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
@@ -2722,8 +2853,11 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   before_initializing_inputs = time.time()
 
   logging_with_options(options, 'Preparing inputs')
-  regions, calling_regions = processing_regions_from_options(options)
-
+  (
+      regions,
+      sample_regions,
+      calling_regions,
+  ) = processing_regions_from_options(options)
   main_sample = options.sample_options[options.main_sample_index]
   mode_candidate_sweep = deepvariant_pb2.MakeExamplesOptions.CANDIDATE_SWEEP
   candidates_writer = None
@@ -2790,6 +2924,9 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       'Overhead for preparing inputs: %d seconds'
       % (time.time() - before_initializing_inputs),
   )
+
+  if 'mean_coverage' in options.pic_options.channels:
+    region_processor.precompute_mean_coverage_per_sample(sample_regions)
 
   running_timer = timer.TimerStart()
   # Ideally this would use dv_constants.NUM_CLASSES, which requires generalizing
