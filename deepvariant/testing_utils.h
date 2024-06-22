@@ -33,6 +33,7 @@
 #define LEARNING_GENOMICS_DEEPVARIANT_TESTING_UTILS_H_
 
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_TESTING_UTILS_H_
 
 #include <string>
@@ -70,7 +71,7 @@ nucleus::genomics::v1::Read MakeRead(
 
 // Creates a simple variant for unit testing.
 nucleus::genomics::v1::Variant MakeVariant(
-    absl::string_view ref, const std::vector<absl::string_view>& alts,
+    absl::string_view ref, absl::Span<const absl::string_view> alts,
     int64_t start = kStart);
 
 }  // namespace deepvariant

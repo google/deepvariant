@@ -37,6 +37,7 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -78,7 +79,7 @@ nucleus::genomics::v1::Read MakeRead(
 }
 
 nucleus::genomics::v1::Variant MakeVariant(
-    absl::string_view ref, const std::vector<absl::string_view>& alts,
+    absl::string_view ref, absl::Span<const absl::string_view> alts,
     int64_t start) {
   nucleus::genomics::v1::Variant variant;
   variant.set_reference_name(std::string(kChr));
