@@ -47,13 +47,14 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "absl/log/log.h"
 
 namespace learning {
 namespace genomics {
@@ -110,8 +111,8 @@ std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
   return to_return;
 }
 
-std::vector<Allele> SumAlleleCounts(
-    const std::vector<AlleleCount>& allele_counts, bool include_low_quality) {
+std::vector<Allele> SumAlleleCounts(absl::Span<const AlleleCount> allele_counts,
+                                    bool include_low_quality) {
   std::map<std::pair<string_view, AlleleType>, int> allele_sums;
   for (const AlleleCount& allele_count : allele_counts) {
     for (const auto& entry : allele_count.read_alleles()) {
@@ -262,7 +263,7 @@ void AlleleCounter::Init() {
 // AlleleCounter objects are passed to Python by pointers. We need to return
 // a raw pointer here in order to test a Python specific API.
 AlleleCounter* AlleleCounter::InitFromAlleleCounts(
-    const std::vector<AlleleCount>& allele_counts) {
+    absl::Span<const AlleleCount> allele_counts) {
   auto allele_counter = new AlleleCounter();
   allele_counter->counts_.assign(allele_counts.begin(), allele_counts.end());
   return allele_counter;

@@ -46,6 +46,7 @@ friend class test_case_name##_##test_name##_Test
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -71,9 +72,8 @@ std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
 // for one position combined for all DeepTrio samples. Effectively this function
 // merges allele_count from all DeepTrio samples.
 // This function is similar to SumAlleleCounts(const AlleleCount& allele_count)
-std::vector<Allele> SumAlleleCounts(
-    const std::vector<AlleleCount>& allele_counts,
-    bool include_low_quality = false);
+std::vector<Allele> SumAlleleCounts(absl::Span<const AlleleCount> allele_counts,
+                                    bool include_low_quality = false);
 
 // Gets the total count of observed alleles in this allele_count, which is the
 // sum of the observed non-reference alleles in read_alleles + the total number
@@ -256,7 +256,7 @@ class AlleleCounter {
 
   // This Init is used by unit tests only.
   static AlleleCounter* InitFromAlleleCounts(
-      const std::vector<AlleleCount>& allele_counts);
+      absl::Span<const AlleleCount> allele_counts);
 
   // Adds the alleles from read to our AlleleCounts. This method is also called
   // by NormalizeAndAdd. In that case allele counts are created using a
