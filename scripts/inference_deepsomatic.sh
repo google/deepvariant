@@ -71,6 +71,7 @@ Note: All paths to dataset must be of the form "gs://..."
 # Booleans; sorted alphabetically.
 BUILD_DOCKER=false
 DRY_RUN=false
+USE_CANDIDATE_PARTITION=false
 USE_GPU=false
 SAVE_INTERMEDIATE_RESULTS=false
 SKIP_SOMPY=false
@@ -142,6 +143,16 @@ while (( "$#" )); do
       SKIP_SOMPY="$2"
       if [[ "${SKIP_SOMPY}" != "true" ]] && [[ "${SKIP_SOMPY}" != "false" ]]; then
         echo "Error: --SKIP_SOMPY needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --use_candidate_partition)
+      USE_CANDIDATE_PARTITION="$2"
+      if [[ ${USE_CANDIDATE_PARTITION} != "true" ]] && [[ ${USE_CANDIDATE_PARTITION} != "false" ]]; then
+        echo "Error: --use_candidate_partition needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -359,6 +370,12 @@ if [[ "${SAVE_INTERMEDIATE_RESULTS}" == "true" ]]; then
   extra_args+=( --intermediate_results_dir "/output/intermediate_results_dir")
 fi
 
+# Because the default is False, we only set it if
+# set to true.
+if [[ "${USE_CANDIDATE_PARTITION}" == "true" ]]; then
+  extra_args+=( --use_candidate_partition )
+fi
+
 echo "========================="
 echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
@@ -366,6 +383,7 @@ echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
 echo "SKIP_SOMPY: ${SKIP_SOMPY}"
+echo "USE_CANDIDATE_PARTITION: ${USE_CANDIDATE_PARTITION}"
 echo "# Strings; sorted alphabetically."
 echo "BAM_NORMAL: ${BAM_NORMAL}"
 echo "BAM_TUMOR: ${BAM_TUMOR}"

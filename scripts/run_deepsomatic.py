@@ -34,6 +34,7 @@ If you want to access more flags that are available in `make_examples_somatic`,
 using the binaries in the Docker image.
 """
 
+import enum
 import os
 import re
 import subprocess
@@ -202,6 +203,16 @@ _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
     ),
 )
 
+_USE_CANDIDATE_PARTITION = flags.DEFINE_boolean(
+    'use_candidate_partition',
+    False,
+    (
+        'NOTE: This is experimental and not ready for production use.'
+        'Optional. If set, make_examples is run over partitions that contain an'
+        ' equal number of candidates. Default value is False.'
+    ),
+)
+
 # Optional flags for postprocess_variants.
 _OUTPUT_GVCF = flags.DEFINE_string(
     'output_gvcf', None, 'Optional. Path where we should write gVCF file.'
@@ -251,6 +262,31 @@ MODEL_TYPE_MAP = {
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
 DEEP_VARIANT_VERSION = '1.6.1'
+
+
+@enum.unique
+class CandidatePartitionCommand(enum.Enum):
+  """make_examples mode for candidate partition."""
+
+  SWEEP = enum.auto()  # Candidate sweep
+  CANDIDATE_PARTITION_INFERENCE = (
+      enum.auto()
+  )  # Inference with candidate partition
+
+
+def _candidate_positions_common_suffix(num_shards):
+  return '@{}'.format(num_shards)
+
+
+def _candidate_positions_common_prefix(intermediate_results_dir):
+  return os.path.join(intermediate_results_dir, 'candidate_positions')
+
+
+def _candidate_positions_common_name(intermediate_results_dir, num_shards):
+  return '{}{}'.format(
+      _candidate_positions_common_prefix(intermediate_results_dir),
+      _candidate_positions_common_suffix(num_shards),
+  )
 
 
 def _is_quoted(value):
@@ -333,6 +369,8 @@ def make_examples_somatic_command(
     examples,
     model_ckpt,
     extra_args,
+    candidate_positions_path,
+    candidate_partition_mode=None,
     runtime_by_region_path=None,
     **kwargs,
 ) -> Tuple[str, Optional[str]]:
@@ -345,6 +383,9 @@ def make_examples_somatic_command(
     examples: Output tfrecord file containing tensorflow.Example files.
     model_ckpt: Path to the TensorFlow model checkpoint.
     extra_args: Comma-separated list of flag_name=flag_value.
+    candidate_positions_path: Path to candidate positions file.
+    candidate_partition_mode: If set adds extra parameters to allow candidate
+      partition.
     runtime_by_region_path: Output path for runtime by region metrics.
     **kwargs: Additional arguments to pass in for make_examples_somatic.
 
@@ -357,7 +398,18 @@ def make_examples_somatic_command(
       'parallel -q --halt 2 --line-buffer',
       '/opt/deepvariant/bin/make_examples_somatic',
   ]
-  command.extend(['--mode', 'calling'])
+  if candidate_partition_mode == CandidatePartitionCommand.SWEEP:
+    command.extend(['--mode', 'candidate_sweep'])
+  elif (
+      candidate_partition_mode
+      == CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE
+  ):
+    command.extend(['--mode', 'calling'])
+  elif candidate_partition_mode is None:
+    command.extend(['--mode', 'calling'])
+  else:
+    raise ValueError('Invalid value of candidate_partition_mode.')
+
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--reads_tumor', '"{}"'.format(reads_tumor)])
   if reads_normal:
@@ -377,13 +429,13 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_snps'] = 0.029
     special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
     special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
-    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'PACBIO':
     special_args = {}
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['min_mapping_quality'] = 5
     special_args['parse_sam_aux_fields'] = True
-    special_args['partition_size'] = 25000
+    if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
+      special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
     special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
@@ -395,13 +447,13 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_indels'] = 0.1
     special_args['vsc_min_fraction_snps'] = 0.02
     special_args['trim_reads_for_pileup'] = True
-    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'ONT_R104':
     special_args = {}
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['min_mapping_quality'] = 5
     special_args['parse_sam_aux_fields'] = True
-    special_args['partition_size'] = 25000
+    if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
+      special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
     special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
@@ -412,18 +464,36 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_snps'] = 0.05
     special_args['vsc_min_fraction_indels'] = 0.1
     special_args['trim_reads_for_pileup'] = True
-    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   else:
     raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
+
+  if candidate_partition_mode == CandidatePartitionCommand.SWEEP:
+    special_args['partition_size'] = 10000  # Should be approximately read
+    # length to avoid having high
+    # coverage intervals in multiple shards at a time
+    special_args['candidate_positions'] = candidate_positions_path
+
+  if (
+      candidate_partition_mode
+      == CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE
+  ):
+    special_args['candidate_positions'] = candidate_positions_path
+
+  if special_args:
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
 
   command.extend(['--task {}'])
+
   logfile = None
   if _LOGGING_DIR.value:
     logfile = '{}/make_examples_somatic.log'.format(_LOGGING_DIR.value)
+    if candidate_partition_mode == CandidatePartitionCommand.SWEEP:
+      logfile = '{}/make_examples_somatic_sweep.log'.format(_LOGGING_DIR.value)
+
   return (' '.join(command), logfile)
 
 
@@ -617,23 +687,47 @@ def create_all_commands_and_logfiles(
   else:
     runtime_by_region_path = None
 
+  # If _USE_CANDIDATE_PARTITION is set add a call to make_examples to generate
+  # candidates.
+  # If _USE_CANDIDATE_PARTITION is set we generate two make_examples commands.
+  # The first one to generate candidate_positions. The second command is for
+  # generating DeepVariant examples. _USE_CANDIDATE_PARTITION is an option that
+  # helps to better distribute the work between shards.
+
+  candidate_partition_modes = [None]
+  use_candidate_partition = False
+  if _USE_CANDIDATE_PARTITION.value:
+    use_candidate_partition = True
+    candidate_partition_modes = [
+        CandidatePartitionCommand.SWEEP,
+        CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE,
+    ]
+
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
-  commands.append(
-      make_examples_somatic_command(
-          ref=_REF.value,
-          reads_tumor=_READS_TUMOR.value,
-          reads_normal=_READS_NORMAL.value,
-          examples=examples,
-          model_ckpt=model_ckpt,
-          runtime_by_region_path=runtime_by_region_path,
-          extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
-          # kwargs:
-          gvcf=nonvariant_site_tfrecord_path,
-          regions=_REGIONS.value,
-          sample_name_tumor=_SAMPLE_NAME_TUMOR.value,
-          sample_name_normal=_SAMPLE_NAME_NORMAL.value,
-      )
-  )
+
+  for candidate_partition_mode in candidate_partition_modes:
+    commands.append(
+        make_examples_somatic_command(
+            ref=_REF.value,
+            reads_tumor=_READS_TUMOR.value,
+            reads_normal=_READS_NORMAL.value,
+            examples=examples,
+            model_ckpt=model_ckpt,
+            runtime_by_region_path=runtime_by_region_path,
+            extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
+            candidate_positions_path=_candidate_positions_common_name(
+                intermediate_results_dir, _NUM_SHARDS.value
+            ),
+            candidate_partition_mode=candidate_partition_mode
+            if use_candidate_partition
+            else None,
+            # kwargs:
+            gvcf=nonvariant_site_tfrecord_path,
+            regions=_REGIONS.value,
+            sample_name_tumor=_SAMPLE_NAME_TUMOR.value,
+            sample_name_normal=_SAMPLE_NAME_NORMAL.value,
+        )
+    )
 
   # call_variants
   call_variants_output = os.path.join(
