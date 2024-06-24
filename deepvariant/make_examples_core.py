@@ -2764,51 +2764,73 @@ def processing_regions_from_options(
 
   region_list = list(regions)
 
-  sample_regions = regions_to_process(
-      contigs=contigs,
-      partition_size=options.allele_counter_options.partition_size,
-      calling_regions=calling_regions
-      if options.sample_mean_coverage_on_calling_regions
-      else None,
-      task_id=None,
-      num_shards=None,
-      candidates=None,
-  )
-  sample_regions_list = list(sample_regions)
-  if (
-      len(sample_regions_list) < NUM_REGIONS_FOR_MEAN_COVERAGE
-      and 'mean_coverage' in options.pic_options.channels
-  ):
-    logging.warning(
-        'calling_regions has %d regions, which is less than %d. '
-        'This may result in inaccurate mean coverage if estimated.',
-        len(sample_regions_list),
-        NUM_REGIONS_FOR_MEAN_COVERAGE,
-    )
-  else:
-    # Sample regions to calculate mean coverage by random sampling
-    # NUM_LOCI_FOR_MEAN_COVERAGE places in the genome and expanding
-    # consecutively to reach NUM_REGIONS_FOR_MEAN_COVERAGE regions.
-    # See internal#comment46 for more details.
-    random_generator = np.random.RandomState(options.random_seed)
+  def sample_regions_for_coverage_estimation(
+      options: deepvariant_pb2.MakeExamplesOptions,
+  ) -> List[range_pb2.Range]:
+    """Returns a list of regions sampled from the BAM file to use for mean coverage estimation.
 
-    num_regions_per_locus = int(
-        NUM_REGIONS_FOR_MEAN_COVERAGE / NUM_LOCI_FOR_MEAN_COVERAGE
+    Uses the calling regions if options.sample_mean_coverage_on_calling_regions
+    is set.
+    Otherwise, uses: UNION(ref_contigs, sample_contigs) - exclude_contigs.
+    Samples NUM_REGIONS_FOR_MEAN_COVERAGE regions from
+    NUM_LOCI_FOR_MEAN_COVERAGE places in the genome from the above set. If there
+    are less than NUM_REGIONS_FOR_MEAN_COVERAGE regions, returns all regions.
+
+    Args:
+      options: deepvariant.MakeExamplesOptions proto containing information
+        about our input data sources.
+
+    Returns:
+      A list of regions to use for mean coverage estimation.
+    """
+    sample_regions = regions_to_process(
+        contigs=contigs,
+        partition_size=options.allele_counter_options.partition_size,
+        calling_regions=calling_regions
+        if options.sample_mean_coverage_on_calling_regions
+        else None,
+        task_id=None,
+        num_shards=None,
+        candidates=None,
     )
-    sample_regions_indexes = []
-    for sample_start_positions in random_generator.choice(
-        range(len(sample_regions_list)), NUM_LOCI_FOR_MEAN_COVERAGE
+    sample_regions_list = list(sample_regions)
+    if (
+        len(sample_regions_list) < NUM_REGIONS_FOR_MEAN_COVERAGE
+        and 'mean_coverage' in options.pic_options.channels
     ):
-      sample_regions_indexes += list(
-          range(
-              sample_start_positions,
-              min(
-                  sample_start_positions + num_regions_per_locus,
-                  len(sample_regions_list),
-              ),
-          )
+      logging.warning(
+          'calling_regions has %d regions, which is less than %d. '
+          'This may result in inaccurate mean coverage if estimated.',
+          len(sample_regions_list),
+          NUM_REGIONS_FOR_MEAN_COVERAGE,
       )
-    sample_regions_list = np.take(sample_regions_list, sample_regions_indexes)
+    else:
+      # Sample regions to calculate mean coverage by random sampling
+      # NUM_LOCI_FOR_MEAN_COVERAGE places in the genome and expanding
+      # consecutively to reach NUM_REGIONS_FOR_MEAN_COVERAGE regions.
+      # See internal#comment46 for more details.
+      random_generator = np.random.RandomState(options.random_seed)
+
+      num_regions_per_locus = int(
+          NUM_REGIONS_FOR_MEAN_COVERAGE / NUM_LOCI_FOR_MEAN_COVERAGE
+      )
+      sample_regions_indexes = []
+      for sample_start_positions in random_generator.choice(
+          range(len(sample_regions_list)), NUM_LOCI_FOR_MEAN_COVERAGE
+      ):
+        sample_regions_indexes += list(
+            range(
+                sample_start_positions,
+                min(
+                    sample_start_positions + num_regions_per_locus,
+                    len(sample_regions_list),
+                ),
+            )
+        )
+      sample_regions_list = np.take(sample_regions_list, sample_regions_indexes)
+    return sample_regions_list
+
+  sample_regions_list = sample_regions_for_coverage_estimation(options)
 
   # When using VcfCandidateImporter, it is safe to skip regions without
   # candidates as long as gVCF output is not needed. There is a tradeoff
