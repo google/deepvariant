@@ -131,6 +131,11 @@ _PILEUP_IMAGE_HEIGHT_NORMAL = flags.DEFINE_integer(
         f' normal. Uses {dv_constants.PILEUP_DEFAULT_HEIGHT} by default.'
     ),
 )
+_CANDIDATE_POSITIONS = flags.DEFINE_string(
+    'candidate_positions',
+    '',
+    'Path to the binary file containing candidate positions.',
+)
 
 # Change any flag defaults that differ for DeepSomatic.
 # I'm setting this to float('inf') because we don't want to include any
@@ -218,6 +223,9 @@ def default_options(main_sample_index, add_flags=True, flags_obj=None):
 
   samples_in_order, sample_role_to_train = tumor_normal_samples_from_flags(
       flags_obj=flags_obj
+  )
+  samples_in_order[main_sample_index].candidate_positions = (
+      flags_obj.candidate_positions
   )
 
   options = make_examples_options.shared_flags_to_options(
