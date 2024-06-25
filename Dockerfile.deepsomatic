@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
-ARG VERSION_DEEPSOMATIC=1.6.1
+ARG VERSION_DEEPSOMATIC=1.7.0-rc0
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
 FROM continuumio/miniconda3 as conda_setup
@@ -120,6 +120,15 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEP
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wgs.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/deepsomatic/wgs/*
 
+WORKDIR /opt/models/deepsomatic/wes
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wes.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wes.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wes.savedmodel/example_info.json .
+WORKDIR /opt/models/deepsomatic/wes/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wes.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wes.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/deepsomatic/wes/*
+
 WORKDIR /opt/models/deepsomatic/pacbio
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.pacbio.savedmodel/fingerprint.pb .
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.pacbio.savedmodel/saved_model.pb .
@@ -128,6 +137,33 @@ WORKDIR /opt/models/deepsomatic/pacbio/variables
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.pacbio.savedmodel/variables/variables.data-00000-of-00001 .
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.pacbio.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/deepsomatic/pacbio/*
+
+WORKDIR /opt/models/deepsomatic/ont
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont.savedmodel/example_info.json .
+WORKDIR /opt/models/deepsomatic/ont/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/deepsomatic/ont/*
+
+WORKDIR /opt/models/deepsomatic/ffpe_wgs
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/example_info.json .
+WORKDIR /opt/models/deepsomatic/ffpe_wgs/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/deepsomatic/ffpe_wgs/*
+
+WORKDIR /opt/models/deepsomatic/ffpe_wes
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/example_info.json .
+WORKDIR /opt/models/deepsomatic/ffpe_wes/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/deepsomatic/ffpe_wes/*
 
 ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin/deepsomatic:/opt/deepvariant/bin
 
