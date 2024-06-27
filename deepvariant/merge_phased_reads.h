@@ -42,6 +42,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 
 namespace learning {
 namespace genomics {
@@ -155,8 +156,8 @@ class Merger {
 class MergerPeer {
  public:
   // Populates unmerged_reads_. This is needed for unit testing.
-  static void SetUnmergedReads(
-      Merger& merger, const std::vector<UnmergedRead>& unmerged_reads);
+  static void SetUnmergedReads(Merger& merger,
+                               absl::Span<const UnmergedRead> unmerged_reads);
 
   // Returns merged_reads_. This is needed for unit testing.
   static const std::vector<MergedPhaseRead>& merged_reads(

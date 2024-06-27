@@ -52,6 +52,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "re2/re2.h"
 
 namespace learning {
@@ -276,7 +277,7 @@ void Merger::MergeReads() {
 }
 
 void MergerPeer::SetUnmergedReads(
-    Merger& merger, const std::vector<UnmergedRead>& unmerged_reads) {
+    Merger& merger, absl::Span<const UnmergedRead> unmerged_reads) {
   // Cannot use absl::btree_set as the rbegin() iterator is not provided.
   std::set<int> shards;
   for (const auto& unmerged_read : unmerged_reads) {
