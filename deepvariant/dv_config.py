@@ -66,7 +66,7 @@ def get_wgs_config(config: ml_collections.ConfigDict):
 
   config.best_checkpoint_metric = 'tune/f1_weighted'
   config.batch_size = 16384
-  config.num_epochs = 10
+  config.num_epochs = 20
   config.optimizer = 'adam'
   config.beta_1 = 0.9651804083266324
   config.beta_2 = 0.9665259112630292
