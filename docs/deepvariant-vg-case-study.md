@@ -88,7 +88,7 @@ user    157m44.462s
 sys     10m9.054s
 ```
 
-Run `giraffe`` on the graph, haplotype index, kmers and reads:
+Run `giraffe` on the graph, haplotype index, kmers and reads:
 
 ```bash
 ${DATA_DIR}/vg paths \
