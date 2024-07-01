@@ -207,9 +207,10 @@ _USE_CANDIDATE_PARTITION = flags.DEFINE_boolean(
     'use_candidate_partition',
     False,
     (
-        'NOTE: This is experimental and not ready for production use.'
         'Optional. If set, make_examples is run over partitions that contain an'
         ' equal number of candidates. Default value is False.'
+        'NOTE: This is experimental. So far, we have seen runtime improvements '
+        ' on PACBIO data.'
     ),
 )
 
@@ -434,8 +435,7 @@ def make_examples_somatic_command(
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['min_mapping_quality'] = 5
     special_args['parse_sam_aux_fields'] = True
-    if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
-      special_args['partition_size'] = 25000
+    special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
     special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
@@ -452,8 +452,7 @@ def make_examples_somatic_command(
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['min_mapping_quality'] = 5
     special_args['parse_sam_aux_fields'] = True
-    if candidate_partition_mode != CandidatePartitionCommand.SWEEP:
-      special_args['partition_size'] = 25000
+    special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
     special_args['pileup_image_width'] = 199
     special_args['realign_reads'] = False
@@ -468,9 +467,8 @@ def make_examples_somatic_command(
     raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
 
   if candidate_partition_mode == CandidatePartitionCommand.SWEEP:
-    special_args['partition_size'] = 10000  # Should be approximately read
-    # length to avoid having high
-    # coverage intervals in multiple shards at a time
+    # We don't set a different partition size for sweep mode.
+    # If candidate_sweep mode runs out of memory, we can adjust later.
     special_args['candidate_positions'] = candidate_positions_path
 
   if (

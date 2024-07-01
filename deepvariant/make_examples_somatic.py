@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """A prototype to create tumor-normal images (tf.Example protos)."""
 
+import logging
 import os
 
 from absl import app
@@ -268,6 +269,20 @@ def check_options_are_valid(options, main_sample_index):
           ),
           errors.CommandLineError,
       )
+
+  if options.sample_options[main_sample_index].candidate_positions:
+    if options.max_reads_per_partition:
+      logging.warning(
+          'Since candidate_positions is set, we use '
+          'max_reads_for_dynamic_bases_per_region instead of '
+          'max_reads_per_partition. This is due to the dynamic nature of the '
+          'partition size when candidate_positions is enabled, making a fixed '
+          'max_reads_per_partition unsuitable.'
+      )
+      options.max_reads_for_dynamic_bases_per_region = (
+          options.max_reads_per_partition
+      )
+      options.max_reads_per_partition = 0
 
 
 def main(argv=()):
