@@ -18,7 +18,7 @@ ARG DV_GPU_BUILD=0
 ARG VERSION_DEEPVARIANT=1.7.0
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
-FROM continuumio/miniconda3 as conda_setup
+FROM continuumio/miniconda3 AS conda_setup
 RUN conda config --add channels defaults && \
     conda config --add channels bioconda && \
     conda config --add channels conda-forge
@@ -27,7 +27,7 @@ RUN conda create -n bio \
                     bioconda::samtools=1.15 \
     && conda clean -a
 
-FROM ${FROM_IMAGE} as builder
+FROM ${FROM_IMAGE} AS builder
 COPY --from=conda_setup /opt/conda /opt/conda
 LABEL maintainer="https://github.com/google/deepvariant/issues"
 
@@ -48,9 +48,9 @@ ARG VERSION_DEEPVARIANT
 ARG PYTHON_VERSION
 ARG TF_ENABLE_ONEDNN_OPTS
 ENV DV_GPU_BUILD=${DV_GPU_BUILD}
-ENV VERSION_DEEPVARIANT ${VERSION_DEEPVARIANT}
-ENV PYTHON_VERSION ${PYTHON_VERSION}
-ENV TF_ENABLE_ONEDNN_OPTS ${TF_ENABLE_ONEDNN_OPTS}
+ENV VERSION_DEEPVARIANT=${VERSION_DEEPVARIANT}
+ENV PYTHON_VERSION=${PYTHON_VERSION}
+ENV TF_ENABLE_ONEDNN_OPTS=${TF_ENABLE_ONEDNN_OPTS}
 
 WORKDIR /opt/
 COPY --from=builder /opt/deepvariant/bazel-bin/licenses.zip .
@@ -110,14 +110,18 @@ RUN \
     /opt/deepvariant/bin/runtime_by_region_vis \
     /opt/deepvariant/bin/run_pangenome_aware_deepvariant
 
-# Copy default data used for the representation.
-WORKDIR /opt/models/pangenome_aware_deepvariant
-ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/hprc-v1.1-mc-grch38.haplotypes.aligned_to_GRCh38.minimap2_v2.26_asm5.sorted.quality_added.primary_only.HP_tag_added.split_1kb.merged.bam .
-ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/hprc-v1.1-mc-grch38.haplotypes.aligned_to_GRCh38.minimap2_v2.26_asm5.sorted.quality_added.primary_only.HP_tag_added.split_1kb.merged.bam.bai .
-# The model files should be added later. For now, --customized_model will
-# need to be set when running with this Dockerfile.
+# Copy models.
+WORKDIR /opt/models/pangenome_aware_deepvariant/wgs
+ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wgs/weights-111-0.995872.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wgs/weights-111-0.995872.ckpt.index .
+ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wgs/example_info.json .
+RUN chmod -R +r /opt/models/pangenome_aware_deepvariant/wgs/*
 
-RUN chmod -R +r /opt/models/pangenome_aware_deepvariant/*
+WORKDIR /opt/models/pangenome_aware_deepvariant/wes
+ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wes/weights-31-0.987898.ckpt.data-00000-of-00001 .
+ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wes/weights-31-0.987898.ckpt.index .
+ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wes/example_info.json .
+RUN chmod -R +r /opt/models/pangenome_aware_deepvariant/wes/*
 
 ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin/pangenome_aware_deepvariant:/opt/deepvariant/bin
 

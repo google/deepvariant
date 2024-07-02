@@ -54,11 +54,9 @@ Flags:
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 --skip_happy (true|false) If True, skip the hap.py evaluation.
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
-# TODO: It might be worth considering having a separate inference_pangenome_aware_deepvariant.sh script.
-# Because there are specific optional flags, such as --pangenome that could be added.
-# However, right now it seems most convenient for me to re-use inference_deepvariant.sh
-# for my experiment.
+
 --main_binary_name (run_deepvariant|run_pangenome_aware_deepvariant)  Default is run_deepvariant. If using the pangenome-aware DeepVariant Docker image, use run_pangenome_aware_deepvariant.
+--pangenome Only required when --main_binary_name is run_pangenome_aware_deepvariant. Path to the pangenome BAM file.
 
 If model_preset is not specified, the below flags are required:
 --model_type Type of DeepVariant model to run (WGS, WES, PACBIO, ONT_R104, HYBRID_PACBIO_ILLUMINA)
@@ -90,6 +88,7 @@ MAIN_BINARY_NAME="run_deepvariant"
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
+PANGENOME=""
 PAR_REGIONS_BED=""
 POPULATION_VCFS=""
 POSTPROCESS_VARIANTS_ARGS=""
@@ -229,6 +228,11 @@ while (( "$#" )); do
       ;;
     --capture_bed)
       CAPTURE_BED="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --pangenome)
+      PANGENOME="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -386,6 +390,7 @@ echo "MAIN_BINARY_NAME: ${MAIN_BINARY_NAME}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
 echo "MODEL_TYPE: ${MODEL_TYPE}"
+echo "PANGENOME: ${PANGENOME}"
 echo "PAR_REGIONS_BED: ${PAR_REGIONS_BED}"
 echo "POPULATION_VCFS: ${POPULATION_VCFS}"
 echo "POSTPROCESS_VARIANTS_ARGS: ${POSTPROCESS_VARIANTS_ARGS}"
@@ -513,6 +518,24 @@ function setup_test() {
   fi
 }
 
+function check_flags() {
+  if [[ "${MAIN_BINARY_NAME}" = "run_pangenome_aware_deepvariant" ]]; then
+    if [[ -z "${PANGENOME}" ]]; then
+      echo "Error: To run_pangenome_aware_deepvariant, need to set --pangenome " >&2
+      exit 1
+    fi
+  fi
+
+  # But, if we're not running run_pangenome_aware_deepvariant, we should not set
+  # --pangenome.
+  if [[ "${MAIN_BINARY_NAME}" != "run_pangenome_aware_deepvariant" ]]; then
+    if [[ -n "${PANGENOME}" ]]; then
+      echo "Error: Do not set --pangenome unless run_pangenome_aware_deepvariant" >&2
+      exit 1
+    fi
+  fi
+}
+
 function get_docker_image() {
   DOCKERFILE_NAME="Dockerfile"
   if [[ "${MAIN_BINARY_NAME}" = "run_pangenome_aware_deepvariant" ]]; then
@@ -567,6 +590,11 @@ function get_docker_image() {
 }
 
 function setup_args() {
+  if [[ -n "${PANGENOME}" ]]; then
+    run echo "Copy from gs:// path ${PANGENOME} to ${INPUT_DIR}/"
+    run gcloud storage cp -R "${PANGENOME}*" "${INPUT_DIR}"/
+    extra_args+=( --pangenome "/input/$(basename "$PANGENOME")")
+  fi
   if [[ -n "${CUSTOMIZED_MODEL}" ]]; then
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
     # Check if it's saved Model
@@ -708,6 +736,7 @@ function run_happy() {
 function main() {
   run echo 'Starting the test...'
 
+  check_flags
   setup_test
   copy_data
   if [[ ${DOCKER_SOURCE} =~ ^gcr.io ]]; then

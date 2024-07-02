@@ -83,13 +83,12 @@ _READS = flags.DEFINE_string(
 )
 _PANGENOME = flags.DEFINE_string(
     'pangenome',
-    '/opt/models/pangenome_aware_deepvariant/hprc-v1.1-mc-grch38.haplotypes.aligned_to_GRCh38.minimap2_v2.26_asm5.sorted.quality_added.primary_only.HP_tag_added.split_1kb.merged.bam',
+    None,
     (
-        'Pangenome haplotypes to aid the variant calling process.'
+        'Required. Pangenome haplotypes to aid the variant calling process.'
         'Aligned, sorted, indexed BAM file. '
         'Should be aligned to a reference genome compatible with --ref. '
         'Can provide multiple BAMs (comma-separated).'
-        'Default is set to a file we provided in the corresponding Docker.'
     ),
 )
 _OUTPUT_VCF = flags.DEFINE_string(
@@ -229,9 +228,12 @@ _REPORT_TITLE = flags.DEFINE_string(
 )
 
 MODEL_TYPE_MAP = {
-    'WGS': '/opt/models/pangenome_aware_deepvariant/wgs',
-    'WES': '/opt/models/pangenome_aware_deepvariant/wes',
-    'PACBIO': '/opt/models/pangenome_aware_deepvariant/pacbio',
+    'WGS': (
+        '/opt/models/pangenome_aware_deepvariant/wgs/weights-111-0.995872.ckpt'
+    ),
+    'WES': (
+        '/opt/models/pangenome_aware_deepvariant/wes/weights-31-0.987898.ckpt'
+    ),
 }
 
 # Current release version of DeepVariant.
@@ -694,4 +696,11 @@ def main(_):
 
 
 if __name__ == '__main__':
+  flags.mark_flags_as_required([
+      'model_type',
+      'output_vcf',
+      'pangenome',
+      'reads',
+      'ref',
+  ])
   app.run(main)
