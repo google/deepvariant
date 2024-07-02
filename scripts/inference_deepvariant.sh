@@ -514,10 +514,15 @@ function setup_test() {
 }
 
 function get_docker_image() {
+  DOCKERFILE_NAME="Dockerfile"
+  if [[ "${MAIN_BINARY_NAME}" = "run_pangenome_aware_deepvariant" ]]; then
+    DOCKERFILE_NAME="Dockerfile.pangenome_aware_deepvariant"
+  fi
   if [[ "${BUILD_DOCKER}" = true ]]; then
     if [[ "${USE_GPU}" = true ]]; then
       IMAGE="deepvariant_gpu:latest"
       run "sudo docker build \
+        -f ${DOCKERFILE_NAME} \
         --build-arg=FROM_IMAGE=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04 \
         --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu ."
       run echo "Done building GPU Docker image ${IMAGE}."
@@ -525,8 +530,8 @@ function get_docker_image() {
     else
       IMAGE="deepvariant:latest"
       # Building twice in case the first one times out.
-      run "sudo docker build -t deepvariant . || \
-        (sleep 5 ; sudo docker build -t deepvariant .)"
+      run "sudo docker build -f ${DOCKERFILE_NAME} -t deepvariant . || \
+        (sleep 5 ; sudo docker build -f ${DOCKERFILE_NAME} -t deepvariant .)"
       run echo "Done building Docker image ${IMAGE}."
     fi
 
