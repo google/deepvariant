@@ -466,16 +466,12 @@ def make_examples_somatic_command(
   else:
     raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
 
-  if candidate_partition_mode == CandidatePartitionCommand.SWEEP:
+  if candidate_partition_mode:
     # We don't set a different partition size for sweep mode.
     # If candidate_sweep mode runs out of memory, we can adjust later.
     special_args['candidate_positions'] = candidate_positions_path
-
-  if (
-      candidate_partition_mode
-      == CandidatePartitionCommand.CANDIDATE_PARTITION_INFERENCE
-  ):
-    special_args['candidate_positions'] = candidate_positions_path
+    special_args['max_reads_per_partition'] = 0
+    special_args['max_reads_for_dynamic_bases_per_region'] = 1500
 
   if special_args:
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
