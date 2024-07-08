@@ -28,9 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "third_party/nucleus/protos/reference_pyclif.h" import *
+from "third_party/nucleus/protos/range_pyclif.h" import *
 
 from "deepvariant/postprocess_variants.h":
   namespace `learning::genomics::deepvariant`:
     def `ProcessSingleSiteCallTfRecords` as process_single_sites_tfrecords(
         contigs: list<ContigInfo>, tfrecord_paths: list<str>,
-        output_tfrecord_path: str) -> int
+        output_tfrecord_path: str,
+        partitions: list<Range>) -> int

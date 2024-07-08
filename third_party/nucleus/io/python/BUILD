@@ -445,6 +445,7 @@ py_clif_cc(
     name = "merge_variants",
     srcs = ["merge_variants.clif"],
     pyclif_deps = [
+        "//third_party/nucleus/protos:range_pyclif",
         "//third_party/nucleus/protos:variants_pyclif",
     ],
     deps = [

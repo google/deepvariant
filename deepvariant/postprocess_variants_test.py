@@ -57,6 +57,8 @@ from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
+from third_party.nucleus.protos import range_pb2
+from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import genomics_math
@@ -1847,6 +1849,188 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     # In sorted output, 3rd has indices=[1].
     self.assertEqual(output[2], group[1])
     self.assertEqual(output[2].alt_allele_indices.indices, [1])
+
+
+class PartitionContigsTest(parameterized.TestCase):
+  # Total bps: 2100
+  CONTIGS = [
+      reference_pb2.ContigInfo(
+          name='chr1',
+          n_bases=1000,
+          pos_in_fasta=0,
+      ),
+      reference_pb2.ContigInfo(
+          name='chr2',
+          n_bases=500,
+          pos_in_fasta=1,
+      ),
+      reference_pb2.ContigInfo(
+          name='chr3',
+          n_bases=300,
+          pos_in_fasta=2,
+      ),
+      reference_pb2.ContigInfo(
+          name='chr4',
+          n_bases=200,
+          pos_in_fasta=3,
+      ),
+      reference_pb2.ContigInfo(
+          name='chr5',
+          n_bases=100,
+          pos_in_fasta=4,
+      ),
+  ]
+
+  @parameterized.parameters(
+      dict(
+          num_partitions=1,
+          expected_partition_groups=[
+              [
+                  range_pb2.Range(reference_name='chr1', start=0, end=1000),
+                  range_pb2.Range(reference_name='chr2', start=0, end=500),
+                  range_pb2.Range(reference_name='chr3', start=0, end=300),
+                  range_pb2.Range(reference_name='chr4', start=0, end=200),
+                  range_pb2.Range(reference_name='chr5', start=0, end=100),
+              ],
+          ],
+      ),
+      dict(
+          num_partitions=2,
+          expected_partition_groups=[
+              [
+                  range_pb2.Range(reference_name='chr1', start=0, end=1000),
+                  range_pb2.Range(reference_name='chr2', start=0, end=500),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr3', start=0, end=300),
+                  range_pb2.Range(reference_name='chr4', start=0, end=200),
+                  range_pb2.Range(reference_name='chr5', start=0, end=100),
+              ],
+          ],
+      ),
+      dict(
+          num_partitions=3,
+          expected_partition_groups=[
+              [
+                  range_pb2.Range(reference_name='chr1', start=0, end=700),
+                  range_pb2.Range(reference_name='chr1', start=700, end=1000),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr2', start=0, end=500),
+                  range_pb2.Range(reference_name='chr3', start=0, end=300),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr4', start=0, end=200),
+                  range_pb2.Range(reference_name='chr5', start=0, end=100),
+              ],
+          ],
+      ),
+      dict(
+          num_partitions=4,
+          expected_partition_groups=[
+              [
+                  range_pb2.Range(reference_name='chr1', start=0, end=525),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr1', start=525, end=1000),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr2', start=0, end=500),
+                  range_pb2.Range(reference_name='chr3', start=0, end=300),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr4', start=0, end=200),
+                  range_pb2.Range(reference_name='chr5', start=0, end=100),
+              ],
+          ],
+      ),
+      dict(
+          num_partitions=10,
+          expected_partition_groups=[
+              [
+                  range_pb2.Range(reference_name='chr1', start=0, end=210),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr1', start=210, end=420),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr1', start=420, end=630),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr1', start=630, end=840),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr1', start=840, end=1000),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr2', start=0, end=210),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr2', start=210, end=420),
+                  range_pb2.Range(reference_name='chr2', start=420, end=500),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr3', start=0, end=210),
+                  range_pb2.Range(reference_name='chr3', start=210, end=300),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr4', start=0, end=200),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr5', start=0, end=100),
+              ],
+          ],
+      ),
+      dict(
+          num_partitions=11,
+          expected_partition_groups=[
+              [
+                  range_pb2.Range(reference_name='chr1', start=0, end=190),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr1', start=190, end=380),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr1', start=380, end=570),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr1', start=570, end=760),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr1', start=760, end=950),
+                  range_pb2.Range(reference_name='chr1', start=950, end=1000),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr2', start=0, end=190),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr2', start=190, end=380),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr2', start=380, end=500),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr3', start=0, end=190),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr3', start=190, end=300),
+                  range_pb2.Range(reference_name='chr4', start=0, end=190),
+              ],
+              [
+                  range_pb2.Range(reference_name='chr4', start=190, end=200),
+                  range_pb2.Range(reference_name='chr5', start=0, end=100),
+              ],
+          ],
+      ),
+  )
+  def test_split_into_contiguous_partitions(
+      self, num_partitions, expected_partition_groups
+  ):
+    partition_groups = postprocess_variants.split_into_contiguous_partitions(
+        self.CONTIGS, num_partitions=num_partitions
+    )
+    self.assertLen(partition_groups, num_partitions)
+    self.assertEqual(partition_groups, expected_partition_groups)
 
 
 if __name__ == '__main__':

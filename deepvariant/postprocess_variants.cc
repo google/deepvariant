@@ -36,6 +36,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
@@ -76,7 +77,8 @@ void SortSingleSiteCalls(
 std::uint64_t ProcessSingleSiteCallTfRecords(
     const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
     const std::vector<std::string>& tfrecord_paths,
-    const string& output_tfrecord_path) {
+    const string& output_tfrecord_path,
+    const std::vector<nucleus::genomics::v1::Range>& ranges) {
   std::vector<CallVariantsOutput> single_site_calls;
   tensorflow::Env* env = tensorflow::Env::Default();
   for (const string& tfrecord_path : tfrecord_paths) {
@@ -96,7 +98,10 @@ std::uint64_t ProcessSingleSiteCallTfRecords(
           << "Failed to parse CallVariantsOutput";
       // Here we assume each variant has only 1 call.
       QCHECK_EQ(single_site_call.variant().calls_size(), 1);
-      single_site_calls.push_back(single_site_call);
+      if (ranges.empty() ||
+          nucleus::RangesContainVariant(ranges, single_site_call.variant())) {
+        single_site_calls.push_back(std::move(single_site_call));
+      }
     }
     if (tfrecord_paths.size() > 1) {
       LOG(INFO) << "Done reading: " << tfrecord_path

@@ -36,6 +36,8 @@
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/variant_reader.h"
 #include "third_party/nucleus/io/vcf_writer.h"
+#include "third_party/nucleus/protos/range.pb.h"
+
 namespace nucleus {
 
 using nucleus::genomics::v1::Variant;
@@ -63,12 +65,14 @@ void MergeAndWriteVariantsAndNonVariants(
     const std::string& fasta_path, const std::string& vcf_out_path,
     const std::string& gvcf_out_path,
     const nucleus::genomics::v1::VcfHeader& header,
+    const std::vector<nucleus::genomics::v1::Range>& ranges,
     bool process_somatic = false);
 
 void MergeAndWriteVariantsAndNonVariants(
     bool only_keep_pass, VariantReader* variant_reader,
     ShardedVariantReader* non_variant_reader, VcfWriter* vcf_writer,
     VcfWriter* gvcf_writer, const GenomeReference& ref,
+    const std::vector<nucleus::genomics::v1::Range>& ranges,
     bool process_somatic = false);
 
 }  // namespace nucleus

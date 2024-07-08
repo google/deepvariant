@@ -29,21 +29,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
 #include "third_party/nucleus/util/utils.h"
 
-#include "third_party/nucleus/protos/cigar.pb.h"
-#include "third_party/nucleus/protos/reads.pb.h"
-#include "third_party/nucleus/protos/struct.pb.h"
-#include "third_party/nucleus/testing/test_utils.h"
-
-#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
+#include <vector>
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/protos/cigar.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/protos/struct.pb.h"
+#include "third_party/nucleus/testing/protocol-buffer-matchers.h"
+#include "third_party/nucleus/testing/test_utils.h"
 
 namespace nucleus {
 
@@ -173,6 +172,54 @@ TEST(UtilsTest, TestRangeContains) {
                              MakeRange("chr1", 0, 0)));
   EXPECT_TRUE(RangeContains(MakeRange("chr1", 10, 10),
                             MakeRange("chr1", 10, 10)));
+}
+
+TEST(UtilsTest, RangesContainVariant) {
+  // In first range
+  EXPECT_TRUE(RangesContainVariant(
+      {
+          nucleus::MakeRange("chr10", 0, 100),
+          nucleus::MakeRange("chr10", 100, 200),
+      },
+      MakeVariantAt("chr10", 50, 100)));
+
+  // In second range
+  EXPECT_TRUE(RangesContainVariant(
+      {
+          nucleus::MakeRange("chr10", 0, 100),
+          nucleus::MakeRange("chr10", 100, 200),
+      },
+      MakeVariantAt("chr10", 150, 200)));
+
+  // Not in either range
+  EXPECT_FALSE(RangesContainVariant(
+      {
+          nucleus::MakeRange("chr10", 0, 100),
+          nucleus::MakeRange("chr10", 100, 200),
+      },
+      MakeVariantAt("chr10", 300, 301)));
+
+  // Contained by start only
+  EXPECT_TRUE(RangesContainVariant(
+      {
+          nucleus::MakeRange("chr10", 0, 100),
+          nucleus::MakeRange("chr10", 100, 200),
+      },
+      MakeVariantAt("chr10", 199, 210)));
+
+  // Not contained by end
+  EXPECT_FALSE(RangesContainVariant(
+      {
+          nucleus::MakeRange("chr10", 100, 200),
+      },
+      MakeVariantAt("chr10", 99, 110)));
+
+  // Not contained by reference
+  EXPECT_FALSE(RangesContainVariant(
+      {
+          nucleus::MakeRange("chr10", 100, 200),
+      },
+      MakeVariantAt("chr11", 150, 151)));
 }
 
 TEST(UtilsTest, TestMakeIntervalStr) {

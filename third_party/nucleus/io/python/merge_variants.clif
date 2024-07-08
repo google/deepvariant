@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from "third_party/nucleus/protos/variants_pyclif.h" import *
+from "third_party/nucleus/protos/range_pyclif.h" import *
 
 from "third_party/nucleus/io/merge_variants.h":
   namespace `nucleus`:
@@ -39,5 +40,6 @@ from "third_party/nucleus/io/merge_variants.h":
       vcf_out_file_path: str,
       gvcf_out_file_path: str,
       header: VcfHeader,
+      ranges: list<Range>,
       process_somatic: bool = default)
 

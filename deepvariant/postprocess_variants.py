@@ -32,9 +32,10 @@ import collections
 import functools
 import itertools
 import os
+import subprocess
 import tempfile
 import time
-from typing import Iterator
+from typing import Any, Iterable, Iterator, Sequence
 
 
 
@@ -58,6 +59,7 @@ from third_party.nucleus.io import tabix
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.io.python import merge_variants
+from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
@@ -1121,13 +1123,18 @@ def _transform_call_variants_output_to_variants(
   Yields:
     Variant protos in sorted order representing the CallVariantsOutput calls.
   """
-  cvo_group_to_variant_kwargs = (
-      _get_transform_call_variant_group_to_output_variant_kwargs(
-          input_sorted_tfrecord_path
-      )
-  )
-  for cvo_group_kwargs in cvo_group_to_variant_kwargs:
-    yield _transform_call_variant_group_to_output_variant(**cvo_group_kwargs)
+  sample_name = get_sample_name()
+  for call_variant_group in group_call_variants_outputs(
+      input_sorted_tfrecord_path, FLAGS.group_variants
+  ):
+    yield _transform_call_variant_group_to_output_variant(
+        call_variant_group,
+        FLAGS.qual_filter,
+        FLAGS.multi_allelic_qual_filter,
+        sample_name,
+        FLAGS.use_multiallelic_model,
+        FLAGS.debug_output_all_candidates,
+    )
 
 
 def dump_variants_to_temp_file(variant_protos):
@@ -1157,40 +1164,134 @@ def group_call_variants_outputs(input_sorted_tfrecord_path, group_variants):
     yield list(group)
 
 
-def _get_transform_call_variant_group_to_output_variant_kwargs(
-    input_sorted_tfrecord_path,
-):
-  """Performs the grouping of CVOs and packages them into a list of kwargs.
+def _concat_vcf(output_file, temp_vcf_files):
+  """Concatenates a set of temp (g)VCF files."""
+  vcf_files_to_concat = ' '.join(f.name for f in temp_vcf_files)
+  # TODO: Replace bcftools dependency with .c binary.
+  subprocess.run(
+      f'bcftools concat {vcf_files_to_concat} -o {output_file} -O z --naive',
+      shell=True,
+      check=True,
+  )
+
+
+def process_contiguous_partition(
+    contiguous_range_set: Sequence[range_pb2.Range],
+    contigs: Sequence[reference_pb2.ContigInfo],
+    cvo_paths: Sequence[str],
+    temp_file_name: str,
+) -> Iterator[variants_pb2.Variant]:
+  """Postprocess all CVOs in the given partition and returns an iterator.
 
   Args:
-    input_sorted_tfrecord_path: str. TFRecord format file containing sorted
-      CallVariantsOutput protos.
+    contiguous_range_set: set of contiguous ranges to load and transform.
+    contigs: all contigs from ref
+    cvo_paths: paths to all CVO files
+    temp_file_name: path to temp file to variants to.
 
   Returns:
-    List of kwargs to be passed to invocations of the transform function.
+    An iterator of processed variants.
   """
-  sample_name = get_sample_name()
-
-  kwargs = []
-  for call_variant_group in group_call_variants_outputs(
-      input_sorted_tfrecord_path, FLAGS.group_variants
-  ):
-    kwargs.append(
-        dict(
-            call_variant_group=call_variant_group,
-            qual_filter=FLAGS.qual_filter,
-            multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
-            sample_name=sample_name,
-            use_multiallelic_model=FLAGS.use_multiallelic_model,
-            debug_output_all_candidates=FLAGS.debug_output_all_candidates,
-        )
+  start_time = time.time()
+  num_cvo_records = postprocess_variants_lib.process_single_sites_tfrecords(
+      contigs,
+      cvo_paths,
+      temp_file_name,
+      contiguous_range_set,
+  )
+  if contiguous_range_set:
+    logging.info(
+        'Processing region %s:%s-%s:%s',
+        contiguous_range_set[0].reference_name,
+        contiguous_range_set[0].start,
+        contiguous_range_set[-1].reference_name,
+        contiguous_range_set[-1].end,
     )
-  return kwargs
+  logging.info('CVO sorting took %s minutes', (time.time() - start_time) / 60)
+  if num_cvo_records == 0:
+    return iter([])
+
+  logging.info('Transforming call_variants_output to variants.')
+  independent_variants = _transform_call_variants_output_to_variants(
+      input_sorted_tfrecord_path=temp_file_name
+  )
+  variant_generator = haplotypes.maybe_resolve_conflicting_variants(
+      independent_variants
+  )
+  logging.info('Processed %s variants.', num_cvo_records)
+  return variant_generator
 
 
-def _mappable_transform_call_variant_group_to_output_variant(kwargs):
-  """Unpacks the arguments to individual keyword arguments."""
-  return _transform_call_variant_group_to_output_variant(**kwargs)
+def split_into_contiguous_partitions(
+    contigs: Sequence[reference_pb2.ContigInfo], num_partitions: int
+) -> Sequence[Sequence[range_pb2.Range]]:
+  """Splits the contigs into N number of contiguous partitions.
+
+  This is a simpler version of https://en.wikipedia.org/wiki/Partition_problem,
+  since we have to preserve order. This algorithm runs in 3 stages:
+    1. Calculate the partition size across the entire genome by BP count.
+    2. Group the partitions greedily such that all groups exceed the partition
+       size. This will produce *fewer* groups than `num_partitions`.
+    3. Keep splitting the largest groups in half until the target number of
+       partition is reached.
+    4. Sort everything such that we preserve the order in `contigs`.
+
+  Args:
+    contigs: the contigs given by ref
+    num_partitions: how many partitions to break into it.
+
+  Returns:
+    partition_groups: list of groups of nucleus.genomics.v1.Range.
+  """
+  # Split into target partition size.
+  total_bps = sum(c.n_bases for c in contigs)
+  max_partition_size = total_bps // num_partitions
+  regions = ranges.RangeSet.from_contigs(contigs)
+  partitions = list(regions.partition(max_partition_size))
+
+  # Group the partitions such that no group exceeds the max size.
+  partition_groups = []
+  current_group = []
+  for partition in partitions:
+    if sum(p.end - p.start for p in current_group) > max_partition_size:
+      partition_groups.append(current_group)
+      current_group = []
+    current_group.append(partition)
+  if current_group:
+    partition_groups.append(current_group)
+
+  # The above will produce fewer groups than `num_partitions`, because
+  # all groups grew past the target size. We fix this now by splitting
+  # the largest groups in half until we have `num_partitions` groups.
+  while len(partition_groups) < num_partitions:
+    partition_groups.sort(key=lambda ps: sum(p.end - p.start for p in ps))
+    largest_partition = partition_groups.pop()
+    mid_point = len(largest_partition) // 2
+    ps_1 = largest_partition[:mid_point]
+    ps_2 = largest_partition[mid_point:]
+    partition_groups.extend([ps_1, ps_2])
+
+  # Sort the partitions into their initial config
+  partition_groups.sort(key=lambda ps: partitions.index(ps[0]))
+  return partition_groups
+
+
+def _yield_variants_from_temp_files(
+    temp_files: Sequence[Any],
+) -> Iterable[variants_pb2.Variant]:
+  """Yields variants from all the temp files in order.
+
+  Args:
+    temp_files: a list of NamedTemporaryFiles objects
+
+  Yields:
+    variants read in order from the given temp files.
+  """
+  for temp_file in temp_files:
+    for variant in tfrecord.read_tfrecords(
+        temp_file.name, proto=variants_pb2.Variant
+    ):
+      yield variant
 
 
 def _decide_to_use_csi(contigs):
@@ -1319,6 +1420,88 @@ def get_sample_name():
   return sample_name
 
 
+def run_postprocess_variants_on_region(
+    output_vcf: str,
+    output_gvcf: str,
+    partition: Sequence[range_pb2.Range],
+    contigs: Sequence[reference_pb2.ContigInfo],
+    all_cvo_paths: Sequence[str],
+    header: variants_pb2.VcfHeader,
+    is_empty: bool,
+):
+  """Runs postprocess_variants on the given partition.
+
+  If the partition is empty, we process all CVO records. If the partition is not
+  empty, we process only the CVO records in the partition.
+
+  Args:
+    output_vcf: path to the output VCF file.
+    output_gvcf: path to the output gVCF file.
+    partition: a list of nucleus.genomics.v1.Range protos.
+    contigs: all contigs from ref
+    all_cvo_paths: paths to all CVO files
+    header: the VCF header
+    is_empty: if the partition is empty.
+
+  Returns:
+    None (the output is written to the output_vcf and output_gvcf files).
+  """
+  temp = tempfile.NamedTemporaryFile()
+  start_time = time.time()
+  if not is_empty:
+    variant_generator = process_contiguous_partition(
+        partition,
+        contigs,
+        all_cvo_paths,
+        temp.name,
+    )
+    pon_reader = (
+        vcf.VcfReader(_PON_FILTERING.value) if _PON_FILTERING.value else None
+    )
+    variant_generator = add_pon_filter(variant_generator, pon_reader)
+  else:
+    logging.info('call_variants_output is empty. Writing out empty VCF.')
+    variant_generator = iter([])
+  logging.info(
+      'Processing variants (and writing to temporary files) took %s minutes',
+      (time.time() - start_time) / 60,
+  )
+
+  start_time = time.time()
+  if not FLAGS.nonvariant_site_tfrecord_path:
+    if _PROCESS_SOMATIC.value:
+      logging.info('Writing variants to somatic VCF.')
+    else:
+      logging.info('Writing variants to VCF.')
+    write_variants_to_vcf(
+        variant_iterable=variant_generator,
+        output_vcf_path=FLAGS.outfile,
+        header=header,
+    )
+    logging.info(
+        'VCF creation took %s minutes', (time.time() - start_time) / 60
+    )
+  else:
+    tmp_variant_file = dump_variants_to_temp_file(variant_generator)
+    merge_variants.merge_and_write_variants_and_nonvariants(
+        FLAGS.only_keep_pass,
+        tmp_variant_file.name,
+        tfrecord.expanded_paths_if_sharded(FLAGS.nonvariant_site_tfrecord_path),
+        FLAGS.ref,
+        output_vcf,
+        output_gvcf,
+        header,
+        partition,
+        _PROCESS_SOMATIC.value,
+    )
+    tmp_variant_file.close()
+    logging.info(
+        'VCF and gVCF creation took %s minutes.',
+        (time.time() - start_time) / 60,
+    )
+  temp.close()
+
+
 def main(argv=()):
   with errors.clean_commandline_error_exit():
     if len(argv) > 1:
@@ -1367,6 +1550,7 @@ def main(argv=()):
 
     sample_name = get_sample_name()
     cvo_paths, cvo_record = get_cvo_paths_and_first_record()
+    is_empty = cvo_record is None
     small_model_cvo_paths = []
     if FLAGS.small_model_cvo_records:
       small_model_cvo_paths = (
@@ -1374,62 +1558,14 @@ def main(argv=()):
               FLAGS.small_model_cvo_records
           )
       )
+    all_cvo_paths = cvo_paths + small_model_cvo_paths
 
-    if cvo_record is None:
-      logging.info('call_variants_output is empty. Writing out empty VCF.')
-      variant_generator = iter([])
-    else:
-      temp = tempfile.NamedTemporaryFile()
-      start_time = time.time()
-      num_cvo_records = postprocess_variants_lib.process_single_sites_tfrecords(
-          contigs, cvo_paths + small_model_cvo_paths, temp.name
-      )
-
-      logging.info(
-          'CVO sorting took %s minutes', (time.time() - start_time) / 60
-      )
-      logging.info('Transforming call_variants_output to variants.')
-      if _CPUS.value > 1:
-        logging.info(
-            'Using %d CPUs for parallelization of variant transformation.',
-            _CPUS.value,
-        )
-        pool = multiprocessing.Pool(_CPUS.value)
-        transform_call_variant_groups_kwargs = (
-            _get_transform_call_variant_group_to_output_variant_kwargs(
-                input_sorted_tfrecord_path=temp.name
-            )
-        )
-        # Using the heuristic #CVOs / #cpus
-        chunksize = max(num_cvo_records // _CPUS.value // 10, 1)
-        independent_variants = pool.imap(
-            _mappable_transform_call_variant_group_to_output_variant,
-            transform_call_variant_groups_kwargs,
-            chunksize=chunksize,
-        )
-        pool.close()
-      else:
-        independent_variants = _transform_call_variants_output_to_variants(
-            input_sorted_tfrecord_path=temp.name,
-        )
-      variant_generator = haplotypes.maybe_resolve_conflicting_variants(
-          independent_variants
-      )
-    pon_reader = (
-        vcf.VcfReader(_PON_FILTERING.value) if _PON_FILTERING.value else None
-    )
-    variant_generator = add_pon_filter(variant_generator, pon_reader)
-
-    add_info_candidates = FLAGS.debug_output_all_candidates == 'INFO'
-    include_model_id = FLAGS.small_model_cvo_records is not None
     header = dv_vcf_constants.deepvariant_header(
         contigs=contigs,
         sample_names=[sample_name],
-        add_info_candidates=add_info_candidates,
-        include_model_id=include_model_id,
+        add_info_candidates=FLAGS.debug_output_all_candidates == 'INFO',
+        include_model_id=FLAGS.small_model_cvo_records is not None,
     )
-    use_csi = _decide_to_use_csi(contigs)
-
     if _PROCESS_SOMATIC.value:
       header.filters.append(
           variants_pb2.VcfFilterInfo(
@@ -1437,7 +1573,6 @@ def main(argv=()):
               description='Non somatic variants',
           )
       )
-
     if _PON_FILTERING.value:
       if not _PROCESS_SOMATIC.value:
         raise ValueError(
@@ -1450,59 +1585,64 @@ def main(argv=()):
           )
       )
 
-    start_time = time.time()
-    if not FLAGS.nonvariant_site_tfrecord_path:
-      if _PROCESS_SOMATIC.value:
-        logging.info('Writing variants to somatic VCF.')
-      else:
-        logging.info('Writing variants to VCF.')
-      write_variants_to_vcf(
-          variant_iterable=variant_generator,
-          output_vcf_path=FLAGS.outfile,
-          header=header,
-      )
-      if FLAGS.outfile.endswith('.gz'):
-        build_index(FLAGS.outfile, use_csi)
-      logging.info(
-          'VCF creation took %s minutes', (time.time() - start_time) / 60
-      )
+    if _CPUS.value > 1:
+      partitions = split_into_contiguous_partitions(contigs, _CPUS.value)
+      temp_vcf_files = [
+          tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
+      ]
+      temp_gvcf_files = [
+          tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
+      ]
+
+      async_results = []
+      with multiprocessing.Pool(_CPUS.value) as pool:
+        for task_id in range(_CPUS.value):
+          async_results.append(
+              pool.apply_async(
+                  run_postprocess_variants_on_region,
+                  (
+                      temp_vcf_files[task_id].name,
+                      temp_gvcf_files[task_id].name,
+                      partitions[task_id],
+                      contigs,
+                      all_cvo_paths,
+                      header,
+                      is_empty,
+                  ),
+              )
+          )
+        for r in async_results:
+          r.wait()
+
+        _concat_vcf(FLAGS.outfile, temp_vcf_files)
+        _concat_vcf(FLAGS.gvcf_outfile, temp_gvcf_files)
+        for temp_vcf_file in temp_vcf_files:
+          temp_vcf_file.close()
+        for temp_gvcf_file in temp_gvcf_files:
+          temp_gvcf_file.close()
     else:
-      # Dump all processed variants to the disk so that the C++
-      # merge_and_write_variants_and_nonvariants logic can access them.
-      # Note: This takes a really long time, but not because of the writing to
-      # the disk, but rather because it runs all the transformations on the
-      # variants at this point and not later on.
-      # That is fine, and there is no need to blame this part of the code when
-      # noticing how long it takes.
-      start_time = time.time()
-      tmp_variant_file = dump_variants_to_temp_file(variant_generator)
-      logging.info(
-          'Processing variants (and writing to temporary file) took %s minutes',
-          (time.time() - start_time) / 60,
-      )
-      start_time = time.time()
-      merge_variants.merge_and_write_variants_and_nonvariants(
-          FLAGS.only_keep_pass,
-          tmp_variant_file.name,
-          tfrecord.expanded_paths_if_sharded(
-              FLAGS.nonvariant_site_tfrecord_path
-          ),
-          FLAGS.ref,
+      run_postprocess_variants_on_region(
           FLAGS.outfile,
           FLAGS.gvcf_outfile,
+          [],
+          contigs,
+          all_cvo_paths,
           header,
-          _PROCESS_SOMATIC.value,
+          is_empty,
       )
-      if FLAGS.outfile.endswith('.gz'):
-        build_index(FLAGS.outfile, use_csi)
-      if FLAGS.gvcf_outfile.endswith('.gz'):
-        build_index(FLAGS.gvcf_outfile, use_csi)
-      logging.info(
-          'Finished writing VCF and gVCF in %s minutes.',
-          (time.time() - start_time) / 60,
-      )
-    if cvo_record:
-      temp.close()
+
+    start_time = time.time()
+    use_csi = _decide_to_use_csi(contigs)
+    if FLAGS.outfile.endswith('.gz'):
+      build_index(FLAGS.outfile, use_csi)
+    if FLAGS.nonvariant_site_tfrecord_path and FLAGS.gvcf_outfile.endswith(
+        '.gz'
+    ):
+      build_index(FLAGS.gvcf_outfile, use_csi)
+    logging.info(
+        'Indexing VCF and gVCF took %s minutes.',
+        (time.time() - start_time) / 60,
+    )
 
 
 if __name__ == '__main__':

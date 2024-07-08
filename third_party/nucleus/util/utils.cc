@@ -157,6 +157,18 @@ bool RangeContains(const Range& haystack, const Range& needle) {
           needle.end() <= haystack.end());
 }
 
+bool RangesContainVariant(
+    const std::vector<nucleus::genomics::v1::Range>& ranges,
+    const Variant& variant) {
+  for (const auto& range : ranges) {
+    if (range.reference_name() == variant.reference_name() &&
+        range.start() <= variant.start() && range.end() > variant.start()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool ReadOverlapsRegion(const ::nucleus::genomics::v1::Read& read,
                         const ::nucleus::genomics::v1::Range& range) {
   // Equivalent code in python from ranges.py:

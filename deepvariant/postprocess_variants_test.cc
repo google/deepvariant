@@ -38,9 +38,11 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/util/utils.h"
 
 namespace learning {
 namespace genomics {
@@ -88,7 +90,8 @@ TEST(ProcessSingleSiteCallTfRecords, BasicCase) {
   nucleus::WriteProtosToTFRecord(single_site_calls, input_tfrecord_path);
 
   ProcessSingleSiteCallTfRecords(contigs, {input_tfrecord_path},
-                                 output_tfrecord_path);
+                                 output_tfrecord_path,
+                                 std::vector<nucleus::genomics::v1::Range>());
   std::vector<CallVariantsOutput> output =
       nucleus::ReadProtosFromTFRecord<CallVariantsOutput>(output_tfrecord_path);
 
@@ -111,6 +114,74 @@ TEST(ProcessSingleSiteCallTfRecords, BasicCase) {
   // Order of calls with the same reference, start, end should be preserved.
   EXPECT_EQ(output[3].variant().quality(), 0.9);
   EXPECT_EQ(output[4].variant().quality(), 0.7);
+}
+
+TEST(ProcessSingleSiteCallTfRecords, SplitByRange) {
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs =
+      nucleus::CreateContigInfos({"chr1", "chr10"}, {0, 1000});
+  std::vector<CallVariantsOutput> single_site_calls;
+  std::vector<nucleus::genomics::v1::Range> ranges = {
+      nucleus::MakeRange("chr1", 0, 100)};
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 2000, 2001));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 1000, 1001));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr1", 1, 2));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 2000, 2002, 0.9));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 2000, 2002, 0.7));
+  const string& input_tfrecord_path = nucleus::MakeTempFile(
+      "ProessSingleSiteCallTfRecordsBasicCase.in.tfrecord");
+  const string& output_tfrecord_path = nucleus::MakeTempFile(
+      "ProessSingleSiteCallTfRecordsBasicCase.out.tfrecord");
+  nucleus::WriteProtosToTFRecord(single_site_calls, input_tfrecord_path);
+
+  ProcessSingleSiteCallTfRecords(contigs, {input_tfrecord_path},
+                                 output_tfrecord_path, ranges);
+  std::vector<CallVariantsOutput> output =
+      nucleus::ReadProtosFromTFRecord<CallVariantsOutput>(output_tfrecord_path);
+
+  EXPECT_EQ(output.size(), 1);
+  EXPECT_EQ(output[0].variant().reference_name(), "chr1");
+  EXPECT_EQ(output[0].variant().start(), 1);
+  EXPECT_EQ(output[0].variant().end(), 2);
+}
+
+TEST(ProcessSingleSiteCallTfRecords, SplitByRangesHandleNeighbors) {
+  std::vector<nucleus::genomics::v1::ContigInfo> contigs =
+      nucleus::CreateContigInfos({"chr1", "chr10"}, {0, 1000});
+  std::vector<CallVariantsOutput> single_site_calls;
+  std::vector<nucleus::genomics::v1::Range> ranges = {
+      nucleus::MakeRange("chr10", 0, 100),
+      nucleus::MakeRange("chr10", 100, 200),
+  };
+  single_site_calls.push_back(CreateSingleSiteCalls("chr1", 1, 2));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 50, 51));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 100, 110));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 199, 200));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 199, 210));
+  single_site_calls.push_back(CreateSingleSiteCalls("chr10", 200, 210));
+  const string& input_tfrecord_path = nucleus::MakeTempFile(
+      "ProessSingleSiteCallTfRecordsBasicCase.in.tfrecord");
+  const string& output_tfrecord_path = nucleus::MakeTempFile(
+      "ProessSingleSiteCallTfRecordsBasicCase.out.tfrecord");
+  nucleus::WriteProtosToTFRecord(single_site_calls, input_tfrecord_path);
+
+  ProcessSingleSiteCallTfRecords(contigs, {input_tfrecord_path},
+                                 output_tfrecord_path, ranges);
+  std::vector<CallVariantsOutput> output =
+      nucleus::ReadProtosFromTFRecord<CallVariantsOutput>(output_tfrecord_path);
+
+  EXPECT_EQ(output.size(), 4);
+  EXPECT_EQ(output[0].variant().reference_name(), "chr10");
+  EXPECT_EQ(output[0].variant().start(), 50);
+  EXPECT_EQ(output[0].variant().end(), 51);
+  EXPECT_EQ(output[1].variant().reference_name(), "chr10");
+  EXPECT_EQ(output[1].variant().start(), 100);
+  EXPECT_EQ(output[1].variant().end(), 110);
+  EXPECT_EQ(output[2].variant().reference_name(), "chr10");
+  EXPECT_EQ(output[2].variant().start(), 199);
+  EXPECT_EQ(output[2].variant().end(), 200);
+  EXPECT_EQ(output[3].variant().reference_name(), "chr10");
+  EXPECT_EQ(output[3].variant().start(), 199);
+  EXPECT_EQ(output[3].variant().end(), 210);
 }
 
 }  // namespace deepvariant

@@ -52,6 +52,7 @@ py_clif_cc(
     name = "postprocess_variants",
     srcs = ["postprocess_variants.clif"],
     pyclif_deps = [
+        "//third_party/nucleus/protos:range_pyclif",
         "//third_party/nucleus/protos:reference_pyclif",
         "//deepvariant/protos:deepvariant_pyclif",
     ],

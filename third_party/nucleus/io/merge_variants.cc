@@ -29,12 +29,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
 #include "third_party/nucleus/io/merge_variants.h"
+
+#include <vector>
 
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/variant_reader.h"
+#include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
+#include "third_party/nucleus/util/utils.h"
 
 namespace nucleus {
 
@@ -105,7 +108,9 @@ void MergeAndWriteVariantsAndNonVariants(
     const std::vector<std::string>& non_variant_file_paths,
     const std::string& fasta_path, const std::string& vcf_out_path,
     const std::string& gvcf_out_path,
-    const nucleus::genomics::v1::VcfHeader& header, bool process_somatic) {
+    const nucleus::genomics::v1::VcfHeader& header,
+    const std::vector<nucleus::genomics::v1::Range>& ranges,
+    bool process_somatic) {
   // Create VCF and gVCF writers
   nucleus::genomics::v1::VcfWriterOptions writer_options;
   writer_options.set_round_qual_values(true);
@@ -145,20 +150,28 @@ void MergeAndWriteVariantsAndNonVariants(
   std::unique_ptr<ShardedVariantReader> non_variant_reader =
       ShardedVariantReader::Open(non_variant_file_paths, contig_index_map);
 
-  MergeAndWriteVariantsAndNonVariants(
-      only_keep_pass, variant_reader.get(), non_variant_reader.get(),
-      vcf_writer.get(), gvcf_writer.get(), *fasta_reader, process_somatic);
+  MergeAndWriteVariantsAndNonVariants(only_keep_pass, variant_reader.get(),
+                                      non_variant_reader.get(),
+                                      vcf_writer.get(), gvcf_writer.get(),
+                                      *fasta_reader, ranges, process_somatic);
 }
 
 void MergeAndWriteVariantsAndNonVariants(
     bool only_keep_pass, VariantReader* variant_reader,
     ShardedVariantReader* non_variant_reader, VcfWriter* vcf_writer,
-    VcfWriter* gvcf_writer, const GenomeReference& ref, bool process_somatic) {
+    VcfWriter* gvcf_writer, const GenomeReference& ref,
+    const std::vector<nucleus::genomics::v1::Range>& ranges,
+    bool process_somatic) {
   IndexedVariant variant = variant_reader->GetAndReadNext();
 
   IndexedVariant nonvariant = non_variant_reader->GetAndReadNext();
 
   while (variant.variant != nullptr || nonvariant.variant != nullptr) {
+    if (!ranges.empty() && nonvariant.variant != nullptr &&
+        !nucleus::RangesContainVariant(ranges, *nonvariant.variant)) {
+      nonvariant = non_variant_reader->GetAndReadNext();
+      continue;
+    }
     if (variant.contig_map_index < nonvariant.contig_map_index ||
         (variant.contig_map_index == nonvariant.contig_map_index &&
          variant.variant->end() <= nonvariant.variant->start())) {

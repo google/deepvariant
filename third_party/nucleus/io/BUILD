@@ -1242,7 +1242,9 @@ cc_library(
         ":reference",
         ":variant_reader",
         ":vcf_writer",
+        "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
     ],
 )
 

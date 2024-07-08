@@ -51,7 +51,8 @@ using std::string;
 std::uint64_t ProcessSingleSiteCallTfRecords(
     const std::vector<nucleus::genomics::v1::ContigInfo>& contigs,
     const std::vector<std::string>& tfrecord_paths,
-    const string& output_tfrecord_path);
+    const string& output_tfrecord_path,
+    const std::vector<nucleus::genomics::v1::Range>& ranges);
 
 }  // namespace deepvariant
 }  // namespace genomics
