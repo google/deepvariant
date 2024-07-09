@@ -1638,15 +1638,32 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "pileup_image_native_test",
+    srcs = ["pileup_image_native_test.cc"],
+    deps = [
+        ":pileup_image_native",
+        ":testing_utils",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "@com_google_absl//absl/log",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
 cc_library(
     name = "testing_utils",
     testonly = True,
     srcs = ["testing_utils.cc"],
     hdrs = ["testing_utils.h"],
     deps = [
+        ":pileup_image_native",
+        "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "@com_google_absl//absl/log:check",

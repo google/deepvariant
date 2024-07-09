@@ -39,6 +39,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 
@@ -76,6 +77,17 @@ struct ImageRow {
 
   int Width() const;
   explicit ImageRow(int width, int num_channels);
+  bool operator==(const ImageRow& other) const {
+    if (channel_enums != other.channel_enums) {
+      LOG(INFO) << "ImageRow channel_enums mismatch";
+    }
+    if (channel_data != other.channel_data) {
+      LOG(INFO) << "ImageRow channel_data mismatch";
+    }
+    return width == other.width && num_channels == other.num_channels &&
+           channel_enums == other.channel_enums &&
+           channel_data == other.channel_data;
+  }
 };
 
 class PileupImageEncoderNative {

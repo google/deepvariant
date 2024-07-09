@@ -654,20 +654,6 @@ TEST(ExamplesGenerator, NeedAlignmentAltAlignedNone) {
       generator, MakeVariant("A", {"C", "AT"}, 10)));
 }
 
-std::unique_ptr<ImageRow> MakeImageRow(
-    const std::vector<std::vector<unsigned char>>& data, int width,
-    int num_channels) {
-  ImageRow row(width, num_channels);
-  int channel_index = 0;
-  for (const std::vector<unsigned char>& data_row : data) {
-    std::vector<unsigned char> channel_data_row;
-    channel_data_row.assign(data_row.begin(), data_row.end());
-    row.channel_data[channel_index].assign(data_row.begin(), data_row.end());
-    channel_index++;
-  }
-  return std::make_unique<ImageRow>(row);
-}
-
 TEST(FillPileupArray, TestCases) {
   int num_channels = 7;
   int width = 5;

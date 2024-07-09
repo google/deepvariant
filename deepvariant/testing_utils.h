@@ -39,6 +39,8 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/pileup_image_native.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -67,13 +69,24 @@ void CreateTestSeq(const std::string& name, int pos_in_fasta,
 nucleus::genomics::v1::Read MakeRead(
     absl::string_view chromosome, int start, const std::string& bases,
     const std::vector<std::string>& cigar_elements,
-    absl::string_view read_name);
+    absl::string_view read_name,
+    int hp_tag = -1);
 
 // Creates a simple variant for unit testing.
 nucleus::genomics::v1::Variant MakeVariant(
     absl::string_view ref, absl::Span<const absl::string_view> alts,
     int64_t start = kStart);
 
+DeepVariantCall MakeDeepVariantCall(
+    const nucleus::genomics::v1::Variant& variant);
+
+std::unique_ptr<ImageRow> MakeImageRow(
+    const std::vector<std::vector<unsigned char>>& data, int width,
+    int num_channels);
+
+PileupImageOptions MakeDefaultPileupImageOptions(int width,
+                                                 int height,
+                                                 int ref_band_height);
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
