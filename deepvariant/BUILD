@@ -1629,6 +1629,7 @@ cc_test(
         ":testing_utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",
+        "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
         "@com_google_absl//absl/container:flat_hash_set",

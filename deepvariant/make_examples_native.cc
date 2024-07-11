@@ -766,6 +766,14 @@ absl::string_view CustomizedClassesLabel::GetClassStatus(
 
 // Implementation of CustomizedClassesLabel. The code is adopted from
 // customized_class_labeler.py.
+// THe function works the following way:
+// 1. If the truth variant is {0,0} then the label is 0.
+// 2. If the ref bases of the candidate and the truth doesn't match, return
+//    0 (ref).
+// 3. class status of truth is returned if first alt allele of truth is in
+//    variant's alt alleles set. For example, if first alt allele of truth is
+//    'AC' and variant's alt alleles are ['T', 'AC'] then there is a match and
+//    the class from truth_variant is returned.
 int CustomizedClassesLabel::LabelForAltAlleles(
     const absl::flat_hash_set<int>& alt_indices_set) const {
   int label_value = 0;

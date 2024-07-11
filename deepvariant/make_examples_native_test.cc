@@ -34,6 +34,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -48,6 +49,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 
@@ -64,31 +66,134 @@ using ::testing::ValuesIn;
 using ContigInfo = nucleus::genomics::v1::ContigInfo;
 using ReferenceSequence = nucleus::genomics::v1::ReferenceSequence;
 
-// TODO Implement CustomizedClassesLabel. The comment out code can
-// be used once all the infrastructure is implemented.
-// struct CustomizedClassesLabelTestData {
-//   Variant variant;
-//   Variant truth_variant;
-//   std::unordered_map<std::string, int> classes_dict;
-//   absl::string_view info_field_name;
-//   absl::flat_hash_set<int> alt_indices_set;
-//   int expected_label;
-// };
+struct CustomizedClassesLabelTestData {
+  Variant variant;
+  Variant truth_variant;
+  std::unordered_map<std::string, int> classes_dict;
+  std::string info_field_name;
+  absl::flat_hash_set<int> alt_indices_set;
+  int expected_label;
+};
 
-// class CustomizedClassesLabelTest :
-//     public testing::TestWithParam<CustomizedClassesLabelTestData> {};
+class CustomizedClassesLabelTest
+    : public testing::TestWithParam<CustomizedClassesLabelTestData> {};
 
-// TEST_P(CustomizedClassesLabelTest, CustomizedClassesLabelTestCases) {
-//   const CustomizedClassesLabelTestData& param = GetParam();
-//   CustomizedClassesLabel customized_classes_label(
-//       true, param.variant,
-//       param.truth_variant,
-//       param.classes_dict,
-//       std::string(param.info_field_name));
+TEST_P(CustomizedClassesLabelTest, CustomizedClassesLabelTestCases) {
+  const CustomizedClassesLabelTestData& param = GetParam();
+  CustomizedClassesLabel customized_classes_label(
+      true, param.variant, param.truth_variant, param.classes_dict,
+      std::string(param.info_field_name));
 
-//   EXPECT_EQ(customized_classes_label.LabelForAltAlleles(
-//       param.alt_indices_set), param.expected_label);
-// }
+  EXPECT_EQ(customized_classes_label.LabelForAltAlleles(param.alt_indices_set),
+            param.expected_label);
+}
+
+Variant AddClassToVariant(const Variant& variant,
+                          absl::string_view class_status) {
+  Variant variant_copy = variant;
+  auto type_field = (*variant_copy.mutable_info())["type"].add_values();
+  type_field->set_string_value(class_status.data());
+  return variant_copy;
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    CustomizedClassesLabelTests, CustomizedClassesLabelTest,
+    ValuesIn(std::vector<CustomizedClassesLabelTestData>(
+        {{
+             .variant = MakeVariant("A", {"C"}, 10),
+             .truth_variant = AddClassToVariant(MakeVariant("A", {"C"}, 10),
+                                                "class1"),
+             .classes_dict = {{"class1", 1}, {"class2", 2}},
+             .info_field_name = "type",
+             .alt_indices_set = {0},
+             .expected_label = 1,
+         },
+         {
+             .variant = MakeVariant("ACG", {"A"}, 20),
+             .truth_variant = AddClassToVariant(MakeVariant("ACG", {"A"}, 20),
+                                                "class2"),
+             .classes_dict = {{"class1", 1}, {"class2", 2}},
+             .info_field_name = "type",
+             .alt_indices_set = {0},
+             .expected_label = 2,
+         },
+         {
+             .variant = MakeVariant("ACT", {"ACTGT", "A"}, 30),
+             .truth_variant = AddClassToVariant(
+                 MakeVariant("ACT", {"ACTGT", "A"}, 30), "class2"),
+             .classes_dict = {{"class1", 1}, {"class2", 2}},
+             .info_field_name = "type",
+             .alt_indices_set = {0},
+             .expected_label = 2,
+         }  // These variant start at our SNP but has a different allele. We are
+            // confident and we get back the true snp variant.
+            // However, because the proposed allele is different, so its status
+            // is unknown.
+         ,
+         {
+             .variant = MakeVariant("A", {"G"}, 10),
+             .truth_variant = AddClassToVariant(MakeVariant("A", {"C"}, 10),
+                                                "class1"),
+             .classes_dict = {{"class1", 1}, {"class2", 2}},
+             .info_field_name = "type",
+             .alt_indices_set = {0},
+             .expected_label = 0,
+         }  // Ref alleles don't match.
+         ,
+         {
+             .variant = MakeVariant("AC", {"C"}, 10),
+             .truth_variant = AddClassToVariant(MakeVariant("A", {"C"}, 10),
+                                                "class1"),
+             .classes_dict = {{"class1", 1}, {"class2", 2}},
+             .info_field_name = "type",
+             .alt_indices_set = {0},
+             .expected_label = 0,
+         }  // Ref matches but alt doesn't.
+         ,
+         {
+             .variant = MakeVariant("A", {"CA"}, 10),
+             .truth_variant = AddClassToVariant(MakeVariant("A", {"C"}, 10),
+                                                "class1"),
+             .classes_dict = {{"class1", 1}, {"class2", 2}},
+             .info_field_name = "type",
+             .alt_indices_set = {0},
+             .expected_label = 0,
+         }  // These variant start at our SNP but has a different first alt
+            // allele 'G'. The second alt ('C') matches snp_class1, so we still
+            // got back the expected_label.
+         ,
+         {
+             .variant = MakeVariant("A", {"G", "C"}, 10),
+             .truth_variant = AddClassToVariant(MakeVariant("A", {"C"}, 10),
+                                                "class1"),
+             .classes_dict = {{"class1", 1}, {"class2", 2}},
+             .info_field_name = "type",
+             .alt_indices_set = {1},
+             .expected_label = 1,
+         }  // And, even if the variant_alt_alleles_indices is a composite one
+            // ([0,1]), We still label it as long as one of them matches the
+            // truth_alt.
+         ,
+         {
+             .variant = MakeVariant("A", {"G", "C"}, 10),
+             .truth_variant = AddClassToVariant(MakeVariant("A", {"C"}, 10),
+                                                "class1"),
+             .classes_dict = {{"class1", 1}, {"class2", 2}},
+             .info_field_name = "type",
+             .alt_indices_set = {0, 1},
+             .expected_label = 1,
+         }  // ... But we won't label it if the alt_allele_indices does not
+            // cover the truth alt.
+         ,
+         {
+             .variant = MakeVariant("A", {"G", "C"}, 10),
+             .truth_variant = AddClassToVariant(MakeVariant("A", {"C"}, 10),
+                                                "class1"),
+             .classes_dict = {{"class1", 1}, {"class2", 2}},
+             .info_field_name = "type",
+             .alt_indices_set = {0},
+             .expected_label = 0,
+         }})));
 
 struct VariantLabelTestData {
   bool is_confident;
