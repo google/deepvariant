@@ -150,6 +150,13 @@ def get_pacbio_config(config: ml_collections.ConfigDict):
   config.ema_momentum = 0.991463134331829
 
 
+def get_ont_config(config: ml_collections.ConfigDict):
+  get_pacbio_config(config)
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = ''
+
+
 # =====================#
 # DeepSomatic Configs #
 # =====================#
@@ -344,6 +351,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_exome_config(config)
   elif config_name == 'pacbio':
     get_pacbio_config(config)
+  elif config_name == 'ont':
+    get_ont_config(config)
   elif config_name == 'deepsomatic_wgs':
     get_deepsomatic_wgs_config(config)
   elif config_name == 'deepsomatic_wgs_tumor_only':
