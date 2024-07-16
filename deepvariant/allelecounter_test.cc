@@ -50,6 +50,7 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
@@ -135,8 +136,8 @@ class AlleleCounterTest : public ::testing::Test {
   // compared to those observed in the corresponding position in each
   // AlleleCount in allele_counter. The comparison of the alleles at position i
   // and the expected alleles is done in an order-independent way.
-  void AddAndCheckReads(const std::vector<Read>& reads,
-                        const std::vector<CountLiteral>& expected,
+  void AddAndCheckReads(absl::Span<const Read> reads,
+                        absl::Span<const CountLiteral> expected,
                         AlleleCounter* allele_counter) {
     ASSERT_THAT(expected.size(), Eq(allele_counter->IntervalLength()));
 

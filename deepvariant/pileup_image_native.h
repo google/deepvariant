@@ -40,6 +40,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 
@@ -179,14 +180,12 @@ class PileupImageEncoderNative {
 //
 // TODO: Consolidate streaming examples and normal examples so
 // that we don't need to use the template anymore.
-template<class T>
+template <class T>
 void FillPileupArray(
-    const std::vector<std::unique_ptr<ImageRow>>& image,
-    const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
-    AltAlignedPileup alt_aligned_representation,
-    T* pileup_array,
-    int buffer_size,
-    int buffer_pos = 0) {
+    absl::Span<const std::unique_ptr<ImageRow>> image,
+    absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_image,
+    AltAlignedPileup alt_aligned_representation, T* pileup_array,
+    int buffer_size, int buffer_pos = 0) {
   // TODO Although channels 0 and 5 should not change we need to set
   // channel number programmatically.
   int alt_channel_index = 0;

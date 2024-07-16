@@ -230,7 +230,7 @@ bool allele_pos_cmp(const AlleleCount& allele_count, int64_t pos) {
 }
 
 // Return the allele index by base position in allele_counts vector.
-int AlleleIndex(const std::vector<AlleleCount>& allele_counts, int64_t pos) {
+int AlleleIndex(absl::Span<const AlleleCount> allele_counts, int64_t pos) {
   auto idx = std::lower_bound(allele_counts.begin(), allele_counts.end(), pos,
                               allele_pos_cmp);
   if (idx == allele_counts.end() || idx->position().position() != pos) {

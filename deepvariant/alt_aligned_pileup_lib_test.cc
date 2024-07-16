@@ -43,6 +43,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
@@ -77,11 +78,10 @@ google::protobuf::RepeatedPtrField<CigarUnit> CreateCigar(
   return cigar;
 }
 
-Read MakeRead(
-    int64_t ref_start, const std::string& bases,
-    const std::vector<std::string>& cigar,
-    const std::vector<int>& aligned_quality,
-    const std::string& read_name = "test_read") {
+Read MakeRead(int64_t ref_start, const std::string& bases,
+              const std::vector<std::string>& cigar,
+              absl::Span<const int> aligned_quality,
+              const std::string& read_name = "test_read") {
   Read read =
       nucleus::MakeRead("chr1", ref_start, bases, cigar, read_name);
   read.mutable_aligned_quality()->Clear();
