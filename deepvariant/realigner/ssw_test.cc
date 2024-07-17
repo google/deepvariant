@@ -34,7 +34,6 @@
 #include <stdio.h>
 
 #include "absl/strings/str_format.h"
-#include "src/ssw_cpp.h"
 
 namespace learning {
 namespace genomics {

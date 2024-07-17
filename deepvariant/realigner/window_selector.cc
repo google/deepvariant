@@ -33,6 +33,12 @@
 #include <algorithm>
 #include <vector>
 
+#include "deepvariant/allelecounter.h"
+#include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/protos/realigner.pb.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+
 namespace learning {
 namespace genomics {
 namespace deepvariant {

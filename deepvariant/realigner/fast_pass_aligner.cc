@@ -42,15 +42,17 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/protos/realigner.pb.h"
+#include "deepvariant/realigner/ssw.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
 #include "re2/re2.h"
 
 namespace learning {

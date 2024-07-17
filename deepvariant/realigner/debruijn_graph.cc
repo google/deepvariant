@@ -56,6 +56,7 @@
 #include "boost/graph/graphviz.hpp"
 #include "boost/graph/reverse_graph.hpp"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 #include "third_party/nucleus/util/utils.h"
 
 namespace learning {
