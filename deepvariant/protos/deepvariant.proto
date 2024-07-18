@@ -629,7 +629,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 76.
+// Next ID: 77.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -865,6 +865,8 @@ message MakeExamplesOptions {
   int32 small_model_gq_threshold = 65;
   // Path to the pickled small model.
   string trained_small_model_path = 66;
+  // Batch size to use during inference
+  int32 small_model_inference_batch_size = 76;
 
   // Following 3 attribute are for the fast pipeline.
 

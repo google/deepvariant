@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Module for calling variants on examples using a trained keras model."""
 
-from typing import Sequence, Tuple, Union
+from typing import List, Sequence, Tuple
 
 import numpy as np
 import tensorflow as tf
@@ -62,16 +62,20 @@ class SmallModelVariantCaller:
       self,
       classifier: tf.keras.Model,
       gq_threshold: float,
+      batch_size: int,
   ):
     self.classifier = classifier
     self.gq_threshold = gq_threshold
+    self.batch_size = batch_size
 
   @classmethod
   def from_model_path(
-      cls, model_path: str, gq_threshold: float
+      cls, model_path: str, gq_threshold: float, batch_size: int
   ) -> "SmallModelVariantCaller":
     """Init class with a path to a pickled model."""
-    return cls(keras_config.load_keras_model(model_path), gq_threshold)
+    return cls(
+        keras_config.load_keras_model(model_path), gq_threshold, batch_size
+    )
 
   def _accept_call_result(self, probability) -> bool:
     """Determine if the given probability is above the GQ threshold."""
@@ -101,17 +105,25 @@ class SmallModelVariantCaller:
         ),
     )
 
+  def classify(self, examples: np.ndarray) -> List[Tuple[float, ...]]:
+    """Classifies the given example."""
+    predictions = []
+    for i in range(0, len(examples), self.batch_size):
+      predictions.extend(
+          self.classifier.predict_on_batch(examples[i : i + self.batch_size])
+      )
+    return predictions
+
   def call_variants(
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
-      examples: Sequence[Sequence[Union[str, int]]],
+      examples: Sequence[Sequence[int]],
   ) -> Tuple[
-      Sequence[deepvariant_pb2.CallVariantsOutput],
-      Sequence[deepvariant_pb2.DeepVariantCall],
+      List[deepvariant_pb2.CallVariantsOutput],
+      List[deepvariant_pb2.DeepVariantCall],
   ]:
     """Calls variants on the given examples."""
-    probabilities = self.classifier.predict(examples, verbose=0)
-
+    probabilities = self.classify(np.array(examples))
     call_variant_outputs = []
     filtered_candidates = []
     for candidate, probability in zip(candidates, probabilities):

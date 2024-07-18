@@ -1330,6 +1330,7 @@ class RegionProcessor:
           small_model_inference.SmallModelVariantCaller.from_model_path(
               model_path=self.options.trained_small_model_path,
               gq_threshold=self.options.small_model_gq_threshold,
+              batch_size=self.options.small_model_inference_batch_size,
           )
       )
 

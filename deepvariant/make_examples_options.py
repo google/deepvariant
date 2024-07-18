@@ -680,6 +680,11 @@ _SMALL_MODEL_GQ_THRESHOLD = flags.DEFINE_integer(
     30,
     'Sets the minimum threshold for GQ scores for the small model.',
 )
+_SMALL_MODEL_INFERENCE_BATCH_SIZE = flags.DEFINE_integer(
+    'small_model_inference_batch_size',
+    128,
+    'Sets the batch size used by the small model during inference.',
+)
 _TRAINED_SMALL_MODEL_PATH = flags.DEFINE_string(
     'trained_small_model_path',
     '',
@@ -767,6 +772,7 @@ def shared_flags_to_options(
       write_small_model_examples=_WRITE_SMALL_MODEL_EXAMPLES.value,
       call_small_model_examples=_CALL_SMALL_MODEL_EXAMPLES.value,
       small_model_gq_threshold=_SMALL_MODEL_GQ_THRESHOLD.value,
+      small_model_inference_batch_size=_SMALL_MODEL_INFERENCE_BATCH_SIZE.value,
       trained_small_model_path=_TRAINED_SMALL_MODEL_PATH.value,
       downsample_classes=list(map(float, _DOWNSAMPLE_CLASSES.value)),
       sample_mean_coverage_on_calling_regions=_SAMPLE_MEAN_COVERAGE_ON_CALLING_REGIONS.value,
