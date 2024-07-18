@@ -532,7 +532,6 @@ def postprocess_variants_command(
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
-  command.extend(['--cpus 0'])
   if process_somatic:
     command.extend(['--process_somatic=true'])
   else:
