@@ -32,7 +32,6 @@ import collections
 import functools
 import itertools
 import os
-import subprocess
 import tempfile
 import time
 from typing import Any, Iterable, Iterator, Sequence
@@ -1166,13 +1165,17 @@ def group_call_variants_outputs(input_sorted_tfrecord_path, group_variants):
 
 def _concat_vcf(output_file, temp_vcf_files):
   """Concatenates a set of temp (g)VCF files."""
-  vcf_files_to_concat = ' '.join(f.name for f in temp_vcf_files)
-  # TODO: Replace bcftools dependency with .c binary.
-  subprocess.run(
-      f'bcftools concat {vcf_files_to_concat} -o {output_file} -O z --naive',
-      shell=True,
-      check=True,
-  )
+  with pysam.VariantFile(
+      output_file,
+      mode='w',
+      header=pysam.VariantFile(temp_vcf_files[0].name).header,
+      threads=_CPUS.value,
+  ) as output_vcf:
+    for temp_vcf_file in temp_vcf_files:
+      logging.info('Concatenating VCF file: %s', temp_vcf_file.name)
+      with pysam.VariantFile(temp_vcf_file.name) as input_vcf:
+        for variant in input_vcf:
+          output_vcf.write(variant)
 
 
 def process_contiguous_partition(
@@ -1475,7 +1478,7 @@ def run_postprocess_variants_on_region(
       logging.info('Writing variants to VCF.')
     write_variants_to_vcf(
         variant_iterable=variant_generator,
-        output_vcf_path=FLAGS.outfile,
+        output_vcf_path=output_vcf,
         header=header,
     )
     logging.info(
@@ -1587,12 +1590,8 @@ def main(argv=()):
 
     if _CPUS.value > 1:
       partitions = split_into_contiguous_partitions(contigs, _CPUS.value)
-      temp_vcf_files = [
-          tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
-      ]
-      temp_gvcf_files = [
-          tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
-      ]
+      temp_vcf_files = [tempfile.NamedTemporaryFile() for _ in partitions]
+      temp_gvcf_files = [tempfile.NamedTemporaryFile() for _ in partitions]
 
       async_results = []
       with multiprocessing.Pool(_CPUS.value) as pool:
@@ -1615,7 +1614,8 @@ def main(argv=()):
           r.wait()
 
         _concat_vcf(FLAGS.outfile, temp_vcf_files)
-        _concat_vcf(FLAGS.gvcf_outfile, temp_gvcf_files)
+        if FLAGS.nonvariant_site_tfrecord_path:
+          _concat_vcf(FLAGS.gvcf_outfile, temp_gvcf_files)
         for temp_vcf_file in temp_vcf_files:
           temp_vcf_file.close()
         for temp_gvcf_file in temp_gvcf_files:
