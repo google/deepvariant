@@ -247,13 +247,12 @@ void FillPileupArray(
     for (const auto& one_alt_image : alt_image) {
       if (one_alt_image.empty()) {
         CHECK_LT(buffer_pos, buffer_size);
-        auto buffer_end = buffer_pos + image.size() * image[0]->Width() *
-                                           image[0]->channel_data.size();
-        CHECK_LE(buffer_end, buffer_size);
-        std::fill(
-            &(*pileup_array)[buffer_pos],
-            &(*pileup_array)[buffer_end],
-            (unsigned char)0);
+        auto pos_offset_to_end =
+            image.size() * image[0]->Width() * image[0]->channel_data.size();
+        CHECK_LE(buffer_pos + pos_offset_to_end, buffer_size);
+        auto* const fill_from = &(*pileup_array)[buffer_pos];
+        std::fill(fill_from, fill_from + pos_offset_to_end,
+                  static_cast<unsigned char>(0));
         buffer_pos +=
             image.size() * image[0]->Width() * image[0]->channel_data.size();
         continue;
