@@ -59,20 +59,12 @@ using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::LinearAlignment;
 using nucleus::genomics::v1::Position;
 
-// TODO Add ChromosomePosition type instead of uint64_t
-
-struct Kmer {
-  string sequence;
-};
-
 struct ReadId {
   ReadId() : is_set(false), id(0) {}
   explicit ReadId(size_t id) : is_set(true), id(id) {}
 
-  explicit operator int64_t() const { return id; }
   explicit operator uint64_t() const { return id; }
 
-  bool operator<(const ReadId& that) const { return id < that.id; }
   bool operator==(const ReadId& that) const { return id == that.id; }
 
   bool is_set;
@@ -416,10 +408,6 @@ class FastPassAligner {
 
   int FastAlignStrings(absl::string_view s1, absl::string_view s2,
                        int max_mismatches, int* num_of_mismatches) const;
-
-  void UpdateBestHaplotypes(
-      size_t haplotype_index, int haplotype_score,
-      const std::vector<ReadAlignment>& current_read_scores);
 
   // Update position map for each haplotype. Position map stores shifts for
   // each position of a haplotype in respect to haplotype to reference
