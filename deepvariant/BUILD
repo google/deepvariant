@@ -1072,6 +1072,7 @@ py_library(
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/io/python:merge_variants",
+        "//third_party/nucleus/io/python:vcf_concat",
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",

@@ -65,6 +65,14 @@ py_clif_cc(
     ],
 )
 
+py_clif_cc(
+    name = "vcf_concat",
+    srcs = ["vcf_concat.clif"],
+    deps = [
+        "//third_party/nucleus/io:vcf_concat",
+    ],
+)
+
 py_test(
     name = "vcf_writer_wrap_test",
     size = "small",

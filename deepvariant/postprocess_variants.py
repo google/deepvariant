@@ -58,6 +58,7 @@ from third_party.nucleus.io import tabix
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.io.python import merge_variants
+from third_party.nucleus.io.python import vcf_concat
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
@@ -1165,17 +1166,8 @@ def group_call_variants_outputs(input_sorted_tfrecord_path, group_variants):
 
 def _concat_vcf(output_file, temp_vcf_files):
   """Concatenates a set of temp (g)VCF files."""
-  with pysam.VariantFile(
-      output_file,
-      mode='w',
-      header=pysam.VariantFile(temp_vcf_files[0].name).header,
-      threads=_CPUS.value,
-  ) as output_vcf:
-    for temp_vcf_file in temp_vcf_files:
-      logging.info('Concatenating VCF file: %s', temp_vcf_file.name)
-      with pysam.VariantFile(temp_vcf_file.name) as input_vcf:
-        for variant in input_vcf:
-          output_vcf.write(variant)
+  vcf_files_to_concat = [f.name for f in temp_vcf_files]
+  vcf_concat.concat(output_file, vcf_files_to_concat)
 
 
 def process_contiguous_partition(
@@ -1590,8 +1582,12 @@ def main(argv=()):
 
     if _CPUS.value > 1:
       partitions = split_into_contiguous_partitions(contigs, _CPUS.value)
-      temp_vcf_files = [tempfile.NamedTemporaryFile() for _ in partitions]
-      temp_gvcf_files = [tempfile.NamedTemporaryFile() for _ in partitions]
+      temp_vcf_files = [
+          tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
+      ]
+      temp_gvcf_files = [
+          tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
+      ]
 
       async_results = []
       with multiprocessing.Pool(_CPUS.value) as pool:

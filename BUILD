@@ -84,6 +84,7 @@ cc_library(
         "//third_party/nucleus/io/python:tabix_indexer_cclib",
         "//third_party/nucleus/io/python:tfrecord_reader_cclib",
         "//third_party/nucleus/io/python:tfrecord_writer_cclib",
+        "//third_party/nucleus/io/python:vcf_concat_cclib",
         "//third_party/nucleus/io/python:vcf_reader_cclib",
         "//third_party/nucleus/io/python:vcf_writer_cclib",
         "//third_party/nucleus/util/python:math_cclib",

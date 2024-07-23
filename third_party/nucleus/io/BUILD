@@ -916,6 +916,24 @@ cc_library(
 )
 
 cc_library(
+    name = "vcf_naive_concat",
+    srcs = ["vcf_naive_concat.c"],
+    hdrs = ["vcf_naive_concat.h"],
+    deps = [
+        "@htslib",
+    ],
+)
+
+cc_library(
+    name = "vcf_concat",
+    srcs = ["vcf_concat.cc"],
+    hdrs = ["vcf_concat.h"],
+    deps = [
+        ":vcf_naive_concat",
+    ],
+)
+
+cc_library(
     name = "hts_path",
     srcs = ["hts_path.cc"],
     hdrs = ["hts_path.h"],
