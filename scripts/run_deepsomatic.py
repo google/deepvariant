@@ -53,7 +53,7 @@ FLAGS = flags.FLAGS
 _MODEL_TYPE = flags.DEFINE_enum(
     'model_type',
     'WGS',
-    ['WGS', 'ONT_R104', 'PACBIO'],
+    ['WGS', 'WES', 'PACBIO', 'ONT', 'FFPE_WGS', 'FFPE_WES'],
     (
         'Required. Type of model to use for variant calling. Set this flag to'
         ' use the default model associated with each type, and it will set'
@@ -257,12 +257,16 @@ _PON_FILTERING = flags.DEFINE_string(
 
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/deepsomatic/wgs',
+    'WES': '/opt/models/deepsomatic/wes',
     'PACBIO': '/opt/models/deepsomatic/pacbio',
+    'ONT': '/opt/models/deepsomatic/ont',
+    'FFPE_WGS': '/opt/models/deepsomatic/ffpe_wgs',
+    'FFPE_WES': '/opt/models/deepsomatic/ffpe_wes',
 }
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
-DEEP_VARIANT_VERSION = '1.6.1'
+DEEP_VARIANT_VERSION = '1.7.0'
 
 
 @enum.unique
@@ -430,6 +434,30 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_snps'] = 0.029
     special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
     special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'WES':
+    # Specific flags that are not default can be added here.
+    special_args = {}
+    special_args['vsc_min_fraction_indels'] = 0.05
+    special_args['vsc_min_fraction_snps'] = 0.029
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'FFPE_WGS':
+    # Specific flags that are not default can be added here.
+    special_args = {}
+    special_args['vsc_min_fraction_indels'] = 0.05
+    special_args['vsc_min_fraction_snps'] = 0.029
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'FFPE_WES':
+    # Specific flags that are not default can be added here.
+    special_args = {}
+    special_args['vsc_min_fraction_indels'] = 0.05
+    special_args['vsc_min_fraction_snps'] = 0.029
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
   elif _MODEL_TYPE.value == 'PACBIO':
     special_args = {}
     special_args['alt_aligned_pileup'] = 'diff_channels'
@@ -447,7 +475,7 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_indels'] = 0.1
     special_args['vsc_min_fraction_snps'] = 0.02
     special_args['trim_reads_for_pileup'] = True
-  elif _MODEL_TYPE.value == 'ONT_R104':
+  elif _MODEL_TYPE.value == 'ONT':
     special_args = {}
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['min_mapping_quality'] = 5

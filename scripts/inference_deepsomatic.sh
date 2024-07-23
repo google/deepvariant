@@ -43,10 +43,12 @@ Flags:
 --bin_version Version of DeepSomatic docker to use
 --customized_model Path to checkpoint directory containing model checkpoint.
 --regions Regions passed into both variant calling and som.py.
+--sample_name_normal Sample name to use for normal bam.
+--sample_name_tumor Sample name to use for tumor bam.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
---model_preset Preset case study to run: WGS, or PACBIO.
+--model_preset Preset case study to run: WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES.
 --pon_filtering Path to PON (panel of normal) VCF. If set, pass --pon_filtering to postprocess_variants.
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
@@ -56,7 +58,7 @@ Flags:
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
 
 If model_preset is not specified, the below flags are required:
---model_type Type of DeepSomatic model to run (WGS, PACBIO)
+--model_type Type of DeepSomatic model to run (WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES)
 --ref Path to GCP bucket containing ref file (.fa)
 --bam_normal Path to GCP bucket containing BAM_NORMAL
 --bam_tumor Path to GCP bucket containing BAM_TUMOR
@@ -93,6 +95,8 @@ PROPOSED_VARIANTS=""
 REF=""
 REGIONS=""
 REPORT_TITLE=""
+SAMPLE_NAME_NORMAL=""
+SAMPLE_NAME_TUMOR=""
 SOMPY_DOCKER_SOURCE="pkrusche/hap.py"
 TRUTH_BED=""
 TRUTH_VCF=""
@@ -259,6 +263,16 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --sample_name_normal)
+      SAMPLE_NAME_NORMAL="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --sample_name_tumor)
+      SAMPLE_NAME_TUMOR="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     --help)
       echo "$USAGE" >&2
       exit 1
@@ -299,6 +313,21 @@ if [[ "${MODEL_PRESET}" = "WGS" ]]; then
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_T_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+elif [[ "${MODEL_PRESET}" = "WES" ]]; then
+  MODEL_TYPE="WES"
+  BASE="${HOME}/deepsomatic-case-studies"
+
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  # Only use the default if BAM_NORMAL is unset.
+  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
+  # tumor-only model
+  if [[ "${BAM_NORMAL+set}" != set ]]; then
+    BAM_NORMAL="gs://brain-genomics/deepsomatic/data/seqc/WES/WES_IL_N_1.bwa.dedup.bam"
+  fi
+  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/deepsomatic/data/seqc/WES/WES_IL_T_1.bwa.dedup.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+  CAPTURE_BED="${CAPTURE_BED:=gs://brain-genomics/deepsomatic/data/seqc/bed/seqc2_hg38.exome_regions.bed}"
 elif [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   MODEL_TYPE="PACBIO"
   BASE="${HOME}/deepsomatic-case-studies"
@@ -313,8 +342,8 @@ elif [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-pacbio-case-study/HCC1395.pacbio.tumor.GRCh38.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
-elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
-  MODEL_TYPE="ONT_R104"
+elif [[ "${MODEL_PRESET}" = "ONT" ]]; then
+  MODEL_TYPE="ONT"
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
@@ -326,13 +355,54 @@ elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
     BAM_NORMAL="gs://brain-genomics/nanopore-somatic-nygc/ONT/minimap2_grch38_bams/minimap2_grch38_bams/1395_Normal_ONT.GRCh38.sorted.bam"
   fi
 
-  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/nanopore-somatic-nygc/ONT/minimap2_grch38_bams/minimap2_grch38_bams/1395_Tumor_ONT.GRCh38.sorted.bam}"
+  SAMPLE_NAME_NORMAL="1395_normal_ont"
+  SAMPLE_NAME_TUMOR="1395_tumor_ont"
+  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/nanopore-somatic-nygc/ONT/minimap2_grch38_bams/minimap2_grch38_bams/1395_Tumor_ONT.50x.GRCh38.sorted.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+
+elif [[ "${MODEL_PRESET}" = "FFPE_WGS" ]]; then
+  MODEL_TYPE="FFPE_WGS"
+  BASE="${HOME}/deepsomatic-case-studies"
+
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  # Only use the default if BAM_NORMAL is unset.
+  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
+  # tumor-only model
+  # TODO: Update to a path in gs://deepvariant.
+  if [[ "${BAM_NORMAL+set}" != set ]]; then
+    BAM_NORMAL="gs://brain-genomics/deepsomatic/data/seqc/FFG/FFG_IL_N_6h.bwa.dedup.bam"
+  fi
+
+  SAMPLE_NAME_NORMAL="1395_normal_ffpe_wgs"
+  SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wgs"
+  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/deepsomatic/data/seqc/FFG/FFG_IL_T_6h.bwa.dedup.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+
+elif [[ "${MODEL_PRESET}" = "FFPE_WES" ]]; then
+  MODEL_TYPE="FFPE_WES"
+  BASE="${HOME}/deepsomatic-case-studies"
+
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  # Only use the default if BAM_NORMAL is unset.
+  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
+  # tumor-only model
+  # TODO: Update to a path in gs://deepvariant.
+  if [[ "${BAM_NORMAL+set}" != set ]]; then
+    BAM_NORMAL="gs://brain-genomics/deepsomatic/data/seqc/FFX/FFX_IL_N_6h_2.bwa.dedup.bam"
+  fi
+
+  SAMPLE_NAME_NORMAL="1395_normal_ffpe_wes"
+  SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wes"
+  CAPTURE_BED="${CAPTURE_BED:=gs://brain-genomics/deepsomatic/data/seqc/bed/seqc2_hg38.exome_regions.bed}"
+  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/deepsomatic/data/seqc/FFX/FFX_IL_T_6h_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 
 else
   if [[ -n "${MODEL_PRESET}" ]]; then
-    echo "Error: --model_preset must be one of WGS, PACBIO, or ONT_R104." >&2
+    echo "Error: --model_preset must be one of WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES." >&2
     exit 1
   fi
 fi
@@ -356,14 +426,13 @@ OUTPUT_VCF="deepsomatic.output.vcf.gz"
 OUTPUT_GVCF="deepsomatic.output.g.vcf.gz"
 LOG_DIR="${OUTPUT_DIR}/logs"
 
-if [[ "${MODEL_TYPE}" = "WES" ]]; then
+if [[ "${MODEL_TYPE}" = "WES" || "${MODEL_TYPE}" = "FFPE_WES" ]]; then
   if [[ -n "${REGIONS}" ]]; then
     echo "Error: --regions is not used with model_type WES. Please use --capture_bed." >&2
     exit 1
   fi
   extra_args+=( --regions "/input/$(basename "$CAPTURE_BED")")
-  # TODO: Add back when any use cases use CAPTURE_BED.
-  # sompy_args+=( -T "${INPUT_DIR}/$(basename $CAPTURE_BED)")
+  sompy_args+=( -T "${INPUT_DIR}/$(basename $CAPTURE_BED)")
 fi
 
 if [[ "${SAVE_INTERMEDIATE_RESULTS}" == "true" ]]; then
@@ -473,7 +542,7 @@ function copy_data() {
   copy_gs_or_http_file "${REF}.gz.gzi" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gzi" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.fai" "${INPUT_DIR}"
-  if [[ "${MODEL_TYPE}" = "WES" ]]; then
+  if [[ "${MODEL_TYPE}" = "WES" || "${MODEL_TYPE}" = "FFPE_WES" ]]; then
     copy_gs_or_http_file "${CAPTURE_BED}" "${INPUT_DIR}"
   fi
   if [[ -n "${PROPOSED_VARIANTS}" ]]; then
@@ -649,6 +718,12 @@ function run_deepsomatic_with_docker() {
   fi
   if [[ ! -z "${PON_FILTERING}" ]]; then
     extra_args+=( --pon_filtering "/input/$(basename "$PON_FILTERING")" )
+  fi
+  if [[ ! -z "${SAMPLE_NAME_NORMAL}" ]]; then
+    extra_args+=( --sample_name_normal "${SAMPLE_NAME_NORMAL}" )
+  fi
+  if [[ ! -z "${SAMPLE_NAME_TUMOR}" ]]; then
+    extra_args+=( --sample_name_tumor "${SAMPLE_NAME_TUMOR}" )
   fi
   # shellcheck disable=SC2027
   # shellcheck disable=SC2046
