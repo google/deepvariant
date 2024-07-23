@@ -45,36 +45,36 @@ class PresetConfig(enum.Enum):
 def set_wgs_config(config: ml_collections.ConfigDict) -> None:
   config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b345306347_wgs/ttl=14d/b345306347_wgs_train_ME_*.tfrecord.gz.small_model.tsv"
   config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b345306347_wgs/ttl=14d/b345306347_wgs_tune_ME_*.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 34162936
-  config.num_tune_samples = 973886
+  config.num_train_samples = 784_569_482
+  config.num_tune_samples = 22_245_399
 
 
 def set_wes_config(config: ml_collections.ConfigDict) -> None:
   config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_exome/b345306347_exome/ttl=14d/b345306347_exome_train_ME_*.tfrecord.gz.small_model.tsv"
   config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_exome/b345306347_exome/ttl=14d/b345306347_exome_tune_ME_*.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 539986
-  config.num_tune_samples = 20752
+  config.num_train_samples = 19_217_144
+  config.num_tune_samples = 726_013
 
 
 def set_pacbio_config(config: ml_collections.ConfigDict) -> None:
-  config.train_tsv_directory = "/usr/local/google/home/lucasbrambrink/tmp/HG002.examples.tfrecord-*.gz.small_model.tsv"
-  config.tune_tsv_directory = "/usr/local/google/home/lucasbrambrink/tmp/HG002.examples.tfrecord-*.gz.small_model.tsv"
-  config.num_train_samples = 100_000  # 48123335
-  config.num_tune_samples = 10_000  # 1290029
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 2_015_187_426
+  config.num_tune_samples = 53_932_522
 
 
 def set_ont_config(config: ml_collections.ConfigDict) -> None:
-  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b345306347_ont/ttl=14d/b345306347_ont_train_ME_*.tfrecord.gz.small_model.tsv"
-  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b345306347_ont/ttl=14d/b345306347_ont_tune_ME_*.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 72360798
-  config.num_tune_samples = 1948621
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b352354037-base/ttl=14d/b352354037-base_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b352354037-base/ttl=14d/b352354037-base_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 447_500_870
+  config.num_tune_samples = 12_288_308
 
 
 def set_hybrid_config(config: ml_collections.ConfigDict) -> None:
   config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_hybrid/b345306347_hybrid_pacbio_illumina/ttl=14d/b345306347_hybrid_pacbio_illumina_train_ME_*.tfrecord.gz.small_model.tsv"
   config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_hybrid/b345306347_hybrid_pacbio_illumina/ttl=14d/b345306347_hybrid_pacbio_illumina_tune_ME_*.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 31325720
-  config.num_tune_samples = 861825
+  config.num_train_samples = 142_447_287
+  config.num_tune_samples = 3_916_034
 
 
 def set_preset_config(
