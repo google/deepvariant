@@ -103,8 +103,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
 
   # Training parameters
   config = ml_collections.ConfigDict()
-  config.epochs = 5
-  config.batch_size = 32
+  config.epochs = 20
+  config.batch_size = 64
   config.logging_frequency = 8192
   config.train_tsv_directory = ""
   config.num_train_samples = 0
@@ -115,6 +115,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.test_fraction = 0.2
 
   # Training environment
+  config.trial_id = 1
   config.tensorboard_directory = None
   config.is_xmanager_run = False
 
