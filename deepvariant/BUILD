@@ -467,6 +467,7 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":allele_frequency",
+        ":calling_regions_utils",
         ":dv_constants",
         ":dv_utils",
         ":dv_utils_using_clif",
@@ -542,6 +543,7 @@ py_library(
     srcs = ["make_examples_options.py"],
     srcs_version = "PY3",
     deps = [
+        ":calling_regions_utils",
         ":dv_constants",
         ":dv_utils",
         ":exclude_contigs",
@@ -744,6 +746,34 @@ py_test(
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/protos:variants_py_pb2",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
+py_library(
+    name = "calling_regions_utils",
+    srcs = ["calling_regions_utils.py"],
+    srcs_version = "PY3",
+    deps = [
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/protos:range_py_pb2",
+        "//third_party/nucleus/protos:reference_py_pb2",
+        "//third_party/nucleus/util:ranges",
+        "@absl_py//absl/logging",
+    ],
+)
+
+py_test(
+    name = "calling_regions_utils_test",
+    size = "small",
+    srcs = ["calling_regions_utils_test.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":calling_regions_utils",
+        "//third_party/nucleus/protos:range_py_pb2",
+        "//third_party/nucleus/protos:reference_py_pb2",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -1065,6 +1095,7 @@ py_library(
         ":dv_utils",
         ":dv_constants",
         ":haplotypes",
+        ":calling_regions_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:postprocess_variants",
         "//third_party/nucleus/io:sharded_file_utils",

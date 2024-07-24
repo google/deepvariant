@@ -44,6 +44,7 @@ import numpy as np
 import pysam
 import tensorflow as tf
 
+from deepvariant import calling_regions_utils
 from deepvariant import dv_constants
 from deepvariant import dv_utils
 from deepvariant import dv_vcf_constants
@@ -209,6 +210,15 @@ _PAR_REGIONS = flags.DEFINE_string(
         'regions.'
         'Variants within this region are unaffected by genotype reallocation '
         'applied on regions supplied by --haploid_contigs flag.'
+    ),
+)
+_REGIONS = flags.DEFINE_string(
+    'regions',
+    '',
+    (
+        'Optional. Space-separated list of regions we want to process. Elements'
+        ' can be region literals (e.g., chr20:10-20) or paths to BED/BEDPE'
+        ' files. This should match the flag passed to make_examples.py.'
     ),
 )
 
@@ -1217,60 +1227,6 @@ def process_contiguous_partition(
   return variant_generator
 
 
-def split_into_contiguous_partitions(
-    contigs: Sequence[reference_pb2.ContigInfo], num_partitions: int
-) -> Sequence[Sequence[range_pb2.Range]]:
-  """Splits the contigs into N number of contiguous partitions.
-
-  This is a simpler version of https://en.wikipedia.org/wiki/Partition_problem,
-  since we have to preserve order. This algorithm runs in 3 stages:
-    1. Calculate the partition size across the entire genome by BP count.
-    2. Group the partitions greedily such that all groups exceed the partition
-       size. This will produce *fewer* groups than `num_partitions`.
-    3. Keep splitting the largest groups in half until the target number of
-       partition is reached.
-    4. Sort everything such that we preserve the order in `contigs`.
-
-  Args:
-    contigs: the contigs given by ref
-    num_partitions: how many partitions to break into it.
-
-  Returns:
-    partition_groups: list of groups of nucleus.genomics.v1.Range.
-  """
-  # Split into target partition size.
-  total_bps = sum(c.n_bases for c in contigs)
-  max_partition_size = total_bps // num_partitions
-  regions = ranges.RangeSet.from_contigs(contigs)
-  partitions = list(regions.partition(max_partition_size))
-
-  # Group the partitions such that no group exceeds the max size.
-  partition_groups = []
-  current_group = []
-  for partition in partitions:
-    if sum(p.end - p.start for p in current_group) > max_partition_size:
-      partition_groups.append(current_group)
-      current_group = []
-    current_group.append(partition)
-  if current_group:
-    partition_groups.append(current_group)
-
-  # The above will produce fewer groups than `num_partitions`, because
-  # all groups grew past the target size. We fix this now by splitting
-  # the largest groups in half until we have `num_partitions` groups.
-  while len(partition_groups) < num_partitions:
-    partition_groups.sort(key=lambda ps: sum(p.end - p.start for p in ps))
-    largest_partition = partition_groups.pop()
-    mid_point = len(largest_partition) // 2
-    ps_1 = largest_partition[:mid_point]
-    ps_2 = largest_partition[mid_point:]
-    partition_groups.extend([ps_1, ps_2])
-
-  # Sort the partitions into their initial config
-  partition_groups.sort(key=lambda ps: partitions.index(ps[0]))
-  return partition_groups
-
-
 def _yield_variants_from_temp_files(
     temp_files: Sequence[Any],
 ) -> Iterable[variants_pb2.Variant]:
@@ -1581,7 +1537,17 @@ def main(argv=()):
       )
 
     if _CPUS.value > 1:
-      partitions = split_into_contiguous_partitions(contigs, _CPUS.value)
+      calling_regions = calling_regions_utils.build_calling_regions(
+          contigs=contigs,
+          regions_to_include=calling_regions_utils.parse_regions_flag(
+              _REGIONS.value
+          ),
+          regions_to_exclude=[],
+          ref_n_regions=[],
+      )
+      partitions = calling_regions_utils.partition_calling_regions(
+          calling_regions, num_partitions=_CPUS.value
+      )
       temp_vcf_files = [
           tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
       ]

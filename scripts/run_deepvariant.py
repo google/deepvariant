@@ -674,6 +674,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           sample_name=_SAMPLE_NAME.value,
           haploid_contigs=_HAPLOID_CONTIGS.value,
           par_regions_bed=_PAR_REGIONS.value,
+          regions=_REGIONS.value,
       )
   )
 

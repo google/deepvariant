@@ -45,6 +45,7 @@ import numpy as np
 
 
 from deepvariant import allele_frequency
+from deepvariant import calling_regions_utils
 from deepvariant import dv_constants
 from deepvariant import dv_utils
 from deepvariant import dv_vcf_constants
@@ -306,12 +307,6 @@ def resolve_sam_aux_fields(
             channel,
         )
   return parse_sam_aux_fields
-
-
-def parse_regions_flag(regions_flag_value):
-  if isinstance(regions_flag_value, str):
-    regions_flag_value = regions_flag_value.split()
-  return regions_flag_value
 
 
 def logging_with_options(
@@ -596,56 +591,6 @@ def find_ref_n_regions(
       else:
         i += min_region_len - 1
   return ref_n_regions
-
-
-def build_calling_regions(
-    contigs: Sequence[reference_pb2.ContigInfo],
-    regions_to_include: Sequence[str],
-    regions_to_exclude: Sequence[str],
-    ref_n_regions: Optional[Sequence[range_pb2.Range]],
-) -> ranges.RangeSet:
-  """Builds a RangeSet containing the regions we should call variants in.
-
-  This function intersects the Ranges spanning all of the contigs with those
-  from regions_to_include, if not empty, and removes all of the regions in
-  regions_to_exclude.
-
-  Args:
-    contigs: Sequence of ContigInfo protos. Used to determine the initial ranges
-      to process (i.e., all bases of these contigs).
-    regions_to_include: RangeSet or iterable that can be converted to a
-      RangeSet.
-    regions_to_exclude: RangeSet or iterable that can be converted to a
-      RangeSet.
-    ref_n_regions: List of Range containing non DNA bases to exclude.
-
-  Returns:
-    A RangeSet.
-  """
-  # Initially we are going to call everything in the reference.
-  regions = ranges.RangeSet.from_contigs(contigs)
-
-  # If we provided a regions to include, intersect it with all of the regions,
-  # producing a common set of regions between the reference and the provided
-  # calling regions.
-  contig_dict = ranges.contigs_dict(contigs)
-  if regions_to_include:
-    regions = regions.intersection(
-        ranges.RangeSet.from_regions(regions_to_include, contig_dict)
-    )
-
-  if ref_n_regions:
-    regions.exclude_regions(ranges.RangeSet(ref_n_regions))
-
-  # If we provided regions to exclude, intersect those with the existing calling
-  # regions to further refine our set of contigs to process.
-  if regions_to_exclude:
-    # exclude_regions mutates regions.
-    regions.exclude_regions(
-        ranges.RangeSet.from_regions(regions_to_exclude, contig_dict)
-    )
-
-  return regions
 
 
 def partition_by_candidates(
@@ -2740,7 +2685,7 @@ def processing_regions_from_options(
   logging_with_options(
       options, 'Common contigs are %s' % [c.name for c in contigs]
   )
-  calling_regions = build_calling_regions(
+  calling_regions = calling_regions_utils.build_calling_regions(
       ref_contigs,
       options.calling_regions,
       options.exclude_calling_regions,

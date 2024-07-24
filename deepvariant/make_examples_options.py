@@ -35,6 +35,7 @@ import textwrap
 from absl import flags
 from absl import logging
 
+from deepvariant import calling_regions_utils
 from deepvariant import dv_constants
 from deepvariant import dv_utils
 from deepvariant import exclude_contigs
@@ -1007,10 +1008,10 @@ def shared_flags_to_options(
       options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
 
     options.calling_regions.extend(
-        make_examples_core.parse_regions_flag(flags_obj.regions)
+        calling_regions_utils.parse_regions_flag(flags_obj.regions)
     )
     options.exclude_calling_regions.extend(
-        make_examples_core.parse_regions_flag(flags_obj.exclude_regions)
+        calling_regions_utils.parse_regions_flag(flags_obj.exclude_regions)
     )
 
     options.realigner_enabled = flags_obj.realign_reads
