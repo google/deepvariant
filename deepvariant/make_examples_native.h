@@ -70,6 +70,7 @@ struct Sample {
   std::unique_ptr<nucleus::TFRecordWriter> writer;
   bool needs_alt_alignment;
   absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank;
+  absl::flat_hash_set<EncodedVariantType> encoded_variant_types_to_blank;
 };
 
 // Cache of reads. Reads are passed from Python wrapped in ConstProtoPtr.

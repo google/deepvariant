@@ -82,11 +82,32 @@ ExamplesGenerator::ExamplesGenerator(
         Sample(sample_options_for_one_sample);
     samples_[sample_options_for_one_sample.role()].needs_alt_alignment =
         SampleNeedsAltAlignment(sample_options_for_one_sample);
+    // Blank out specified channels.
     for (int i = 0;
          i < sample_options_for_one_sample.channels_enum_to_blank_size(); ++i) {
       samples_[sample_options_for_one_sample.role()]
           .channels_enum_to_blank.insert(
               sample_options_for_one_sample.channels_enum_to_blank(i));
+    }
+    // Blank out all channels for the specified variant types.
+    for (int i = 0;
+         i < sample_options_for_one_sample.variant_types_to_blank_size(); ++i) {
+      switch (sample_options_for_one_sample.variant_types_to_blank(i)) {
+        case SampleOptions::VARIANT_TYPE_SNP:
+          samples_[sample_options_for_one_sample.role()]
+              .encoded_variant_types_to_blank.insert(EncodedVariantType::kSnp);
+          break;
+        case SampleOptions::VARIANT_TYPE_INDEL:
+          samples_[sample_options_for_one_sample.role()]
+              .encoded_variant_types_to_blank.insert(
+                  EncodedVariantType::kIndel);
+          break;
+        default:
+          LOG(WARNING) << "Unknown variant type to blank will be ignored: "
+                       << sample_options_for_one_sample.variant_types_to_blank(
+                              i);
+          break;
+      }
     }
   }
   half_width_ = (options_.pic_options().width() - 1) / 2;
@@ -483,7 +504,7 @@ std::string ExamplesGenerator::GetReferenceBases(const Range& region) const {
 // Two pileup images are built, one for each alt allele. In these pileups the
 // reference is replaced with the artificial haplotype, that is created by
 // concatenating ref prefix, alt allele, and ref suffix. Reads are aligned to
-// ths haplotype instead of the reference. BuildPileupForOneSample is called
+// this haplotype instead of the reference. BuildPileupForOneSample is called
 // the same way as for a normal pileup which means no special alt aligned
 // processing is required in pileup_image_native library.
 void ExamplesGenerator::CreateAltAlignedImages(
@@ -528,11 +549,21 @@ void ExamplesGenerator::CreateAltAlignedImages(
     // channels. The runtime penalty is very small (~1.5% of runtime).
     auto sample_it =
         samples_.find(options_.sample_options(sample_order).role());
+    // Get the channels to blank for this sample if any.
+    auto blank_channels_set = sample_it->second.channels_enum_to_blank;
+    if (sample_it->second.encoded_variant_types_to_blank.contains(
+            EncodedVariantType(variant))) {
+      auto channel_enum_descriptor = DeepVariantChannelEnum_descriptor();
+      for (int i = 0; i < channel_enum_descriptor->value_count(); ++i) {
+        blank_channels_set.insert(static_cast<DeepVariantChannelEnum>(
+            channel_enum_descriptor->value(i)->number()));
+      }
+    }
     auto alt_image = pileup_image_.BuildPileupForOneSample(
         candidate, haplotype.substr(0, options_.pic_options().width()),
         realigned_reads_ptrs, image_start_pos, alt_combination,
         options_.sample_options(sample_order), mean_coverage,
-        original_start_positions, sample_it->second.channels_enum_to_blank);
+        original_start_positions, blank_channels_set);
     // move alt_image to alt_images[2] array.
     for (auto& row : alt_image) {
       alt_images[alt_image_num].push_back(std::move(row));
@@ -553,6 +584,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     const std::vector<float>& mean_coverage_per_sample,
     const std::unique_ptr<VariantLabel>& label) {
   const auto& variant = candidate.variant();
+  const auto encoded_variant_type = EncodedVariantType(variant);
   int image_start_pos = variant.start() - half_width_;
   // Pileup range.
   Range region;
@@ -606,13 +638,23 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       // If trim_reads_for_pileup is set then trimmed_reads are used.
       auto sample_it =
           samples_.find(options_.sample_options(this_sample_order).role());
+      // Get the channels to blank for this sample if any.
+      auto blank_channels_set = sample_it->second.channels_enum_to_blank;
+      if (sample_it->second.encoded_variant_types_to_blank.contains(
+              EncodedVariantType(variant))) {
+        auto channel_enum_descriptor = DeepVariantChannelEnum_descriptor();
+        for (int i = 0; i < channel_enum_descriptor->value_count(); ++i) {
+          blank_channels_set.insert(static_cast<DeepVariantChannelEnum>(
+              channel_enum_descriptor->value(i)->number()));
+        }
+      }
       auto ref_image = pileup_image_.BuildPileupForOneSample(
           candidate, reference_bases,
           use_trimmed_reads ? std::move(trimmed_reads_ptrs)
                             : readers[this_sample_order].Query(region),
           image_start_pos, alt_combination,
           options_.sample_options(this_sample_order), mean_coverage,
-          &original_start_positions, sample_it->second.channels_enum_to_blank);
+          &original_start_positions, blank_channels_set);
       // Collect rows from all samples in ref_images.
       for (auto& row : ref_image) {
         ref_images.push_back(std::move(row));
@@ -641,7 +683,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
           ref_images, alt_images, alt_aligned_pileup_,
           EncodeAltAlleles(variant, alt_combination, nullptr),
           EncodeVariant(variant, nullptr));
-      UpdateStats(EncodedVariantType(variant), nullptr, 0, stats);
+      UpdateStats(encoded_variant_type, nullptr, 0, stats);
     } else {
       sample.writer->WriteRecord(EncodeExample(ref_images, alt_images, variant,
                                                alt_combination, stats,

@@ -570,7 +570,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
-// Next ID: 15.
+// Next ID: 16.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -624,7 +624,15 @@ message SampleOptions {
   // genome per sample. Used in CH_MEAN_COVERAGE channel.
   float mean_coverage = 14;
 
+  // The channels to blank out in the pileup image for this sample.
   repeated DeepVariantChannelEnum channels_enum_to_blank = 13;
+  // Blank out all channels for these variant types if set.
+  enum VariantType {
+    VARIANT_TYPE_UNSPECIFIED = 0;
+    VARIANT_TYPE_SNP = 1;
+    VARIANT_TYPE_INDEL = 2;
+  }
+  repeated VariantType variant_types_to_blank = 15;
 }
 
 // High-level options that encapsulates all of the parameters needed to run

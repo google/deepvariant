@@ -133,6 +133,15 @@ _KEEP_ONLY_WINDOW_SPANNING_HAPLOTYPES = flags.DEFINE_bool(
         'model.'
     ),
 )
+_VARIANT_TYPES_TO_BLANK = flags.DEFINE_list(
+    'variant_types_to_blank',
+    [],
+    (
+        '[optional] A comma-separated list of variant types to blank out in the'
+        ' pangenome sample pileup image.'
+        ' The possible values are INDEL, and SNP.'
+    ),
+)
 
 # Change any flag defaults that differ for Pangenome-aware DeepVariant.
 # I'm setting this to float('inf') because we don't want to include any
@@ -164,6 +173,15 @@ def reads_and_pangenome_samples_from_flags(add_flags=True, flags_obj=None):
       order=[0, 1],
       pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT,
   )
+  def variant_type_string_to_enum(variant_type_string):
+    variant_type_string = variant_type_string.upper()
+    if variant_type_string == 'INDEL':
+      return deepvariant_pb2.SampleOptions.VARIANT_TYPE_INDEL
+    elif variant_type_string == 'SNP':
+      return deepvariant_pb2.SampleOptions.VARIANT_TYPE_SNP
+    else:
+      raise ValueError('Invalid variant type: %s' % variant_type_string)
+
   pangenome_sample_options = deepvariant_pb2.SampleOptions(
       role='pangenome',
       name=pangenome_sample_name,
@@ -179,6 +197,10 @@ def reads_and_pangenome_samples_from_flags(add_flags=True, flags_obj=None):
           deepvariant_pb2.CH_DIFF_CHANNELS_ALTERNATE_ALLELE_2,
           deepvariant_pb2.CH_BASE_QUALITY,
           deepvariant_pb2.CH_MAPPING_QUALITY,
+      ],
+      variant_types_to_blank=[
+          variant_type_string_to_enum(variant_type_string)
+          for variant_type_string in _VARIANT_TYPES_TO_BLANK.value
       ],
   )
 
