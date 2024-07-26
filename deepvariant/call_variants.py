@@ -596,7 +596,6 @@ def load_model_and_check_shape(
 
   example_shape = []
   example_info_json: str = ''
-  input_example_shape = []
   if not use_examples_from_stream:
     first_example = dv_utils.get_one_example_from_examples_path(
         examples_filename
@@ -659,25 +658,22 @@ def load_model_and_check_shape(
           )
         example_info_json = expected_filename
 
-      input_example_shape, _ = dv_utils.get_shape_and_channels_from_json(
-          example_info_json
-      )
     # These checks make sure we are using the right model with right input.
     if not use_examples_from_stream:
-      if model_example_shape[0] != input_example_shape[0]:
+      if model_example_shape[0] != example_shape[0]:
         # The following has been changed from ValueError to Warning because of
         # internal
         logging.warning(
             'Input shape %s and model shape %s does not match.',
-            str(input_example_shape[0]),
+            str(example_shape[0]),
             str(model_example_shape[0]),
         )
-      if model_example_shape[1] != input_example_shape[1]:
+      if model_example_shape[1] != example_shape[1]:
         # The following has been changed from ValueError to Warning because of
         # internal
         logging.warning(
             'Input channels %s and model channels %s do not match.',
-            str(input_example_shape[1]),
+            str(example_shape[1]),
             str(model_example_shape[1]),
         )
   else:
