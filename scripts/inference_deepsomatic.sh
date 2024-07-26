@@ -322,12 +322,12 @@ elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   # This will allow BAM_NORMAL to be set to an empty string, in order to enable
   # tumor-only model
   if [[ "${BAM_NORMAL+set}" != set ]]; then
-    BAM_NORMAL="gs://brain-genomics/deepsomatic/data/seqc/WES/WES_IL_N_1.bwa.dedup.bam"
+    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/WES_IL_N_1.bwa.dedup.bam"
   fi
-  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/deepsomatic/data/seqc/WES/WES_IL_T_1.bwa.dedup.bam}"
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/WES_IL_T_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
-  CAPTURE_BED="${CAPTURE_BED:=gs://brain-genomics/deepsomatic/data/seqc/bed/seqc2_hg38.exome_regions.bed}"
+  CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/seqc2_hg38.exome_regions.bed}"
 elif [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   MODEL_TYPE="PACBIO"
   BASE="${HOME}/deepsomatic-case-studies"
@@ -352,12 +352,12 @@ elif [[ "${MODEL_PRESET}" = "ONT" ]]; then
   # tumor-only model
   # TODO: Update to a path in gs://deepvariant.
   if [[ "${BAM_NORMAL+set}" != set ]]; then
-    BAM_NORMAL="gs://brain-genomics/nanopore-somatic-nygc/ONT/minimap2_grch38_bams/minimap2_grch38_bams/1395_Normal_ONT.GRCh38.sorted.bam"
+    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Normal_ONT.GRCh38.sorted.bam"
   fi
 
   SAMPLE_NAME_NORMAL="1395_normal_ont"
   SAMPLE_NAME_TUMOR="1395_tumor_ont"
-  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/nanopore-somatic-nygc/ONT/minimap2_grch38_bams/minimap2_grch38_bams/1395_Tumor_ONT.50x.GRCh38.sorted.bam}"
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Tumor_ONT.50x.GRCh38.sorted.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 
@@ -371,12 +371,12 @@ elif [[ "${MODEL_PRESET}" = "FFPE_WGS" ]]; then
   # tumor-only model
   # TODO: Update to a path in gs://deepvariant.
   if [[ "${BAM_NORMAL+set}" != set ]]; then
-    BAM_NORMAL="gs://brain-genomics/deepsomatic/data/seqc/FFG/FFG_IL_N_6h.bwa.dedup.bam"
+    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wgs-case-study/FFG_IL_N_6h.bwa.dedup.bam"
   fi
 
   SAMPLE_NAME_NORMAL="1395_normal_ffpe_wgs"
   SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wgs"
-  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/deepsomatic/data/seqc/FFG/FFG_IL_T_6h.bwa.dedup.bam}"
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wgs-case-study/FFG_IL_T_6h.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 
@@ -390,13 +390,13 @@ elif [[ "${MODEL_PRESET}" = "FFPE_WES" ]]; then
   # tumor-only model
   # TODO: Update to a path in gs://deepvariant.
   if [[ "${BAM_NORMAL+set}" != set ]]; then
-    BAM_NORMAL="gs://brain-genomics/deepsomatic/data/seqc/FFX/FFX_IL_N_6h_2.bwa.dedup.bam"
+    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wes-case-study/FFX_IL_N_6h_2.bwa.dedup.bam"
   fi
 
   SAMPLE_NAME_NORMAL="1395_normal_ffpe_wes"
   SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wes"
-  CAPTURE_BED="${CAPTURE_BED:=gs://brain-genomics/deepsomatic/data/seqc/bed/seqc2_hg38.exome_regions.bed}"
-  BAM_TUMOR="${BAM_TUMOR:=gs://brain-genomics/deepsomatic/data/seqc/FFX/FFX_IL_T_6h_1.bwa.dedup.bam}"
+  CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/seqc2_hg38.exome_regions.bed}"
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wes-case-study/FFX_IL_T_6h_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 
