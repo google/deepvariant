@@ -40,6 +40,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
@@ -140,10 +141,9 @@ class PileupImageEncoderNative {
   // Encode one read into a row of pixels for our image.
   std::unique_ptr<ImageRow> EncodeRead(
       const learning::genomics::deepvariant::DeepVariantCall& dv_call,
-      const string& ref_bases, const nucleus::genomics::v1::Read& read,
+      absl::string_view ref_bases, const nucleus::genomics::v1::Read& read,
       int image_start_pos, const std::vector<std::string>& alt_alleles,
-      absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank =
-          {});
+      absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank = {});
 
   // Simple wrapper around EncodeRead that allows us to efficiently pass large
   // protobufs in from Python. Simply unwraps the ConstProtoPtr objects and

@@ -48,6 +48,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -270,8 +271,9 @@ int PileupImageEncoderNative::GetHapIndex(const Read& read) {
 }
 
 std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
-    const DeepVariantCall& dv_call, const string& ref_bases, const Read& read,
-    int image_start_pos, const vector<std::string>& alt_alleles,
+    const DeepVariantCall& dv_call, absl::string_view ref_bases,
+    const Read& read, int image_start_pos,
+    const vector<std::string>& alt_alleles,
     const absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank) {
   int num_channels = AllChannelsEnum("").size();
   ImageRow img_row(ref_bases.size(), num_channels);
