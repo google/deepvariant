@@ -98,8 +98,10 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Model hyperparameters
   model_params = ml_collections.ConfigDict()
   model_params.activation = "relu"
-  model_params.hidden_layer_sizes = (100, 100)
+  model_params.hidden_layer_sizes = (200, 100, 200)
   model_params.optimizer = "adam"
+  model_params.features = ()
+  model_params.vaf_context_window_size = 11
 
   # Training parameters
   config = ml_collections.ConfigDict()

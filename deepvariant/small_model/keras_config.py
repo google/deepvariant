@@ -92,7 +92,13 @@ def keras_model_metrics() -> list[tf.keras.metrics.Metric]:
 def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
   """Creates a Keras MLP model."""
   model = tf.keras.Sequential()
-  input_shape = len(make_small_model_examples.MODEL_FEATURES)
+  input_shape = len(
+      make_small_model_examples.SmallModelExampleFactory(
+          vaf_context_window_size=model_params.vaf_context_window_size
+      ).inference_features
+  )
+  if model_params.features:
+    input_shape = len(model_params.features)
   hidden_layers = model_params.hidden_layer_sizes
   model.add(
       tf.keras.layers.Dense(
@@ -120,9 +126,6 @@ def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
 
 def load_keras_model(checkpoint_path: str) -> tf.keras.Model:
   """Loads a Keras model from the given checkpoint path."""
-  # return tf.saved_model.load(checkpoint_path)
-  # tf.train.Checkpoint(checkpoint_path).restore(checkpoint_path)
-  # return tf.saved_model.load(checkpoint_path)
   return tf.keras.models.load_model(checkpoint_path)
 
 

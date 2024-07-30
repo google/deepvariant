@@ -44,8 +44,9 @@ namespace deepvariant {
 using std::string;
 
 // Creates an allele with the provided bases, type, and count.
-Allele MakeAllele(absl::string_view bases, const AlleleType type,
-                  const int count, const bool is_low_quality = false);
+Allele MakeAllele(absl::string_view bases, AlleleType type, int count,
+                  bool is_low_quality = false, int mapping_quality = 0,
+                  int avg_base_quality = 0);
 
 // First simplifies ref and alt by removing the common suffix, and the returns
 // simplified_ref->simplified_alt.

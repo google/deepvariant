@@ -989,13 +989,16 @@ TEST_F(AlleleCounterTest, TestAlleleSamplSupport_one_read_per_sample) {
   auto exptected_sample_alleles =
       expected_allele_count.mutable_sample_alleles();
   Allele* new_allele = (*exptected_sample_alleles)["sample_1"].add_alleles();
-  new_allele->MergeFrom(MakeAllele("T", AlleleType::SUBSTITUTION, 1));
+  new_allele->MergeFrom(
+      MakeAllele("T", AlleleType::SUBSTITUTION, 1, false, 90, 30));
 
   new_allele = (*exptected_sample_alleles)["sample_2"].add_alleles();
-  new_allele->MergeFrom(MakeAllele("A", AlleleType::SUBSTITUTION, 1));
+  new_allele->MergeFrom(
+      MakeAllele("A", AlleleType::SUBSTITUTION, 1, false, 90, 30));
 
   new_allele = (*exptected_sample_alleles)["sample_3"].add_alleles();
-  new_allele->MergeFrom(MakeAllele("G", AlleleType::SUBSTITUTION, 1));
+  new_allele->MergeFrom(
+      MakeAllele("G", AlleleType::SUBSTITUTION, 1, false, 90, 30));
 
   // Get allele count for the variant at position 2.
   auto allele_count = allele_counter->Counts()[2];
@@ -1033,13 +1036,16 @@ TEST_F(AlleleCounterTest, TestAlleleSamplSupport_one_sample_three_reads) {
   auto exptected_sample_alleles =
       expected_allele_count.mutable_sample_alleles();
   Allele* new_allele = (*exptected_sample_alleles)["sample_1"].add_alleles();
-  new_allele->MergeFrom(MakeAllele("T", AlleleType::SUBSTITUTION, 1));
+  new_allele->MergeFrom(
+      MakeAllele("T", AlleleType::SUBSTITUTION, 1, false, 90, 30));
 
   new_allele = (*exptected_sample_alleles)["sample_1"].add_alleles();
-  new_allele->MergeFrom(MakeAllele("A", AlleleType::SUBSTITUTION, 1));
+  new_allele->MergeFrom(
+      MakeAllele("A", AlleleType::SUBSTITUTION, 1, false, 90, 30));
 
   new_allele = (*exptected_sample_alleles)["sample_1"].add_alleles();
-  new_allele->MergeFrom(MakeAllele("G", AlleleType::SUBSTITUTION, 1));
+  new_allele->MergeFrom(
+      MakeAllele("G", AlleleType::SUBSTITUTION, 1, false, 90, 30));
 
   // Get allele count for the variant at position 2.
   auto allele_count = allele_counter->Counts()[2];

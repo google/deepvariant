@@ -150,7 +150,7 @@ Variant WithCounts(const Variant& base_variant, const std::vector<int>& ad,
 }
 
 // Test max_fraction_snps_for_non_target_sample.
-TEST(VariantCallingSomaicTest, TestCallVariantWithMaxFractionForNormal) {
+TEST(VariantCallingSomaticTest, TestCallVariantWithMaxFractionForNormal) {
   // Tumor:
   // SNP A -> T with 19 reads support and 1 reads ref support
   //

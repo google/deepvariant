@@ -178,7 +178,8 @@ class VariantCaller {
       const std::string& target_sample,
       std::optional<T> (VariantCaller::*F)(
           const absl::node_hash_map<std::string, AlleleCount>&,
-          const std::string&) const) const;
+          const std::string&, const std::vector<AlleleCount>*,
+          std::vector<AlleleCount>::const_iterator*) const) const;
   // Primary interface function for calling variants.
   //
   // Looks at the alleles in the provided AlleleCount proto and returns
@@ -191,12 +192,23 @@ class VariantCaller {
   // (diploid no-call).
   std::optional<DeepVariantCall> CallVariant(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-      const std::string& target_sample) const;
+      const std::string& target_sample,
+      const std::vector<AlleleCount>* target_sample_allele_counts = nullptr,
+      std::vector<AlleleCount>::const_iterator*
+          target_sample_allele_count_iterator = nullptr) const;
 
   // Adds supporting reads to the DeepVariantCall.
   void AddSupportingReads(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
       const AlleleMap& allele_map, const std::string& target_sample,
+      DeepVariantCall* call) const;
+
+  // Adds allele counts in window around the position of the DeepVariantCall.
+  void AddAdjacentAlleleFractionsAtPosition(
+      int window_size,
+      const std::vector<AlleleCount>& target_sample_allele_counts,
+      std::vector<AlleleCount>::const_iterator
+          target_sample_allele_count_iterator,
       DeepVariantCall* call) const;
 
  private:
@@ -232,7 +244,10 @@ class VariantCaller {
   // function returns a position of the candidate.
   std::optional<int> CallVariantPosition(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-      const std::string& target_sample) const;
+      const std::string& target_sample,
+      const std::vector<AlleleCount>* target_sample_allele_counts = nullptr,
+      std::vector<AlleleCount>::const_iterator*
+          target_sample_allele_count_iterator = nullptr) const;
 
   const VariantCallerOptions options_;
 

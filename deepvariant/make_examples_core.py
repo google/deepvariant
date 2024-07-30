@@ -209,6 +209,7 @@ def make_vc_options(
       skip_uncalled_genotypes=flags_obj.mode == 'training',
       phase_reads_region_padding_pct=dv_constants.PHASE_READS_REGION_PADDING_PCT,
       track_ref_reads=flags_obj.track_ref_reads,
+      small_model_vaf_context_window_size=flags_obj.small_model_vaf_context_window_size,
   )
 
 
@@ -1050,6 +1051,11 @@ class OutputsWriter:
     ]
     self._writers = {k: None for k in outputs}
     self.examples_filename = None
+    self.make_small_model_examples = (
+        make_small_model_examples.SmallModelExampleFactory(
+            options.small_model_vaf_context_window_size
+        )
+    )
 
     if options.candidates_filename:
       self._add_writer(
@@ -1110,7 +1116,7 @@ class OutputsWriter:
       writer = self._writers['small_model_examples']
       if writer is not None:
         writer.__enter__()
-        columns = make_small_model_examples.get_example_feature_columns()
+        columns = self.make_small_model_examples.training_features
         writer.write('\t'.join(columns) + '\n')
 
     self._deterministic_serialization = options.deterministic_serialization
@@ -1278,6 +1284,11 @@ class RegionProcessor:
               batch_size=self.options.small_model_inference_batch_size,
           )
       )
+    self.make_small_model_examples = (
+        make_small_model_examples.SmallModelExampleFactory(
+            self.options.small_model_vaf_context_window_size
+        )
+    )
 
   def _get_mean_coverage_per_sample(self) -> List[float]:
     """Returns the mean coverage per sample if set in options.
@@ -1680,8 +1691,10 @@ class RegionProcessor:
           'Writing small model examples is only supported in training mode.'
       )
 
-    small_model_examples = make_small_model_examples.generate_training_examples(
-        list(self.label_candidates(candidates, region))
+    small_model_examples = (
+        self.make_small_model_examples.encode_training_examples(
+            list(self.label_candidates(candidates, region))
+        )
     )
     writer.write_small_model_examples(*small_model_examples)
 
@@ -1713,7 +1726,7 @@ class RegionProcessor:
 
     # skip candidates not suitable for the small model, e.g. indels.
     skipped_candidates, kept_candidates, examples = (
-        make_small_model_examples.generate_inference_examples(candidates)
+        self.make_small_model_examples.encode_inference_examples(candidates)
     )
     runtimes['small model generate examples'] = trim_runtime(
         time.time() - before_generate_small_model_examples
@@ -1740,7 +1753,8 @@ class RegionProcessor:
         time.time() - before_generate_small_model_examples
     )
     # pass skipped and filtered candidates to the large model
-    return list(skipped_candidates) + list(filtered_candidates)
+    skipped_candidates.extend(filtered_candidates)
+    return skipped_candidates
 
   def find_candidate_positions(self, region: range_pb2.Range) -> Iterator[int]:
     """Finds all candidate positions within a given region."""

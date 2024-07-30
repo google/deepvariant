@@ -91,6 +91,10 @@ message Allele {
 
   // Set to true if allele contains low quality bases.
   bool is_low_quality = 4;
+
+  int32 mapping_quality = 5;
+
+  int32 avg_base_quality = 6;
 }
 
 // An AlleleCount summarizes the NGS data observed at a position in the genome.
@@ -272,6 +276,8 @@ message DeepVariantCall {
   message ReadSupport {
     string read_name = 1;
     bool is_low_quality = 2;
+    int32 mapping_quality = 3;
+    int32 average_base_quality = 4;
   }
   // A map from alt allele in Variant to ReadSupport structure. This structrue
   // is to replace SupportingReads but for back a backward compatibility old
@@ -285,11 +291,8 @@ message DeepVariantCall {
 
   SupportingReadsExt ref_support_ext = 6;
 
-  // This is to see if candidate is called by small model.
-  bool is_small_model_callable = 7;
-
-  // This is to see if small model's gq was above the confidence threshold.
-  bool is_small_model_above_confidence_threshold = 8;
+  // Map of VAF at a given +/- position relative to the variant.
+  map<int32, int32> allele_frequency_at_position = 7;
 }
 
 // Options to control how our AlleleCounter code works.
@@ -365,7 +368,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 18
+// Next ID: 19
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -424,6 +427,9 @@ message VariantCallerOptions {
   bool track_ref_reads = 14;
 
   int32 phase_reads_region_padding_pct = 15;
+
+  // Small model context window size
+  int32 small_model_vaf_context_window_size = 18;
 }
 
 // Options to control how we label variant calls.
@@ -637,7 +643,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 77.
+// Next ID: 78.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -875,6 +881,8 @@ message MakeExamplesOptions {
   string trained_small_model_path = 66;
   // Batch size to use during inference
   int32 small_model_inference_batch_size = 76;
+  // Small model context window size
+  int32 small_model_vaf_context_window_size = 77;
 
   // Following 3 attribute are for the fast pipeline.
 

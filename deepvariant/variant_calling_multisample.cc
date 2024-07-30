@@ -34,6 +34,7 @@
 #include <stdlib.h>
 
 #include <algorithm>
+#include <iterator>
 #include <map>
 #include <numeric>
 #include <optional>
@@ -438,7 +439,8 @@ std::vector<T> VariantCaller::AlleleCountsGenerator(
     const std::string& target_sample,
     std::optional<T> (VariantCaller::*F)(
         const absl::node_hash_map<std::string, AlleleCount>&,
-        const std::string&) const) const {
+        const std::string&, const std::vector<AlleleCount>*,
+        std::vector<AlleleCount>::const_iterator*) const) const {
   // Get Allele counts for the target sample
   auto it = allele_counters.find(target_sample);
   if (it == allele_counters.end()) {
@@ -477,7 +479,9 @@ std::vector<T> VariantCaller::AlleleCountsGenerator(
     }
     // Calling CallVariant for one position. allele_counts_per_sample contains
     // AlleleCount object for this position for each sample.
-    std::optional<T> item = (this->*F)(allele_counts_per_sample, target_sample);
+    std::optional<T> item = (this->*F)(
+        allele_counts_per_sample, target_sample, &target_sample_allele_counts,
+        &allele_counter_iterators[target_sample]);
     if (item) {
       items.push_back(*item);
     }
@@ -508,7 +512,10 @@ std::vector<int> VariantCaller::CallPositionsFromAlleleCounts(
 
 std::optional<int> VariantCaller::CallVariantPosition(
     const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    const std::string& target_sample) const {
+    const std::string& target_sample,
+    const std::vector<AlleleCount>* target_sample_allele_counts,
+    std::vector<AlleleCount>::const_iterator*
+        target_sample_allele_count_iterator) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
   const AlleleCount& target_sample_allele_count =
@@ -529,7 +536,10 @@ std::optional<int> VariantCaller::CallVariantPosition(
 
 std::optional<DeepVariantCall> VariantCaller::CallVariant(
     const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    const std::string& target_sample) const {
+    const std::string& target_sample,
+    const std::vector<AlleleCount>* target_sample_allele_counts,
+    std::vector<AlleleCount>::const_iterator*
+        target_sample_allele_count_iterator) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
   const AlleleCount& target_sample_allele_count =
@@ -579,6 +589,13 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
 
   AddReadDepths(target_sample_allele_count, allele_map, variant);
   AddSupportingReads(allele_counts, allele_map, target_sample, &call);
+  if (options_.small_model_vaf_context_window_size() > 0) {
+    AddAdjacentAlleleFractionsAtPosition(
+        options_.small_model_vaf_context_window_size(),
+        *target_sample_allele_counts, *target_sample_allele_count_iterator,
+        &call);
+  }
+
   return std::make_optional(call);
 }
 
@@ -632,6 +649,8 @@ void VariantCaller::AddSupportingReads(
         DeepVariantCall_ReadSupport* read_info = support_infos.add_read_infos();
         read_info->set_read_name(read_name);
         read_info->set_is_low_quality(allele.is_low_quality());
+        read_info->set_mapping_quality(allele.mapping_quality());
+        read_info->set_average_base_quality(allele.avg_base_quality());
       } else {
         call->add_ref_support(read_name);
         DeepVariantCall_SupportingReadsExt& support_infos =
@@ -642,8 +661,37 @@ void VariantCaller::AddSupportingReads(
 
         read_info->set_read_name(read_name);
         read_info->set_is_low_quality(allele.is_low_quality());
+        read_info->set_mapping_quality(allele.mapping_quality());
+        read_info->set_average_base_quality(allele.avg_base_quality());
       }
     }
+  }
+}
+
+void VariantCaller::AddAdjacentAlleleFractionsAtPosition(
+    const int window_size,
+    const std::vector<AlleleCount>& target_sample_allele_counts,
+    std::vector<AlleleCount>::const_iterator
+        target_sample_allele_count_iterator,
+    DeepVariantCall* call) const {
+  int index = std::distance(target_sample_allele_counts.begin(),
+                            target_sample_allele_count_iterator);
+  int half_window_size = window_size / 2;
+  int start = std::min(index, half_window_size);
+  int end = std::min((int)target_sample_allele_counts.size() - index,
+                     half_window_size + 1);
+  const std::vector<AlleleCount>& context_allele_counts = {
+      target_sample_allele_count_iterator - start,
+      target_sample_allele_count_iterator + end};
+  for (const auto& context_allele_count : context_allele_counts) {
+    int depth = context_allele_count.ref_supporting_read_count() +
+                context_allele_count.read_alleles_size();
+    int vaf = 0;
+    if (depth > 0) {
+      vaf = (100 * context_allele_count.read_alleles_size()) / depth;
+    }
+    (*call->mutable_allele_frequency_at_position())
+        [context_allele_count.position().position()] = vaf;
   }
 }
 

@@ -50,6 +50,10 @@ TEST(UtilsTest, TestMakeAllele) {
               EqualsProto("bases: \"A\" type: REFERENCE count: 1"));
   EXPECT_THAT(MakeAllele("AC", AlleleType::INSERTION, 10),
               EqualsProto("bases: \"AC\" type: INSERTION count: 10"));
+  EXPECT_THAT(
+      MakeAllele("AC", AlleleType::INSERTION, 10, true, 90, 5),
+      EqualsProto("bases: \"AC\" type: INSERTION count: 10 is_low_quality: "
+                  "true mapping_quality: 90 avg_base_quality: 5"));
 }
 
 TEST(UtilsTest, TestSimplifyRefAlt) {

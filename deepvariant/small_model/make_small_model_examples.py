@@ -29,7 +29,8 @@
 """Module for generating small model examples."""
 
 import enum
-from typing import Sequence, Tuple, Union
+import re
+from typing import List, Sequence, Tuple, Union
 
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
@@ -51,13 +52,17 @@ class SmallModelFeature(enum.Enum):
   END = 'end'
   REF = 'ref'
   ALT_1 = 'alt_1'
+  # Truth feature
+  GENOTYPE = 'genotype'
   # Features passed to the model
   NUM_READS_SUPPORTS_REF = 'num_reads_supports_ref'
   NUM_READS_SUPPORTS_ALT_1 = 'num_reads_supports_alt_1'
   TOTAL_DEPTH = 'total_depth'
   VARIANT_ALLELE_FREQUENCY_1 = 'variant_allele_frequency_1'
-  # Truth feature
-  GENOTYPE = 'genotype'
+  REF_MAPPING_QUALITY = 'ref_mapping_quality'
+  ALT_1_MAPPING_QUALITY = 'alt_1_mapping_quality'
+  REF_BASE_QUALITY = 'ref_base_quality'
+  ALT_1_BASE_QUALITY = 'alt_1_base_quality'
 
 
 IDENTIFYING_FEATURES = (
@@ -68,12 +73,7 @@ IDENTIFYING_FEATURES = (
     SmallModelFeature.ALT_1,
 )
 TRUTH_FEATURE = SmallModelFeature.GENOTYPE
-MODEL_FEATURES = [
-    feature
-    for feature in SmallModelFeature
-    if feature not in IDENTIFYING_FEATURES and feature != TRUTH_FEATURE
-]
-
+VARIANT_ALLELE_FREQUENCY_AT_PREFIX = 'variant_allele_frequency_at'
 
 ENCODING_BY_GENOTYPE = {
     (0, 0): GenotypeEncoding.REF.value,
@@ -138,6 +138,59 @@ def _get_variant_allele_frequency_1(
   )
 
 
+def _get_ref_mapping_quality(candidate: deepvariant_pb2.DeepVariantCall) -> int:
+  """Returns the mapping quality of the candidate."""
+  read_infos = candidate.ref_support_ext.read_infos
+  if not read_infos:
+    return 0
+  return sum(r.mapping_quality for r in read_infos) // len(read_infos)
+
+
+def _get_alt_1_mapping_quality(
+    candidate: deepvariant_pb2.DeepVariantCall,
+) -> int:
+  """Returns the mapping quality of the candidate."""
+  alt_base = candidate.variant.alternate_bases[0]
+  read_infos = []
+  if alt_base in candidate.allele_support_ext:
+    read_infos = candidate.allele_support_ext[alt_base].read_infos
+  if not read_infos:
+    return 0
+  return sum(r.mapping_quality for r in read_infos) // len(read_infos)
+
+
+def _get_ref_base_quality(candidate: deepvariant_pb2.DeepVariantCall) -> int:
+  """Returns the mapping quality of the candidate."""
+  read_infos = candidate.ref_support_ext.read_infos
+  if not read_infos:
+    return 0
+  return sum(r.average_base_quality for r in read_infos) // len(read_infos)
+
+
+def _get_alt_1_base_quality(
+    candidate: deepvariant_pb2.DeepVariantCall,
+) -> int:
+  """Returns the mapping quality of the candidate."""
+  alt_base = candidate.variant.alternate_bases[0]
+  read_infos = []
+  if alt_base in candidate.allele_support_ext:
+    read_infos = candidate.allele_support_ext[alt_base].read_infos
+  if not read_infos:
+    return 0
+  return sum(r.average_base_quality for r in read_infos) // len(read_infos)
+
+
+def _get_variant_allele_frequency_at_position(
+    feature_name: str,
+    candidate: deepvariant_pb2.DeepVariantCall,
+) -> int:
+  """Returns the VAF for the candidate at the given position."""
+  offset = int(re.findall('[0-9]+', feature_name)[0])
+  plus_or_minus = -1 if 'minus' in feature_name else 1
+  position = candidate.variant.start + (plus_or_minus * offset)
+  return candidate.allele_frequency_at_position.get(position, 0)
+
+
 def _pass_candidate_to_small_model(
     candidate: deepvariant_pb2.DeepVariantCall,
 ) -> bool:
@@ -149,7 +202,7 @@ def _pass_candidate_to_small_model(
 
 
 def encode_feature(
-    feature: SmallModelFeature,
+    feature: str,
     candidate: deepvariant_pb2.DeepVariantCall,
     label: Union[variant_labeler.VariantLabel, None],
 ) -> Union[int, str]:
@@ -163,93 +216,128 @@ def encode_feature(
   Returns:
     The extracted value for that feature for the candidate.
   """
-  if feature == SmallModelFeature.CONTIG:
+  if feature == SmallModelFeature.CONTIG.value:
     return _get_contig(candidate)
-  elif feature == SmallModelFeature.START:
+  elif feature == SmallModelFeature.START.value:
     return _get_start(candidate)
-  elif feature == SmallModelFeature.END:
+  elif feature == SmallModelFeature.END.value:
     return _get_end(candidate)
-  elif feature == SmallModelFeature.REF:
+  elif feature == SmallModelFeature.REF.value:
     return _get_ref(candidate)
-  elif feature == SmallModelFeature.ALT_1:
+  elif feature == SmallModelFeature.ALT_1.value:
     return _get_alt_1(candidate)
-  elif feature == SmallModelFeature.NUM_READS_SUPPORTS_REF:
+  elif feature == SmallModelFeature.NUM_READS_SUPPORTS_REF.value:
     return _get_num_reads_supports_ref(candidate)
-  elif feature == SmallModelFeature.NUM_READS_SUPPORTS_ALT_1:
+  elif feature == SmallModelFeature.NUM_READS_SUPPORTS_ALT_1.value:
     return _get_num_reads_supports_alt_1(candidate)
-  elif feature == SmallModelFeature.TOTAL_DEPTH:
+  elif feature == SmallModelFeature.TOTAL_DEPTH.value:
     return _get_total_depth(candidate)
-  elif feature == SmallModelFeature.VARIANT_ALLELE_FREQUENCY_1:
+  elif feature == SmallModelFeature.VARIANT_ALLELE_FREQUENCY_1.value:
     return _get_variant_allele_frequency_1(candidate)
-  elif feature == SmallModelFeature.GENOTYPE and label:
+  elif feature == SmallModelFeature.REF_MAPPING_QUALITY.value:
+    return _get_ref_mapping_quality(candidate)
+  elif feature == SmallModelFeature.ALT_1_MAPPING_QUALITY.value:
+    return _get_alt_1_mapping_quality(candidate)
+  elif feature == SmallModelFeature.REF_BASE_QUALITY.value:
+    return _get_ref_base_quality(candidate)
+  elif feature == SmallModelFeature.ALT_1_BASE_QUALITY.value:
+    return _get_alt_1_base_quality(candidate)
+  elif feature.startswith(VARIANT_ALLELE_FREQUENCY_AT_PREFIX):
+    return _get_variant_allele_frequency_at_position(feature, candidate)
+  elif feature == SmallModelFeature.GENOTYPE.value and label:
     return ENCODING_BY_GENOTYPE[label.genotype]
   else:
     raise ValueError(f'{feature} does not map to a callable.')
 
 
-def get_example_feature_columns() -> Sequence[str]:
-  """Produces an ordered list of all feature as columns in TSV example.
+class SmallModelExampleFactory:
+  """Class for making small model examples."""
 
-  Returns:
-    A list of feature names.
-  """
-  return [f.value for f in SmallModelFeature]
-
-
-def generate_training_examples(
-    candidates_with_label: Sequence[
-        Tuple[deepvariant_pb2.DeepVariantCall, variant_labeler.VariantLabel]
-    ],
-) -> Sequence[Sequence[Union[str, int]]]:
-  """Generates examples from the given candidates for training.
-
-  Args:
-    candidates_with_label: List of candidates with labels to be processed into
-      examples.
-
-  Returns:
-    A list of encoded candidate examples.
-  """
-  candidate_examples = []
-  for candidate, label in candidates_with_label:
-    if not _pass_candidate_to_small_model(candidate):
-      continue
-    candidate_example = [
-        encode_feature(feature, candidate, label)
+  def __init__(self, vaf_context_window_size: int):
+    context_vaf_features = self._get_context_vaf_features(
+        vaf_context_window_size
+    )
+    self.training_features = [f.value for f in SmallModelFeature]
+    self.inference_features = [
+        feature.value
         for feature in SmallModelFeature
+        if feature not in IDENTIFYING_FEATURES and feature != TRUTH_FEATURE
     ]
-    candidate_examples.append(candidate_example)
-  return candidate_examples
+    self.inference_features.extend(context_vaf_features)
+    self.training_features.extend(context_vaf_features)
 
+  def _get_context_vaf_features(
+      self,
+      vaf_context_window_size: int,
+  ) -> List[str]:
+    """Adds context VAF to model_features based on the window size."""
+    if not vaf_context_window_size:
+      return []
+    half_window_size = vaf_context_window_size // 2
+    context_vaf_features = []
+    for offset in range(-half_window_size, half_window_size + 1):
+      prefix = 'minus' if offset < 0 else 'plus'
+      context_vaf_features.append(
+          f'{VARIANT_ALLELE_FREQUENCY_AT_PREFIX}_{prefix}_{abs(offset)}'
+      )
+    return context_vaf_features
 
-def generate_inference_examples(
-    candidates: Sequence[deepvariant_pb2.DeepVariantCall],
-) -> Tuple[
-    Sequence[deepvariant_pb2.DeepVariantCall],
-    Sequence[deepvariant_pb2.DeepVariantCall],
-    Sequence[Sequence[Union[str, int]]],
-]:
-  """Generates examples from the given candidates for inference.
+  def encode_training_examples(
+      self,
+      candidates_with_label: Sequence[
+          Tuple[deepvariant_pb2.DeepVariantCall, variant_labeler.VariantLabel]
+      ],
+  ) -> Sequence[Sequence[Union[str, int]]]:
+    """Generates examples from the given candidates for training.
 
-  Args:
-    candidates: List of candidates to be processed into a summary.
+    Args:
+      candidates_with_label: List of candidates with labels to be processed into
+        examples.
 
-  Returns:
-    A tuple containing:
-      A list of all candidates that were skipped.
-      A list of all candidates for which examples were generated.
+    Returns:
       A list of encoded candidate examples.
-  """
-  skipped_candidates = []
-  kept_candidates = []
-  examples = []
-  for candidate in candidates:
-    if not _pass_candidate_to_small_model(candidate):
-      skipped_candidates.append(candidate)
-      continue
-    kept_candidates.append(candidate)
-    candidate_example = [
-        encode_feature(feature, candidate, None) for feature in MODEL_FEATURES
-    ]
-    examples.append(candidate_example)
-  return skipped_candidates, kept_candidates, examples
+    """
+    candidate_examples = []
+    for candidate, label in candidates_with_label:
+      if not _pass_candidate_to_small_model(candidate):
+        continue
+      candidate_example = [
+          encode_feature(feature, candidate, label)
+          for feature in self.training_features
+      ]
+      candidate_examples.append(candidate_example)
+    return candidate_examples
+
+  def encode_inference_examples(
+      self,
+      candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+  ) -> Tuple[
+      List[deepvariant_pb2.DeepVariantCall],
+      List[deepvariant_pb2.DeepVariantCall],
+      List[Sequence[Union[str, int]]],
+  ]:
+    """Generates examples from the given candidates for inference.
+
+    Args:
+      candidates: List of candidates to be processed into a summary.
+
+    Returns:
+      A tuple containing:
+        A list of all candidates that were skipped.
+        A list of all candidates for which examples were generated.
+        A list of encoded candidate examples.
+    """
+    skipped_candidates = []
+    kept_candidates = []
+    examples = []
+    for candidate in candidates:
+      if not _pass_candidate_to_small_model(candidate):
+        skipped_candidates.append(candidate)
+        continue
+      kept_candidates.append(candidate)
+      candidate_example = [
+          encode_feature(feature, candidate, None)
+          for feature in self.inference_features
+      ]
+      examples.append(candidate_example)
+    return skipped_candidates, kept_candidates, examples

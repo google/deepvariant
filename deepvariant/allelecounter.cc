@@ -225,6 +225,19 @@ bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
   return true;
 }
 
+// Returns the average base quality of the bases from offset to offset+len.
+int GetAvgBaseQuality(const nucleus::genomics::v1::Read& read,
+                      CigarUnit cigar_op, int offset, int len) {
+  int indel_base_quality = 0;
+  if (cigar_op.operation() == CigarUnit::DELETE) {
+    return 0;
+  }
+  for (int i = 0; i < len; i++) {
+    indel_base_quality += read.aligned_quality(offset + i);
+  }
+  return indel_base_quality / std::max(1, len);
+}
+
 bool allele_pos_cmp(const AlleleCount& allele_count, int64_t pos) {
   return allele_count.position().position() < pos;
 }
@@ -393,9 +406,10 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
     default:
       LOG(FATAL) << "Unexpected cigar operation: " << cigar.DebugString();
   }
-
+  int avg_base_quality = GetAvgBaseQuality(read, cigar, read_offset, op_len);
   return ReadAllele(interval_offset - 1, StrCat(prev_base, bases), type,
-                    is_low_quality_read_allele);
+                    is_low_quality_read_allele,
+                    read.alignment().mapping_quality(), avg_base_quality);
 }
 
 void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
@@ -440,8 +454,9 @@ void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
       auto* read_alleles = allele_count.mutable_read_alleles();
       auto* sample_alleles = allele_count.mutable_sample_alleles();
       const string key = ReadKey(read);
-      const Allele allele = MakeAllele(to_add_i.bases(), to_add_i.type(), 1,
-                                       to_add_i.is_low_quality());
+      const Allele allele = MakeAllele(
+          to_add_i.bases(), to_add_i.type(), 1, to_add_i.is_low_quality(),
+          to_add_i.mapping_quality(), to_add_i.avg_base_quality());
 
       // Naively, there should never be multiple counts for the same read key.
       // We detect such a situation here but only write out a warning. It would
@@ -834,7 +849,9 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
                     : AlleleType::SUBSTITUTION;
             to_add.emplace_back(interval_offset + i,
                                 string(read_seq.substr(base_offset, 1)), type,
-                                is_low_quality_read_allele);
+                                is_low_quality_read_allele,
+                                read.alignment().mapping_quality(),
+                                read.aligned_quality(base_offset));
           }
         }
         read_offset += op_len;

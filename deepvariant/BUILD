@@ -221,6 +221,24 @@ cc_library(
 )
 
 cc_test(
+    name = "variant_calling_multisample_test",
+    size = "small",
+    srcs = ["variant_calling_multisample_test.cc"],
+    deps = [
+        ":utils",
+        ":variant_calling_multisample",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_test(
     name = "variant_calling_multisample_somatic_test",
     size = "small",
     srcs = ["variant_calling_multisample_somatic_test.cc"],
