@@ -50,18 +50,15 @@ class Filter : public StripedSmithWaterman::Filter {
  public:
   Filter();
 
-  Filter(const bool& pos, const bool& cigar,
-         const uint16_t& score, const uint16_t& dis);
+  Filter(const bool& pos, const bool& cigar, uint16_t score, uint16_t dis);
 };
 
 class Aligner : public StripedSmithWaterman::Aligner {
  public:
   Aligner();
 
-  Aligner(const uint8_t& match_score,
-          const uint8_t& mismatch_penalty,
-          const uint8_t& gap_opening_penalty,
-          const uint8_t& gap_extending_penalty);
+  Aligner(uint8_t match_score, uint8_t mismatch_penalty,
+          uint8_t gap_opening_penalty, uint8_t gap_extending_penalty);
 
   int SetReferenceSequence(const string& reference);
 

@@ -43,23 +43,20 @@ Filter::Filter()
     {}
 
 // NOLINTNEXTLINE: const bool& is silly; just mirroring the API in superclass.
-Filter::Filter(const bool& pos, const bool& cigar,
-               const uint16_t& score, const uint16_t& dis)
-    : StripedSmithWaterman::Filter(pos, cigar, score, dis)
-    {}
+Filter::Filter(const bool& pos, const bool& cigar, const uint16_t score,
+               const uint16_t dis)
+    : StripedSmithWaterman::Filter(pos, cigar, score, dis) {}
 
 Aligner::Aligner()
     : StripedSmithWaterman::Aligner()
     {}
 
-Aligner::Aligner(const uint8_t& match_score,
-                 const uint8_t& mismatch_penalty,
-                 const uint8_t& gap_opening_penalty,
-                 const uint8_t& gap_extending_penalty)
+Aligner::Aligner(const uint8_t match_score, const uint8_t mismatch_penalty,
+                 const uint8_t gap_opening_penalty,
+                 const uint8_t gap_extending_penalty)
     : StripedSmithWaterman::Aligner(match_score, mismatch_penalty,
-                                    gap_opening_penalty, gap_extending_penalty)
-    {}
-
+                                    gap_opening_penalty,
+                                    gap_extending_penalty) {}
 
 int Aligner::SetReferenceSequence(const string& reference) {
   return StripedSmithWaterman::Aligner::SetReferenceSequence(
