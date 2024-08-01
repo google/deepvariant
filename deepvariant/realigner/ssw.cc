@@ -30,6 +30,7 @@
  */
 
 #include "deepvariant/realigner/ssw.h"
+
 #include "src/ssw_cpp.h"
 
 namespace learning {
