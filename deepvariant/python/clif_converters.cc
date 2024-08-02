@@ -73,7 +73,7 @@ PyObject* Clif_PyObjFrom(std::unique_ptr<ImageRow> img_row,
   PyArrayObject* res =
       reinterpret_cast<PyArrayObject*>(PyArray_SimpleNew(3, dims, NPY_UBYTE));
   CHECK(res != nullptr);
-  unsigned char* data = reinterpret_cast<unsigned char*> PyArray_DATA(res);
+  unsigned char* data = reinterpret_cast<unsigned char*>(PyArray_DATA(res));
   unsigned char* cur = data;
 
   for (int i = 0; i < img_row->Width(); i++) {
