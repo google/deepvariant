@@ -581,6 +581,9 @@ void FastPassAligner::RealignReadsToReference(
       (*realigned_reads)->push_back(realigned_read);
     } else {  // Could not find a new alignment.
       if (force_alignment_) {
+        // Adding an empty read to the realigned_reads array to keep the indices
+        // consistent.
+        (*realigned_reads)->push_back(nucleus::genomics::v1::Read());
       } else {
         // Keeping original alignment (force_alignment is off).
         (*realigned_reads)->push_back(realigned_read);

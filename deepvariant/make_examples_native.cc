@@ -541,8 +541,19 @@ void ExamplesGenerator::CreateAltAlignedImages(
         *(this->ref_reader_), this->options_);
     std::vector<const Read*> realigned_reads_ptrs;
     realigned_reads_ptrs.reserve(realigned_reads.size());
+
+    // Some reads cannot be aligned to haplotype. In that case empty read is
+    // inserted in realigned_reads vector. We need to remove those and modify
+    // original_start_positions accordingly.
+    int index = 0;
+    std::vector<int64_t> start_positions_after_realignment;
     for (const auto& read : realigned_reads) {
-      realigned_reads_ptrs.push_back(&read);
+      if (!read.aligned_sequence().empty()) {
+        realigned_reads_ptrs.push_back(&read);
+        start_positions_after_realignment.push_back(
+            original_start_positions->at(index));
+      }
+      index++;
     }
     // Build alt pileup with all channels. Although, we only need one
     // channel it is easier to call BuildPileupForOneSample for all
@@ -563,7 +574,7 @@ void ExamplesGenerator::CreateAltAlignedImages(
         candidate, haplotype.substr(0, options_.pic_options().width()),
         realigned_reads_ptrs, image_start_pos, alt_combination,
         options_.sample_options(sample_order), mean_coverage,
-        original_start_positions, blank_channels_set);
+        &start_positions_after_realignment, blank_channels_set);
     // move alt_image to alt_images[2] array.
     for (auto& row : alt_image) {
       alt_images[alt_image_num].push_back(std::move(row));
