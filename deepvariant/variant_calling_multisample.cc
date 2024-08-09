@@ -53,6 +53,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
@@ -108,7 +109,7 @@ int DeletionSize(const Allele& allele) {
 // use those bases as our reference.  And if there are multiple deletions
 // at a site, we need to use the longest deletion allele.
 std::string CalcRefBases(absl::string_view ref_bases,
-                         const std::vector<Allele>& alt_alleles) {
+                         absl::Span<const Allele> alt_alleles) {
   if (alt_alleles.empty()) {
     // We don't have any alternate alleles, so used the provided ref_bases.
     return std::string(ref_bases);
