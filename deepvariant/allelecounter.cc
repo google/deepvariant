@@ -413,7 +413,7 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
 }
 
 void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
-                                   const std::vector<ReadAllele>& to_add) {
+                                   absl::Span<const ReadAllele> to_add) {
   for (size_t i = 0; i < to_add.size(); ++i) {
     const ReadAllele& to_add_i = to_add[i];
 

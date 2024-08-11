@@ -401,7 +401,7 @@ class AlleleCounter {
   // Adds the ReadAlleles in to_add to our AlleleCounts.
   void AddReadAlleles(const nucleus::genomics::v1::Read& read,
                       absl::string_view sample,
-                      const std::vector<ReadAllele>& to_add);
+                      absl::Span<const ReadAllele> to_add);
 
   // Normalize cigar by shifting INDELs in the middle of a repeat all the way
   // to the left. As a result of shifting two INDELs may become merged. Merged
