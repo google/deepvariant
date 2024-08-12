@@ -641,8 +641,18 @@ def check_flags():
   """Additional logic to make sure flags are set appropriately."""
   if _CUSTOMIZED_MODEL.value is not None:
     if (
-        not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.data-00000-of-00001')
-        or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index')
+        # SavedModel path does not exist.
+        not tf.io.gfile.exists(
+            os.path.join(_CUSTOMIZED_MODEL.value, 'saved_model.pb')
+        )
+        and
+        # Checkpoint path does not exist.
+        (
+            not tf.io.gfile.exists(
+                _CUSTOMIZED_MODEL.value + '.data-00000-of-00001'
+            )
+            or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index')
+        )
     ):
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
