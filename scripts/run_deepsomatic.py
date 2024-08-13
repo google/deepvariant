@@ -463,7 +463,7 @@ def make_examples_somatic_command(
     special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
     special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
     special_args['population_vcfs'] = (
-        '/opt/models/deepsomatic/pons/AF_ilmn_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz'
+        '/opt/models/deepsomatic/pons/AF_ilmn_PON_DeepVariant.GRCh38.AF0.05.vcf.gz'
     )
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'WES':

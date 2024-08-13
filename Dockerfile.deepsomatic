@@ -195,8 +195,8 @@ RUN chmod -R +r /opt/models/deepsomatic/ont_tumor_only/*
 
 # PONs and AF VCF files
 WORKDIR /opt/models/deepsomatic/pons
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_ilmn_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz .
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_ilmn_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz.tbi .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_ilmn_PON_DeepVariant.GRCh38.AF0.05.vcf.gz .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_ilmn_PON_DeepVariant.GRCh38.AF0.05.vcf.gz.tbi .
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_pacbio_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz .
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_pacbio_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz.tbi .
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/PON_dbsnp138_gnomad_ILMN1000g_pon.vcf.gz .
