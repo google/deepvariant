@@ -211,6 +211,12 @@ _STREAM_EXAMPLES = flags.DEFINE_boolean(
     False,
     'If true, examples are streammed from make_example processes.',
 )
+_ALLOW_EMPTY_EXAMPLES = flags.DEFINE_boolean(
+    'allow_empty_examples',
+    False,
+    'If true, call_variants will not crash if the examples are empty. This can'
+    ' reasonably happen when the small model is used.',
+)
 
 
 class ExecutionHardwareError(Exception):
@@ -585,10 +591,27 @@ def post_processing(
   writer.close()
 
 
+def write_empty_output_file(examples_filename: str, output_file: str) -> None:
+  """Writes an empty output file."""
+  logging.warning(
+      'Unable to read any records from %s. Output shards will contain zero'
+      ' records.',
+      examples_filename,
+  )
+  # Write empty shards
+  total_writer_process = 1
+  output_file = output_file.replace(
+      '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
+  )
+  paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
+  for path in paths:
+    tfrecord.write_tfrecords([], path, compression_type='GZIP')
+
+
 def load_model_and_check_shape(
     checkpoint_path: str,
     examples_filename: str,
-    output_file: str,
+    first_example: Any,
     use_saved_model: bool,
     use_examples_from_stream: bool,
 ) -> tuple[Any, Any]:
@@ -597,25 +620,6 @@ def load_model_and_check_shape(
   example_shape = []
   example_info_json: str = ''
   if not use_examples_from_stream:
-    first_example = dv_utils.get_one_example_from_examples_path(
-        examples_filename
-    )
-    if first_example is None:
-      logging.warning(
-          'Unable to read any records from %s. Output shards will contain zero'
-          ' records.',
-          examples_filename,
-      )
-      # Write empty shards
-      total_writer_process = 1
-      output_file = output_file.replace(
-          '.tfrecord.gz', '@' + str(total_writer_process) + '.tfrecord.gz'
-      )
-      paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
-      for path in paths:
-        tfrecord.write_tfrecords([], path, compression_type='GZIP')
-      return example_shape, None
-
     example_info_json = dv_utils.get_example_info_json_filename(
         examples_filename, 0
     )
@@ -632,7 +636,7 @@ def load_model_and_check_shape(
           example_info_json,
       )
       example_shape = dv_utils.example_image_shape(first_example)
-  # end of (if use_examples_from_stream)
+  # end of (if not use_examples_from_stream)
 
   if use_saved_model:
     model = tf.saved_model.load(checkpoint_path)
@@ -719,8 +723,24 @@ def call_variants(
     use_dataset_from_stream: bool,
     shm_prefix: str,
     num_shards: int,
+    allow_empty_examples: bool,
 ):
   """Main driver of call_variants."""
+  first_example = None
+  if not use_dataset_from_stream:
+    first_example = dv_utils.get_one_example_from_examples_path(
+        examples_filename
+    )
+    if first_example is None:
+      write_empty_output_file(examples_filename, output_file)
+      if allow_empty_examples:
+        logging.info('Allowing empty examples. Exiting.')
+        return
+      else:
+        raise ValueError(
+            'Examples file is empty. If you want to allow empty examples,'
+            ' please set --allow_empty_examples to True.'
+        )
 
   # See if GPU is available
   is_gpu_available = True if tf.config.list_physical_devices('GPU') else False
@@ -783,7 +803,7 @@ def call_variants(
   example_shape, model = load_model_and_check_shape(
       checkpoint_path,
       examples_filename,
-      output_file,
+      first_example,
       use_saved_model,
       _STREAM_EXAMPLES.value,
   )
@@ -944,6 +964,7 @@ def main(argv=()):
         use_dataset_from_stream=_STREAM_EXAMPLES.value,
         shm_prefix=_SHM_PREFIX.value,
         num_shards=_NUM_INPUT_SHARDS.value,
+        allow_empty_examples=_ALLOW_EMPTY_EXAMPLES.value,
     )
     logging.info('Complete: call_variants.')
 

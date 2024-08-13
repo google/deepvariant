@@ -268,6 +268,45 @@ class CallVariantsTest(parameterized.TestCase):
 
     self.assertEqual(actual_value, expected_value)
 
+  @flagsaver.flagsaver
+  def test_call_variants_empty_examples(
+      self,
+  ):
+    # Load in test data and get input shape
+    calling_testdata_path = testdata.GOLDEN_CALLING_EMPTY_EXAMPLES
+
+    # set up output directory
+    output_dir = self.create_tempdir()
+    output_tfrecord = os.path.join(output_dir, "output.tfrecord.gz")
+    input_checkpoint_dir = os.path.join(self.create_tempdir("input"), "ckpt")
+
+    # Run end to end variant calling
+    FLAGS.batch_size = 4
+    FLAGS.include_debug_info = False
+    FLAGS.outfile = output_tfrecord
+    FLAGS.examples = calling_testdata_path
+    FLAGS.checkpoint = input_checkpoint_dir
+    FLAGS.stream_examples = False
+    FLAGS.allow_empty_examples = True
+    call_variants.main()
+
+    # Assert
+    sharded_output_files = tf.io.gfile.listdir(output_dir)
+    self.assertLen(sharded_output_files, 1)
+
+    only_sharded_output_filepath = os.path.join(
+        output_dir, sharded_output_files[0]
+    )
+    call_variants_outputs = list(
+        tfrecord.read_tfrecords(
+            only_sharded_output_filepath,
+            proto=deepvariant_pb2.CallVariantsOutput,
+            compression_type="GZIP",
+        )
+    )
+    # Check that we have written an empty output file.
+    self.assertEmpty(call_variants_outputs)
+
 
 if __name__ == "__main__":
   absltest.main()

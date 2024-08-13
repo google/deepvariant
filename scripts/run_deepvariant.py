@@ -436,6 +436,7 @@ def call_variants_command(
     examples: str,
     model_ckpt: str,
     extra_args: str,
+    allow_empty_examples: bool,
 ) -> Tuple[str, Optional[str]]:
   """Returns a call_variants (command, logfile) for subprocess."""
   binary_name = 'call_variants'
@@ -443,6 +444,8 @@ def call_variants_command(
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
+  if allow_empty_examples:
+    command.extend(['--allow_empty_examples'])
   if extra_args and 'use_openvino' in extra_args:
     raise RuntimeError(
         'OpenVINO is not installed by default in DeepVariant '
@@ -658,6 +661,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           examples=examples,
           model_ckpt=model_ckpt,
           extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
+          allow_empty_examples=_CUSTOMIZED_SMALL_MODEL.value is not None,
       )
   )
 

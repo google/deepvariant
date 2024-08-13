@@ -3568,11 +3568,10 @@ resource_metrics {
   physical_core_count: 32
   cpu_frequency_mhz: 2449.9980000000014
   total_memory_mb: 120737
-  wall_time_seconds: 1.2516357898712158
-  cpu_user_time_seconds: 8.70769
-  cpu_system_time_seconds: 6.000738
-  memory_peak_rss_mb: 529
-  read_bytes: 4014080
+  wall_time_seconds: 1.1957075595855713
+  cpu_user_time_seconds: 8.754299
+  cpu_system_time_seconds: 5.789504
+  memory_peak_rss_mb: 521
   write_bytes: 20480
 }
 stats {
