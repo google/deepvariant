@@ -181,14 +181,12 @@ void naive_concat(const char *output_fname, const int nfnames, const char **fnam
     output_type.format = bcf;
     output_type.compression = bgzf;
 
-    struct timeval t0, t1;
     const size_t page_size = BGZF_MAX_BLOCK_SIZE;
     uint8_t *buf = (uint8_t*) malloc(page_size);
     kstring_t tmp = {0,0,0};
     int i, file_types = 0;
     for (i=0; i<nfnames; i++)
     {
-        gettimeofday(&t0, NULL);
         htsFile *hts_fp = hts_open(fnames[i],"r");
         if ( !hts_fp ) hts_log_error("\nFailed to open: %s\n", fnames[i]);
         htsFormat type = *hts_get_format(hts_fp);
@@ -253,12 +251,6 @@ void naive_concat(const char *output_fname, const int nfnames, const char **fnam
             if ( nwr != nread ) hts_log_error("\nWrite failed, wrote %"PRId64" instead of %d bytes.\n", (uint64_t)nwr,(int)nread);
         }
         if (hts_close(hts_fp)) hts_log_error("\nClose failed: %s\n", fnames[i]);
-
-        // Print processing time
-        gettimeofday(&t1, NULL);
-        double delta = (t1.tv_sec - t0.tv_sec) * 1e6 + (t1.tv_usec - t0.tv_usec);
-        fprintf(stderr,"\t%f seconds\n",delta/1e6);
-
     }
     free(buf);
     free(tmp.s);
