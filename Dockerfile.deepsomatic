@@ -165,6 +165,46 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEP
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/deepsomatic/ffpe_wes/*
 
+# Tumor-only models
+WORKDIR /opt/models/deepsomatic/wgs_tumor_only
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wgs_tumor_only.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wgs_tumor_only.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wgs_tumor_only.savedmodel/example_info.json .
+WORKDIR /opt/models/deepsomatic/wgs_tumor_only/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wgs_tumor_only.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wgs_tumor_only.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/deepsomatic/wgs_tumor_only/*
+
+WORKDIR /opt/models/deepsomatic/pacbio_tumor_only
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.pacbio_tumor_only.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.pacbio_tumor_only.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.pacbio_tumor_only.savedmodel/example_info.json .
+WORKDIR /opt/models/deepsomatic/pacbio_tumor_only/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.pacbio_tumor_only.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.pacbio_tumor_only.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/deepsomatic/pacbio_tumor_only/*
+
+WORKDIR /opt/models/deepsomatic/ont_tumor_only
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont_tumor_only.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont_tumor_only.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont_tumor_only.savedmodel/example_info.json .
+WORKDIR /opt/models/deepsomatic/ont_tumor_only/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont_tumor_only.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont_tumor_only.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/deepsomatic/ont_tumor_only/*
+
+# PONs and AF VCF files
+WORKDIR /opt/models/deepsomatic/pons
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_ilmn_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_ilmn_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz.tbi .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_pacbio_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/AF_pacbio_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz.tbi .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/PON_dbsnp138_gnomad_ILMN1000g_pon.vcf.gz .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/PON_dbsnp138_gnomad_ILMN1000g_pon.vcf.gz.tbi .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/PON_dbsnp138_gnomad_PB1000g_pon.vcf.gz .
+ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/pons/PON_dbsnp138_gnomad_PB1000g_pon.vcf.gz.tbi .
+RUN chmod -R +r /opt/models/deepsomatic/pons/*
+
 ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin/deepsomatic:/opt/deepvariant/bin
 
 RUN apt-get -y update && \

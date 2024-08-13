@@ -53,7 +53,17 @@ FLAGS = flags.FLAGS
 _MODEL_TYPE = flags.DEFINE_enum(
     'model_type',
     'WGS',
-    ['WGS', 'WES', 'PACBIO', 'ONT', 'FFPE_WGS', 'FFPE_WES'],
+    [
+        'WGS',
+        'WES',
+        'PACBIO',
+        'ONT',
+        'FFPE_WGS',
+        'FFPE_WES',
+        'WGS_TUMOR_ONLY',
+        'PACBIO_TUMOR_ONLY',
+        'ONT_TUMOR_ONLY',
+    ],
     (
         'Required. Type of model to use for variant calling. Set this flag to'
         ' use the default model associated with each type, and it will set'
@@ -250,8 +260,15 @@ _PON_FILTERING = flags.DEFINE_string(
         'A VCF file with Panel of Normals (PON) data.'
         'If set, the output VCF will be filtered: any variants that appear in '
         'PON will be marked with a PON filter, and PASS filter value will be '
-        'removed.'
+        'removed. PON filtering is enabled by default in tumor-only models.'
     ),
+)
+
+_USE_DEFAULT_PON_FILTERING = flags.DEFINE_boolean(
+    'use_default_pon_filtering',
+    False,
+    'Optional. If true then default PON filtering will be used in tumor-only'
+    ' models.',
 )
 
 
@@ -262,6 +279,9 @@ MODEL_TYPE_MAP = {
     'ONT': '/opt/models/deepsomatic/ont',
     'FFPE_WGS': '/opt/models/deepsomatic/ffpe_wgs',
     'FFPE_WES': '/opt/models/deepsomatic/ffpe_wes',
+    'WGS_TUMOR_ONLY': '/opt/models/deepsomatic/wgs_tumor_only',
+    'PACBIO_TUMOR_ONLY': '/opt/models/deepsomatic/pacbio_tumor_only',
+    'ONT_TUMOR_ONLY': '/opt/models/deepsomatic/ont_tumor_only',
 }
 
 # Current release version of DeepVariant.
@@ -435,6 +455,17 @@ def make_examples_somatic_command(
     special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
     special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'WGS_TUMOR_ONLY':
+    # Specific flags that are not default can be added here.
+    special_args = {}
+    special_args['vsc_min_fraction_indels'] = 0.07
+    special_args['vsc_min_fraction_snps'] = 0.05
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
+    special_args['population_vcfs'] = (
+        '/opt/models/deepsomatic/pons/AF_ilmn_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz'
+    )
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'WES':
     # Specific flags that are not default can be added here.
     special_args = {}
@@ -458,6 +489,7 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_snps'] = 0.029
     special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
     special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'PACBIO':
     special_args = {}
     special_args['alt_aligned_pileup'] = 'diff_channels'
@@ -475,6 +507,28 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_indels'] = 0.1
     special_args['vsc_min_fraction_snps'] = 0.02
     special_args['trim_reads_for_pileup'] = True
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'PACBIO_TUMOR_ONLY':
+    special_args = {}
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['min_mapping_quality'] = 5
+    special_args['parse_sam_aux_fields'] = True
+    special_args['partition_size'] = 25000
+    special_args['phase_reads'] = True
+    special_args['pileup_image_width'] = 199
+    special_args['realign_reads'] = False
+    special_args['sort_by_haplotypes'] = True
+    special_args['track_ref_reads'] = True
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
+    special_args['vsc_min_count_snps'] = 1
+    special_args['vsc_min_fraction_indels'] = 0.1
+    special_args['vsc_min_fraction_snps'] = 0.02
+    special_args['trim_reads_for_pileup'] = True
+    special_args['population_vcfs'] = (
+        '/opt/models/deepsomatic/pons/AF_pacbio_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz'
+    )
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'ONT':
     special_args = {}
     special_args['alt_aligned_pileup'] = 'diff_channels'
@@ -491,6 +545,27 @@ def make_examples_somatic_command(
     special_args['vsc_min_fraction_snps'] = 0.05
     special_args['vsc_min_fraction_indels'] = 0.1
     special_args['trim_reads_for_pileup'] = True
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'ONT_TUMOR_ONLY':
+    special_args = {}
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['min_mapping_quality'] = 5
+    special_args['parse_sam_aux_fields'] = True
+    special_args['partition_size'] = 25000
+    special_args['phase_reads'] = True
+    special_args['pileup_image_width'] = 199
+    special_args['realign_reads'] = False
+    special_args['sort_by_haplotypes'] = True
+    special_args['track_ref_reads'] = True
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.6
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.6
+    special_args['vsc_min_fraction_snps'] = 0.05
+    special_args['vsc_min_fraction_indels'] = 0.1
+    special_args['trim_reads_for_pileup'] = True
+    special_args['population_vcfs'] = (
+        '/opt/models/deepsomatic/pons/AF_pacbio_PON_CoLoRSdb.GRCh38.AF0.05.vcf.gz'
+    )
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   else:
     raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
 
@@ -564,8 +639,27 @@ def postprocess_variants_command(
     command.extend(['--process_somatic=true'])
   else:
     command.extend(['--noprocess_somatic'])
+
+  # Use this if-else block only for PON filtering.
   if pon_filtering:
     command.extend(['--pon_filtering', '"{}"'.format(pon_filtering)])
+  elif _MODEL_TYPE.value == 'WGS_TUMOR_ONLY':
+    if not _PON_FILTERING.value and _USE_DEFAULT_PON_FILTERING.value:
+      pon_filtering = '/opt/models/deepsomatic/pons/PON_dbsnp138_gnomad_ILMN1000g_pon.vcf.gz'
+      command.extend(['--pon_filtering', '"{}"'.format(pon_filtering)])
+  elif _MODEL_TYPE.value == 'PACBIO_TUMOR_ONLY':
+    if not _PON_FILTERING.value and _USE_DEFAULT_PON_FILTERING.value:
+      pon_filtering = (
+          '/opt/models/deepsomatic/pons/PON_dbsnp138_gnomad_PB1000g_pon.vcf.gz'
+      )
+      command.extend(['--pon_filtering', '"{}"'.format(pon_filtering)])
+  elif _MODEL_TYPE.value == 'ONT_TUMOR_ONLY':
+    if not _PON_FILTERING.value and _USE_DEFAULT_PON_FILTERING.value:
+      pon_filtering = (
+          '/opt/models/deepsomatic/pons/PON_dbsnp138_gnomad_PB1000g_pon.vcf.gz'
+      )
+      command.extend(['--pon_filtering', '"{}"'.format(pon_filtering)])
+
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
@@ -817,15 +911,17 @@ def main(_):
       'reads_tumor',
       'output_vcf',
   ]:
+    model_type = FLAGS.get_flag_value('model_type', None)
+    if model_type in ['WGS_TUMOR_ONLY', 'ONT_TUMOR_ONLY', 'PACBIO_TUMOR_ONLY']:
+      reads_normal = FLAGS.get_flag_value('reads_normal', None)
+      if reads_normal is not None:
+        sys.stderr.write('--{} is set for tumor-only mode.\n'.format(flag_key))
+        sys.stderr.write('Please use the tumor-normal mode for this.\n')
+        sys.exit(1)
     if FLAGS.get_flag_value(flag_key, None) is None:
       sys.stderr.write('--{} is required.\n'.format(flag_key))
       sys.stderr.write('Pass --helpshort or --helpfull to see help on flags.\n')
       sys.exit(1)
-
-  for flag_key in ['reads_normal']:
-    if FLAGS.get_flag_value(flag_key, None) is None:
-      sys.stderr.write('--{} is not set.\n'.format(flag_key))
-      sys.stderr.write('WARNING: This is not officially supported.\n')
 
   intermediate_results_dir = check_or_create_intermediate_results_dir(
       _INTERMEDIATE_RESULTS_DIR.value
