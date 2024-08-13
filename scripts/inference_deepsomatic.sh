@@ -74,6 +74,7 @@ Note: All paths to dataset must be of the form "gs://..."
 BUILD_DOCKER=false
 DRY_RUN=false
 USE_CANDIDATE_PARTITION=false
+USE_DEFAULT_PON_FILTERING=false
 USE_GPU=false
 SAVE_INTERMEDIATE_RESULTS=false
 SKIP_SOMPY=false
@@ -157,6 +158,16 @@ while (( "$#" )); do
       USE_CANDIDATE_PARTITION="$2"
       if [[ ${USE_CANDIDATE_PARTITION} != "true" ]] && [[ ${USE_CANDIDATE_PARTITION} != "false" ]]; then
         echo "Error: --use_candidate_partition needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --use_default_pon_filtering)
+      USE_DEFAULT_PON_FILTERING="$2"
+      if [[ ${USE_DEFAULT_PON_FILTERING} != "true" ]] && [[ ${USE_DEFAULT_PON_FILTERING} != "false" ]]; then
+        echo "Error: --use_default_pon_filtering needs to have value (true|false)." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -300,7 +311,12 @@ declare -a sompy_args
 declare -a docker_args
 
 if [[ "${MODEL_PRESET}" = "WGS" ]]; then
-  MODEL_TYPE="WGS"
+  # Only set to default if MODEL_TYPE is not set.
+  # This will allow MODEL_TYPE to be set to WGS_TUMOR_ONLY, and allow usage of
+  # the tumor-only model
+  if [[ -z "${MODEL_TYPE}" ]]; then
+    MODEL_TYPE="WGS"
+  fi
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
@@ -444,6 +460,9 @@ fi
 if [[ "${USE_CANDIDATE_PARTITION}" == "true" ]]; then
   extra_args+=( --use_candidate_partition )
 fi
+if [[ "${USE_DEFAULT_PON_FILTERING}" == "true" ]]; then
+  extra_args+=( --use_default_pon_filtering )
+fi
 
 echo "========================="
 echo "# Booleans; sorted alphabetically."
@@ -453,6 +472,7 @@ echo "USE_GPU: ${USE_GPU}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
 echo "SKIP_SOMPY: ${SKIP_SOMPY}"
 echo "USE_CANDIDATE_PARTITION: ${USE_CANDIDATE_PARTITION}"
+echo "USE_DEFAULT_PON_FILTERING: ${USE_DEFAULT_PON_FILTERING}"
 echo "# Strings; sorted alphabetically."
 echo "BAM_NORMAL: ${BAM_NORMAL}"
 echo "BAM_TUMOR: ${BAM_TUMOR}"
