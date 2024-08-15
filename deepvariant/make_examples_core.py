@@ -1053,7 +1053,9 @@ class OutputsWriter:
     self.examples_filename = None
     self.make_small_model_examples = (
         make_small_model_examples.SmallModelExampleFactory(
-            options.small_model_vaf_context_window_size
+            options.small_model_vaf_context_window_size,
+            accept_snps=options.small_model_snp_gq_threshold > -1,
+            accept_indels=options.small_model_indel_gq_threshold > -1,
         )
     )
 
@@ -1280,7 +1282,8 @@ class RegionProcessor:
       self.small_model_variant_caller = (
           small_model_inference.SmallModelVariantCaller.from_model_path(
               model_path=self.options.trained_small_model_path,
-              gq_threshold=self.options.small_model_gq_threshold,
+              snp_gq_threshold=self.options.small_model_snp_gq_threshold,
+              indel_gq_threshold=self.options.small_model_indel_gq_threshold,
               batch_size=self.options.small_model_inference_batch_size,
           )
       )

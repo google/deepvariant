@@ -120,6 +120,19 @@ FAKE_VARIANT_CALL_HET_LABEL = variant_labeler.VariantLabel(
     genotype=(0, 1),
 )
 
+FAKE_VARIANT_INSERTION = deepvariant_pb2.DeepVariantCall(
+    variant=variants_pb2.Variant(
+        reference_bases="A",
+        alternate_bases=["AAC"],
+    )
+)
+FAKE_VARIANT_DELETION = deepvariant_pb2.DeepVariantCall(
+    variant=variants_pb2.Variant(
+        reference_bases="AACC",
+        alternate_bases=["C"],
+    )
+)
+
 
 class SmallModelMakeExamplesTest(parameterized.TestCase):
 
@@ -219,6 +232,31 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           feature="variant_allele_frequency_at_plus_2",
           expected_value=40,
       ),
+      dict(
+          testcase_name="is_snp_feature",
+          feature=make_small_model_examples.SmallModelFeature.IS_SNP.value,
+          expected_value=1,
+      ),
+      dict(
+          testcase_name="is_insertion",
+          feature=make_small_model_examples.SmallModelFeature.IS_INSERTION.value,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="is_deletion_feature",
+          feature=make_small_model_examples.SmallModelFeature.IS_DELETION.value,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="insertion_length_feature",
+          feature=make_small_model_examples.SmallModelFeature.INSERTION_LENGTH.value,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="deletion_length_feature",
+          feature=make_small_model_examples.SmallModelFeature.DELETION_LENGTH.value,
+          expected_value=0,
+      ),
   )
   def test_encode_feature(self, feature, expected_value):
     self.assertEqual(
@@ -226,6 +264,78 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             feature,
             FAKE_VARIANT_CALL_HET,
             FAKE_VARIANT_CALL_HET_LABEL,
+        ),
+        expected_value,
+    )
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="is_snp_feature_insertion",
+          feature=make_small_model_examples.SmallModelFeature.IS_SNP.value,
+          variant=FAKE_VARIANT_INSERTION,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="is_snp_feature_deletion",
+          feature=make_small_model_examples.SmallModelFeature.IS_SNP.value,
+          variant=FAKE_VARIANT_DELETION,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="is_insertion_feature_insertion",
+          feature=make_small_model_examples.SmallModelFeature.IS_INSERTION.value,
+          variant=FAKE_VARIANT_INSERTION,
+          expected_value=1,
+      ),
+      dict(
+          testcase_name="is_insertion_feature_deletion",
+          feature=make_small_model_examples.SmallModelFeature.IS_INSERTION.value,
+          variant=FAKE_VARIANT_DELETION,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="is_deletion_feature_insertion",
+          feature=make_small_model_examples.SmallModelFeature.IS_DELETION.value,
+          variant=FAKE_VARIANT_INSERTION,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="is_deletion_feature_deletion",
+          feature=make_small_model_examples.SmallModelFeature.IS_DELETION.value,
+          variant=FAKE_VARIANT_DELETION,
+          expected_value=1,
+      ),
+      dict(
+          testcase_name="insertion_length_feature_insertion",
+          feature=make_small_model_examples.SmallModelFeature.INSERTION_LENGTH.value,
+          variant=FAKE_VARIANT_INSERTION,
+          expected_value=2,
+      ),
+      dict(
+          testcase_name="insertion_length_feature_deletion",
+          feature=make_small_model_examples.SmallModelFeature.INSERTION_LENGTH.value,
+          variant=FAKE_VARIANT_DELETION,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="deletion_length_feature_insertion",
+          feature=make_small_model_examples.SmallModelFeature.DELETION_LENGTH.value,
+          variant=FAKE_VARIANT_INSERTION,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="deletion_length_feature_deletion",
+          feature=make_small_model_examples.SmallModelFeature.DELETION_LENGTH.value,
+          variant=FAKE_VARIANT_DELETION,
+          expected_value=3,
+      ),
+  )
+  def test_encode_indel_feature(self, feature, variant, expected_value):
+    self.assertEqual(
+        make_small_model_examples.encode_feature(
+            feature,
+            variant,
+            None,
         ),
         expected_value,
     )
@@ -248,6 +358,11 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
               "alt_1_mapping_quality",
               "ref_base_quality",
               "alt_1_base_quality",
+              "is_snp",
+              "is_insertion",
+              "is_deletion",
+              "insertion_length",
+              "deletion_length",
           ],
       ),
       dict(
@@ -267,6 +382,11 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
               "alt_1_mapping_quality",
               "ref_base_quality",
               "alt_1_base_quality",
+              "is_snp",
+              "is_insertion",
+              "is_deletion",
+              "insertion_length",
+              "deletion_length",
               "variant_allele_frequency_at_minus_1",
               "variant_allele_frequency_at_plus_0",
               "variant_allele_frequency_at_plus_1",
@@ -289,6 +409,11 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
               "alt_1_mapping_quality",
               "ref_base_quality",
               "alt_1_base_quality",
+              "is_snp",
+              "is_insertion",
+              "is_deletion",
+              "insertion_length",
+              "deletion_length",
               "variant_allele_frequency_at_minus_5",
               "variant_allele_frequency_at_minus_4",
               "variant_allele_frequency_at_minus_3",
@@ -328,6 +453,11 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
               "alt_1_mapping_quality",
               "ref_base_quality",
               "alt_1_base_quality",
+              "is_snp",
+              "is_insertion",
+              "is_deletion",
+              "insertion_length",
+              "deletion_length",
           ],
       ),
       dict(
@@ -341,6 +471,11 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
               "alt_1_mapping_quality",
               "ref_base_quality",
               "alt_1_base_quality",
+              "is_snp",
+              "is_insertion",
+              "is_deletion",
+              "insertion_length",
+              "deletion_length",
               "variant_allele_frequency_at_minus_1",
               "variant_allele_frequency_at_plus_0",
               "variant_allele_frequency_at_plus_1",
@@ -357,6 +492,11 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
               "alt_1_mapping_quality",
               "ref_base_quality",
               "alt_1_base_quality",
+              "is_snp",
+              "is_insertion",
+              "is_deletion",
+              "insertion_length",
+              "deletion_length",
               "variant_allele_frequency_at_minus_5",
               "variant_allele_frequency_at_minus_4",
               "variant_allele_frequency_at_minus_3",
@@ -412,6 +552,11 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             50,
             30,
             50,
+            1,
+            0,
+            0,
+            0,
+            0,
             50,
             87,
             30,
@@ -442,6 +587,11 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             50,
             30,
             50,
+            1,
+            0,
+            0,
+            0,
+            0,
             0,
             50,
             87,

@@ -3543,11 +3543,12 @@ options {
   phase_reads_region_padding_pct: 20
   phase_max_candidates: 5000
   deterministic_serialization: true
-  small_model_gq_threshold: 30
+  small_model_snp_gq_threshold: -1
   shm_buffer_size: 10485760
   exclude_variants_af_threshold: 0.05000000074505806
   small_model_inference_batch_size: 128
   small_model_vaf_context_window_size: 11
+  small_model_indel_gq_threshold: -1
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3568,11 +3569,11 @@ resource_metrics {
   physical_core_count: 32
   cpu_frequency_mhz: 2449.9980000000014
   total_memory_mb: 120737
-  wall_time_seconds: 1.1957075595855713
-  cpu_user_time_seconds: 8.754299
-  cpu_system_time_seconds: 5.789504
-  memory_peak_rss_mb: 521
-  write_bytes: 20480
+  wall_time_seconds: 1.2145822048187256
+  cpu_user_time_seconds: 8.310902
+  cpu_system_time_seconds: 1.569503
+  memory_peak_rss_mb: 526
+  write_bytes: 16384
 }
 stats {
   num_examples: 49

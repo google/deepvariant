@@ -417,7 +417,8 @@ def make_examples_command(
     special_args['trained_small_model_path'] = _CUSTOMIZED_SMALL_MODEL.value
     special_args['call_small_model_examples'] = True
     # Note that the default GQ threshold can be overwritten by extra_args.
-    special_args['small_model_gq_threshold'] = 30
+    special_args['small_model_snp_gq_threshold'] = 30
+    special_args['small_model_indel_gq_threshold'] = 30
 
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.

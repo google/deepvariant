@@ -50,6 +50,7 @@ py_library(
         ":make_small_model_examples",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/util:genomics_math",
+        "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
     ],
 )

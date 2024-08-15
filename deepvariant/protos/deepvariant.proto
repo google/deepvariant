@@ -643,7 +643,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 78.
+// Next ID: 79.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -875,8 +875,10 @@ message MakeExamplesOptions {
   bool skip_pileup_image_generation = 73;
   // Call small model examples directly instead of passing to CNN.
   bool call_small_model_examples = 64;
-  // GQ threshold for small model
-  int32 small_model_gq_threshold = 65;
+  // GQ threshold for small model SNPs.
+  int32 small_model_snp_gq_threshold = 65;
+  // GQ threshold for small model INDELs.
+  int32 small_model_indel_gq_threshold = 78;
   // Path to the pickled small model.
   string trained_small_model_path = 66;
   // Batch size to use during inference

@@ -3603,8 +3603,9 @@ options {
   phase_max_candidates: 5000
   denovo_regions_filename: "deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.denovo_regions.bed"
   deterministic_serialization: true
-  small_model_gq_threshold: 30
+  small_model_snp_gq_threshold: -1
   shm_buffer_size: 10485760
+  small_model_indel_gq_threshold: -1
 }
 labeling_metrics {
   n_truth_variant_sites: 40

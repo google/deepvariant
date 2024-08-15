@@ -37,6 +37,7 @@ from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import keras_config
 from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.util import genomics_math
+from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 
 
@@ -61,28 +62,39 @@ class SmallModelVariantCaller:
   def __init__(
       self,
       classifier: tf.keras.Model,
-      gq_threshold: float,
+      snp_gq_threshold: float,
+      indel_gq_threshold: float,
       batch_size: int,
   ):
     self.classifier = classifier
-    self.gq_threshold = gq_threshold
+    self.snp_gq_threshold = snp_gq_threshold
+    self.indel_gq_threshold = indel_gq_threshold
     self.batch_size = batch_size
 
   @classmethod
   def from_model_path(
-      cls, model_path: str, gq_threshold: float, batch_size: int
+      cls,
+      model_path: str,
+      snp_gq_threshold: float,
+      indel_gq_threshold: float,
+      batch_size: int,
   ) -> "SmallModelVariantCaller":
     """Init class with a path to a pickled model."""
     return cls(
-        keras_config.load_keras_model(model_path), gq_threshold, batch_size
+        keras_config.load_keras_model(model_path),
+        snp_gq_threshold,
+        indel_gq_threshold,
+        batch_size,
     )
 
-  def _accept_call_result(self, probability) -> bool:
+  def _accept_call_result(self, candidate, probability) -> bool:
     """Determine if the given probability is above the GQ threshold."""
-    return (
-        genomics_math.ptrue_to_bounded_phred(max(probability))
-        >= self.gq_threshold
+    threshold = (
+        self.snp_gq_threshold
+        if variant_utils.is_snp(candidate.variant)
+        else self.indel_gq_threshold
     )
+    return genomics_math.ptrue_to_bounded_phred(max(probability)) >= threshold
 
   def _get_call_variant_outputs(
       self, candidate, prediction, probability
@@ -127,7 +139,7 @@ class SmallModelVariantCaller:
     call_variant_outputs = []
     filtered_candidates = []
     for candidate, probability in zip(candidates, probabilities):
-      if self._accept_call_result(probability):
+      if self._accept_call_result(candidate, probability):
         prediction = np.argmax(probability)
         call_variant_outputs.append(
             self._get_call_variant_outputs(candidate, prediction, probability)

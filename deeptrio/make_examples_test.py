@@ -1090,6 +1090,9 @@ class MakeExamplesUnitTest(parameterized.TestCase):
     # Check that reading + writing the data produces the same lines:
     tmp_output = test_utils.test_tmpfile('written_run_info.pbtxt')
     make_examples_core.write_make_examples_run_info(golden_actual, tmp_output)
+    print('*' * 100)
+    print(_read_lines(tmp_output))
+    print('*' * 100)
     self.assertEqual(
         _read_lines(testdata.GOLDEN_MAKE_EXAMPLES_RUN_INFO),
         _read_lines(tmp_output),

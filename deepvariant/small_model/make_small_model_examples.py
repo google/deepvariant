@@ -63,6 +63,11 @@ class SmallModelFeature(enum.Enum):
   ALT_1_MAPPING_QUALITY = 'alt_1_mapping_quality'
   REF_BASE_QUALITY = 'ref_base_quality'
   ALT_1_BASE_QUALITY = 'alt_1_base_quality'
+  IS_SNP = 'is_snp'
+  IS_INSERTION = 'is_insertion'
+  IS_DELETION = 'is_deletion'
+  INSERTION_LENGTH = 'insertion_length'
+  DELETION_LENGTH = 'deletion_length'
 
 
 IDENTIFYING_FEATURES = (
@@ -100,7 +105,7 @@ def _get_end(candidate: deepvariant_pb2.DeepVariantCall) -> int:
 
 def _get_ref(candidate: deepvariant_pb2.DeepVariantCall) -> str:
   """Returns the reference base of the candidate."""
-  return candidate.variant.reference_bases[0]
+  return candidate.variant.reference_bases
 
 
 def _get_alt_1(candidate: deepvariant_pb2.DeepVariantCall) -> str:
@@ -191,14 +196,45 @@ def _get_variant_allele_frequency_at_position(
   return candidate.allele_frequency_at_position.get(position, 0)
 
 
-def _pass_candidate_to_small_model(
-    candidate: deepvariant_pb2.DeepVariantCall,
-) -> bool:
-  """Determines if the candidate is eligible for the small model."""
-  return (
-      variant_utils.is_snp(candidate.variant)
-      and len(candidate.variant.alternate_bases) == 1
+def _get_is_snp(candidate: deepvariant_pb2.DeepVariantCall) -> int:
+  """Returns 1 if the candidate is a SNP, 0 otherwise."""
+  return int(variant_utils.is_snp(candidate.variant))
+
+
+def _get_is_insertion(candidate: deepvariant_pb2.DeepVariantCall) -> int:
+  """Returns 1 if the candidate is an insertion, 0 otherwise."""
+  return int(
+      variant_utils.is_insertion(
+          candidate.variant.reference_bases,
+          candidate.variant.alternate_bases[0],
+      )
   )
+
+
+def _get_is_deletion(candidate: deepvariant_pb2.DeepVariantCall) -> int:
+  """Returns 1 if the candidate is an insertion, 0 otherwise."""
+  return int(
+      variant_utils.is_deletion(
+          candidate.variant.reference_bases,
+          candidate.variant.alternate_bases[0],
+      )
+  )
+
+
+def _get_insertion_length(candidate: deepvariant_pb2.DeepVariantCall) -> int:
+  """Returns the insertion length of the candidate."""
+  insertion_length = len(candidate.variant.alternate_bases[0]) - len(
+      candidate.variant.reference_bases
+  )
+  return max(0, insertion_length)
+
+
+def _get_deletion_length(candidate: deepvariant_pb2.DeepVariantCall) -> int:
+  """Returns the deletion length of the candidate."""
+  deletion_length = len(candidate.variant.reference_bases) - len(
+      candidate.variant.alternate_bases[0]
+  )
+  return max(0, deletion_length)
 
 
 def encode_feature(
@@ -244,6 +280,16 @@ def encode_feature(
     return _get_alt_1_base_quality(candidate)
   elif feature.startswith(VARIANT_ALLELE_FREQUENCY_AT_PREFIX):
     return _get_variant_allele_frequency_at_position(feature, candidate)
+  elif feature == SmallModelFeature.IS_SNP.value:
+    return _get_is_snp(candidate)
+  elif feature == SmallModelFeature.IS_INSERTION.value:
+    return _get_is_insertion(candidate)
+  elif feature == SmallModelFeature.IS_DELETION.value:
+    return _get_is_deletion(candidate)
+  elif feature == SmallModelFeature.INSERTION_LENGTH.value:
+    return _get_insertion_length(candidate)
+  elif feature == SmallModelFeature.DELETION_LENGTH.value:
+    return _get_deletion_length(candidate)
   elif feature == SmallModelFeature.GENOTYPE.value and label:
     return ENCODING_BY_GENOTYPE[label.genotype]
   else:
@@ -253,7 +299,14 @@ def encode_feature(
 class SmallModelExampleFactory:
   """Class for making small model examples."""
 
-  def __init__(self, vaf_context_window_size: int):
+  def __init__(
+      self,
+      vaf_context_window_size: int,
+      accept_snps: bool = True,
+      accept_indels: bool = True,
+  ):
+    self.accept_snps = accept_snps
+    self.accept_indels = accept_indels
     context_vaf_features = self._get_context_vaf_features(
         vaf_context_window_size
     )
@@ -265,6 +318,18 @@ class SmallModelExampleFactory:
     ]
     self.inference_features.extend(context_vaf_features)
     self.training_features.extend(context_vaf_features)
+
+  def _pass_candidate_to_small_model(
+      self,
+      candidate: deepvariant_pb2.DeepVariantCall,
+  ) -> bool:
+    """Determines if the candidate is eligible for the small model."""
+    if not variant_utils.is_biallelic(candidate.variant):
+      return False
+    elif variant_utils.is_snp(candidate.variant):
+      return self.accept_snps
+    else:
+      return self.accept_indels
 
   def _get_context_vaf_features(
       self,
@@ -299,7 +364,7 @@ class SmallModelExampleFactory:
     """
     candidate_examples = []
     for candidate, label in candidates_with_label:
-      if not _pass_candidate_to_small_model(candidate):
+      if not self._pass_candidate_to_small_model(candidate):
         continue
       candidate_example = [
           encode_feature(feature, candidate, label)
@@ -331,7 +396,7 @@ class SmallModelExampleFactory:
     kept_candidates = []
     examples = []
     for candidate in candidates:
-      if not _pass_candidate_to_small_model(candidate):
+      if not self._pass_candidate_to_small_model(candidate):
         skipped_candidates.append(candidate)
         continue
       kept_candidates.append(candidate)

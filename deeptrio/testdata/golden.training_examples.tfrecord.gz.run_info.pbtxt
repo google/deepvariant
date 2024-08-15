@@ -3594,8 +3594,9 @@ options {
   phase_reads_region_padding_pct: 20
   phase_max_candidates: 5000
   deterministic_serialization: true
-  small_model_gq_threshold: 30
+  small_model_snp_gq_threshold: -1
   shm_buffer_size: 10485760
+  small_model_indel_gq_threshold: -1
 }
 labeling_metrics {
   n_truth_variant_sites: 48

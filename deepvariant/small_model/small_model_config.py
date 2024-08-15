@@ -43,10 +43,10 @@ class PresetConfig(enum.Enum):
 
 
 def set_wgs_config(config: ml_collections.ConfigDict) -> None:
-  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b345306347_wgs/ttl=14d/b345306347_wgs_train_ME_*.tfrecord.gz.small_model.tsv"
-  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b345306347_wgs/ttl=14d/b345306347_wgs_tune_ME_*.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 784_569_482
-  config.num_tune_samples = 22_245_399
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b356435536_wgs/ttl=14d/b356435536_wgs_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b356435536_wgs/ttl=14d/b356435536_wgs_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 887016302
+  config.num_tune_samples = 25218942
 
 
 def set_wes_config(config: ml_collections.ConfigDict) -> None:
@@ -57,24 +57,24 @@ def set_wes_config(config: ml_collections.ConfigDict) -> None:
 
 
 def set_pacbio_config(config: ml_collections.ConfigDict) -> None:
-  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_train_ME_*.tfrecord.gz.small_model.tsv"
-  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b345306347_pacbio/ttl=14d/b345306347_pacbio_tune_ME_*.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 2_015_187_426
-  config.num_tune_samples = 53_932_522
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b356435536_pacbio/ttl=14d/b356435536_pacbio_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b356435536_pacbio/ttl=14d/b356435536_pacbio_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 2911519250
+  config.num_tune_samples = 77084518
 
 
 def set_ont_config(config: ml_collections.ConfigDict) -> None:
-  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b352354037-base/ttl=14d/b352354037-base_train_ME_*.tfrecord.gz.small_model.tsv"
-  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b352354037-base/ttl=14d/b352354037-base_tune_ME_*.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 447_500_870
-  config.num_tune_samples = 12_288_308
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b356435536_ont/ttl=14d/b356435536_ont_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_ont/b356435536_ont/ttl=14d/b356435536_ont_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 1374687650
+  config.num_tune_samples = 38297278
 
 
 def set_hybrid_config(config: ml_collections.ConfigDict) -> None:
-  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_hybrid/b345306347_hybrid_pacbio_illumina/ttl=14d/b345306347_hybrid_pacbio_illumina_train_ME_*.tfrecord.gz.small_model.tsv"
-  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_hybrid/b345306347_hybrid_pacbio_illumina/ttl=14d/b345306347_hybrid_pacbio_illumina_tune_ME_*.tfrecord.gz.small_model.tsv"
-  config.num_train_samples = 142_447_287
-  config.num_tune_samples = 3_916_034
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_hybrid/b356435536_hybrid_pacbio_illumina/ttl=14d/b356435536_hybrid_pacbio_illumina_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_hybrid/b356435536_hybrid_pacbio_illumina/ttl=14d/b356435536_hybrid_pacbio_illumina_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.num_train_samples = 198381199
+  config.num_tune_samples = 5406511
 
 
 def set_preset_config(
@@ -98,15 +98,17 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Model hyperparameters
   model_params = ml_collections.ConfigDict()
   model_params.activation = "relu"
-  model_params.hidden_layer_sizes = (200, 100, 200)
+  model_params.hidden_layer_sizes = (200, 300)
   model_params.optimizer = "adam"
+  model_params.learning_rate = 0.000001
+  model_params.weight_decay = 0.000001
   model_params.features = ()
   model_params.vaf_context_window_size = 11
 
   # Training parameters
   config = ml_collections.ConfigDict()
-  config.epochs = 20
-  config.batch_size = 64
+  config.epochs = 6
+  config.batch_size = 256
   config.logging_frequency = 8192
   config.train_tsv_directory = ""
   config.num_train_samples = 0
