@@ -35,13 +35,14 @@
 #include <memory>
 #include <vector>
 
+#include "deepvariant/fast_pipeline_utils.h"
 #include "deepvariant/pileup_image_native.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "deepvariant/fast_pipeline_utils.h"
 
 namespace learning {
 namespace genomics {
@@ -116,8 +117,8 @@ void StreamExamples::WriteBytesToShm(const void* bytes, int len) {
 // The recipient is notified once the buffer is full or all examples are
 // processed.
 void StreamExamples::StreamExample(
-    const std::vector<std::unique_ptr<ImageRow>>& ref_rows,
-    const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images,
+    absl::Span<const std::unique_ptr<ImageRow>> ref_rows,
+    absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_images,
     const AltAlignedPileup& alt_aligned_pileup,
     absl::string_view alt_indices_encoded, absl::string_view variant_encoded) {
   // Calculate the space needed.

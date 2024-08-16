@@ -38,6 +38,7 @@
 
 #include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/types/span.h"
 #include "boost/interprocess/managed_shared_memory.hpp"  // NOLINT
 #include "boost/interprocess/shared_memory_object.hpp"  // NOLINT
 #include "boost/interprocess/sync/named_mutex.hpp"  // NOLINT
@@ -54,8 +55,8 @@ class StreamExamples {
 
   // Writes examples to shared memory buffer.
   void StreamExample(
-      const std::vector<std::unique_ptr<ImageRow>>& ref_rows,
-      const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images,
+      absl::Span<const std::unique_ptr<ImageRow>> ref_rows,
+      absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_images,
       const AltAlignedPileup& alt_aligned_pileup,
       absl::string_view alt_indices_encoded, absl::string_view variant_encoded);
 
