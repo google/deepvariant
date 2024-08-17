@@ -36,11 +36,12 @@
 #include "absl/types/span.h"
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_TESTING_UTILS_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/pileup_image_native.h"
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
