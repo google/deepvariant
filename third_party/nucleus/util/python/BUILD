@@ -56,5 +56,6 @@ py_test(
         "//third_party/nucleus/protos:range_py_pb2",
         "//third_party/nucleus/protos:reads_py_pb2",
         "@absl_py//absl/testing:absltest",
+        "@com_google_protobuf//:protobuf_python",
     ],
 )

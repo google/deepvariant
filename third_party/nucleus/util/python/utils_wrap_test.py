@@ -29,9 +29,15 @@
 
 from absl.testing import absltest
 
+from google.protobuf import text_format
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util.python import utils as cpp_utils
+
+# NOTE: The primary purpose of these tests is to exercise that the
+#       EmptyProtoPtr/ConstProtoPtr conversions from Python to C++ are
+#       working as intended. These tests are not meant to exercise any
+#       of the functionality in the bound functions.
 
 
 class UtilsTest(absltest.TestCase):
@@ -48,6 +54,31 @@ class UtilsTest(absltest.TestCase):
   def test_read_overlaps_region_minimal(self):
     read_pb = reads_pb2.Read()
     range_pb = range_pb2.Range()
+    self.assertFalse(cpp_utils.read_overlaps_region(read_pb, range_pb))
+
+  def test_read_end_with_content(self):
+    read_pb = reads_pb2.Read()
+    text_format.Parse('alignment { position { position: 10000001 }}', read_pb)
+    self.assertEqual(cpp_utils.read_end(read_pb), 10000001)
+
+  def test_read_range_with_content(self):
+    read_pb = reads_pb2.Read()
+    text_format.Parse('alignment { position { position: 10000002 }}', read_pb)
+    range_pb = range_pb2.Range()
+    self.assertEqual(range_pb.reference_name, '')
+    self.assertEqual(range_pb.start, 0)
+    self.assertEqual(range_pb.end, 0)
+    self.assertIsNone(cpp_utils.read_range(read_pb, range_pb))
+    self.assertEqual(range_pb.start, 10000002)
+    self.assertEqual(range_pb.end, 10000002)
+
+  def test_read_overlaps_region_with_content(self):
+    read_pb = reads_pb2.Read()
+    text_format.Parse('alignment { position { position: 10000003 }}', read_pb)
+    range_pb = range_pb2.Range()
+    range_pb.reference_name = 'chrY'
+    range_pb.start = 13
+    range_pb.end = 15
     self.assertFalse(cpp_utils.read_overlaps_region(read_pb, range_pb))
 
 
