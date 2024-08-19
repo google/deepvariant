@@ -308,7 +308,7 @@ def main(argv=()):
     proto_utils.uses_fast_cpp_protos_or_die()
 
     logging_level.set_from_flag()
-    hts_verbose.set(hts_verbose.htsLogLevel[FLAGS.hts_logging_level])
+    hts_verbose.set(hts_verbose.htsLogLevel.HTS_LOG_WARNING)
 
     # Set up options; may do I/O.
     options = default_options(add_flags=True, flags_obj=FLAGS)

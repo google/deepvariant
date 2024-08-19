@@ -45,7 +45,6 @@ from deepvariant.protos import deepvariant_pb2
 from deepvariant.realigner import realigner
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import sharded_file_utils
-from third_party.nucleus.io.python import hts_verbose
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import errors
 
@@ -265,11 +264,6 @@ flags.DEFINE_enum(
         ' is experimental and is not compatible with the pre-trained release'
         ' models.'
     ),
-)
-flags.DEFINE_string(
-    'hts_logging_level',
-    hts_verbose.htsLogLevel.HTS_LOG_WARNING.name,
-    'Sets the htslib logging threshold.',
 )
 flags.DEFINE_integer(
     'hts_block_size',

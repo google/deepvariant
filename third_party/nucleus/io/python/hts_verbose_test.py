@@ -49,7 +49,7 @@ class HtsVerbose(absltest.TestCase):
     level = hts_verbose.get()
     self.assertEqual(level, hts_verbose.htsLogLevel.HTS_LOG_INFO)
 
-    hts_verbose.set(hts_verbose.htsLogLevel['HTS_LOG_DEBUG'])
+    hts_verbose.set(hts_verbose.htsLogLevel.HTS_LOG_DEBUG)
     level = hts_verbose.get()
     self.assertEqual(level, hts_verbose.htsLogLevel.HTS_LOG_DEBUG)
 
