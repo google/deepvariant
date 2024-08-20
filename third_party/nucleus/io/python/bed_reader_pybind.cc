@@ -35,21 +35,24 @@
 #include <pybind11/pybind11.h>
 #endif
 
-#include "third_party/nucleus/io/gff_writer.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/io/bed_reader.h"
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(gff_writer, m) {
+PYBIND11_MODULE(bed_reader, m) {
   using namespace ::nucleus;
-  py::class_<GffWriter>(m, "GffWriter")
-      .def_static("to_file", &GffWriter::ToFile, py::arg("gffPath"),
-                  py::arg("header"), py::arg("options"))
-      .def("write", &GffWriter::WritePython, py::arg("gffMessage"))
+
+  py::class_<BedReader>(m, "BedReader")
+      .def_static("from_file", &BedReader::FromFile, py::arg("bedPath"),
+                  py::arg("options"))
+      .def("iterate", &BedReader::Iterate)
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &GffWriter::Close)
-      .def_property_readonly("header", &GffWriter::Header);
+      .def("__exit__", &BedReader::Close)
+      .def_property_readonly("header", &BedReader::Header);
+  py::class_<BedIterable>(m, "BedIterable")
+      .def("PythonNext", &BedIterable::PythonNext, py::arg("bed"))
+      .def("Release", &BedIterable::Release)
+      .def("__enter__", [](py::object self) { return self; })
+      .def("__exit__", &BedIterable::PythonExit);
 }

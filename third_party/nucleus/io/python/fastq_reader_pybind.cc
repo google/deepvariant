@@ -30,12 +30,13 @@
  *
  */
 
+#include "third_party/pybind11/include/pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
 #endif
 
-#include "third_party/nucleus/io/gff_writer.h"
+#include "third_party/nucleus/io/fastq_reader.h"
 #include "third_party/pybind11/include/pybind11/chrono.h"
 #include "third_party/pybind11/include/pybind11/complex.h"
 #include "third_party/pybind11/include/pybind11/functional.h"
@@ -43,13 +44,17 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(gff_writer, m) {
+PYBIND11_MODULE(fastq_reader, m) {
   using namespace ::nucleus;
-  py::class_<GffWriter>(m, "GffWriter")
-      .def_static("to_file", &GffWriter::ToFile, py::arg("gffPath"),
-                  py::arg("header"), py::arg("options"))
-      .def("write", &GffWriter::WritePython, py::arg("gffMessage"))
+  py::class_<FastqReader>(m, "FastqReader")
+      .def_static("from_file", &FastqReader::FromFile, py::arg("fastqPath"),
+                  py::arg("options"))
+      .def("iterate", &FastqReader::Iterate)
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &GffWriter::Close)
-      .def_property_readonly("header", &GffWriter::Header);
+      .def("__exit__", &FastqReader::Close);
+  py::class_<FastqIterable>(m, "FastqIterable")
+      .def("PythonNext", &FastqIterable::PythonNext, py::arg("fastq"))
+      .def("Release", &FastqIterable::Release)
+      .def("__enter__", [](py::object self) { return self; })
+      .def("__exit__", &FastqIterable::PythonExit);
 }

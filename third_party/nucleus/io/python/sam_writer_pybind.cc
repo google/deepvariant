@@ -30,12 +30,13 @@
  *
  */
 
+#include "third_party/pybind11/include/pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
 #endif
 
-#include "third_party/nucleus/io/gff_writer.h"
+#include "third_party/nucleus/io/sam_writer.h"
 #include "third_party/pybind11/include/pybind11/chrono.h"
 #include "third_party/pybind11/include/pybind11/complex.h"
 #include "third_party/pybind11/include/pybind11/functional.h"
@@ -43,13 +44,16 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(gff_writer, m) {
+PYBIND11_MODULE(sam_writer, m) {
   using namespace ::nucleus;
-  py::class_<GffWriter>(m, "GffWriter")
-      .def_static("to_file", &GffWriter::ToFile, py::arg("gffPath"),
-                  py::arg("header"), py::arg("options"))
-      .def("write", &GffWriter::WritePython, py::arg("gffMessage"))
+  py::class_<SamWriter>(m, "SamWriter")
+      .def_static("to_file",
+                  py::overload_cast<const string&, const string&, bool,
+                                    const nucleus::genomics::v1::SamHeader&>(
+                      &SamWriter::ToFile),
+                  py::arg("sam_path"), py::arg("ref_path"),
+                  py::arg("embed_ref"), py::arg("sam_header"))
+      .def("write", &SamWriter::WritePython, py::arg("readMessage"))
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &GffWriter::Close)
-      .def_property_readonly("header", &GffWriter::Header);
+      .def("__exit__", &SamWriter::Close);
 }

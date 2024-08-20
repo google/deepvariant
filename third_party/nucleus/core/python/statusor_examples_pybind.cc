@@ -35,21 +35,25 @@
 #include <pybind11/pybind11.h>
 #endif
 
-#include "third_party/nucleus/io/gff_writer.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+// #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
+#include "third_party/nucleus/core/statusor_examples.h"
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(gff_writer, m) {
+PYBIND11_MODULE(statusor_examples, m) {
   using namespace ::nucleus;
-  py::class_<GffWriter>(m, "GffWriter")
-      .def_static("to_file", &GffWriter::ToFile, py::arg("gffPath"),
-                  py::arg("header"), py::arg("options"))
-      .def("write", &GffWriter::WritePython, py::arg("gffMessage"))
-      .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &GffWriter::Close)
-      .def_property_readonly("header", &GffWriter::Header);
+  m.def("MakeIntOK", &MakeIntOK);
+  m.def("MakeIntFail", &MakeIntFail);
+  m.def("MakeStrOK", &MakeStrOK);
+  // Note: this "stripped" type doesn't work for strings. The test will fail if
+  // enabled. See internal for more information.
+  // m.def("MakeStrOKStrippedType", &MakeStrOKStrippedType);
+  m.def("MakeStrFail", &MakeStrFail);
+  m.def("MakeIntUniquePtrOK", &MakeIntUniquePtrOK);
+  m.def("MakeIntUniquePtrFail", &MakeIntUniquePtrFail);
+  m.def("MakeIntVectorOK", &MakeIntVectorOK);
+  m.def("MakeIntVectorFail", &MakeIntVectorFail);
+  m.def("FuncReturningStatusOK", &FuncReturningStatusOK);
+  m.def("FuncReturningStatusFail", &FuncReturningStatusFail);
 }

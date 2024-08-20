@@ -45,6 +45,6 @@ PYBIND11_MODULE(bedgraph_writer, m) {
   py::class_<BedGraphWriter>(m, "BedGraphWriter")
       .def_static("to_file", &BedGraphWriter::ToFile, py::arg("bedPath"))
       .def("write", &BedGraphWriter::WritePython, py::arg("bedGraphMessage"))
-      .def("__enter__", &BedGraphWriter::PythonEnter)
+      .def("__enter__", [](py::object self) { return self; })
       .def("__exit__", &BedGraphWriter::Close);
 }

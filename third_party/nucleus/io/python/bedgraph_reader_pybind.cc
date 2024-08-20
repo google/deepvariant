@@ -30,12 +30,13 @@
  *
  */
 
+#include "third_party/pybind11/include/pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
 #endif
 
-#include "third_party/nucleus/io/gff_writer.h"
+#include "third_party/nucleus/io/bedgraph_reader.h"
 #include "third_party/pybind11/include/pybind11/chrono.h"
 #include "third_party/pybind11/include/pybind11/complex.h"
 #include "third_party/pybind11/include/pybind11/functional.h"
@@ -43,13 +44,17 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(gff_writer, m) {
+PYBIND11_MODULE(bedgraph_reader, m) {
   using namespace ::nucleus;
-  py::class_<GffWriter>(m, "GffWriter")
-      .def_static("to_file", &GffWriter::ToFile, py::arg("gffPath"),
-                  py::arg("header"), py::arg("options"))
-      .def("write", &GffWriter::WritePython, py::arg("gffMessage"))
+  py::class_<BedGraphReader>(m, "BedGraphReader")
+      .def_static("from_file", &BedGraphReader::FromFile,
+                  py::arg("bedgraph_path"))
+      .def("iterate", &BedGraphReader::Iterate)
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &GffWriter::Close)
-      .def_property_readonly("header", &GffWriter::Header);
+      .def("__exit__", &BedGraphReader::Close);
+  py::class_<BedGraphIterable>(m, "BedGraphIterable")
+      .def("PythonNext", &BedGraphIterable::PythonNext, py::arg("bedgraph"))
+      .def("Release", &BedGraphIterable::Release)
+      .def("__enter__", [](py::object self) { return self; })
+      .def("__exit__", &BedGraphIterable::PythonExit);
 }

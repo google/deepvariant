@@ -49,7 +49,7 @@ PYBIND11_MODULE(gff_reader, m) {
       .def_static("from_file", &GffReader::FromFile, py::arg("gffPath"),
                   py::arg("options"))
       .def("iterate", &GffReader::Iterate)
-      .def("__enter__", &GffReader::PythonEnter)
+      .def("__enter__", [](py::object self) { return self; })
       .def("__exit__", &GffReader::Close)
       .def_property_readonly("header", &GffReader::Header);
   // Do I need this?
@@ -62,7 +62,7 @@ PYBIND11_MODULE(gff_reader, m) {
   py::class_<GffIterable>(m, "GffIterable")
       .def("PythonNext", &GffIterable::PythonNext, py::arg("gff"))
       .def("Release", &GffIterable::Release)
-      .def("__enter__", &GffIterable::PythonEnter)
+      .def("__enter__", [](py::object self) { return self; })
       .def("__exit__", &GffIterable::PythonExit);
   // Do I need this?
   // GffIterable_class.def(

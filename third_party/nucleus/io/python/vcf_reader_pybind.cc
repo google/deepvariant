@@ -30,12 +30,13 @@
  *
  */
 
+#include "third_party/pybind11/include/pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
 #endif
 
-#include "third_party/nucleus/io/gff_writer.h"
+#include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/pybind11/include/pybind11/chrono.h"
 #include "third_party/pybind11/include/pybind11/complex.h"
 #include "third_party/pybind11/include/pybind11/functional.h"
@@ -43,13 +44,24 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(gff_writer, m) {
+PYBIND11_MODULE(vcf_reader, m) {
   using namespace ::nucleus;
-  py::class_<GffWriter>(m, "GffWriter")
-      .def_static("to_file", &GffWriter::ToFile, py::arg("gffPath"),
-                  py::arg("header"), py::arg("options"))
-      .def("write", &GffWriter::WritePython, py::arg("gffMessage"))
+  py::class_<VcfReader>(m, "VcfReader")
+      .def_static("from_file", &VcfReader::FromFile, py::arg("vcfPath"),
+                  py::arg("options"))
+      .def_static("from_file_with_header", &VcfReader::FromFileWithHeader,
+                  py::arg("variantsPath"), py::arg("options"),
+                  py::arg("header"))
+      .def("iterate", &VcfReader::Iterate)
+      .def("query", &VcfReader::Query, py::arg("region"))
+      .def("from_string", &VcfReader::FromStringPython, py::arg("vcf_line"),
+           py::arg("options"))
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &GffWriter::Close)
-      .def_property_readonly("header", &GffWriter::Header);
+      .def("__exit__", &VcfReader::Close)
+      .def_property_readonly("header", &VcfReader::Header);
+  py::class_<VariantIterable>(m, "VariantIterable")
+      .def("PythonNext", &VariantIterable::PythonNext, py::arg("variant"))
+      .def("Release", &VariantIterable::Release)
+      .def("__enter__", [](py::object self) { return self; })
+      .def("__exit__", &VariantIterable::PythonExit);
 }

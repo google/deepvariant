@@ -30,12 +30,13 @@
  *
  */
 
+#include "third_party/pybind11/include/pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
 #endif
 
-#include "third_party/nucleus/io/gff_writer.h"
+#include "third_party/nucleus/io/fastq_writer.h"
 #include "third_party/pybind11/include/pybind11/chrono.h"
 #include "third_party/pybind11/include/pybind11/complex.h"
 #include "third_party/pybind11/include/pybind11/functional.h"
@@ -43,13 +44,12 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(gff_writer, m) {
+PYBIND11_MODULE(fastq_writer, m) {
   using namespace ::nucleus;
-  py::class_<GffWriter>(m, "GffWriter")
-      .def_static("to_file", &GffWriter::ToFile, py::arg("gffPath"),
-                  py::arg("header"), py::arg("options"))
-      .def("write", &GffWriter::WritePython, py::arg("gffMessage"))
+  py::class_<FastqWriter>(m, "FastqWriter")
+      .def_static("to_file", &FastqWriter::ToFile, py::arg("fastqPath"),
+                  py::arg("options"))
+      .def("write", &FastqWriter::WritePython, py::arg("fastqMessage"))
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &GffWriter::Close)
-      .def_property_readonly("header", &GffWriter::Header);
+      .def("__exit__", &FastqWriter::Close);
 }

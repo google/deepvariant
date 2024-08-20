@@ -41,14 +41,18 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(merge_variants, m) {
-  using namespace ::nucleus;
+  using namespace ::nucleus;  // NOLINT
   pybind11_protobuf::ImportNativeProtoCasters();
-  // // I couldn't get this one to compile yet:
-  // m.def("merge_and_write_variants_and_nonvariants",
-  //       &MergeAndWriteVariantsAndNonVariants,
-  //          py::arg("only_keep_pass"), py::arg("variant_file_path"),
-  //          py::arg("non_variant_file_paths"), py::arg("fasta_path"),
-  //          py::arg("vcf_out_file_path"), py::arg("gvcf_out_file_path"),
-  //          py::arg("header"), py::arg("ranges"),
-  //          py::arg("process_somatic") = false);
+  m.def(
+      "merge_and_write_variants_and_nonvariants",
+      py::overload_cast<bool, const std::string&,
+                        const std::vector<std::string>&, const std::string&,
+                        const std::string&, const std::string&,
+                        const nucleus::genomics::v1::VcfHeader&,
+                        const std::vector<nucleus::genomics::v1::Range>&, bool>(
+          &MergeAndWriteVariantsAndNonVariants),
+      py::arg("only_keep_pass"), py::arg("variant_file_path"),
+      py::arg("non_variant_file_paths"), py::arg("fasta_path"),
+      py::arg("vcf_out_file_path"), py::arg("gvcf_out_file_path"),
+      py::arg("header"), py::arg("ranges"), py::arg("process_somatic") = false);
 }

@@ -46,7 +46,7 @@ PYBIND11_MODULE(gfile, m) {
       .def_static("New", &WritableFile::New, py::arg("filename"))
       .def("write", &WritableFile::Write, py::arg("s"))
       .def("close", &WritableFile::Close)
-      .def("__enter__", &WritableFile::PythonEnter)
+      .def("__enter__", [](py::object self) { return self; })
       .def("__exit__", &WritableFile::Close);
 
   py::class_<ReadableFile>(m, "ReadableFile")
@@ -54,7 +54,7 @@ PYBIND11_MODULE(gfile, m) {
       // This one doesn't pass the test, and I don't know why yet.
       .def("Readline", &ReadableFile::Readline)
       .def("close", &ReadableFile::Close)
-      .def("__enter__", &ReadableFile::PythonEnter)
+      .def("__enter__", [](py::object self) { return self; })
       .def("__exit__", &ReadableFile::Close);
   m.def("Exists", &Exists, py::arg("filename"));
   m.def("Glob", &Glob, py::arg("pattern"));
