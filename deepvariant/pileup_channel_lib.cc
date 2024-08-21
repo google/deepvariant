@@ -276,13 +276,23 @@ bool Channels::CalculateBaseLevelData(
       case CigarUnit::INSERT:
       case CigarUnit::CLIP_SOFT:
         // Insert op.
-        ok = action_per_cigar_unit(ref_i - 1, read_i, op);
+        if (ref_i > 0) {
+          ok = action_per_cigar_unit(ref_i - 1, read_i, op);
+        } else {
+          LOG(WARNING) << "Skipping insertion that starts before the first "
+                          "base of the reference.";
+        }
         read_i += op_len;
         break;
       case CigarUnit::DELETE:
       case CigarUnit::SKIP:
         // Delete op.
-        ok = action_per_cigar_unit(ref_i, read_i - 1, op);
+        if (read_i > 0) {
+          ok = action_per_cigar_unit(ref_i, read_i - 1, op);
+        } else {
+          LOG(WARNING) << "Skipping deletion that starts before the first base "
+                          "of the read.";
+        }
         ref_i += op_len;
         break;
       case CigarUnit::CLIP_HARD:
