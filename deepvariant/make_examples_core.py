@@ -34,7 +34,7 @@ import json
 import os
 import random
 import time
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import Any, DefaultDict, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
 
 
 
@@ -61,9 +61,9 @@ from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.python import direct_phasing
-from deepvariant.python import make_examples_native
+from deepvariant.python import make_examples_native as make_examples_native_module
 from deepvariant.python import pileup_image_native
-from deepvariant.realigner import realigner
+from deepvariant.realigner import realigner as realigner_module
 from deepvariant.small_model import inference as small_model_inference
 from deepvariant.small_model import make_small_model_examples
 from deepvariant.vendor import timer
@@ -1173,6 +1173,8 @@ class OutputsWriter:
   def write_runtime(self, stats_dict: Dict[str, Any]):
     columns = [str(stats_dict.get(k, 'NA')) for k in RUNTIME_BY_REGION_COLUMNS]
     writer = self._writers['runtime']
+    if writer is None:
+      raise ValueError('Runtime writer unexpectedly found to be None.')
     writer.write('\t'.join(columns) + '\n')
 
   def write_read_phase(self, read, phase, region_n):
@@ -1183,6 +1185,10 @@ class OutputsWriter:
 
   def write_small_model_examples(self, *examples: Sequence[Union[str, int]]):
     writer = self._writers['small_model_examples']
+    if writer is None:
+      raise ValueError(
+          'Small model examples writer unexpectedly found to be None.'
+      )
     for row in examples:
       writer.write('\t'.join(map(str, row)) + '\n')
 
@@ -1265,11 +1271,11 @@ class RegionProcessor:
     ]
     self.mean_coverage_per_sample = None
     self.initialized = False
-    self.ref_reader = None
-    self.realigner = None
-    self.labeler = None
-    self.population_vcf_readers = None
-    self.make_examples_native = None
+    self._realigner = None
+    self._labeler = None
+    self._population_vcf_readers = None
+    self._ref_reader = None
+    self._make_examples_native = None
     if self.options.phase_reads:
       # One instance of DirectPhasing per lifetime of make_examples.
       self.direct_phasing_cpp = self._make_direct_phasing_obj()
@@ -1277,7 +1283,7 @@ class RegionProcessor:
     self.contig_dict = ranges.contigs_dict(
         fasta.IndexedFastaReader(self.options.reference_filename).header.contigs
     )
-    self.small_model_variant_caller = None
+    self._small_model_variant_caller = None
     if self.options.call_small_model_examples:
       self.small_model_variant_caller = (
           small_model_inference.SmallModelVariantCaller.from_model_path(
@@ -1292,6 +1298,89 @@ class RegionProcessor:
             self.options.small_model_vaf_context_window_size
         )
     )
+
+  @property
+  def realigner(self) -> realigner_module.Realigner:
+    if self._realigner is None:
+      raise ValueError('realigner is not initialized.')
+    return self._realigner
+
+  @realigner.setter
+  def realigner(self, realigner: realigner_module.Realigner):
+    self._realigner = realigner
+
+  @property
+  def labeler(
+      self,
+  ) -> (
+      positional_labeler.PositionalVariantLabeler
+      | haplotype_labeler.HaplotypeLabeler
+  ):
+    if self._labeler is None:
+      raise ValueError('labeler is not initialized.')
+    return self._labeler
+
+  @labeler.setter
+  def labeler(
+      self,
+      labeler: (
+          positional_labeler.PositionalVariantLabeler
+          | haplotype_labeler.HaplotypeLabeler
+      ),
+  ):
+    self._labeler = labeler
+
+  @property
+  def population_vcf_readers(self) -> DefaultDict[str, Optional[vcf.VcfReader]]:
+    if self._population_vcf_readers is None:
+      raise ValueError('population_vcf_readers is not initialized.')
+    return self._population_vcf_readers
+
+  @population_vcf_readers.setter
+  def population_vcf_readers(
+      self, population_vcf_readers: DefaultDict[str, Optional[vcf.VcfReader]]
+  ):
+    self._population_vcf_readers = population_vcf_readers
+
+  @property
+  def ref_reader(self) -> fasta.IndexedFastaReader:
+    if self._ref_reader is None:
+      raise ValueError('ref_reader is not initialized.')
+    return self._ref_reader
+
+  @ref_reader.setter
+  def ref_reader(self, ref_reader: fasta.IndexedFastaReader):
+    self._ref_reader = ref_reader
+
+  @property
+  def make_examples_native(
+      self,
+  ) -> make_examples_native_module.ExamplesGenerator:
+    if self._make_examples_native is None:
+      raise ValueError('make_examples_native is not initialized.')
+    return self._make_examples_native
+
+  @make_examples_native.setter
+  def make_examples_native(
+      self,
+      make_examples_native: make_examples_native_module.ExamplesGenerator,
+  ):
+    self._make_examples_native = make_examples_native
+
+  @property
+  def small_model_variant_caller(
+      self,
+  ) -> small_model_inference.SmallModelVariantCaller:
+    if self._small_model_variant_caller is None:
+      raise ValueError('small_model_variant_caller is not initialized.')
+    return self._small_model_variant_caller
+
+  @small_model_variant_caller.setter
+  def small_model_variant_caller(
+      self,
+      small_model_variant_caller: small_model_inference.SmallModelVariantCaller,
+  ):
+    self._small_model_variant_caller = small_model_variant_caller
 
   def _get_mean_coverage_per_sample(self) -> List[float]:
     """Returns the mean coverage per sample if set in options.
@@ -1443,7 +1532,7 @@ class RegionProcessor:
       input_bam_header = sam.SamReader(
           main_sample.options.reads_filenames[0]
       ).header
-      self.realigner = realigner.Realigner(
+      self.realigner = realigner_module.Realigner(
           self.options.realigner_options,
           self.ref_reader,
           shared_header=input_bam_header,
@@ -1598,7 +1687,7 @@ class RegionProcessor:
         # pylint: disable=unidiomatic-typecheck
         if type(label) is variant_labeler.VariantLabel:
           self.make_examples_native.append_label(
-              make_examples_native.VariantLabel(
+              make_examples_native_module.VariantLabel(
                   label.is_confident, label.variant, label.genotype, is_denovo
               )
           )
@@ -1608,7 +1697,7 @@ class RegionProcessor:
             is customized_classes_labeler.CustomizedClassesVariantLabel
         ):
           self.make_examples_native.append_label(
-              make_examples_native.CustomizedClassesLabel(
+              make_examples_native_module.CustomizedClassesLabel(
                   label.is_confident,
                   label.variant,
                   label.truth_variant,
@@ -2893,7 +2982,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       role: writers_dict[role].examples_filename for role in writers_dict
   }
   region_processor.make_examples_native = (
-      make_examples_native.ExamplesGenerator(options, example_filenames)
+      make_examples_native_module.ExamplesGenerator(options, example_filenames)
   )
 
   logging_with_options(

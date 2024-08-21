@@ -436,6 +436,7 @@ class DiagnosticLogger(object):
 
   def close(self):
     if self.enabled:
+      assert self._csv_file is not None
       self._csv_file.close()
 
   @property
@@ -451,6 +452,7 @@ class DiagnosticLogger(object):
 
   def _write_csv_line(self, *args):
     assert self.enabled, 'only callable when diagnostics are on'
+    assert self._csv_writer is not None
     self._csv_writer.writerow(args)
 
   def _file_for_region(self, region, basename):
