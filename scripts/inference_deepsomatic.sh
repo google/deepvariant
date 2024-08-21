@@ -330,7 +330,12 @@ if [[ "${MODEL_PRESET}" = "WGS" ]]; then
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 elif [[ "${MODEL_PRESET}" = "WES" ]]; then
-  MODEL_TYPE="WES"
+  # Only set to default if MODEL_TYPE is not set.
+  # This will allow MODEL_TYPE to be set to WES_TUMOR_ONLY, and allow usage of
+  # the tumor-only model
+  if [[ -z "${MODEL_TYPE}" ]]; then
+    MODEL_TYPE="WES"
+  fi
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
@@ -345,7 +350,12 @@ elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
   CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/seqc2_hg38.exome_regions.bed}"
 elif [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
-  MODEL_TYPE="PACBIO"
+  # Only set to default if MODEL_TYPE is not set.
+  # This will allow MODEL_TYPE to be set to WES_TUMOR_ONLY, and allow usage of
+  # the tumor-only model
+  if [[ -z "${MODEL_TYPE}" ]]; then
+    MODEL_TYPE="PACBIO"
+  fi
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
@@ -359,7 +369,12 @@ elif [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 elif [[ "${MODEL_PRESET}" = "ONT" ]]; then
-  MODEL_TYPE="ONT"
+  # Only set to default if MODEL_TYPE is not set.
+  # This will allow MODEL_TYPE to be set to WES_TUMOR_ONLY, and allow usage of
+  # the tumor-only model
+  if [[ -z "${MODEL_TYPE}" ]]; then
+    MODEL_TYPE="ONT"
+  fi
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
