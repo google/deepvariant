@@ -79,7 +79,7 @@ curl ${HTTPDIR}/HG003.GRCh38.chr20.pFDA_truthv2.bam.bai > input/HG003.GRCh38.chr
 
 ```bash
 ulimit -u 10000 # https://stackoverflow.com/questions/52026652/openblas-blas-thread-init-pthread-create-resource-temporarily-unavailable/54746150#54746150
-BIN_VERSION="1.6.1"
+BIN_VERSION="1.7.0"
 mkdir -p deepvariant_output
 
 singularity exec --bind /usr/lib/locale/ \

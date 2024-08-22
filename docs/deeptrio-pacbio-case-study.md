@@ -85,7 +85,7 @@ is run as a separate command.
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.6.1"
+BIN_VERSION="1.7.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io

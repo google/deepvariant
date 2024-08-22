@@ -33,7 +33,7 @@ If you want to compile the DeepVariant binaries for yourself, we also have a
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.6.1"
+BIN_VERSION="1.7.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -274,7 +274,7 @@ INDEL   PASS            4         4         0           13         0          9 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r1.6.1/Dockerfile
+[Dockerfile]: https://github.com/google/deepvariant/blob/r1.7/Dockerfile
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
