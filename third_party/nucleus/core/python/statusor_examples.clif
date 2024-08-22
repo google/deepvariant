@@ -44,3 +44,9 @@ from "third_party/nucleus/core/statusor_examples.h":
     def MakeIntVectorFail() -> StatusOr<list<int>>
     def FuncReturningStatusOK() -> Status
     def FuncReturningStatusFail() -> Status
+
+    class StringOwner:
+      @classmethod
+      def Factory(cls) -> StatusOr<StringOwner>
+
+      def GetText(self) -> str

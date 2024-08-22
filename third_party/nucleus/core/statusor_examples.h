@@ -29,15 +29,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Examples of StatusOr usage in C++ for CLIF bindings and tests.
+// Examples of StatusOr usage in C++ for Python bindings and tests.
 #ifndef THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
 #define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_EXAMPLES_H_
 
 #include <memory>
+#include <string>
 
-#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/core/statusor.h"
+#include "third_party/nucleus/platform/types.h"
 
 namespace nucleus {
 
@@ -76,6 +77,24 @@ static Status FuncReturningStatusOK() { return Status(); }
 static Status FuncReturningStatusFail() {
   return Status(absl::StatusCode::kInvalidArgument, "FuncReturningStatusFail");
 }
+
+struct StringOwner {
+  std::string text;
+  explicit StringOwner(const std::string &text) : text{text} {}
+
+  // Exercising processing of this return type is the purpose of this test.
+  static StatusOr<std::unique_ptr<StringOwner>> Factory() {
+    return std::unique_ptr<StringOwner>(new StringOwner{"Factory"});
+  }
+
+  std::string GetText() const { return text; }
+
+  // Make this type non-copyable, non-movable (bolts-and-braces approach).
+  StringOwner(const StringOwner&) = delete;
+  StringOwner(StringOwner&&) = delete;
+  StringOwner& operator=(const StringOwner&) = delete;
+  StringOwner& operator=(StringOwner&&) = delete;
+};
 
 }  // namespace nucleus
 

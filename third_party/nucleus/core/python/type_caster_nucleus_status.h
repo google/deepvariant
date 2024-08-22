@@ -30,36 +30,38 @@
  *
  */
 
+#pragma once
+
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
 #endif
 
-#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
-#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
-#include "third_party/nucleus/core/statusor_examples.h"
+// IWYU pragma: always_keep // See pybind11/docs/type_caster_iwyu.rst
 
-PYBIND11_MODULE(statusor_examples, m) {
-  using namespace ::nucleus;  // NOLINT
+#include "third_party/nucleus/core/status.h"
 
-  namespace py = pybind11;
+namespace pybind11 {
+namespace detail {
 
-  // Intended usage: `hasattr(statusor_examples, 'USING_PYBIND')`
-  m.attr("USING_PYBIND") = py::none();
+template <>
+class type_caster<nucleus::Status> {
+ public:
+  static constexpr auto name = const_name("Status");
 
-  m.def("MakeIntOK", MakeIntOK);
-  m.def("MakeIntFail", MakeIntFail);
-  m.def("MakeStrOK", MakeStrOK);
-  m.def("MakeStrFail", MakeStrFail);
-  // These may not be relevant to production code situations:
-  // m.def("MakeIntUniquePtrOK", MakeIntUniquePtrOK);
-  // m.def("MakeIntUniquePtrFail", MakeIntUniquePtrFail);
-  // m.def("MakeIntVectorOK", MakeIntVectorOK);
-  // m.def("MakeIntVectorFail", MakeIntVectorFail);
-  m.def("FuncReturningStatusOK", FuncReturningStatusOK);
-  m.def("FuncReturningStatusFail", FuncReturningStatusFail);
+  // C++ to Python conversion.
+  static handle cast(const nucleus::Status& src, return_value_policy /*policy*/,
+                     handle /*parent*/) {
+    if (src.ok()) {
+      return none().release();
+    }
+    PyErr_SetString(PyExc_ValueError, src.ToString().c_str());
+    throw error_already_set();
+  }
 
-  py::classh<StringOwner>(m, "StringOwner")
-      .def_static("Factory", &StringOwner::Factory)
-      .def("GetText", &StringOwner::GetText);
-}
+  // Python to C++ conversion is not enabled:
+  // bool load(handle src, bool);
+};
+
+}  // namespace detail
+}  // namespace pybind11

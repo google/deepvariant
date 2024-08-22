@@ -30,36 +30,62 @@
  *
  */
 
+#pragma once
+
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
 #endif
 
-#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+// IWYU pragma: always_keep // See pybind11/docs/type_caster_iwyu.rst
+
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
-#include "third_party/nucleus/core/statusor_examples.h"
+#include "third_party/nucleus/core/status.h"
+#include "third_party/nucleus/core/statusor.h"
 
-PYBIND11_MODULE(statusor_examples, m) {
-  using namespace ::nucleus;  // NOLINT
+namespace pybind11 {
+namespace detail {
 
-  namespace py = pybind11;
+template <typename PayloadType>
+struct type_caster<nucleus::StatusOr<PayloadType>> {
+ public:
+  static constexpr auto name = const_name("StatusOr");
 
-  // Intended usage: `hasattr(statusor_examples, 'USING_PYBIND')`
-  m.attr("USING_PYBIND") = py::none();
+  using PayloadCaster = make_caster<PayloadType>;
+  using StatusCaster = make_caster<nucleus::Status>;
 
-  m.def("MakeIntOK", MakeIntOK);
-  m.def("MakeIntFail", MakeIntFail);
-  m.def("MakeStrOK", MakeStrOK);
-  m.def("MakeStrFail", MakeStrFail);
-  // These may not be relevant to production code situations:
-  // m.def("MakeIntUniquePtrOK", MakeIntUniquePtrOK);
-  // m.def("MakeIntUniquePtrFail", MakeIntUniquePtrFail);
-  // m.def("MakeIntVectorOK", MakeIntVectorOK);
-  // m.def("MakeIntVectorFail", MakeIntVectorFail);
-  m.def("FuncReturningStatusOK", FuncReturningStatusOK);
-  m.def("FuncReturningStatusFail", FuncReturningStatusFail);
+  // Convert C++ -> Python.
+  // Adapted from:
+  // https://github.com/pybind/pybind11_abseil/blob/baadf890e80e72969f03976489a5294bd0c6efa7/pybind11_abseil/statusor_caster.h#L84-L102
+  static handle cast(const nucleus::StatusOr<PayloadType>* src,
+                     return_value_policy policy, handle parent) {
+    if (!src) return none().release();
+    return cast_impl(*src, policy, parent);
+  }
 
-  py::classh<StringOwner>(m, "StringOwner")
-      .def_static("Factory", &StringOwner::Factory)
-      .def("GetText", &StringOwner::GetText);
-}
+  static handle cast(const nucleus::StatusOr<PayloadType>& src,
+                     return_value_policy policy, handle parent) {
+    return cast_impl(src, policy, parent);
+  }
+
+  static handle cast(nucleus::StatusOr<PayloadType>&& src,
+                     return_value_policy policy, handle parent) {
+    return cast_impl(std::move(src), policy, parent);
+  }
+
+ private:
+  template <typename CType>
+  static handle cast_impl(CType&& src, return_value_policy policy, handle parent) {
+    if (src.ok()) {
+      return PayloadCaster::cast(std::forward<CType>(src).ConsumeValueOrDie(),
+                                 policy, parent);
+    }
+    return StatusCaster::cast(std::forward<CType>(src).status(), return_value_policy::move, parent);
+  }
+
+  // Python to C++ conversion is not enabled:
+  // bool load(handle src, bool);
+};
+
+}  // namespace detail
+}  // namespace pybind11
