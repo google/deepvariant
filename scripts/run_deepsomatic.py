@@ -751,7 +751,7 @@ def check_flags():
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
-          'https://github.com/google/deepvariant/blob/r1.6.1/docs/'
+          'https://github.com/google/deepvariant/blob/r1.7/docs/'
           'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
           'could-not-open'.format(_CUSTOMIZED_MODEL.value)
       )

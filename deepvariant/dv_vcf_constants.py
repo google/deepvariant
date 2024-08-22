@@ -32,7 +32,7 @@ from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import vcf_constants
 
 # Current release version of DeepVariant.
-DEEP_VARIANT_VERSION = '1.6.1'
+DEEP_VARIANT_VERSION = '1.7.0'
 
 # FILTER field IDs.
 DEEP_VARIANT_PASS = 'PASS'
