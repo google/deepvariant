@@ -46,10 +46,12 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/util/utils.h"
+#include "google/protobuf/text_format.h"
 
 namespace learning {
 namespace genomics {

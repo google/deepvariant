@@ -34,6 +34,7 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <iterator>
 #include <sstream>
 #include <string>
@@ -48,10 +49,12 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-// #include "absl/log/log.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 
 namespace learning {
 namespace genomics {

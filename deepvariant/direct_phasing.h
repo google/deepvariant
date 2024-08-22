@@ -37,6 +37,7 @@
 friend class test_case_name##_##test_name##_Test
 #endif
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <utility>

@@ -54,6 +54,7 @@
 #include "boost/graph/graphviz.hpp"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 
 namespace learning {
 namespace genomics {

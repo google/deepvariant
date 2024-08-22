@@ -32,6 +32,7 @@
 // UnitTests for allelecounter.{h,cc}.
 #include "deepvariant/allelecounter.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <numeric>

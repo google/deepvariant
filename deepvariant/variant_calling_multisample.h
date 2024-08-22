@@ -43,6 +43,7 @@
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"

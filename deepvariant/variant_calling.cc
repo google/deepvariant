@@ -32,6 +32,7 @@
 #include "deepvariant/variant_calling.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
@@ -44,6 +45,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "absl/container/btree_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "third_party/nucleus/io/vcf_reader.h"
