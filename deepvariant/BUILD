@@ -1896,6 +1896,7 @@ cc_library(
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

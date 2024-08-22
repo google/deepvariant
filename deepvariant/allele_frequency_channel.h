@@ -38,6 +38,7 @@
 
 #include "deepvariant/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -62,7 +63,7 @@ class AlleleFrequencyChannel : public Channel {
 
   // Public for testing
   float ReadAlleleFrequency(const DeepVariantCall& dv_call, const Read& read,
-                            const std::vector<std::string>& alt_alleles);
+                            absl::Span<const std::string> alt_alleles);
 
  private:
   unsigned char AlleleFrequencyColor(float allele_frequency);

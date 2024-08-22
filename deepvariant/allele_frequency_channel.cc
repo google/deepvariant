@@ -37,6 +37,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
+
 namespace learning {
 namespace genomics {
 namespace deepvariant {
@@ -74,7 +76,7 @@ unsigned char AlleleFrequencyChannel::AlleleFrequencyColor(
 // Get the allele frequency of the alt allele that is carried by a read.
 float AlleleFrequencyChannel::ReadAlleleFrequency(
     const DeepVariantCall& dv_call, const Read& read,
-    const std::vector<std::string>& alt_alleles) {
+    absl::Span<const std::string> alt_alleles) {
   std::string key =
       (read.fragment_name() + "/" + std::to_string(read.read_number()));
 
