@@ -163,7 +163,7 @@ std::string CalcRefBases(absl::string_view ref_bases,
 //   "ACGT" [DEL] => "A" + "" (from >= "ACGT".length()) => "A"
 //
 std::string MakeAltAllele(const std::string_view prefix,
-                          const std::string& variant_ref, const uint32_t from) {
+                          absl::string_view variant_ref, const uint32_t from) {
   const auto postfix =
       from >= variant_ref.length() ? "" : variant_ref.substr(from);
   return absl::StrCat(prefix, postfix);
