@@ -278,9 +278,6 @@ bool Channels::CalculateBaseLevelData(
         // Insert op.
         if (ref_i > 0) {
           ok = action_per_cigar_unit(ref_i - 1, read_i, op);
-        } else {
-          LOG(WARNING) << "Skipping insertion that starts before the first "
-                          "base of the reference.";
         }
         read_i += op_len;
         break;
@@ -289,9 +286,6 @@ bool Channels::CalculateBaseLevelData(
         // Delete op.
         if (read_i > 0) {
           ok = action_per_cigar_unit(ref_i, read_i - 1, op);
-        } else {
-          LOG(WARNING) << "Skipping deletion that starts before the first base "
-                          "of the read.";
         }
         ref_i += op_len;
         break;
