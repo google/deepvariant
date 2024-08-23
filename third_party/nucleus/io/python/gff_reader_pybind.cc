@@ -35,40 +35,36 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/gff_reader.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(gff_reader, m) {
-  using namespace ::nucleus;
-  py::class_<GffReader>(m, "GffReader")
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+
+  py::classh<GffReader>(m, "GffReader")
       .def_static("from_file", &GffReader::FromFile, py::arg("gffPath"),
                   py::arg("options"))
-      .def("iterate", &GffReader::Iterate)
+      .def("iterate",
+           [](const GffReader& self) {
+             auto cpp_result = self.Iterate();
+             auto ret0 = py::cast(std::move(cpp_result));
+             auto postproc = py::module_::import(
+                 "third_party.nucleus.io.clif_postproc");
+             return postproc.attr("WrappedGffIterable")(ret0);
+           })
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &GffReader::Close)
+      .def("__exit__", [](GffReader& self, py::args) { return self.Close(); })
       .def_property_readonly("header", &GffReader::Header);
-  // Do I need this?
-  // GffReader_class.def(
-  //     "as_nucleus_Reader",
-  //     [](::nucleus::GffReader* self) {
-  //         return pybind11::capsule(static_cast<void *>(self));
-  //     }
-  // );
-  py::class_<GffIterable>(m, "GffIterable")
+
+  py::classh<GffIterable>(m, "GffIterable")
       .def("PythonNext", &GffIterable::PythonNext, py::arg("gff"))
       .def("Release", &GffIterable::Release)
       .def("__enter__", [](py::object self) { return self; })
       .def("__exit__", &GffIterable::PythonExit);
-  // Do I need this?
-  // GffIterable_class.def(
-  //     "as_nucleus_IterableBase",
-  //     [](::nucleus::Iterable< ::nucleus::genomics::v1::GffRecord>* self) {
-  //         return pybind11::capsule(static_cast<void *>(self));
-  //     }
-  // );
 }

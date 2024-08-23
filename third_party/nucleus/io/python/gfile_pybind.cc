@@ -35,27 +35,41 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include <pybind11/stl.h>
+
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/gfile.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(gfile, m) {
-  using namespace ::nucleus;
-  py::class_<WritableFile>(m, "WritableFile")
+  pybind11_protobuf::ImportNativeProtoCasters();
+
+  using namespace ::nucleus;  // NOLINT
+
+  py::classh<WritableFile>(m, "WritableFile")
       .def_static("New", &WritableFile::New, py::arg("filename"))
       .def("write", &WritableFile::Write, py::arg("s"))
       .def("close", &WritableFile::Close)
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &WritableFile::Close);
+      .def("__exit__", [](WritableFile& self, py::args) { self.Close(); });
 
-  py::class_<ReadableFile>(m, "ReadableFile")
+  py::classh<ReadableFile>(m, "ReadableFile")
       .def_static("New", &ReadableFile::New, py::arg("filename"))
-      // This one doesn't pass the test, and I don't know why yet.
-      .def("Readline", &ReadableFile::Readline)
+      .def("Readline",
+           [](ReadableFile& self) {
+             std::string s;
+             bool cpp_result = self.Readline(&s);
+             py::object ret0 = py::cast(std::move(cpp_result));
+             py::object ret1 = py::cast(std::move(s));
+             return py::make_tuple(ret0, ret1);
+           })
       .def("close", &ReadableFile::Close)
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &ReadableFile::Close);
+      .def("__exit__", [](ReadableFile& self, py::args) { self.Close(); });
   m.def("Exists", &Exists, py::arg("filename"));
   m.def("Glob", &Glob, py::arg("pattern"));
 }

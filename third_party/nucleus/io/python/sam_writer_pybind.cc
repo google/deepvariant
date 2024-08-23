@@ -36,17 +36,19 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/sam_writer.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(sam_writer, m) {
-  using namespace ::nucleus;
-  py::class_<SamWriter>(m, "SamWriter")
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+
+  py::classh<SamWriter>(m, "SamWriter")
       .def_static("to_file",
                   py::overload_cast<const string&, const string&, bool,
                                     const nucleus::genomics::v1::SamHeader&>(
@@ -55,5 +57,5 @@ PYBIND11_MODULE(sam_writer, m) {
                   py::arg("embed_ref"), py::arg("sam_header"))
       .def("write", &SamWriter::WritePython, py::arg("readMessage"))
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &SamWriter::Close);
+      .def("__exit__", [](SamWriter& self, py::args) { return self.Close(); });
 }

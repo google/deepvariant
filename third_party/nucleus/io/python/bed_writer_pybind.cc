@@ -36,21 +36,23 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/bed_writer.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(bed_writer, m) {
-  using namespace ::nucleus;
-  py::class_<BedWriter>(m, "BedWriter")
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+
+  py::classh<BedWriter>(m, "BedWriter")
       .def_static("to_file", &BedWriter::ToFile, py::arg("bedPath"),
                   py::arg("header"), py::arg("options"))
       .def("write", &BedWriter::WritePython, py::arg("bedMessage"))
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &BedWriter::Close)
+      .def("__exit__", [](BedWriter& self, py::args) { return self.Close(); })
       .def_property_readonly("header", &BedWriter::Header);
 }

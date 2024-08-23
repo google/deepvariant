@@ -35,49 +35,82 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include <pybind11/stl.h>
+
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
+#include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/io/reference.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(reference, m) {
+  pybind11_protobuf::ImportNativeProtoCasters();
   using namespace ::nucleus;  // NOLINT
-  py::class_<GenomeReference>(m, "GenomeReference")
+
+  py::classh<GenomeReference>(m, "GenomeReference")
       .def_property_readonly("contig_names", &GenomeReference::ContigNames)
+      .def_property_readonly("contigs", &GenomeReference::Contigs)
       .def("contig", &GenomeReference::Contig, py::arg("chrom"))
       .def("bases", &GenomeReference::GetBases, py::arg("region"))
-      .def("iterate", &GenomeReference::Iterate)
+      .def("iterate",
+           [](const GenomeReference& self) {
+             auto cpp_result = self.Iterate();
+             auto ret0 = py::cast(std::move(cpp_result));
+             auto postproc = py::module_::import(
+                 "third_party.nucleus.io.clif_postproc");
+             return postproc.attr("WrappedReferenceIterable")(ret0);
+           })
       .def("has_contig", &GenomeReference::HasContig, py::arg("contig_name"))
       .def("is_valid_interval", &GenomeReference::IsValidInterval,
            py::arg("region"))
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &GenomeReference::Close);
+      .def("__exit__",
+           [](GenomeReference& self, py::args) { return self.Close(); });
 
-  py::class_<InMemoryFastaReader>(m, "InMemoryFastaReader")
+  py::classh<InMemoryFastaReader, GenomeReference>(m, "InMemoryFastaReader")
+      .def_property_readonly("contig_names", &InMemoryFastaReader::ContigNames)
+      .def_property_readonly("contigs", &InMemoryFastaReader::Contigs)
+      .def("contig", &InMemoryFastaReader::Contig, py::arg("chrom"))
       .def_static("create", &InMemoryFastaReader::Create, py::arg("contigs"),
                   py::arg("seqs"))
       .def_property_readonly("reference_sequences",
-                             &InMemoryFastaReader::ReferenceSequences);
+                             &InMemoryFastaReader::ReferenceSequences)
+      .def("__enter__", [](py::object self) { return self; })
+      .def("__exit__",
+           [](InMemoryFastaReader& self, py::args) { return self.Close(); });
 
-  py::class_<IndexedFastaReader>(m, "IndexedFastaReader")
+  py::classh<IndexedFastaReader, GenomeReference>(m, "IndexedFastaReader")
+      .def_property_readonly("contig_names", &IndexedFastaReader::ContigNames)
+      .def_property_readonly("contigs", &IndexedFastaReader::Contigs)
+      .def("contig", &IndexedFastaReader::Contig, py::arg("chrom"))
       .def_static(
           "from_file",
           py::overload_cast<const string&, const string&,
                             const nucleus::genomics::v1::FastaReaderOptions&,
                             int>(&IndexedFastaReader::FromFile),
           py::arg("fasta_path"), py::arg("fai_path"), py::arg("options"),
-          py::arg("cache_size_bases") =
-              INDEXED_FASTA_READER_DEFAULT_CACHE_SIZE);
+          py::arg("cache_size_bases") = INDEXED_FASTA_READER_DEFAULT_CACHE_SIZE)
+      .def("__enter__", [](py::object self) { return self; })
+      .def("__exit__",
+           [](IndexedFastaReader& self, py::args) { return self.Close(); });
 
-  py::class_<UnindexedFastaReader>(m, "UnindexedFastaReader")
+  py::classh<UnindexedFastaReader, GenomeReference>(m, "UnindexedFastaReader")
       .def_static("from_file", &UnindexedFastaReader::FromFile,
-                  py::arg("fasta_path"));
+                  py::arg("fasta_path"))
+      .def("__enter__", [](py::object self) { return self; })
+      .def("__exit__",
+           [](UnindexedFastaReader& self, py::args) { return self.Close(); });
 
-  py::class_<GenomeReferenceRecordIterable>(m, "GenomeReferenceRecordIterable")
-      .def("Next", &GenomeReferenceRecordIterable::PythonNext)
+  py::classh<GenomeReferenceRecordIterable>(m, "GenomeReferenceRecordIterable")
+      .def("Next",
+           [](GenomeReferenceRecordIterable& self) {
+             GenomeReferenceRecord record;
+             auto cpp_result = self.Next(&record);
+             return py::make_tuple(std::move(cpp_result), std::move(record));
+           })
       .def("Release", &GenomeReferenceRecordIterable::Release)
       .def("__enter__", [](py::object self) { return self; })
       .def("__exit__", &GenomeReferenceRecordIterable::PythonExit);

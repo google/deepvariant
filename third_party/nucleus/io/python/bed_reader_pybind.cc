@@ -36,21 +36,32 @@
 #endif
 
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/bed_reader.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(bed_reader, m) {
-  using namespace ::nucleus;
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
 
-  py::class_<BedReader>(m, "BedReader")
+  py::classh<BedReader>(m, "BedReader")
       .def_static("from_file", &BedReader::FromFile, py::arg("bedPath"),
                   py::arg("options"))
-      .def("iterate", &BedReader::Iterate)
+      .def("iterate",
+           [](const BedReader& self) {
+             auto cpp_result = self.Iterate();
+             auto ret0 = py::cast(std::move(cpp_result));
+             auto postproc = py::module_::import(
+                 "third_party.nucleus.io.clif_postproc");
+             return postproc.attr("WrappedBedIterable")(ret0);
+           })
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &BedReader::Close)
+      .def("__exit__", [](BedReader& self, py::args) { return self.Close(); })
       .def_property_readonly("header", &BedReader::Header);
-  py::class_<BedIterable>(m, "BedIterable")
+  py::classh<BedIterable>(m, "BedIterable")
       .def("PythonNext", &BedIterable::PythonNext, py::arg("bed"))
       .def("Release", &BedIterable::Release)
       .def("__enter__", [](py::object self) { return self; })

@@ -36,20 +36,23 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/fastq_writer.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(fastq_writer, m) {
-  using namespace ::nucleus;
-  py::class_<FastqWriter>(m, "FastqWriter")
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+
+  py::classh<FastqWriter>(m, "FastqWriter")
       .def_static("to_file", &FastqWriter::ToFile, py::arg("fastqPath"),
                   py::arg("options"))
       .def("write", &FastqWriter::WritePython, py::arg("fastqMessage"))
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &FastqWriter::Close);
+      .def("__exit__",
+           [](FastqWriter& self, py::args) { return self.Close(); });
 }

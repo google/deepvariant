@@ -36,23 +36,33 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/bedgraph_reader.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
 #include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(bedgraph_reader, m) {
-  using namespace ::nucleus;
-  py::class_<BedGraphReader>(m, "BedGraphReader")
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+  py::classh<BedGraphReader>(m, "BedGraphReader")
       .def_static("from_file", &BedGraphReader::FromFile,
                   py::arg("bedgraph_path"))
-      .def("iterate", &BedGraphReader::Iterate)
+      .def("iterate",
+           [](const BedGraphReader& self) {
+             auto cpp_result = self.Iterate();
+             auto ret0 = py::cast(std::move(cpp_result));
+             auto postproc = py::module_::import(
+                 "third_party.nucleus.io.clif_postproc");
+             return postproc.attr("WrappedBedGraphIterable")(ret0);
+           })
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &BedGraphReader::Close);
-  py::class_<BedGraphIterable>(m, "BedGraphIterable")
+      .def("__exit__",
+           [](BedGraphReader& self, py::args) { return self.Close(); });
+  py::classh<BedGraphIterable>(m, "BedGraphIterable")
       .def("PythonNext", &BedGraphIterable::PythonNext, py::arg("bedgraph"))
       .def("Release", &BedGraphIterable::Release)
       .def("__enter__", [](py::object self) { return self; })

@@ -36,23 +36,33 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/fastq_reader.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(fastq_reader, m) {
-  using namespace ::nucleus;
-  py::class_<FastqReader>(m, "FastqReader")
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+
+  py::classh<FastqReader>(m, "FastqReader")
       .def_static("from_file", &FastqReader::FromFile, py::arg("fastqPath"),
                   py::arg("options"))
-      .def("iterate", &FastqReader::Iterate)
+      .def("iterate",
+           [](const FastqReader& self) {
+             auto cpp_result = self.Iterate();
+             auto ret0 = py::cast(std::move(cpp_result));
+             auto postproc = py::module_::import(
+                 "third_party.nucleus.io.clif_postproc");
+             return postproc.attr("WrappedFastqIterable")(ret0);
+           })
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &FastqReader::Close);
-  py::class_<FastqIterable>(m, "FastqIterable")
+      .def("__exit__",
+           [](FastqReader& self, py::args) { return self.Close(); });
+  py::classh<FastqIterable>(m, "FastqIterable")
       .def("PythonNext", &FastqIterable::PythonNext, py::arg("fastq"))
       .def("Release", &FastqIterable::Release)
       .def("__enter__", [](py::object self) { return self; })

@@ -36,33 +36,53 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include <pybind11/stl.h>
+
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/sam_reader.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(sam_reader, m) {
-  using namespace ::nucleus;
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
 
-  py::class_<SamReader>(m, "SamReader")
+  py::classh<SamReader>(m, "SamReader")
       .def_static(
           "from_file",
           py::overload_cast<const string&, const string&,
                             const nucleus::genomics::v1::SamReaderOptions&>(
               &SamReader::FromFile),
           py::arg("reads_path"), py::arg("ref_path"), py::arg("options"))
-      .def("iterate", &SamReader::Iterate)
-      .def("query", &SamReader::Query, py::arg("region"))
+      .def("iterate",
+           [](const SamReader& self) {
+             auto cpp_result = self.Iterate();
+             auto ret0 = py::cast(std::move(cpp_result));
+             auto postproc = py::module_::import(
+                 "third_party.nucleus.io.clif_postproc");
+             return postproc.attr("WrappedSamIterable")(ret0);
+           })
+      .def(
+          "query",
+          [](SamReader& self, const nucleus::genomics::v1::Range& region) {
+            auto cpp_result = self.Query(region);
+            auto ret0 = py::cast(std::move(cpp_result));
+            auto postproc = py::module_::import(
+                "third_party.nucleus.io.clif_postproc");
+            return postproc.attr("WrappedSamIterable")(ret0);
+          },
+          py::arg("region"))
       .def_property_readonly("header", &SamReader::Header)
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &SamReader::Close);
+      .def("__exit__", [](SamReader& self, py::args) { return self.Close(); });
 
-  py::class_<SamIterable>(m, "SamIterable")
+  py::classh<SamIterable>(m, "SamIterable")
       .def("PythonNext", &SamIterable::PythonNext, py::arg("read"))
       .def("Release", &SamIterable::Release)
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &SamIterable::PythonExit);
+      .def("__exit__",
+           [](SamIterable& self, py::args) { return self.PythonExit(); });
 }

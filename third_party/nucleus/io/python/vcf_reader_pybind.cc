@@ -36,30 +36,57 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/vcf_reader.h"
-#include "third_party/pybind11/include/pybind11/chrono.h"
-#include "third_party/pybind11/include/pybind11/complex.h"
-#include "third_party/pybind11/include/pybind11/functional.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(vcf_reader, m) {
-  using namespace ::nucleus;
-  py::class_<VcfReader>(m, "VcfReader")
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+  py::classh<VcfReader>(m, "VcfReader")
       .def_static("from_file", &VcfReader::FromFile, py::arg("vcfPath"),
                   py::arg("options"))
       .def_static("from_file_with_header", &VcfReader::FromFileWithHeader,
                   py::arg("variantsPath"), py::arg("options"),
                   py::arg("header"))
-      .def("iterate", &VcfReader::Iterate)
-      .def("query", &VcfReader::Query, py::arg("region"))
-      .def("from_string", &VcfReader::FromStringPython, py::arg("vcf_line"),
-           py::arg("options"))
+      .def("iterate",
+           [](VcfReader& self) {
+             auto cpp_result = self.Iterate();
+             auto ret0 = py::cast(std::move(cpp_result));
+             auto postproc = py::module_::import(
+                 "third_party.nucleus.io.clif_postproc");
+             return postproc.attr("WrappedVariantIterable")(ret0);
+           })
+      .def(
+          "query",
+          [](VcfReader& self, const nucleus::genomics::v1::Range& region) {
+            auto cpp_result = self.Query(region);
+            auto ret0 = py::cast(std::move(cpp_result));
+            auto postproc = py::module_::import(
+                "third_party.nucleus.io.clif_postproc");
+            return postproc.attr("WrappedVariantIterable")(ret0);
+          },
+          py::arg("region"))
+      .def(
+          "from_string",
+          [](::nucleus::VcfReader* self, const absl::string_view& vcf_line) {
+            nucleus::genomics::v1::Variant v;
+            StatusOr<bool> cpp_result = self->FromStringPython(vcf_line, &v);
+            py::object ret0 = py::cast(std::move(cpp_result));
+            py::object ret1 = py::cast(std::move(v));
+            auto postproc = py::module_::import(
+                "third_party.nucleus.io.clif_postproc");
+            return postproc.attr("ValueErrorOnFalse")(ret0, ret1);
+          },
+          py::arg("vcf_line"))
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &VcfReader::Close)
+      .def("__exit__", [](VcfReader& self, py::args) { return self.Close(); })
       .def_property_readonly("header", &VcfReader::Header);
-  py::class_<VariantIterable>(m, "VariantIterable")
+  py::classh<VariantIterable>(m, "VariantIterable")
       .def("PythonNext", &VariantIterable::PythonNext, py::arg("variant"))
       .def("Release", &VariantIterable::Release)
       .def("__enter__", [](py::object self) { return self; })

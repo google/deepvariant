@@ -35,16 +35,22 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/bedgraph_writer.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(bedgraph_writer, m) {
-  using namespace ::nucleus;
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+
   py::class_<BedGraphWriter>(m, "BedGraphWriter")
       .def_static("to_file", &BedGraphWriter::ToFile, py::arg("bedPath"))
       .def("write", &BedGraphWriter::WritePython, py::arg("bedGraphMessage"))
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &BedGraphWriter::Close);
+      .def("__exit__",
+           [](BedGraphWriter& self, py::args) { return self.Close(); });
 }
