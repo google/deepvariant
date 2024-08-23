@@ -82,7 +82,7 @@ SKIP_SOMPY=false
 unset BAM_NORMAL
 BAM_TUMOR=""
 DOCKER_SOURCE="google/deepsomatic"
-BIN_VERSION="latest"
+BIN_VERSION="1.7.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
@@ -329,6 +329,15 @@ if [[ "${MODEL_PRESET}" = "WGS" ]]; then
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_T_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+elif [[ "${MODEL_PRESET}" = "WGS_TUMOR_ONLY" ]]; then
+  MODEL_TYPE="WGS_TUMOR_ONLY"
+  BASE="${HOME}/deepsomatic-case-studies"
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  # Unset BAM_NORMAL, since it's not used in tumor-only model.
+  BAM_NORMAL=""
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_T_1.bwa.dedup.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   # Only set to default if MODEL_TYPE is not set.
   # This will allow MODEL_TYPE to be set to WES_TUMOR_ONLY, and allow usage of
@@ -368,6 +377,14 @@ elif [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-pacbio-case-study/HCC1395.pacbio.tumor.GRCh38.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+elif [[ "${MODEL_PRESET}" = "PACBIO_TUMOR_ONLY" ]]; then
+  MODEL_TYPE="PACBIO_TUMOR_ONLY"
+  BASE="${HOME}/deepsomatic-case-studies"
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  BAM_NORMAL=""
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-pacbio-case-study/HCC1395.pacbio.tumor.GRCh38.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 elif [[ "${MODEL_PRESET}" = "ONT" ]]; then
   # Only set to default if MODEL_TYPE is not set.
   # This will allow MODEL_TYPE to be set to WES_TUMOR_ONLY, and allow usage of
@@ -385,6 +402,17 @@ elif [[ "${MODEL_PRESET}" = "ONT" ]]; then
   if [[ "${BAM_NORMAL+set}" != set ]]; then
     BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Normal_ONT.GRCh38.sorted.bam"
   fi
+
+  SAMPLE_NAME_NORMAL="1395_normal_ont"
+  SAMPLE_NAME_TUMOR="1395_tumor_ont"
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Tumor_ONT.50x.GRCh38.sorted.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+elif [[ "${MODEL_PRESET}" = "ONT_TUMOR_ONLY" ]]; then
+  MODEL_TYPE="ONT_TUMOR_ONLY"
+  BASE="${HOME}/deepsomatic-case-studies"
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  BAM_NORMAL=""
 
   SAMPLE_NAME_NORMAL="1395_normal_ont"
   SAMPLE_NAME_TUMOR="1395_tumor_ont"
@@ -775,7 +803,6 @@ function run_deepsomatic_with_docker() {
     --ref="/input/$(basename $REF).gz" \
     --reads_tumor="/input/$(basename $BAM_TUMOR)" \
     --output_vcf="/output/${OUTPUT_VCF}" \
-    --output_gvcf="/output/${OUTPUT_GVCF}" \
     --num_shards "$(nproc)" \
     --logging_dir="/output/logs" \
     "${extra_args[@]-}" && \
