@@ -27,10 +27,8 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
-#include "third_party/pybind11/include/pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
@@ -38,28 +36,48 @@
 
 #include <pybind11/stl.h>
 
+#include "deepvariant/allelecounter.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
-#include "third_party/nucleus/io/merge_variants.h"
+#include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
 #include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(merge_variants, m) {
+PYBIND11_MODULE(allelecounter, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
-  using namespace ::nucleus;  // NOLINT
+  using namespace ::learning::genomics::deepvariant;  // NOLINT
 
-  m.def(
-      "merge_and_write_variants_and_nonvariants",
-      py::overload_cast<bool, const std::string&,
-                        const std::vector<std::string>&, const std::string&,
-                        const std::string&, const std::string&,
-                        const nucleus::genomics::v1::VcfHeader&,
-                        const std::vector<nucleus::genomics::v1::Range>&, bool>(
-          &MergeAndWriteVariantsAndNonVariants),
-      py::arg("only_keep_pass"), py::arg("variant_file_path"),
-      py::arg("non_variant_file_paths"), py::arg("fasta_path"),
-      py::arg("vcf_out_file_path"), py::arg("gvcf_out_file_path"),
-      py::arg("header"), py::arg("ranges"), py::arg("process_somatic") = false);
+  py::classh<AlleleCounter>(m, "AlleleCounter")
+      // I have no idea whether these are right. They seem to build at least.
+      .def_static(
+          "Default",
+          [](const nucleus::GenomeReference* arg0,
+             const nucleus::genomics::v1::Range arg1,
+             const nucleus::genomics::v1::Range arg2,
+             const std::vector<int>& arg3, const AlleleCounterOptions& arg4) {
+            return std::make_unique<AlleleCounter>(
+                arg0, std::move(arg1), std::move(arg2), std::move(arg3),
+                std::move(arg4));
+          })
+      .def(py::init<const nucleus::GenomeReference*,
+                    const nucleus::genomics::v1::Range&,
+                    const std::vector<int>&, const AlleleCounterOptions&>())
+      .def("add", &AlleleCounter::AddPython, py::arg("read"), py::arg("sample"))
+      .def("NormalizeAndAddPython",
+           [](AlleleCounter* self,
+              ::nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>
+                  wrapped,
+              const string& sample) {
+             int read_shift;
+             std::unique_ptr<std::vector<nucleus::genomics::v1::CigarUnit>>
+                 cpp_result =
+                     self->NormalizeAndAddPython(wrapped, sample, &read_shift);
+             py::object ret0 = py::cast(std::move(*cpp_result));
+             py::object ret1 = py::cast(std::move(read_shift));
+             return py::make_tuple(ret0, ret1);
+           })
+      .def("summary_counts", &AlleleCounter::SummaryCounts)
+      .def("counts", &AlleleCounter::Counts);
 }

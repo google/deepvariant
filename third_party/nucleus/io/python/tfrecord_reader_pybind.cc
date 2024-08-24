@@ -35,16 +35,27 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include <pybind11/stl.h>
+
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/tfrecord_reader.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(tfrecord_reader, m) {
-  using namespace ::nucleus;
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+
   py::class_<TFRecordReader>(m, "TFRecordReader")
       .def_static("from_file", &TFRecordReader::New, py::arg("filename"),
                   py::arg("compression_type"))
       .def("get_next", &TFRecordReader::GetNext)
-      .def("get_record",[](TFRecordReader& self) { return py::bytes(std::string(self.record())); })
+      .def("get_record",
+           [](TFRecordReader& self) {
+             return py::bytes(std::string(self.record()));
+           })
       .def("close", &TFRecordReader::Close);
 }

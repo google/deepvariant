@@ -35,13 +35,20 @@
 #include <pybind11/pybind11.h>
 #endif
 
+#include <pybind11/stl.h>
+
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/tabix_indexer.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(tabix_indexer, m) {
-  using namespace ::nucleus;
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::nucleus;  // NOLINT
+
   m.def("tbx_index_build", &TbxIndexBuild, py::arg("path"));
   m.def("csi_index_build", &CSIIndexBuild, py::arg("path"),
         py::arg("min_shift"));

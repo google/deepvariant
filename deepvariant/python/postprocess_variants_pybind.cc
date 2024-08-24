@@ -27,10 +27,8 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
-#include "third_party/pybind11/include/pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
@@ -38,28 +36,20 @@
 
 #include <pybind11/stl.h>
 
+#include "deepvariant/postprocess_variants.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
-#include "third_party/nucleus/io/merge_variants.h"
+#include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
 #include "third_party/pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(merge_variants, m) {
+PYBIND11_MODULE(postprocess_variants, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
-  using namespace ::nucleus;  // NOLINT
+  using namespace ::learning::genomics::deepvariant;  // NOLINT
 
-  m.def(
-      "merge_and_write_variants_and_nonvariants",
-      py::overload_cast<bool, const std::string&,
-                        const std::vector<std::string>&, const std::string&,
-                        const std::string&, const std::string&,
-                        const nucleus::genomics::v1::VcfHeader&,
-                        const std::vector<nucleus::genomics::v1::Range>&, bool>(
-          &MergeAndWriteVariantsAndNonVariants),
-      py::arg("only_keep_pass"), py::arg("variant_file_path"),
-      py::arg("non_variant_file_paths"), py::arg("fasta_path"),
-      py::arg("vcf_out_file_path"), py::arg("gvcf_out_file_path"),
-      py::arg("header"), py::arg("ranges"), py::arg("process_somatic") = false);
+  m.def("process_single_sites_tfrecords", &ProcessSingleSiteCallTfRecords,
+        py::arg("contigs"), py::arg("tfrecord_paths"),
+        py::arg("output_tfrecord_path"), py::arg("partitions"));
 }
