@@ -29,12 +29,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "third_party/pybind11/include/pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
 #endif
 
+#include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
 #include "deepvariant/pileup_image_native.h"
@@ -43,11 +43,6 @@
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
 #include "third_party/pybind11_protobuf/native_proto_caster.h"
-
-// TODO: Use <pybind11/numpy.h> instead.
-// These includes (probably) need to stay here (do not move them up).
-#include "numpy/arrayobject.h"
-#include "numpy/ndarrayobject.h"
 
 namespace py = pybind11;
 
@@ -58,34 +53,18 @@ py::object ConvertImageRowToNumPyArray(
   if (!img_row) {
     return py::none();
   }
-  npy_intp dims[]{1, img_row->Width(), img_row->num_channels};
-  PyArrayObject* res =
-      reinterpret_cast<PyArrayObject*>(PyArray_SimpleNew(3, dims, NPY_UBYTE));
-  if (res == nullptr) {
-    throw py::error_already_set();
-  }
-
-  unsigned char* data = reinterpret_cast<unsigned char*>(PyArray_DATA(res));
-  if (data == nullptr) {
-    Py_DECREF(res);
-    throw py::error_already_set();
-  }
-
-  unsigned char* cur = data;
+  py::array np_array(py::dtype::of<unsigned char>(),
+                     {1, img_row->Width(), img_row->num_channels});
+  auto* data_ptr = static_cast<unsigned char*>(np_array.mutable_data());
   for (int i = 0; i < img_row->Width(); i++) {
     if (!img_row->channel_data.empty()) {
       // Iterate over channels here and fill data...
       for (int j = 0; j < img_row->channel_data.size(); j++) {
-        *cur++ = img_row->channel_data[j][i];
+        *data_ptr++ = img_row->channel_data[j][i];
       }
     }
   }
-
-  py::object retval = py::reinterpret_steal<py::object>(PyArray_Return(res));
-  if (!retval) {
-    throw py::error_already_set();
-  }
-  return retval;
+  return np_array;
 }
 
 }  // namespace
