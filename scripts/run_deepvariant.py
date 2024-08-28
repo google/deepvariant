@@ -37,6 +37,8 @@ For more details, see:
 https://github.com/google/deepvariant/blob/r1.7/docs/deepvariant-quick-start.md
 """
 
+import dataclasses
+import enum
 import os
 import re
 import subprocess
@@ -51,11 +53,20 @@ import tensorflow as tf
 
 FLAGS = flags.FLAGS
 
+
+class ModelType(enum.Enum):
+  WGS = 'WGS'
+  WES = 'WES'
+  PACBIO = 'PACBIO'
+  ONT_R104 = 'ONT_R104'
+  HYBRID_PACBIO_ILLUMINA = 'HYBRID_PACBIO_ILLUMINA'
+
+
 # Required flags.
 _MODEL_TYPE = flags.DEFINE_enum(
     'model_type',
     None,
-    ['WGS', 'WES', 'PACBIO', 'ONT_R104', 'HYBRID_PACBIO_ILLUMINA'],
+    [m.value for m in ModelType],
     (
         'Required. Type of model to use for variant calling. Set this flag to'
         ' use the default model associated with each type, and it will set'
@@ -157,13 +168,18 @@ _CUSTOMIZED_MODEL = flags.DEFINE_string(
         ' step. If not set, the default for each --model_type will be used'
     ),
 )
-# TODO: Update once we have default trained small models.
+_DISABLE_SMALL_MODEL = flags.DEFINE_boolean(
+    'disable_small_model',
+    False,
+    'Optional. Disable the use of the small model to call variants during '
+    'the `make_examples` step.',
+)
 _CUSTOMIZED_SMALL_MODEL = flags.DEFINE_string(
     'customized_small_model',
     None,
     (
         'Optional. A path to a small model checkpoint to call variants during '
-        'the `make_examples` step. If not set, the small model is not used.'
+        'the `make_examples` step.'
     ),
 )
 # Optional flags for make_examples.
@@ -255,13 +271,43 @@ _REPORT_TITLE = flags.DEFINE_string(
     ),
 )
 
-
 MODEL_TYPE_MAP = {
-    'WGS': '/opt/models/wgs',
-    'WES': '/opt/models/wes',
-    'PACBIO': '/opt/models/pacbio',
-    'ONT_R104': '/opt/models/ont_r104',
-    'HYBRID_PACBIO_ILLUMINA': '/opt/models/hybrid_pacbio_illumina',
+    ModelType.WGS: '/opt/models/wgs',
+    ModelType.WES: '/opt/models/wes',
+    ModelType.PACBIO: '/opt/models/pacbio',
+    ModelType.ONT_R104: '/opt/models/ont_r104',
+    ModelType.HYBRID_PACBIO_ILLUMINA: '/opt/models/hybrid_pacbio_illumina',
+}
+
+
+@dataclasses.dataclass
+class SmallModelConfig:
+  small_model_checkpoint: str
+  snp_gq_threshold: int
+  indel_gq_threshold: int
+
+
+SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
+    ModelType.WGS: SmallModelConfig(
+        small_model_checkpoint='/opt/smallmodels/wgs',
+        snp_gq_threshold=25,
+        indel_gq_threshold=30,
+    ),
+    ModelType.PACBIO: SmallModelConfig(
+        small_model_checkpoint='/opt/smallmodels/pacbio',
+        snp_gq_threshold=25,
+        indel_gq_threshold=30,
+    ),
+    ModelType.ONT_R104: SmallModelConfig(
+        small_model_checkpoint='/opt/smallmodels/ont_r104',
+        snp_gq_threshold=20,
+        indel_gq_threshold=25,
+    ),
+    ModelType.HYBRID_PACBIO_ILLUMINA: SmallModelConfig(
+        small_model_checkpoint='/opt/smallmodels/hybrid_pacbio_illumina',
+        snp_gq_threshold=25,
+        indel_gq_threshold=30,
+    ),
 }
 
 # Current release version of DeepVariant.
@@ -342,6 +388,33 @@ def _update_kwargs_with_warning(kwargs, extra_args):
   return kwargs
 
 
+def _use_small_model() -> bool:
+  """Determines if the small model is enabled based on flags and model type."""
+  if _DISABLE_SMALL_MODEL.value:
+    return False
+  if _CUSTOMIZED_SMALL_MODEL.value:
+    return True
+  return ModelType(_MODEL_TYPE.value) in SMALL_MODEL_CONFIG_BY_MODEL_TYPE
+
+
+def _set_small_model_config(
+    special_args: Dict[str, Any],
+    model_type: ModelType,
+    customized_small_model: str | None,
+) -> None:
+  """Sets small model config parameters."""
+  if not _use_small_model():
+    return
+  special_args['call_small_model_examples'] = True
+  if customized_small_model:
+    special_args['trained_small_model_path'] = customized_small_model
+  elif model_type in SMALL_MODEL_CONFIG_BY_MODEL_TYPE:
+    config = SMALL_MODEL_CONFIG_BY_MODEL_TYPE[model_type]
+    special_args['trained_small_model_path'] = config.small_model_checkpoint
+    special_args['small_model_snp_gq_threshold'] = config.snp_gq_threshold
+    special_args['small_model_indel_gq_threshold'] = config.indel_gq_threshold
+
+
 def make_examples_command(
     ref,
     reads,
@@ -383,43 +456,40 @@ def make_examples_command(
     )
 
   special_args = {}
-  if _MODEL_TYPE.value == 'PACBIO':
+  model_type = ModelType(_MODEL_TYPE.value)
+  if model_type == ModelType.PACBIO:
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['max_reads_per_partition'] = 600
     special_args['min_mapping_quality'] = 1
     special_args['parse_sam_aux_fields'] = True
     special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
-    special_args['pileup_image_width'] = 199
+    special_args['pileup_image_width'] = 99
     special_args['realign_reads'] = False
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['trim_reads_for_pileup'] = True
-  elif _MODEL_TYPE.value == 'ONT_R104':
+  elif model_type == ModelType.ONT_R104:
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['max_reads_per_partition'] = 600
     special_args['min_mapping_quality'] = 5
     special_args['parse_sam_aux_fields'] = True
     special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
-    special_args['pileup_image_width'] = 199
+    special_args['pileup_image_width'] = 99
     special_args['realign_reads'] = False
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
     special_args['vsc_min_fraction_snps'] = 0.08
     special_args['vsc_min_fraction_indels'] = 0.12
     special_args['trim_reads_for_pileup'] = True
-  elif _MODEL_TYPE.value == 'HYBRID_PACBIO_ILLUMINA':
+  elif model_type == ModelType.HYBRID_PACBIO_ILLUMINA:
     special_args['trim_reads_for_pileup'] = True
 
-  if _CUSTOMIZED_SMALL_MODEL.value:
-    special_args['trained_small_model_path'] = _CUSTOMIZED_SMALL_MODEL.value
-    special_args['call_small_model_examples'] = True
-    # Note that the default GQ threshold can be overwritten by extra_args.
-    special_args['small_model_snp_gq_threshold'] = 30
-    special_args['small_model_indel_gq_threshold'] = 30
-
+  _set_small_model_config(
+      special_args, model_type, _CUSTOMIZED_SMALL_MODEL.value
+  )
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
@@ -479,7 +549,7 @@ def postprocess_variants_command(
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--cpus', '"{}"'.format(cpus)])
-  if _CUSTOMIZED_SMALL_MODEL.value:
+  if _use_small_model():
     command.extend(
         ['--small_model_cvo_records', '"{}"'.format(small_model_cvo_records)]
     )
@@ -585,14 +655,25 @@ def check_flags():
         _MODEL_TYPE.value,
         _CUSTOMIZED_MODEL.value,
     )
+  if _CUSTOMIZED_SMALL_MODEL.value is not None:
+    logging.info(
+        (
+            'You set --customized_small_model. Instead of using the default'
+            ' small model for %s, `make_examples` will load %s* instead. Make'
+            ' sure you set the GQ thresholds explicitly via'
+            ' make_examples_extra_args.'
+        ),
+        _MODEL_TYPE.value,
+        _CUSTOMIZED_SMALL_MODEL.value,
+    )
 
 
-def get_model_ckpt(model_type, customized_model):
+def get_model_ckpt(model_type: str, customized_model: str) -> str:
   """Return the path to the model checkpoint based on the input args."""
   if customized_model is not None:
     return customized_model
   else:
-    return MODEL_TYPE_MAP[model_type]
+    return MODEL_TYPE_MAP[ModelType(model_type)]
 
 
 def create_all_commands_and_logfiles(intermediate_results_dir):

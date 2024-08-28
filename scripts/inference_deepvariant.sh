@@ -42,6 +42,7 @@ Flags:
 --docker_source Where to pull the Docker image from. Default: google/deepvariant.
 --bin_version Version of DeepVariant model to use
 --customized_model Path to checkpoint directory containing model checkpoint.
+--disable_small_model If true, do not use the small model for variant calling.
 --customized_small_model Path to checkpoint directory containing small model checkpoint.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
@@ -73,6 +74,7 @@ Note: All paths to dataset must be of the form "gs://..."
 # Booleans; sorted alphabetically.
 BUILD_DOCKER=false
 DRY_RUN=false
+DISABLE_SMALL_MODEL=false
 USE_GPU=false
 SAVE_INTERMEDIATE_RESULTS=false
 SKIP_HAPPY=false
@@ -256,6 +258,16 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --disable_small_model)
+      DISABLE_SMALL_MODEL="$2"
+      if [[ ${DISABLE_SMALL_MODEL} != "true" ]] && [[ ${DISABLE_SMALL_MODEL} != "false" ]]; then
+        echo "Error: --disable_small_model needs to have value (true|false)." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     --help)
       echo "$USAGE" >&2
       exit 1
@@ -374,6 +386,7 @@ fi
 echo "========================="
 echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
+echo "DISABLE_SMALL_MODEL: ${DISABLE_SMALL_MODEL}"
 echo "DRY_RUN: ${DRY_RUN}"
 echo "USE_GPU: ${USE_GPU}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
