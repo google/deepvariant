@@ -676,6 +676,10 @@ function setup_args() {
       happy_args+=( -l "${REGIONS}")
     fi
   fi
+  if [[ "${DISABLE_SMALL_MODEL}" = true ]]; then
+    echo "Disabling small model"
+    extra_args+=( --disable_small_model "true")
+  fi
   # If you're running an older version (before 1.2) that doesn't have this flag,
   # you'll need to comment out this line.
   extra_args+=( --runtime_report )
