@@ -117,7 +117,10 @@ def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
 
   model.summary()
   model.compile(
-      optimizer=model_params.optimizer,
+      optimizer=tf.keras.optimizers.Adam(
+          learning_rate=model_params.learning_rate,
+          weight_decay=model_params.weight_decay,
+      ),
       loss="categorical_crossentropy",
       metrics=keras_model_metrics(),
   )
