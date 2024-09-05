@@ -37,7 +37,7 @@
 #include <string>
 #include <vector>
 
-#include "deepvariant/channel.h"
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"

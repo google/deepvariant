@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/gap_compressed_identity_channel.h"
+#include "deepvariant/channels/identity_channel.h"
 
 #include <cstdint>
 #include <string>
@@ -38,25 +38,22 @@
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-
-void GapCompressedIdentityChannel::FillReadLevelData(
+void IdentityChannel::FillReadLevelData(
     const Read& read, const DeepVariantCall& dv_call,
     const std::vector<std::string>& alt_alleles,
     std::vector<unsigned char>& read_level_data) {
-  read_level_data = std::vector<unsigned char>(
-      1, ScaleColor(GapCompressedIdentity(read), kMaxIdentity));
+  read_level_data =
+      std::vector<unsigned char>(1, ScaleColor(Identity(read), kMaxIdentity));
 }
-void GapCompressedIdentityChannel::FillRefData(
-    const std::string& ref_bases, std::vector<unsigned char>& ref_data) {
+void IdentityChannel::FillRefData(const std::string& ref_bases,
+                                  std::vector<unsigned char>& ref_data) {
   ref_data = std::vector<unsigned char>(
       width_, static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
 }
 
-// Gap Compressed Identity: Ins/Del treated as individual events.
-int GapCompressedIdentityChannel::GapCompressedIdentity(const Read& read) {
-  // Calculates percentage of the read mapped to the reference
+// Identity: Similar to mapping percent but with a slightly different def.
+int IdentityChannel::Identity(const Read& read) {
   int match_len = 0;
-  int gap_compressed_len = 0;
   for (const auto& cigar_elt : read.alignment().cigar()) {
     const CigarUnit::Operation& op = cigar_elt.operation();
     int op_len = cigar_elt.operation_length();
@@ -64,31 +61,25 @@ int GapCompressedIdentityChannel::GapCompressedIdentity(const Read& read) {
       case CigarUnit::SEQUENCE_MATCH:
       case CigarUnit::ALIGNMENT_MATCH:
         match_len += op_len;
-        gap_compressed_len += op_len;
         break;
       case CigarUnit::SEQUENCE_MISMATCH:
-        gap_compressed_len += op_len;
         break;
       case CigarUnit::INSERT:
-        // Add a single event for insertion.
-        gap_compressed_len += 1;
         break;
       case CigarUnit::DELETE:
-        // Add a single event for a deletion.
-        gap_compressed_len += 1;
         break;
       default:
         break;
     }
   }
-  float gap_compressed_identity = static_cast<float>(match_len) /
-                                  static_cast<float>(gap_compressed_len) * 100;
-  return static_cast<int>(gap_compressed_identity);
+  float mapping_percent = (static_cast<float>(match_len) /
+                           static_cast<float>(read.aligned_sequence().size())) *
+                          100;
+  return static_cast<int>(mapping_percent);
 }
 
 // Scales an input value to pixel range 0-254.
-std::uint8_t GapCompressedIdentityChannel::ScaleColor(int value,
-                                                      float max_val) const {
+std::uint8_t IdentityChannel::ScaleColor(int value, float max_val) const {
   if (static_cast<float>(value) > max_val) {
     value = max_val;
   }

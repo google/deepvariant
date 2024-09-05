@@ -29,32 +29,51 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/blank_channel.h"
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_READ_MAPPING_PERCENT_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_READ_MAPPING_PERCENT_CHANNEL_H_
+
+#include <math.h>
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
+#include "deepvariant/protos/deepvariant.pb.h"
+#include "third_party/nucleus/protos/cigar.pb.h"
+#include "third_party/nucleus/protos/position.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/protos/struct.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
+
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-void BlankChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  read_level_data = Blank(read);
-}
-void BlankChannel::FillRefData(const std::string& ref_bases,
-                               std::vector<unsigned char>& ref_data) {
-  ref_data = std::vector<unsigned char>(width_, 0);
-}
+using learning::genomics::deepvariant::DeepVariantCall;
+using nucleus::genomics::v1::CigarUnit;
+using nucleus::genomics::v1::Read;
 
-std::vector<std::uint8_t> BlankChannel::Blank(const Read& read) {
-  // Used to return a blank channel.
-  std::vector<std::uint8_t> blank(read.aligned_sequence().size(), 0);
-  return blank;
-}
+class ReadMappingPercentChannel : public Channel {
+ public:
+  using Channel::Channel;
+  void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
+                         const std::vector<std::string>& alt_alleles,
+                         std::vector<unsigned char>& read_level_data) override;
+  void FillRefData(const std::string& ref_bases,
+                   std::vector<unsigned char>& ref_data) override;
+
+  // Read Mapping Percent: Calculates percentage of bases mapped to reference.
+  // Public for testing
+  int ReadMappingPercent(const Read& read);
+
+ private:
+  // Scales an input value to pixel range 0-254.
+  std::uint8_t ScaleColor(int value, float max_val) const;
+
+  static const constexpr int kMaxMappingPercent = 100;
+};
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_READ_MAPPING_PERCENT_CHANNEL_H_

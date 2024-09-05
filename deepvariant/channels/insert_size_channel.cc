@@ -29,9 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/is_homopolymer_channel.h"
+#include "deepvariant/channels/insert_size_channel.h"
 
 #include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -39,50 +40,34 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-void IsHomopolymerChannel::FillReadLevelData(
+void InsertSizeChannel::FillReadLevelData(
     const Read& read, const DeepVariantCall& dv_call,
     const std::vector<std::string>& alt_alleles,
     std::vector<unsigned char>& read_level_data) {
-  std::vector<std::uint8_t> is_homopolymer = IsHomopolymer(read);
-  read_level_data = ScaleColorVector(is_homopolymer, kMaxIsHomopolymer);
+  read_level_data = ReadInsertSize(read);
 }
-void IsHomopolymerChannel::FillRefData(const std::string& ref_bases,
-                                       std::vector<unsigned char>& ref_data) {
-  Read refRead;
-  refRead.set_aligned_sequence(ref_bases);
-  std::vector<std::uint8_t> is_homopolymer = IsHomopolymer(refRead);
-  ref_data = ScaleColorVector(is_homopolymer, kMaxIsHomopolymer);
+void InsertSizeChannel::FillRefData(const std::string& ref_bases,
+                                    std::vector<unsigned char>& ref_data) {
+  ref_data = std::vector<unsigned char>(
+      width_, static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
 }
 
-std::vector<std::uint8_t> IsHomopolymerChannel::IsHomopolymer(
-    const Read& read) {
-  // Generates a vector indicating homopolymers of 3 or more.
-  // ATCGGGAG
-  // 00011100
-  std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size());
-  const auto& seq = read.aligned_sequence();
-  for (int i = 2; i < seq.size(); i++) {
-    if (seq[i] == seq[i - 1] && seq[i - 1] == seq[i - 2]) {
-      homopolymer[i] = 1;
-      homopolymer[i - 1] = 1;
-      homopolymer[i - 2] = 1;
-    }
-  }
-  return homopolymer;
+std::vector<std::uint8_t> InsertSizeChannel::ReadInsertSize(const Read& read) {
+  // Generates a vector reflecting the fragment length of the read
+  std::vector<std::uint8_t> reads_with_insert_size(
+      read.aligned_sequence().size(), normalizeFragmentLength(read));
+  return reads_with_insert_size;
 }
 
-// Scales an input vector to pixel range 0-254
-std::vector<std::uint8_t> IsHomopolymerChannel::ScaleColorVector(
-    std::vector<std::uint8_t>& channel_values, float max_val) {
-  for (int i = 0; i < channel_values.size(); i++) {
-    int value = channel_values[i];
-    if (static_cast<float>(value) > max_val) {
-      value = max_val;
-    }
-    channel_values[i] = static_cast<int>(kMaxPixelValueAsFloat *
-                                         (static_cast<float>(value) / max_val));
+// normalizes a Read's `fragment_length` to a pixel value
+int InsertSizeChannel::normalizeFragmentLength(const Read& read) {
+  int fragment_length = std::abs(read.fragment_length());
+  if (static_cast<float>(fragment_length) > kMaxFragmentLength) {
+    fragment_length = static_cast<int>(kMaxFragmentLength);
   }
-  return channel_values;
+  return static_cast<int>(
+      kMaxPixelValueAsFloat *
+      (static_cast<float>(fragment_length) / kMaxFragmentLength));
 }
 }  // namespace deepvariant
 }  // namespace genomics

@@ -29,14 +29,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_BLANK_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_BLANK_CHANNEL_H_
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BLANK_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BLANK_CHANNEL_H_
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
-#include "deepvariant/channel.h"
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -68,4 +68,4 @@ class BlankChannel : public Channel {
 }  // namespace genomics
 }  // namespace learning
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_BLANK_CHANNEL_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BLANK_CHANNEL_H_

@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/allele_frequency_channel.h"
+#include "deepvariant/channels/allele_frequency_channel.h"
 
 #include <algorithm>
 #include <cmath>

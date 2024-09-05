@@ -29,30 +29,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_AVG_BASE_QUALITY_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_AVG_BASE_QUALITY_CHANNEL_H_
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_STRAND_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_STRAND_CHANNEL_H_
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
-#include "deepvariant/channel.h"
-#include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/channels/channel.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-
 using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 
-class AvgBaseQualityChannel : public Channel {
+class StrandChannel : public Channel {
  public:
   using Channel::Channel;
   void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
@@ -61,19 +57,10 @@ class AvgBaseQualityChannel : public Channel {
   void FillRefData(const std::string& ref_bases,
                    std::vector<unsigned char>& ref_data) override;
 
-  // Average Base Quality: Averages base quality over length of read.
   // Public for testing.
-  int AvgBaseQuality(const Read& read);
-
- private:
-  // Scales an input value to pixel range 0-254.
-  std::uint8_t ScaleColor(int value, float max_val) const;
-
-  static const constexpr int kMaxAvgBaseQuality = 93;
+  int StrandColor(bool on_positive_strand) const;
 };
-
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_AVG_BASE_QUALITY_CHANNEL_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_STRAND_CHANNEL_H_

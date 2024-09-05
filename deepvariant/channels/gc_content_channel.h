@@ -29,16 +29,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_IS_HOMOPOLYMER_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_IS_HOMOPOLYMER_CHANNEL_H_
-
-#include <math.h>
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_GC_CONTENT_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_GC_CONTENT_CHANNEL_H_
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
-#include "deepvariant/channel.h"
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -53,7 +51,7 @@ using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 
-class IsHomopolymerChannel : public Channel {
+class GcContentChannel : public Channel {
  public:
   using Channel::Channel;
   void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
@@ -62,18 +60,16 @@ class IsHomopolymerChannel : public Channel {
   void FillRefData(const std::string& ref_bases,
                    std::vector<unsigned char>& ref_data) override;
 
-  // Generates a vector indicating homopolymers of 3 or more.
-  // Public for testing
-  std::vector<std::uint8_t> IsHomopolymer(const Read& read);
+  // public for testing
+  int GcContent(const Read& read);
 
  private:
-  // Scales an input vector to pixel range 0-254
-  std::vector<std::uint8_t> ScaleColorVector(
-      std::vector<std::uint8_t>& channel_values, float max_val);
-  static const constexpr int kMaxIsHomopolymer = 1;
+  // Scales an input value to pixel range 0-254.
+  std::uint8_t ScaleColor(int value, float max_val) const;
+
+  static const constexpr int kMaxGcContent = 100;
 };
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_IS_HOMOPOLYMER_CHANNEL_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_GC_CONTENT_CHANNEL_H_

@@ -29,57 +29,65 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/read_mapping_percent_channel.h"
+#include "deepvariant/channels/homopolymer_weighted_channel.h"
 
 #include <cstdint>
 #include <string>
 #include <vector>
+
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-
-void ReadMappingPercentChannel::FillReadLevelData(
+void HomopolymerWeightedChannel::FillReadLevelData(
     const Read& read, const DeepVariantCall& dv_call,
     const std::vector<std::string>& alt_alleles,
     std::vector<unsigned char>& read_level_data) {
-  read_level_data = std::vector<unsigned char>(
-      1, ScaleColor(ReadMappingPercent(read), kMaxMappingPercent));
+  std::vector<std::uint8_t> homopolymer_weighted = HomopolymerWeighted(read);
+  read_level_data =
+      ScaleColorVector(homopolymer_weighted, kMaxHomopolymerWeighted);
 }
-void ReadMappingPercentChannel::FillRefData(
+void HomopolymerWeightedChannel::FillRefData(
     const std::string& ref_bases, std::vector<unsigned char>& ref_data) {
-  ref_data = std::vector<unsigned char>(
-      width_, static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+  Read refRead;
+  refRead.set_aligned_sequence(ref_bases);
+  std::vector<std::uint8_t> homopolymer_weighted = HomopolymerWeighted(refRead);
+  ref_data = ScaleColorVector(homopolymer_weighted, kMaxHomopolymerWeighted);
 }
 
-// Read Mapping Percent: Calculates percentage of bases mapped to reference.
-int ReadMappingPercentChannel::ReadMappingPercent(const Read& read) {
-  int match_len = 0;
-  for (const auto& cigar_elt : read.alignment().cigar()) {
-    const CigarUnit::Operation& op = cigar_elt.operation();
-    int op_len = cigar_elt.operation_length();
-    switch (op) {
-      case CigarUnit::SEQUENCE_MATCH:
-      case CigarUnit::ALIGNMENT_MATCH:
-        match_len += op_len;
-        break;
-      default:
-        break;
+std::vector<std::uint8_t> HomopolymerWeightedChannel::HomopolymerWeighted(
+    const Read& read) {
+  // Generates a vector reflecting the number of repeats observed.
+  // ATCGGGAA
+  // 11133322
+  std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size());
+  const auto& seq = read.aligned_sequence();
+  homopolymer[0] = 1;
+  int current_weight = 1;
+  for (int i = 1; i <= seq.size(); i++) {
+    if (seq[i] == seq[i - 1]) {
+      current_weight += 1;
+    } else {
+      for (int cw = current_weight; cw >= 1; cw--) {
+        homopolymer[i - cw] = current_weight;
+      }
+      current_weight = 1;
     }
   }
-  float mapping_percent = (static_cast<float>(match_len) /
-                           static_cast<float>(read.aligned_sequence().size())) *
-                          100;
-  return static_cast<int>(mapping_percent);
+  return homopolymer;
 }
 
-// Scales an input value to pixel range 0-254.
-std::uint8_t ReadMappingPercentChannel::ScaleColor(int value,
-                                                   float max_val) const {
-  if (static_cast<float>(value) > max_val) {
-    value = max_val;
+// Scales an input vector to pixel range 0-254
+std::vector<std::uint8_t> HomopolymerWeightedChannel::ScaleColorVector(
+    std::vector<std::uint8_t>& channel_values, float max_val) {
+  for (int i = 0; i < channel_values.size(); i++) {
+    int value = channel_values[i];
+    if (static_cast<float>(value) > max_val) {
+      value = max_val;
+    }
+    channel_values[i] = static_cast<int>(kMaxPixelValueAsFloat *
+                                         (static_cast<float>(value) / max_val));
   }
-  return static_cast<int>(kMaxPixelValueAsFloat *
-                          (static_cast<float>(value) / max_val));
+  return channel_values;
 }
 }  // namespace deepvariant
 }  // namespace genomics

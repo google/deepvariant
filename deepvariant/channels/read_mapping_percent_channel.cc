@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/mapping_quality_channel.h"
+#include "deepvariant/channels/read_mapping_percent_channel.h"
 
 #include <cstdint>
 #include <string>
@@ -37,23 +37,44 @@
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-void MappingQualityChannel::FillReadLevelData(
+
+void ReadMappingPercentChannel::FillReadLevelData(
     const Read& read, const DeepVariantCall& dv_call,
     const std::vector<std::string>& alt_alleles,
     std::vector<unsigned char>& read_level_data) {
-  const int mapping_quality = read.alignment().mapping_quality();
   read_level_data = std::vector<unsigned char>(
-      1, ScaleColor(mapping_quality, options_.mapping_quality_cap()));
+      1, ScaleColor(ReadMappingPercent(read), kMaxMappingPercent));
 }
-void MappingQualityChannel::FillRefData(const std::string& ref_bases,
-                                        std::vector<unsigned char>& ref_data) {
-  int ref_qual = options_.reference_base_quality();
+void ReadMappingPercentChannel::FillRefData(
+    const std::string& ref_bases, std::vector<unsigned char>& ref_data) {
   ref_data = std::vector<unsigned char>(
-      width_, ScaleColor(ref_qual, options_.base_quality_cap()));
+      width_, static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+}
+
+// Read Mapping Percent: Calculates percentage of bases mapped to reference.
+int ReadMappingPercentChannel::ReadMappingPercent(const Read& read) {
+  int match_len = 0;
+  for (const auto& cigar_elt : read.alignment().cigar()) {
+    const CigarUnit::Operation& op = cigar_elt.operation();
+    int op_len = cigar_elt.operation_length();
+    switch (op) {
+      case CigarUnit::SEQUENCE_MATCH:
+      case CigarUnit::ALIGNMENT_MATCH:
+        match_len += op_len;
+        break;
+      default:
+        break;
+    }
+  }
+  float mapping_percent = (static_cast<float>(match_len) /
+                           static_cast<float>(read.aligned_sequence().size())) *
+                          100;
+  return static_cast<int>(mapping_percent);
 }
 
 // Scales an input value to pixel range 0-254.
-std::uint8_t MappingQualityChannel::ScaleColor(int value, float max_val) const {
+std::uint8_t ReadMappingPercentChannel::ScaleColor(int value,
+                                                   float max_val) const {
   if (static_cast<float>(value) > max_val) {
     value = max_val;
   }

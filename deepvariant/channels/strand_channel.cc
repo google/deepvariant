@@ -29,42 +29,33 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_MAPPING_QUALITY_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_MAPPING_QUALITY_CHANNEL_H_
+#include "deepvariant/channels/strand_channel.h"
 
 #include <cstdint>
 #include <string>
 #include <vector>
-
-#include "deepvariant/channel.h"
-#include "deepvariant/protos/deepvariant.pb.h"
-#include "third_party/nucleus/protos/cigar.pb.h"
-#include "third_party/nucleus/protos/position.pb.h"
-#include "third_party/nucleus/protos/reads.pb.h"
-#include "third_party/nucleus/protos/struct.pb.h"
-#include "third_party/nucleus/protos/variants.pb.h"
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-using learning::genomics::deepvariant::DeepVariantCall;
-using nucleus::genomics::v1::CigarUnit;
-using nucleus::genomics::v1::Read;
+void StrandChannel::FillReadLevelData(
+    const Read& read, const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles,
+    std::vector<unsigned char>& read_level_data) {
+  const bool is_forward_strand = !read.alignment().position().reverse_strand();
 
-class MappingQualityChannel : public Channel {
- public:
-  using Channel::Channel;
-  void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
-                         const std::vector<std::string>& alt_alleles,
-                         std::vector<unsigned char>& read_level_data) override;
-  void FillRefData(const std::string& ref_bases,
-                   std::vector<unsigned char>& ref_data) override;
+  read_level_data = std::vector<unsigned char>(
+      1, static_cast<std::uint8_t>(StrandColor(is_forward_strand)));
+}
+void StrandChannel::FillRefData(const std::string& ref_bases,
+                                std::vector<unsigned char>& ref_data) {
+  ref_data = std::vector<unsigned char>(
+      width_, static_cast<std::uint8_t>(StrandColor(true)));
+}
 
- private:
-  // Scales an input value to pixel range 0-254.
-  std::uint8_t ScaleColor(int value, float max_val) const;
-};
+int StrandChannel::StrandColor(bool on_positive_strand) const {
+  return (on_positive_strand ? options_.positive_strand_color()
+                             : options_.negative_strand_color());
+}
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_MAPPING_QUALITY_CHANNEL_H_

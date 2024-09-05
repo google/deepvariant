@@ -29,16 +29,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_ALLELE_FREQUENCY_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_ALLELE_FREQUENCY_CHANNEL_H_
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_CHANNEL_H_
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
-#include "deepvariant/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -48,28 +45,47 @@
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+
 using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 
-class AlleleFrequencyChannel : public Channel {
+// Class for channels that only depend on information at the
+// granularity of an entire read
+class Channel {
  public:
-  using Channel::Channel;
-  void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
-                         const std::vector<std::string>& alt_alleles,
-                         std::vector<unsigned char>& read_level_data) override;
-  void FillRefData(const std::string& ref_bases,
-                   std::vector<unsigned char>& ref_data) override;
+  Channel(int width,
+          const learning::genomics::deepvariant::PileupImageOptions& options);
+  virtual ~Channel();
 
-  // Public for testing
-  float ReadAlleleFrequency(const DeepVariantCall& dv_call, const Read& read,
-                            absl::Span<const std::string> alt_alleles);
+  // Fills the provided read_level_data reference. The length of read_level_data
+  // is width_, unless all values are the same, in which case we use a vector of
+  // size 1 to save memory.
+  virtual void FillReadLevelData(
+      const Read& read, const DeepVariantCall& dv_call,
+      const std::vector<std::string>& alt_alleles,
+      std::vector<unsigned char>& read_level_data) = 0;
 
- private:
-  unsigned char AlleleFrequencyColor(float allele_frequency);
+  // Fills the provided ref_data reference.
+  // The length of ref_data_ is always width_.
+  virtual void FillRefData(const std::string& ref_bases,
+                           std::vector<unsigned char>& ref_data) = 0;
+
+  int width_;
+
+ protected:
+  learning::genomics::deepvariant::PileupImageOptions options_;
+
+  // The maximum value a pixel can have as a float. We use the 254.0
+  // value as originally set in DeepVariant v1. This means our pixel
+  // values can go from 0 to 254. Which, when converted to an int,
+  // gives us 255 or 256 possible pixel values.
+  static const constexpr float kMaxPixelValueAsFloat = 254;
+
+  // TODO: make this value configurable as a flag
+  static const constexpr float kMaxFragmentLength = 1000;
 };
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_ALLELE_FREQUENCY_CHANNEL_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_CHANNEL_H_

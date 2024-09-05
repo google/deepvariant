@@ -29,66 +29,60 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/haplotype_tag_channel.h"
+#include "deepvariant/channels/is_homopolymer_channel.h"
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
-#include "absl/log/log.h"
-
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-void HaplotypeTagChannel::FillReadLevelData(
+
+void IsHomopolymerChannel::FillReadLevelData(
     const Read& read, const DeepVariantCall& dv_call,
     const std::vector<std::string>& alt_alleles,
     std::vector<unsigned char>& read_level_data) {
-  const int hp_value =
-      GetHPValueForHPChannel(read, options_.hp_tag_for_assembly_polishing());
-
-  read_level_data = std::vector<unsigned char>(1, ScaleColor(hp_value, 2));
+  std::vector<std::uint8_t> is_homopolymer = IsHomopolymer(read);
+  read_level_data = ScaleColorVector(is_homopolymer, kMaxIsHomopolymer);
 }
-void HaplotypeTagChannel::FillRefData(const std::string& ref_bases,
-                                      std::vector<unsigned char>& ref_data) {
-  ref_data = std::vector<unsigned char>(width_, ScaleColor(0, 2));
-}
-
-int HaplotypeTagChannel::GetHPValueForHPChannel(
-    const Read& read, int hp_tag_for_assembly_polishing) {
-  // HP values are added to reads by DeepVariant (direct phasing).
-  if (!read.info().contains("HP")) {
-    return 0;
-  }
-  const auto& hp_values = read.info().at("HP").values();
-  if (hp_values.empty()) {
-    return 0;
-  }
-  if (hp_values.size() > 1) {
-    LOG(WARNING) << "Unexpected: Read contains more than one HP tag. Return 0";
-    return 0;
-  }
-  int hp_value = hp_values[0].int_value();
-  // If hp_tag_for_assembly_polishing is set to 2, this is a special case
-  // assembly polishing:
-  // If we're calling HP=2, when displayed with `--channel_list=haplotype`,
-  // we want to swap the color of reads with HP=2 and HP=1.
-  if (hp_tag_for_assembly_polishing == 2) {
-    if (hp_value == 1) return 2;
-    if (hp_value == 2) return 1;
-  }
-
-  // Otherwise, keep the default behavior.
-  return hp_value;
+void IsHomopolymerChannel::FillRefData(const std::string& ref_bases,
+                                       std::vector<unsigned char>& ref_data) {
+  Read refRead;
+  refRead.set_aligned_sequence(ref_bases);
+  std::vector<std::uint8_t> is_homopolymer = IsHomopolymer(refRead);
+  ref_data = ScaleColorVector(is_homopolymer, kMaxIsHomopolymer);
 }
 
-// Scales an input value to pixel range 0-254.
-std::uint8_t HaplotypeTagChannel::ScaleColor(int value, float max_val) const {
-  if (static_cast<float>(value) > max_val) {
-    value = max_val;
+std::vector<std::uint8_t> IsHomopolymerChannel::IsHomopolymer(
+    const Read& read) {
+  // Generates a vector indicating homopolymers of 3 or more.
+  // ATCGGGAG
+  // 00011100
+  std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size());
+  const auto& seq = read.aligned_sequence();
+  for (int i = 2; i < seq.size(); i++) {
+    if (seq[i] == seq[i - 1] && seq[i - 1] == seq[i - 2]) {
+      homopolymer[i] = 1;
+      homopolymer[i - 1] = 1;
+      homopolymer[i - 2] = 1;
+    }
   }
-  return static_cast<int>(kMaxPixelValueAsFloat *
-                          (static_cast<float>(value) / max_val));
+  return homopolymer;
+}
+
+// Scales an input vector to pixel range 0-254
+std::vector<std::uint8_t> IsHomopolymerChannel::ScaleColorVector(
+    std::vector<std::uint8_t>& channel_values, float max_val) {
+  for (int i = 0; i < channel_values.size(); i++) {
+    int value = channel_values[i];
+    if (static_cast<float>(value) > max_val) {
+      value = max_val;
+    }
+    channel_values[i] = static_cast<int>(kMaxPixelValueAsFloat *
+                                         (static_cast<float>(value) / max_val));
+  }
+  return channel_values;
 }
 }  // namespace deepvariant
 }  // namespace genomics

@@ -238,8 +238,8 @@ void FillPileupArray(
             buffer_pos++;
           }
         }  // if need_alt_alignment
-      }  // if !channel_data.empty()
-    }  // for row->Width
+      }  // for row->Width
+    }  // if !channel_data.empty()
   }  // for row
 
   // Fill alt aligned channels as rows if AltAlignedPileup::kRows

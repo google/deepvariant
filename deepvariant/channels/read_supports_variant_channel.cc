@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/read_supports_variant_channel.h"
+#include "deepvariant/channels/read_supports_variant_channel.h"
 
 #include <algorithm>
 #include <cstdint>

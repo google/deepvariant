@@ -29,49 +29,55 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_INSERT_SIZE_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_INSERT_SIZE_CHANNEL_H_
-
-#include <math.h>
+#include "deepvariant/channels/avg_base_quality_channel.h"
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
-#include "deepvariant/channel.h"
-#include "deepvariant/protos/deepvariant.pb.h"
-#include "third_party/nucleus/protos/cigar.pb.h"
-#include "third_party/nucleus/protos/position.pb.h"
-#include "third_party/nucleus/protos/reads.pb.h"
-#include "third_party/nucleus/protos/struct.pb.h"
-#include "third_party/nucleus/protos/variants.pb.h"
+#include "absl/log/log.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-using learning::genomics::deepvariant::DeepVariantCall;
-using nucleus::genomics::v1::CigarUnit;
-using nucleus::genomics::v1::Read;
+void AvgBaseQualityChannel::FillReadLevelData(
+    const Read& read, const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles,
+    std::vector<unsigned char>& read_level_data) {
+  read_level_data = std::vector<unsigned char>(
+      1, ScaleColor(AvgBaseQuality(read), kMaxAvgBaseQuality));
+}
+void AvgBaseQualityChannel::FillRefData(const std::string& ref_bases,
+                                        std::vector<unsigned char>& ref_data) {
+  ref_data = std::vector<unsigned char>(
+      width_, static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+}
 
-class InsertSizeChannel : public Channel {
- public:
-  using Channel::Channel;
-  void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
-                         const std::vector<std::string>& alt_alleles,
-                         std::vector<unsigned char>& read_level_data) override;
-  void FillRefData(const std::string& ref_bases,
-                   std::vector<unsigned char>& ref_data) override;
+// Scales an input value to pixel range 0-254.
+std::uint8_t AvgBaseQualityChannel::ScaleColor(int value, float max_val) const {
+  if (static_cast<float>(value) > max_val) {
+    value = max_val;
+  }
+  return static_cast<int>(kMaxPixelValueAsFloat *
+                          (static_cast<float>(value) / max_val));
+}
 
-  // Generates a vector reflecting the fragment length of the read
-  // Public for testing.
-  std::vector<std::uint8_t> ReadInsertSize(const Read& read);
-
- private:
-  // normalizes a Read's `fragment_length` to a pixel value
-  int normalizeFragmentLength(const Read& read);
-};
+// Average Base Quality: Averages base quality over length of read.
+int AvgBaseQualityChannel::AvgBaseQuality(const Read& read) {
+  int base_qual_sum = 0;
+  for (const auto& base_qual : read.aligned_quality()) {
+    base_qual_sum += base_qual;
+    // Base qualities range between 0 and 93
+    if (base_qual < 0 || base_qual > 93) {
+      LOG(FATAL) << "Encountered base quality outside of bounds (0,93):"
+                 << base_qual << ", read=" << read.fragment_name();
+    }
+  }
+  float avg_base_qual = (static_cast<float>(base_qual_sum) /
+                         static_cast<float>(read.aligned_quality().size()));
+  return static_cast<int>(avg_base_qual);
+}
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_INSERT_SIZE_CHANNEL_H_

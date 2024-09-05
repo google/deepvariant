@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/homopolymer_weighted_channel.h"
+#include "deepvariant/channels/blank_channel.h"
 
 #include <cstdint>
 #include <string>
@@ -38,56 +38,22 @@
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-void HomopolymerWeightedChannel::FillReadLevelData(
+
+void BlankChannel::FillReadLevelData(
     const Read& read, const DeepVariantCall& dv_call,
     const std::vector<std::string>& alt_alleles,
     std::vector<unsigned char>& read_level_data) {
-  std::vector<std::uint8_t> homopolymer_weighted = HomopolymerWeighted(read);
-  read_level_data =
-      ScaleColorVector(homopolymer_weighted, kMaxHomopolymerWeighted);
+  read_level_data = Blank(read);
 }
-void HomopolymerWeightedChannel::FillRefData(
-    const std::string& ref_bases, std::vector<unsigned char>& ref_data) {
-  Read refRead;
-  refRead.set_aligned_sequence(ref_bases);
-  std::vector<std::uint8_t> homopolymer_weighted = HomopolymerWeighted(refRead);
-  ref_data = ScaleColorVector(homopolymer_weighted, kMaxHomopolymerWeighted);
+void BlankChannel::FillRefData(const std::string& ref_bases,
+                               std::vector<unsigned char>& ref_data) {
+  ref_data = std::vector<unsigned char>(width_, 0);
 }
 
-std::vector<std::uint8_t> HomopolymerWeightedChannel::HomopolymerWeighted(
-    const Read& read) {
-  // Generates a vector reflecting the number of repeats observed.
-  // ATCGGGAA
-  // 11133322
-  std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size());
-  const auto& seq = read.aligned_sequence();
-  homopolymer[0] = 1;
-  int current_weight = 1;
-  for (int i = 1; i <= seq.size(); i++) {
-    if (seq[i] == seq[i - 1]) {
-      current_weight += 1;
-    } else {
-      for (int cw = current_weight; cw >= 1; cw--) {
-        homopolymer[i - cw] = current_weight;
-      }
-      current_weight = 1;
-    }
-  }
-  return homopolymer;
-}
-
-// Scales an input vector to pixel range 0-254
-std::vector<std::uint8_t> HomopolymerWeightedChannel::ScaleColorVector(
-    std::vector<std::uint8_t>& channel_values, float max_val) {
-  for (int i = 0; i < channel_values.size(); i++) {
-    int value = channel_values[i];
-    if (static_cast<float>(value) > max_val) {
-      value = max_val;
-    }
-    channel_values[i] = static_cast<int>(kMaxPixelValueAsFloat *
-                                         (static_cast<float>(value) / max_val));
-  }
-  return channel_values;
+std::vector<std::uint8_t> BlankChannel::Blank(const Read& read) {
+  // Used to return a blank channel.
+  std::vector<std::uint8_t> blank(read.aligned_sequence().size(), 0);
+  return blank;
 }
 }  // namespace deepvariant
 }  // namespace genomics

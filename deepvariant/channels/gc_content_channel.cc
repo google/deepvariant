@@ -29,21 +29,52 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/channel.h"
+#include "deepvariant/channels/gc_content_channel.h"
 
-using learning::genomics::deepvariant::PileupImageOptions;
+#include <cstdint>
+#include <string>
+#include <vector>
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+void GcContentChannel::FillReadLevelData(
+    const Read& read, const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles,
+    std::vector<unsigned char>& read_level_data) {
+  read_level_data =
+      std::vector<unsigned char>(1, ScaleColor(GcContent(read), kMaxGcContent));
+}
+void GcContentChannel::FillRefData(const std::string& ref_bases,
+                                   std::vector<unsigned char>& ref_data) {
+  Read refRead;
+  refRead.set_aligned_sequence(ref_bases);
+  ref_data = std::vector<unsigned char>(
+      width_, ScaleColor(GcContent(refRead), kMaxGcContent));
+}
 
-Channel::Channel(int width, const PileupImageOptions& options) {
-  width_ = width;
-  options_ = options;
-};
+int GcContentChannel::GcContent(const Read& read) {
+  int gc_count{};
 
-Channel::~Channel() = default;
+  for (const auto& base : read.aligned_sequence()) {
+    if (base == 'G' || base == 'C') {
+      gc_count += 1;
+    }
+  }
 
+  return static_cast<int>((static_cast<float>(gc_count) /
+                           static_cast<float>(read.aligned_sequence().size())) *
+                          100);
+}
+
+// Scales an input value to pixel range 0-254.
+std::uint8_t GcContentChannel::ScaleColor(int value, float max_val) const {
+  if (static_cast<float>(value) > max_val) {
+    value = max_val;
+  }
+  return static_cast<int>(kMaxPixelValueAsFloat *
+                          (static_cast<float>(value) / max_val));
+}
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

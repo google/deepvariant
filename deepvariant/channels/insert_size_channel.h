@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_READ_MAPPING_PERCENT_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_READ_MAPPING_PERCENT_CHANNEL_H_
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_INSERT_SIZE_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_INSERT_SIZE_CHANNEL_H_
 
 #include <math.h>
 
@@ -38,7 +38,7 @@
 #include <string>
 #include <vector>
 
-#include "deepvariant/channel.h"
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -54,7 +54,7 @@ using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 
-class ReadMappingPercentChannel : public Channel {
+class InsertSizeChannel : public Channel {
  public:
   using Channel::Channel;
   void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
@@ -63,17 +63,15 @@ class ReadMappingPercentChannel : public Channel {
   void FillRefData(const std::string& ref_bases,
                    std::vector<unsigned char>& ref_data) override;
 
-  // Read Mapping Percent: Calculates percentage of bases mapped to reference.
-  // Public for testing
-  int ReadMappingPercent(const Read& read);
+  // Generates a vector reflecting the fragment length of the read
+  // Public for testing.
+  std::vector<std::uint8_t> ReadInsertSize(const Read& read);
 
  private:
-  // Scales an input value to pixel range 0-254.
-  std::uint8_t ScaleColor(int value, float max_val) const;
-
-  static const constexpr int kMaxMappingPercent = 100;
+  // normalizes a Read's `fragment_length` to a pixel value
+  int normalizeFragmentLength(const Read& read);
 };
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_READ_MAPPING_PERCENT_CHANNEL_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_INSERT_SIZE_CHANNEL_H_
