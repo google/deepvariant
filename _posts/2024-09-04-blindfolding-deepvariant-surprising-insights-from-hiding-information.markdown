@@ -7,6 +7,26 @@ img: "assets/images/2024-09-04/thumbnail.png"
 authors: ["msamman", "danielecook", "awcarroll", "lucasbrambrink"]
 ---
 
+<style>
+
+.large-image {
+	@media (min-width: 1000px) { 
+		max-width: 925px;
+		margin-left: -90px;
+	}
+	@media (min-width: 1100px) { 
+		max-width: 950px;
+		margin-left: -100px;
+	}
+	@media (min-width: 1200px) { 
+		max-width: 1000px;
+		margin-left: -100px;
+	}
+}
+
+</style>
+
+
 This blog investigates the importance of various features of sequencing data to the ability to accurately call variants. Through a series of experiments where we remove single properties, or only provide a single property of sequencing data, we can get a better idea of what unique information each feature provides. We show that channels such as base quality and mapping quality bring unique information and that a channel for “supports variant” is required for multi-allelic calling. We also show that DeepVariant can learn a very indirect measure from read length distribution in order to accurately call insertions in the absence of other information. 
 
 
@@ -37,7 +57,7 @@ All DeepVariant models generally contain the following six base channels:
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_1.png" alt="Figure 1: An example of all six channels around a candidate"/>
-  <figcaption>Figure 1: A single pileup image (called an Example) composed of multiple channels.</figcaption>
+  <figcaption style='text-align: center;'>Figure 1: A single pileup image (called an Example) composed of multiple channels.</figcaption>
 </figure>
 
 The set of channels used by DeepVariant has changed over time. One of the earliest versions of DeepVariant encoded only four features: `read_base`, `base_quality`, `strand`, and `base_differs_from_ref`. Through trial and error, we arrived at the set of base channels listed above for all our models. In `v0.5.0`, we removed a channel that encoded cigar operation length (e.g. the length of a deletion or insertion event) to improve the generalizability of models. We have also added channels that are tailored towards specific sequencing platforms to improve accuracy. For example, [we added a haplotype channel](https://google.github.io/deepvariant/posts/2021-02-08-the-haplotype-channel/) to our PacBio model ([Release 1.1.0](https://github.com/google/deepvariant/releases/tag/v1.1.0)), and we added an insert-size channel to our Illumina models ([Release 1.4.0](https://github.com/google/deepvariant/releases/tag/v1.4.0)).
@@ -47,19 +67,24 @@ The set of channels used by DeepVariant has changed over time. One of the earlie
 In order to gain a better understanding of each channel's contribution to overall model performance, we trained two sets of models. The first set models were each trained by **ablating** one of the six default channels, as illustrated below; in this example we have removed the `base_differs_from_ref` channel.
 
 
-![Figure 2(a): A pileup image with the base_differs_from_ref channel ablated]({{ site.baseurl }}/assets/images/2024-09-04/figure_2a.png)
 <figure>
   <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_2a.png" alt="Figure 2(a): A pileup image with the base_differs_from_ref channel ablated"/>
-  <figcaption>Figure 2(a): A pileup image with the <code class="highlighter-rouge">base_differs_from_ref</code> channel ablated.</figcaption>
+  <figcaption style='text-align: center;'>Figure 2(a): A pileup image with the <code class="highlighter-rouge" style='font-size: 13px;'>base_differs_from_ref</code> channel ablated.</figcaption>
 </figure>
 
 The second set of models were trained on just a **single** channel chosen from the default channels. These experiments isolate the information contained in each of the channels separately. The following illustration is an example of isolating the `read_base` channel.
 
-![Figure 2(b): A single channel pileup image, showing only read_base information]({{ site.baseurl }}/assets/images/2024-09-04/figure_2b.png)
+<figure>
+  <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_2b.png" alt="Figure 2(b): A single channel pileup image, showing only read_base information"/>
+  <figcaption style='text-align: center;'>A single channel pileup image, showing only <code class="highlighter-rouge" style='font-size: 13px;'>read_base</code> information.</figcaption>
+</figure>
 
 Included in our set of single channel experiments is a model trained on a completely blank channel (i.e. a black image). This model receives absolutely no information about any candidate and acts as a floor for expected performance. 
 
-![Figure 2(c): An example of a blank channel, containing no information about reads or reference]({{ site.baseurl }}/assets/images/2024-09-04/figure_2c.png)
+<figure>
+  <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_2c.png" alt="Figure 2(b): An example of a blank channel, containing no information about reads or reference"/>
+  <figcaption style='text-align: center;'>An example of a <code class="highlighter-rouge" style='font-size: 13px;'>blank</code> channel, containing no information about reads or reference.</figcaption>
+</figure>
 
 All models were trained using our standard GIAB Illumina WGS dataset and evaluated on HG003.
 
@@ -69,14 +94,29 @@ All models were trained using our standard GIAB Illumina WGS dataset and evaluat
 We first focus our attention on the ablation models, in which each model is missing one channel. These models are likely to suggest which channels encode nonredundant information.
 
 
-![Figure 3: F1 Scores of ablation models]({{ site.baseurl }}/assets/images/2024-09-04/figure_5.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_5.png" 
+  	alt="Figure 3: F1 Scores of ablation models"
+	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 3: F1 Scores of ablation models. Instead of the traditional six base channels, these models had one channel missing from the examples, effectively hiding the information contained in the ablated channel. 
+  </figcaption>
+</figure>
 
 Generally speaking, we can clearly see that all models showed remarkable resilience across all ablations, especially for SNPs. The strongest decline in performance is observed for INDELs when ablating the `read_supports_variant` channel. This effect is also seen in SNPs but the drop is less dramatic. This suggests that this channel encodes information that is not otherwise available. 
 
 
 Before we try to answer what critical information the `read_supports_variant` channel provides, let us first consider the single channel models and see if we observe a similar effect.
 
-![Figure 4: F1 Scores of single channel models]({{ site.baseurl }}/assets/images/2024-09-04/figure_6.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_6.png" 
+  	alt="Figure 4: F1 Scores of single channel models"/>
+  <figcaption style='text-align: center;'>
+  	Figure 4: F1 Scores of single channel models compared to baseline. Instead of the traditional six base channels, these models kept just one channel in the examples. In consequence, these models operated in a much lower information environment.
+  </figcaption>
+</figure>
 
 
 We observe the same trend in this set of experiments. The only model that performs near baseline across both SNPs and INDELs is the `only_read_supports_variant` model. For SNPs, we also see resilience across the `base_differs_from_ref` and `read_base` channels, but observe a precipitous drop in accuracy for the other channels. Curiously, INDELs perform reasonably well across all channels after the initial drop in accuracy. 
@@ -91,13 +131,28 @@ To try to answer this question, let’s break up our F1 scores by genotype. Reme
 - `1/2`, i.e. heterozygous alternate (abbreviated as `hetalt`), a multiallelic variant (having three observed alleles) where two different variant alleles are found in each haplotype.
 
 
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_7.png" 
+  	alt="Figure 5: F1 Scores of ablation models computed per genotype"/>
+  <figcaption style='text-align: center;'>
+  	Figure 5: F1 Scores of ablation models computed per genotype, showing the global F1 score in the left most column for comparison. A clear drop in <code class="highlighter-rouge" style='font-size: 13px;'>hetalt</code> performance is observed when ablating the <code class="highlighter-rouge" style='font-size: 13px;'>read_supports_variant</code> channel.
+  </figcaption>
+</figure>
 
-![Figure 7: F1 Scores of ablation models computed per genotype]({{ site.baseurl }}/assets/images/2024-09-04/figure_7.png)
 
 We can see at a glance that the `ablate_read_supports_variant` model stands out in its failure to call `hetalt` variants, while all other models do not struggle with this genotype. For INDELs we also notice a slight drop in performance for the other genotypes. There is a simple explanation why the failure to correctly classify `hetalt` variants has different effects on SNPs versus INDELs. In our HG003 case study, `hetalt` variants account for 7.8% of INDELs, while they only account for 0.1% of SNPs.
 
 
-![Figure 8: Genotype distribution in the HG003 truth set for SNPs and INDELs]({{ site.baseurl }}/assets/images/2024-09-04/figure_8.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_8.png" 
+  	alt="Figure 6: Genotype distribution in the HG003 truth set for SNPs and INDELs"/>
+  <figcaption style='text-align: center;'>
+  	Figure 6: Genotype distribution in the HG003 truth set for SNPs and INDELs.
+  </figcaption>
+</figure>
+
 
 
 ## How does DeepVariant call multiallelic loci?
@@ -106,7 +161,14 @@ The natural follow up question is why the `read_supports_variant` channel is cri
 
 DeepVariant classifies a given example into three classes: `{0/0, 0/1, 1/1}`, the first describing a locus that is not a real variant (a `RefCall`).  Consider the following example showing two SNP candidates. 
 
-![Figure 9: A snapshot of an IGV alignment showing two possible SNPs]({{ site.baseurl }}/assets/images/2024-09-04/figure_9.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_9.png" 
+  	alt="Figure 7: A snapshot of an IGV alignment showing two possible SNPs"/>
+  <figcaption style='text-align: center;'>
+  	Figure 7: A snapshot of an IGV alignment showing two possible SNPs, a comparatively rare multiallelic SNP being shown on the left and a more common biallelic SNP on the right.
+  </figcaption>
+</figure>
 
 The SNP on the right is biallelic with a reference base `A` and a single alternate allele `C`. There is one possible representation for this polymorphism: `G → C`, with two possible genotypes `{0/1, 1/1}` and therefore with three classifications (including the `0/0` case). DeepVariant produces a single pileup image for this SNP, which is sufficient to cover the three possible classifications.
 
@@ -116,11 +178,37 @@ In contrast, the SNP on the left is multiallelic, having two alternate alleles `
 To illustrate this, shown below are the three examples produced for a multiallelic insertion at `chr3:163362558`, purposefully stacked on top of each other.
 
 `chr3:163362557_T->TAC`
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_9.png" 
+  	alt="Figure 7: A snapshot of an IGV alignment showing two possible SNPs"/>
+  <figcaption style='text-align: center;'>
+  	Figure 7: A snapshot of an IGV alignment showing two possible SNPs, a comparatively rare multiallelic SNP being shown on the left and a more common biallelic SNP on the right.
+  </figcaption>
+</figure>
 ![Figure 10(a): SNP for chr3:163362557_T->TAC]({{ site.baseurl }}/assets/images/2024-09-04/figure_10a.png)
 `chr3:163362557_T->TACAC`
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_9.png" 
+  	alt="Figure 7: A snapshot of an IGV alignment showing two possible SNPs"/>
+  <figcaption style='text-align: center;'>
+  	Figure 7: A snapshot of an IGV alignment showing two possible SNPs, a comparatively rare multiallelic SNP being shown on the left and a more common biallelic SNP on the right.
+  </figcaption>
+</figure>
 ![Figure 10(b): SNP for chr3:163362557_T->TACAC]({{ site.baseurl }}/assets/images/2024-09-04/figure_10b.png)
 `chr3:163362557_T->TAC|TACAC`
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_9.png" 
+  	alt="Figure 7: A snapshot of an IGV alignment showing two possible SNPs"/>
+  <figcaption style='text-align: center;'>
+  	Figure 7: A snapshot of an IGV alignment showing two possible SNPs, a comparatively rare multiallelic SNP being shown on the left and a more common biallelic SNP on the right.
+  </figcaption>
+</figure>
 ![Figure 10(c): SNP for chr3:163362557_T->TAC|TACAC]({{ site.baseurl }}/assets/images/2024-09-04/figure_10c.png)
+
+
 
 
 Notice that with the exception of `read_supports_variant`, all channels are exactly the same across the three examples, since they do not depend on which alternate allele is being considered. In contrast, `read_supports_variant` encodes if the read supports the `TAC` insertion, `TACAC` or either (in the last case). DeepVariant will classify each of those examples as some probability of `ref`, `het` or `homalt`, yielding 9 probabilities in total. 
