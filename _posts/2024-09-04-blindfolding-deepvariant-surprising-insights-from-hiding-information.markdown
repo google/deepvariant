@@ -35,7 +35,10 @@ All DeepVariant models generally contain the following six base channels:
 - `read_supports_variant`: The entire read is colored based on whether it supports an alternative allele or the reference.
 - `base_differs_from_ref`: A position in the aligned read is colored based on whether it matches the aligned pair in the reference (match or mismatch).
 
-![Figure 1: An example of all six channels around a candidate]({{ site.baseurl }}/assets/images/2024-09-04/figure_1.png)
+<figure>
+  <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_1.png" alt="Figure 1: An example of all six channels around a candidate"/>
+  <figcaption>Figure 1: A single pileup image (called an Example) composed of multiple channels.</figcaption>
+</figure>
 
 The set of channels used by DeepVariant has changed over time. One of the earliest versions of DeepVariant encoded only four features: `read_base`, `base_quality`, `strand`, and `base_differs_from_ref`. Through trial and error, we arrived at the set of base channels listed above for all our models. In `v0.5.0`, we removed a channel that encoded cigar operation length (e.g. the length of a deletion or insertion event) to improve the generalizability of models. We have also added channels that are tailored towards specific sequencing platforms to improve accuracy. For example, [we added a haplotype channel](https://google.github.io/deepvariant/posts/2021-02-08-the-haplotype-channel/) to our PacBio model ([Release 1.1.0](https://github.com/google/deepvariant/releases/tag/v1.1.0)), and we added an insert-size channel to our Illumina models ([Release 1.4.0](https://github.com/google/deepvariant/releases/tag/v1.4.0)).
 
@@ -45,6 +48,10 @@ In order to gain a better understanding of each channel's contribution to overal
 
 
 ![Figure 2(a): A pileup image with the base_differs_from_ref channel ablated]({{ site.baseurl }}/assets/images/2024-09-04/figure_2a.png)
+<figure>
+  <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_2a.png" alt="Figure 2(a): A pileup image with the base_differs_from_ref channel ablated"/>
+  <figcaption>Figure 2(a): A pileup image with the <code class="highlighter-rouge">base_differs_from_ref</code> channel ablated.</figcaption>
+</figure>
 
 The second set of models were trained on just a **single** channel chosen from the default channels. These experiments isolate the information contained in each of the channels separately. The following illustration is an example of isolating the `read_base` channel.
 
