@@ -112,7 +112,8 @@ Before we try to answer what critical information the `read_supports_variant` ch
 <figure>
   <img 
   	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_6.png" 
-  	alt="Figure 4: F1 Scores of single channel models"/>
+  	alt="Figure 4: F1 Scores of single channel models"
+  	class="large-image"/>
   <figcaption style='text-align: center;'>
   	Figure 4: F1 Scores of single channel models compared to baseline. Instead of the traditional six base channels, these models kept just one channel in the examples. In consequence, these models operated in a much lower information environment.
   </figcaption>
@@ -134,7 +135,8 @@ To try to answer this question, let’s break up our F1 scores by genotype. Reme
 <figure>
   <img 
   	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_7.png" 
-  	alt="Figure 5: F1 Scores of ablation models computed per genotype"/>
+  	alt="Figure 5: F1 Scores of ablation models computed per genotype"
+  	class="large-image"/>
   <figcaption style='text-align: center;'>
   	Figure 5: F1 Scores of ablation models computed per genotype, showing the global F1 score in the left most column for comparison. A clear drop in <code class="highlighter-rouge" style='font-size: 13px;'>hetalt</code> performance is observed when ablating the <code class="highlighter-rouge" style='font-size: 13px;'>read_supports_variant</code> channel.
   </figcaption>
@@ -147,7 +149,8 @@ We can see at a glance that the `ablate_read_supports_variant` model stands out 
 <figure>
   <img 
   	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_8.png" 
-  	alt="Figure 6: Genotype distribution in the HG003 truth set for SNPs and INDELs"/>
+  	alt="Figure 6: Genotype distribution in the HG003 truth set for SNPs and INDELs"
+  	class="large-image"/>
   <figcaption style='text-align: center;'>
   	Figure 6: Genotype distribution in the HG003 truth set for SNPs and INDELs.
   </figcaption>
@@ -177,43 +180,29 @@ In contrast, the SNP on the left is multiallelic, having two alternate alleles `
 
 To illustrate this, shown below are the three examples produced for a multiallelic insertion at `chr3:163362558`, purposefully stacked on top of each other.
 
-`chr3:163362557_T->TAC`
 <figure>
   <img 
-  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_9.png" 
-  	alt="Figure 7: A snapshot of an IGV alignment showing two possible SNPs"/>
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_10a.png" 
+  	alt="Figure 8(a): SNP for chr3:163362557_T->TAC"
+  	class="large-image"/>
+  <img 		
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_10b.png" 
+  	alt="Figure 8(b): SNP for chr3:163362557_T->TACAC"
+  	class="large-image"/>
+  <img 		
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_10c.png" 
+  	alt="Figure 8(c): SNP for chr3:163362557_T->TAC|TACAC"
+  	class="large-image"/>
   <figcaption style='text-align: center;'>
-  	Figure 7: A snapshot of an IGV alignment showing two possible SNPs, a comparatively rare multiallelic SNP being shown on the left and a more common biallelic SNP on the right.
+  	Figure 8: The set of examples showing the three possible representations of a single multiallelic locus. Only the <code class="highlighter-rouge" style='font-size: 13px;'>read_supports_variant</code> channel encodes different information across the three examples, since it encodes if a given read supports <code class="highlighter-rouge" style='font-size: 13px;'>G→A</code> (top row), <code class="highlighter-rouge" style='font-size: 13px;'>G→T</code> (second row) or <code class="highlighter-rouge" style='font-size: 13px;'>G→A|T</code> (A or T, third row).
   </figcaption>
 </figure>
-![Figure 10(a): SNP for chr3:163362557_T->TAC]({{ site.baseurl }}/assets/images/2024-09-04/figure_10a.png)
-`chr3:163362557_T->TACAC`
-<figure>
-  <img 
-  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_9.png" 
-  	alt="Figure 7: A snapshot of an IGV alignment showing two possible SNPs"/>
-  <figcaption style='text-align: center;'>
-  	Figure 7: A snapshot of an IGV alignment showing two possible SNPs, a comparatively rare multiallelic SNP being shown on the left and a more common biallelic SNP on the right.
-  </figcaption>
-</figure>
-![Figure 10(b): SNP for chr3:163362557_T->TACAC]({{ site.baseurl }}/assets/images/2024-09-04/figure_10b.png)
-`chr3:163362557_T->TAC|TACAC`
-<figure>
-  <img 
-  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_9.png" 
-  	alt="Figure 7: A snapshot of an IGV alignment showing two possible SNPs"/>
-  <figcaption style='text-align: center;'>
-  	Figure 7: A snapshot of an IGV alignment showing two possible SNPs, a comparatively rare multiallelic SNP being shown on the left and a more common biallelic SNP on the right.
-  </figcaption>
-</figure>
-![Figure 10(c): SNP for chr3:163362557_T->TAC|TACAC]({{ site.baseurl }}/assets/images/2024-09-04/figure_10c.png)
-
 
 
 
 Notice that with the exception of `read_supports_variant`, all channels are exactly the same across the three examples, since they do not depend on which alternate allele is being considered. In contrast, `read_supports_variant` encodes if the read supports the `TAC` insertion, `TACAC` or either (in the last case). DeepVariant will classify each of those examples as some probability of `ref`, `het` or `homalt`, yielding 9 probabilities in total. 
 
-```
+```python
 'chr3:163362557_T->TAC'       [0.000719, 0.999207, 0.000074]
 'chr3:163362557_T->TACAC'     [0.000222, 0.999520, 0.000258]
 'chr3:163362557_T->TAC|TACAC' [0.000014, 0.000112, 0.999874]
@@ -232,8 +221,15 @@ All other channels are identical across the different examples, and therefore un
 
 Based on the above reasoning, we would expect to observe the same genotype-specific failures in single channel models.
 
-![Figure 11: F1 Scores of single channel models computed per genotype]({{ site.baseurl }}/assets/images/2024-09-04/figure_11.png)
-
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_11.png" 
+  	alt="Figure 9: F1 Scores of single channel models computed per genotype"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 9: F1 Scores of single channel models computed per genotype, showing the global F1 score in the left most column for comparison. A clear drop in SNP <code class="highlighter-rouge" style='font-size: 13px;'>homalt</code> performance is observed for channels that do not directly encode allele information. This is not observed with INDELs.
+  </figcaption>
+</figure>
 
 The same pattern is observed. We can clearly see that only `baseline` and `only_read_support_variant` models are capable of classifying `hetalt` variants. Additionally, we observe a strong decline in `homalt` SNP classification when only `base_quality`, `mapping_quality` or `strand` information is available. Curiously, this effect is not seen with INDELs. What explains this particular drop in performance?
 
@@ -242,8 +238,15 @@ Before we tackle that question, we can pause briefly to address a tangential cur
 
 This can be seen even more clearly when we look at the distribution of genotype predictions by each model, disregarding their correctness.
 
-![Figure 12: Absolute number of genotypes called by each model]({{ site.baseurl }}/assets/images/2024-09-04/figure_12.png)
-
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_12.png" 
+  	alt="Figure 10: Absolute number of genotypes called by each model"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 10: Absolute number of genotypes called by each model. It is clearly observed that the <code class="highlighter-rouge" style='font-size: 13px;'>blank</code> model deterministically classifies each example as <code class="highlighter-rouge" style='font-size: 13px;'>het</code>.
+  </figcaption>
+</figure>
 
 We also observe that for SNPs, the models with only `base_quality`, `mapping_quality` or `strand` information are much more likely to classify a candidate as heterozygous instead of homozygous. This begs a few questions: 
 
@@ -253,7 +256,16 @@ We also observe that for SNPs, the models with only `base_quality`, `mapping_qua
 
 Let’s look at the homozygous SNP `chr2:522921`, a `G → A` mutation. 
 
-![Figure 13: All channel encodings of a homozygous SNP]({{ site.baseurl }}/assets/images/2024-09-04/figure_13.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_13.png" 
+  	alt="Figure 11: All channel encodings of a homozygous SNP"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 11: All channel encodings of a homozygous SNP. The three channels in the top row encode allele information, while the channels in the bottom row do not.
+  </figcaption>
+</figure>
+
 
 Grouped together in the top row are the three channels that encode allele information in some way: 
 - `read_base` shows a difference between the reference and alternate bases across the given reads.
@@ -265,7 +277,15 @@ Grouped together in the bottom row are channels that do not encode any allele in
 So how is it possible for the bottom row models to call heterozygous variants reasonably well? Let’s look at the genotype-specific errors made by each model more closely.
 
 
-![Figure 14: Absolute number of genotype mistakes made by single channel models]({{ site.baseurl }}/assets/images/2024-09-04/figure_14.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_14.png" 
+  	alt="Figure 12: Absolute number of genotypes called by each model"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 12: Absolute number of genotype mistakes made by single channel models. A clear pattern emerges that <code class="highlighter-rouge" style='font-size: 13px;'>homalt</code> SNPs are being called as <code class="highlighter-rouge" style='font-size: 13px;'>het</code>, a classification error not observed in INDELs. 
+  </figcaption>
+</figure>
 
 The above chart looks at the composition of incorrect genotype predictions (which are counted as false negatives). We see that the models without allele information incorrectly genotype nearly all `homalt` SNPs as `het`. Similar to the `blank` channel, these models have learned that in the absence of differentiating signals, calling SNP candidates as `het` minimizes the loss function due to the abundance of this variant type. In contrast, these mistakes are minimal for models with access to allele information. 
 
@@ -279,35 +299,92 @@ Our last remaining puzzle to address is how all single channel models—even tho
 Let’s look at a pair of heterozygous and homozygous deletions that were called correctly by all models. 
 
 
-![Figure 15: Two examples of deletions: a heterozygous deletion (top) and homozygous alternate (bottom)]({{ site.baseurl }}/assets/images/2024-09-04/figure_15.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_15.png" 
+  	alt="Figure 13: Two examples of deletions: a heterozygous deletion (top) and homozygous alternate (bottom)"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 13: Two examples of deletions: a heterozygous deletion (top) and homozygous alternate (bottom). DeepVariant represents deletions as blank spaces within the read.
+  </figcaption>
+</figure>
 
 
-We can see that for deletions, all channels *do* in fact encode genotype information since deletions are represented by gaps in each read. In order to maintain realignment with the reference, DeepVariant “sneaks” in extra information through read representation. Even a human could quickly classify the above deletions as `0/1` and `1/1` at a glance.
+We can see that for deletions, all channels *do* in fact encode genotype information since deletions are represented by gaps in each read in order to maintain realignment to the reference. In this way, DeepVariant “sneaks” in extra information by how the reads are represented. Even a human could quickly classify the above deletions as `0/1` and `1/1` at a glance.
 
-Interestingly, the same is not true for insertions. DeepVariant essentially encodes insertions as SNPs, showing only the first base of the insertion and dropping the rest. This maintains alignment with the reference. 
+The same is not true for insertions. DeepVariant essentially encodes insertions as SNPs, showing only the first base of the insertion and dropping the rest. This again maintains alignment to the reference. 
 
-![Figure 16: An example of an insertion encoded by each channel]({{ site.baseurl }}/assets/images/2024-09-04/figure_16.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_16a.png" 
+  	alt="Figure 14(a): An example of an insertion illustrates how DeepVariant collapses the alternate alleles to their first base only"/>
+  <figcaption style='text-align: center;'>
+  	Figure 14(a): An example of an insertion illustrates how DeepVariant collapses the alternate alleles to their first base only.
+  </figcaption>
+</figure>
 
-Which begs the question, how is it possible for DeepVariant to call insertions reasonably well even in the absence of allele information? We would expect that the models that struggle to differentiate `het` and `homalt` SNPs would similarly struggle with insertions. To this end, let’s break up INDEL accuracy by insertion and deletion, and look at the performance across genotypes.
+Which begs the question, how is it possible for DeepVariant to call insertions reasonably well, even in the absence of allele information? Figure 16(b) illustrates how multiple insertions do not appear to contain information that would allow DeepVariant to differentiate between `het` and `homalt` if only provided with `mapping_quality`.
 
-![Figure 17: F1 scores of single channel models compared across insertions and deletions]({{ site.baseurl }}/assets/images/2024-09-04/figure_17.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_16b.png" 
+  	alt="Figure 14(b): Multiple insertion loci encoded by the mapping_quality channel"/>
+  <figcaption style='text-align: center;'>
+  	Figure 14(b): Multiple insertion loci encoded by the <code class="highlighter-rouge" style='font-size: 13px;'>mapping_quality</code> channel are shown, illustrating how they appear to contain no discernible information to differentiate genotypes (being <code class="highlighter-rouge" style='font-size: 13px;'>het</code>, <code class="highlighter-rouge" style='font-size: 13px;'>homalt</code> and <code class="highlighter-rouge" style='font-size: 13px;'>het</code>, respectively).
+  </figcaption>
+</figure>
 
+
+We would expect that the models that struggle to differentiate `het` and `homalt` SNPs would similarly struggle with insertions. To this end, let’s break up INDEL accuracy by insertion and deletion, and look at the performance across genotypes.
+
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_17.png" 
+  	alt="Figure 15: F1 scores of single channel models compared across insertions and deletions"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 15: F1 scores of single channel models compared across insertions and deletions. There is a clear difference in <code class="highlighter-rouge" style='font-size: 13px;'>homalt</code> performance between insertion and deletions.
+  </figcaption>
+</figure>
 
 We can see that while the low-information models have an easier time with deletions, they still fare much better with insertions than SNPs. How is DeepVariant doing that? The examples appear to look the same between insertions and SNPs.
 
 The answer lies in the read length distribution. Illumina short-read sequencing breaks up DNA into fragments typically 100-200 base pairs in length. For Illumina data, DeepVariant uses a 221bp width per pileup image, cropping reads if they span past the window. The represented read length distribution can be seen in Figure 17.
 
-![Figure 18: The distribution of the average read length per example across all candidates in the HG003 Illumina WGS case study]({{ site.baseurl }}/assets/images/2024-09-04/figure_18.png)
-
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_18.png" 
+  	alt="Figure 16: The distribution of the average read length per example across all candidates in the HG003 Illumina WGS case study"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 16: The distribution of the average read length per example across all candidates in the HG003 Illumina WGS case study.
+  </figcaption>
+</figure>
 
 Because DeepVariant collapses the insertions—that is, representing them by their first base only—it effectively shortens them. The consequence is that reads containing insertions tend to be shorter in the pileup image. If we group the above distribution by variant type, we see a clear separation by read length across insertion size.
 
 
-![Figure 19: The distribution of the average read length per example broken down by SNP, deletion, and multiple ranges of insertion sizes]({{ site.baseurl }}/assets/images/2024-09-04/figure_19.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_19.png" 
+  	alt="Figure 17: The distribution of the average read length per example broken down by SNP, deletion, and multiple ranges of insertion sizes"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 17: The distribution of the average read length per example broken down by SNP, deletion, and multiple ranges of insertion sizes (1-5, 6-10, 11-15, and 15+, respectively).
+  </figcaption>
+</figure>
 
 Furthermore, since `het` and `homalt` differ in the number of reads supporting the variant, a homozygous insertion will have a stronger distribution shift than a heterozygous insertion. This effect is clearly observed when comparing the read length distribution between the two genotypes.
 
-![Figure 20: The distribution of the average read length per example comparing het vs homalt variants, across SNP, deletion, and multiple ranges of insertion sizes]({{ site.baseurl }}/assets/images/2024-09-04/figure_20.png)
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_20.png" 
+  	alt="Figure 18: The distribution of the average read length per example comparing het vs homalt variants, across SNP, deletion, and multiple ranges of insertion sizes"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 18: The distribution of the average read length per example comparing <code class="highlighter-rouge" style='font-size: 13px;'>het</code> vs <code class="highlighter-rouge" style='font-size: 13px;'>homalt</code> variants, across SNP, deletion, and multiple ranges of insertion sizes.
+  </figcaption>
+</figure>
 
 It follows that DeepVariant uses this information to correctly differentiate between `het` and `homalt` insertions. 
 
@@ -315,7 +392,14 @@ Finally, we can compare the read length distribution in examples that DeepVarian
 
 For example, suppose the `only_mapping_quality` model encounters an example with a shortened read length distribution. The model would assign a higher probability to this being a `homalt` insertion than a `het`. However, it happens to be an example for a `het` variant composed of reads that randomly happen to be shorter than average—the result is a `FN`, a misclassification. Therefore, we may expect that `FN+FP` generally have the opposite distribution than `TPs`.
 
-![Figure 21: The distribution of the average read length per example comparing het vs homalt variants across errors (FP+FN) and TPs]({{ site.baseurl }}/assets/images/2024-09-04/figure_21.png)
-
+<figure>
+  <img 
+  	src="{{ site.baseurl }}/assets/images/2024-09-04/figure_21.png" 
+  	alt="Figure 19: The distribution of the average read length per example comparing het vs homalt variants across errors (FP+FN) and TPs"
+  	class="large-image"/>
+  <figcaption style='text-align: center;'>
+  	Figure 19: The distribution of the average read length per example comparing <code class="highlighter-rouge" style='font-size: 13px;'>het</code> vs <code class="highlighter-rouge" style='font-size: 13px;'>homalt</code> variants across errors (<code class="highlighter-rouge" style='font-size: 13px;'>FP+FN</code>) and <code class="highlighter-rouge" style='font-size: 13px;'>TPs</code>. A higher mean for <code class="highlighter-rouge" style='font-size: 13px;'>homalt</code> errors suggests that DeepVariant incorrectly classifies them according to the read length distribution.
+  </figcaption>
+</figure>
 
 The results of this analysis suggest that DeepVariant’s CNN is adept at picking up as many visual signals as possible. In the absence of rich visual information, DeepVariant will use indirect clues to minimize its loss function during training. While the `read_supports_variant` channel is critical for multiallelic variants, representational information such as read length distribution also allows DeepVariant to differentiate the genotypes of insertions. 
