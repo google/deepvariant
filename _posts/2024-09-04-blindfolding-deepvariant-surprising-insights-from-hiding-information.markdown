@@ -19,9 +19,14 @@ authors: ["msamman", "danielecook", "awcarroll", "lucasbrambrink"]
 		margin-left: -100px;
 	}
 	@media (min-width: 1200px) { 
-		max-width: 1000px;
+		max-width: 1100px;
 		margin-left: -100px;
 	}
+}
+figcaption {
+	text-align: left;
+	margin: auto;
+	width: 90%;
 }
 
 </style>
@@ -69,21 +74,29 @@ In order to gain a better understanding of each channel's contribution to overal
 
 <figure>
   <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_2a.png" alt="Figure 2(a): A pileup image with the base_differs_from_ref channel ablated"/>
-  <figcaption style='text-align: center;'>Figure 2(a): A pileup image with the <code class="highlighter-rouge" style='font-size: 13px;'>base_differs_from_ref</code> channel ablated.</figcaption>
+  <figcaption style='text-align: center;'>
+  	Figure 2(a): A pileup image with the <code class="highlighter-rouge" style='font-size: 13px;'>base_differs_from_ref</code> channel ablated.
+  </figcaption>
 </figure>
 
 The second set of models were trained on just a **single** channel chosen from the default channels. These experiments isolate the information contained in each of the channels separately. The following illustration is an example of isolating the `read_base` channel.
 
 <figure>
-  <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_2b.png" alt="Figure 2(b): A single channel pileup image, showing only read_base information"/>
-  <figcaption style='text-align: center;'>A single channel pileup image, showing only <code class="highlighter-rouge" style='font-size: 13px;'>read_base</code> information.</figcaption>
+  <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_2b.png" 
+  	alt="Figure 2(b): A single channel pileup image, showing only read_base information"
+  	style='width: 350px;'/>
+  <figcaption style='text-align: center;'>Figure 2(b): A single channel pileup image, showing only <code class="highlighter-rouge" style='font-size: 13px;'>read_base</code> information.
+  </figcaption>
 </figure>
 
 Included in our set of single channel experiments is a model trained on a completely blank channel (i.e. a black image). This model receives absolutely no information about any candidate and acts as a floor for expected performance. 
 
 <figure>
-  <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_2c.png" alt="Figure 2(b): An example of a blank channel, containing no information about reads or reference"/>
-  <figcaption style='text-align: center;'>An example of a <code class="highlighter-rouge" style='font-size: 13px;'>blank</code> channel, containing no information about reads or reference.</figcaption>
+  <img src="{{ site.baseurl }}/assets/images/2024-09-04/figure_2c.png" 
+  	alt="Figure 2(b): An example of a blank channel, containing no information about reads or reference"
+  	style='width: 350px;'/>
+  <figcaption style='text-align: center;'>Figure 2(c): An example of a <code class="highlighter-rouge" style='font-size: 13px;'>blank</code> channel, containing no information about reads or reference.
+  </figcaption>
 </figure>
 
 All models were trained using our standard GIAB Illumina WGS dataset and evaluated on HG003.
