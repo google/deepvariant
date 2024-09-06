@@ -20,7 +20,7 @@ authors: ["msamman", "danielecook", "awcarroll", "lucasbrambrink"]
 	}
 	@media (min-width: 1200px) { 
 		max-width: 1100px;
-		margin-left: -100px;
+		margin-left: -125px;
 	}
 }
 figcaption {
