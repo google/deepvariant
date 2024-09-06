@@ -25,8 +25,10 @@ authors: ["msamman", "danielecook", "awcarroll", "lucasbrambrink"]
 }
 figcaption {
 	text-align: left;
-	margin: auto;
 	width: 90%;
+	margin: auto;
+	margin-top: 5px;
+	margin-bottom: 20px;
 }
 
 </style>
