@@ -2,7 +2,7 @@
 layout: post
 title: "Blindfolding DeepVariant: Surprising Insights from Hiding Information"
 date: 2024-09-04
-description: "Channel ablation experiments reveal interesting insights about how DeepVariant uses pileup representation towards variant calling."
+description: "Channel ablation experiments reveal how DeepVariant uses specific information for calling certain types of variants."
 img: "assets/images/2024-09-04/thumbnail.png"
 authors: ["msamman", "danielecook", "awcarroll", "lucasbrambrink"]
 ---
