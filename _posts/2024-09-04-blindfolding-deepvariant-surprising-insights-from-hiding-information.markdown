@@ -2,7 +2,7 @@
 layout: post
 title: "Blindfolding DeepVariant: Surprising Insights from Hiding Information"
 date: 2024-09-04
-description: "Channel ablation experiments reveal how DeepVariant uses specific information for calling certain types of variants."
+description: "This post investigates the importance of various features of sequencing data to the ability to accurately call variants. Channel ablation experiments reveal how DeepVariant uses specific representational information to correctly call specific genotypes."
 img: "assets/images/2024-09-04/thumbnail.png"
 authors: ["msamman", "danielecook", "awcarroll", "lucasbrambrink"]
 ---
