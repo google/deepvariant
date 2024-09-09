@@ -107,6 +107,10 @@ MODEL=/tmp/deepvariant.wgs.savedmodel
 
 source settings.sh
 
+# Need to run this first, otherwise the bazel build command below will complain
+# about deepvariant/examples_from_stream.so.
+./build_release_binaries.sh
+
 # shellcheck disable=SC2086
 bazel build -c opt ${DV_COPT_FLAGS} //deepvariant:make_examples \
   //deepvariant:call_variants \
