@@ -772,6 +772,7 @@ py_test(
         ":allele_frequency",
         ":py_testdata",
         "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/protos:variants_py_pb2",

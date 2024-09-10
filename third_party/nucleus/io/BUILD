@@ -84,6 +84,7 @@ py_library(
     deps = [
         ":genomics_reader",
         ":genomics_writer",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io/python:vcf_reader",
         "//third_party/nucleus/io/python:vcf_writer",
         "//third_party/nucleus/protos:variants_py_pb2",
@@ -118,6 +119,7 @@ py_library(
     deps = [
         ":genomics_reader",
         ":genomics_writer",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io/python:sam_reader",
         "//third_party/nucleus/io/python:sam_writer",
         "//third_party/nucleus/protos:reads_py_pb2",
@@ -154,6 +156,7 @@ py_library(
     deps = [
         ":genomics_reader",
         ":genomics_writer",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io/python:bed_reader",
         "//third_party/nucleus/io/python:bed_writer",
         "//third_party/nucleus/protos:bed_py_pb2",
@@ -169,6 +172,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":bed",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/protos:bed_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
@@ -182,6 +186,7 @@ py_library(
     deps = [
         ":genomics_reader",
         ":genomics_writer",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io/python:bedgraph_reader",
         "//third_party/nucleus/io/python:bedgraph_writer",
         "//third_party/nucleus/protos:bedgraph_py_pb2",
@@ -209,6 +214,7 @@ py_library(
     srcs = ["fasta.py"],
     deps = [
         ":genomics_reader",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io/python:reference",
         "//third_party/nucleus/protos:fasta_py_pb2",
         "//third_party/nucleus/util:ranges",
@@ -238,6 +244,7 @@ py_library(
     deps = [
         ":genomics_reader",
         ":genomics_writer",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io/python:fastq_reader",
         "//third_party/nucleus/io/python:fastq_writer",
         "//third_party/nucleus/protos:fastq_py_pb2",
@@ -266,6 +273,7 @@ py_library(
     deps = [
         ":genomics_reader",
         ":genomics_writer",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io/python:gff_reader",
         "//third_party/nucleus/io/python:gff_writer",
         "//third_party/nucleus/protos:gff_py_pb2",
@@ -336,6 +344,7 @@ py_library(
     name = "tabix",
     srcs = ["tabix.py"],
     deps = [
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io/python:tabix_indexer",
     ],
 )

@@ -47,13 +47,14 @@ class FastqReaderTest(parameterized.TestCase):
     self.fastq = test_utils.genomics_core_testdata('test_reads.fastq')
     self.options = fastq_pb2.FastqReaderOptions()
 
-  @parameterized.parameters('test_reads.fastq', 'test_reads.fastq.gz',
-                            'test_reads.bgzip.fastq.gz')
+  @parameterized.parameters(
+      'test_reads.fastq', 'test_reads.fastq.gz', 'test_reads.bgzip.fastq.gz'
+  )
   def test_fastq_iterate(self, filename):
     path = test_utils.genomics_core_testdata(filename)
     with fastq_reader.FastqReader.from_file(path, self.options) as reader:
       iterable = reader.iterate()
-      self.assertIsInstance(iterable, clif_postproc.WrappedCppIterable)
+      self.assertIsInstance(iterable, clif_postproc.WrappedFastqIterable)
       self.assertEqual(test_utils.iterable_len(iterable), 4)
 
   def test_from_file_raises_with_missing_fastq(self):

@@ -36,11 +36,12 @@
 
 #include <pybind11/stl.h>
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/variant_calling_multisample.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
-#include "third_party/pybind11_protobuf/native_proto_caster.h"
+#include "pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 

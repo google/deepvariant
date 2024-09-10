@@ -1,5 +1,4 @@
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
-load("//third_party:clif.bzl", "pyclif_proto_library")
 
 package(
     default_visibility = [
@@ -52,11 +51,6 @@ py_proto_library(
     ],
 )
 
-pyclif_proto_library(
-    name = "deepvariant_pyclif",
-    proto_lib = ":deepvariant_proto",  # NO COPYBARA
-)
-
 # ------------------------------------------------------------------------------
 # realigner proto
 # ------------------------------------------------------------------------------
@@ -82,11 +76,6 @@ proto_library(
     name = "realigner_proto",
     srcs = ["realigner.proto"],
     deps = ["//third_party/nucleus/protos:range_proto"],  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "realigner_pyclif",
-    proto_lib = ":realigner_proto",  # NO COPYBARA
 )
 
 # ------------------------------------------------------------------------------

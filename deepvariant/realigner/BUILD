@@ -65,6 +65,7 @@ py_library(
     name = "window_selector",
     srcs = ["window_selector.py"],
     deps = [
+        "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/python:allelecounter",
         "//deepvariant/realigner/python:window_selector",

@@ -36,7 +36,7 @@
 #endif
 
 #include "third_party/nucleus/util/math.h"
-#include "third_party/pybind11/include/pybind11/stl.h"
+#include "pybind11/stl.h"
 
 namespace py = pybind11;
 

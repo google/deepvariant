@@ -41,7 +41,7 @@
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/hts_verbose.h"
 #include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
-#include "third_party/pybind11_protobuf/native_proto_caster.h"
+#include "pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 

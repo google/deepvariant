@@ -81,6 +81,15 @@ class UtilsTest(absltest.TestCase):
     range_pb.end = 15
     self.assertFalse(cpp_utils.read_overlaps_region(read_pb, range_pb))
 
+  def test_EmptyProtoPtr_TypeError(self):
+    with self.assertRaises(TypeError):
+      cpp_utils.TestOnlyPassEmptyProtoPtrRead('plain Python str')
+
+  def test_ConstProtoPtr_TypeError(self):
+    with self.assertRaises(TypeError):
+      cpp_utils.read_end('plain Python str')
+
+
 
 if __name__ == '__main__':
   absltest.main()

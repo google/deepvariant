@@ -69,7 +69,7 @@ class GffReaderTest(parameterized.TestCase):
     file_path = test_utils.genomics_core_testdata(test_features_gff_filename)
     with gff_reader.GffReader.from_file(file_path, self.options) as reader:
       iterable = reader.iterate()
-      self.assertIsInstance(iterable, clif_postproc.WrappedCppIterable)
+      self.assertIsInstance(iterable, clif_postproc.WrappedGffIterable)
       actual = list(iterable)
       self.assertLen(actual, 2)
       self.assertEqual(actual[0], self.first)

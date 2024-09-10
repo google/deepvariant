@@ -82,37 +82,17 @@ function ensure_wanted_bazel_version {
 
 ensure_wanted_bazel_version "${DV_BAZEL_VERSION}"
 
-################################################################################
-# CLIF
-################################################################################
-
-note_build_stage "Install CLIF binary"
-
-if [[ -e /usr/local/bin/pyclif ]];
-then
-  echo "CLIF already installed."
-else
-  # Build clif binary from scratch. Might not be ideal because it installs a
-  # bunch of dependencies, but this works fine when we used this in a Dockerfile
-  # because we don't do build-prereq.sh in the final image.
-  note_build_stage "Build CLIF."
-  time sudo ./tools/build_clif.sh
-  # TODO:
-  # Figure out why these symbolic links are needed and see if
-  # we can do this better.
-  sudo mkdir -p /usr/clang/bin/
-  sudo ln -sf /usr/local/bin/clif-matcher /usr/clang/bin/clif-matcher
-  sudo mkdir -p /usr/local/clif/bin
-  sudo ln -sf /usr/local/bin/pyclif* /usr/local/clif/bin/
-  DIST_PACKAGES_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])")
-  sudo ln -sf "${DIST_PACKAGES_DIR}"/clif/python /usr/local/clif/
-fi
+# This is used for building examples_from_stream.so later.
+time sudo ./tools/build_absl.sh
 
 ################################################################################
 # TensorFlow
 ################################################################################
 
 note_build_stage "Download and configure TensorFlow sources"
+
+# Getting the directory before switching out.
+DV_DIR=$(pwd)
 
 if [[ ! -d ../tensorflow ]]; then
   note_build_stage "Cloning TensorFlow from github as ../tensorflow doesn't exist"
@@ -131,8 +111,38 @@ fi
 # r2.13. Eventually we'll want to update to TF 2.13. But for now this works.
 # TODO: After updating to v2.13, we can remove this.
 wget https://raw.githubusercontent.com/tensorflow/tensorflow/r2.13/third_party/absl/workspace.bzl -O ../tensorflow/third_party/absl/workspace.bzl
-wget https://raw.githubusercontent.com/tensorflow/tensorflow/r2.13/third_party/absl/absl_designated_initializers.patch -O ../tensorflow/third_party/absl/absl_design\
-ated_initializers.patch
+rm -f ../tensorflow/third_party/absl/absl_designated_initializers.patch
+# To get the @com_google_absl//absl/strings:string_view target:
+sed -i -e 's|b971ac5250ea8de900eae9f95e06548d14cd95fe|29bf8085f3bf17b84d30e34b3d7ff8248fda404e|g' ../tensorflow/third_party/absl/workspace.bzl
+sed -i -e 's|8eeec9382fc0338ef5c60053f3a4b0e0708361375fe51c9e65d0ce46ccfe55a7|affb64f374b16877e47009df966d0a9403dbf7fe613fe1f18e49802c84f6421e|g' ../tensorflow/third_party/absl/workspace.bzl
+sed -i -e 's|patch_file = \["//third_party/absl:absl_designated_initializers.patch"\],||g' ../tensorflow/third_party/absl/workspace.bzl
+
+# Update tensorflow.bzl. This updates the `pybind_extension` rule to use the
+# _message.so file.
+patch ../tensorflow/tensorflow/tensorflow.bzl "${DV_DIR}"/third_party/tensorflow.bzl.patch
+
+# I want to replace this part in ../tensorflow/tensorflow/workspace2.bzl
+# From:
+# tf_http_archive(
+#     name = "pybind11",
+#     urls = tf_mirror_urls("https://github.com/pybind/pybind11/archive/v2.10.0.tar.gz"),
+#     sha256 = "eacf582fa8f696227988d08cfc46121770823839fe9e301a20fbce67e7cd70ec",
+#     strip_prefix = "pybind11-2.10.0",
+#     build_file = "//third_party:pybind11.BUILD",
+#     system_build_file = "//third_party/systemlibs:pybind11.BUILD",
+# )
+# To:
+# tf_http_archive(
+#     name = "pybind11",
+#     urls = tf_mirror_urls("https://github.com/pybind/pybind11/archive/a7b91e33269ab6f3f90167291af2c4179fc878f5.zip"),
+#     sha256 = "09d2ab67e91457c966eb335b361bdc4d27ece2d4dea681d22e5d8307e0e0c023",
+#     strip_prefix = "pybind11-a7b91e33269ab6f3f90167291af2c4179fc878f5",
+#     build_file = "//third_party:pybind11.BUILD",
+#     system_build_file = "//third_party/systemlibs:pybind11.BUILD",
+# )
+sed -i -e 's|v2.10.0.tar.gz|a7b91e33269ab6f3f90167291af2c4179fc878f5.zip|g' ../tensorflow/tensorflow/workspace2.bzl
+sed -i -e 's|eacf582fa8f696227988d08cfc46121770823839fe9e301a20fbce67e7cd70ec|09d2ab67e91457c966eb335b361bdc4d27ece2d4dea681d22e5d8307e0e0c023|g' ../tensorflow/tensorflow/workspace2.bzl
+sed -i -e 's|pybind11-2.10.0|pybind11-a7b91e33269ab6f3f90167291af2c4179fc878f5|g' ../tensorflow/tensorflow/workspace2.bzl
 
 # Inspired by part of https://raw.githubusercontent.com/tensorflow/tensorflow/r2.11/third_party/protobuf/protobuf.patch.
 # This is necessary for Python 3.10.
@@ -157,6 +167,7 @@ index 3530a9b37..c31fa8fcc 100644
      }
 EOM
 
+# TODO: Test removing this version pinning.
 note_build_stage "Set pyparsing to 2.2.2 for CLIF."
 export PATH="$HOME/.local/bin":$PATH
 pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.2'

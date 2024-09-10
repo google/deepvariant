@@ -29,6 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <vector>
+
+#include "third_party/nucleus/io/reference.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
@@ -41,7 +44,7 @@
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
-#include "third_party/pybind11_protobuf/native_proto_caster.h"
+#include "pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
@@ -65,7 +68,7 @@ PYBIND11_MODULE(allelecounter, m) {
                     const nucleus::genomics::v1::Range&,
                     const std::vector<int>&, const AlleleCounterOptions&>())
       .def("add", &AlleleCounter::AddPython, py::arg("read"), py::arg("sample"))
-      .def("NormalizeAndAddPython",
+      .def("normalize_and_add",
            [](AlleleCounter* self,
               ::nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>
                   wrapped,

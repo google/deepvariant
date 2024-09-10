@@ -1,5 +1,4 @@
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
-load("//third_party:clif.bzl", "pyclif_proto_library")
 
 package(
     default_visibility = [
@@ -50,9 +49,4 @@ py_proto_library(
         "//deepvariant/protos:resources_py_pb2",
         "//third_party/nucleus/protos:reads_py_pb2",
     ],
-)
-
-pyclif_proto_library(
-    name = "deeptrio_pyclif",
-    proto_lib = ":deeptrio_proto",  # NO COPYBARA
 )

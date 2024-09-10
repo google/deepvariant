@@ -1,0 +1,141 @@
+--- a/tensorflow/tensorflow.bzl
++++ b/tensorflow/tensorflow.bzl
+@@ -2877,6 +2877,28 @@
+         **kwargs
+     )
+ 
++def _symlink_impl(ctx):
++    """Creates a symbolic link between src and out."""
++    out = ctx.outputs.out
++    src = ctx.attr.src.files.to_list()[0]
++    cmd = "ln -f -r -s %s %s" % (src.path, out.path)
++    ctx.actions.run_shell(
++        inputs = [src],
++        outputs = [out],
++        command = cmd,
++    )
++
++symlink = rule(
++    implementation = _symlink_impl,
++    attrs = {
++        "src": attr.label(
++            mandatory = True,
++            allow_single_file = True,
++        ),
++        "out": attr.output(mandatory = True),
++    },
++)
++
+ # buildozer: disable=function-docstring-args
+ def pybind_extension_opensource(
+         name,
+@@ -3012,46 +3034,46 @@
+         if link_in_framework:
+             srcs += tf_binary_additional_srcs()
+ 
+-        cc_binary(
+-            name = so_file,
+-            srcs = srcs + hdrs,
+-            data = data,
+-            copts = copts + [
+-                "-fno-strict-aliasing",
+-                "-fexceptions",
+-            ] + select({
+-                clean_dep("//tensorflow:windows"): [],
+-                "//conditions:default": [
+-                    "-fvisibility=hidden",
+-                ],
+-            }),
+-            linkopts = linkopts + _rpath_linkopts(name) + select({
+-                clean_dep("//tensorflow:macos"): [
+-                    # TODO: the -w suppresses a wall of harmless warnings about hidden typeinfo symbols
+-                    # not being exported.  There should be a better way to deal with this.
+-                    "-Wl,-w",
+-                    "-Wl,-exported_symbols_list,$(location %s)" % exported_symbols_file,
+-                ],
+-                clean_dep("//tensorflow:windows"): [],
+-                "//conditions:default": [
+-                    "-Wl,--version-script",
+-                    "$(location %s)" % version_script_file,
+-                ],
+-            }),
+-            deps = deps + [
+-                exported_symbols_file,
+-                version_script_file,
+-            ],
+-            defines = defines,
+-            features = features + ["-use_header_modules"],
+-            linkshared = 1,
+-            testonly = testonly,
+-            licenses = licenses,
+-            visibility = visibility,
+-            deprecation = deprecation,
+-            restricted_to = restricted_to,
+-            compatible_with = compatible_with,
+-        )
++        # cc_binary(
++        #     name = so_file,
++        #     srcs = srcs + hdrs,
++        #     data = data,
++        #     copts = copts + [
++        #         "-fno-strict-aliasing",
++        #         "-fexceptions",
++        #     ] + select({
++        #         clean_dep("//tensorflow:windows"): [],
++        #         "//conditions:default": [
++        #             "-fvisibility=hidden",
++        #         ],
++        #     }),
++        #     linkopts = linkopts + _rpath_linkopts(name) + select({
++        #         clean_dep("//tensorflow:macos"): [
++        #             # TODO: the -w suppresses a wall of harmless warnings about hidden typeinfo symbols
++        #             # not being exported.  There should be a better way to deal with this.
++        #             "-Wl,-w",
++        #             "-Wl,-exported_symbols_list,$(location %s)" % exported_symbols_file,
++        #         ],
++        #         clean_dep("//tensorflow:windows"): [],
++        #         "//conditions:default": [
++        #             "-Wl,--version-script",
++        #             "$(location %s)" % version_script_file,
++        #         ],
++        #     }),
++        #     deps = deps + [
++        #         exported_symbols_file,
++        #         version_script_file,
++        #     ],
++        #     defines = defines,
++        #     features = features + ["-use_header_modules"],
++        #     linkshared = 1,
++        #     testonly = testonly,
++        #     licenses = licenses,
++        #     visibility = visibility,
++        #     deprecation = deprecation,
++        #     restricted_to = restricted_to,
++        #     compatible_with = compatible_with,
++        # )
+ 
+         # For Windows, emulate the above filegroup with the shared object.
+         native.alias(
+@@ -3073,11 +3095,21 @@
+         testonly = testonly,
+     )
+ 
++    # To prevent ODR violations, all of the extensions must live in one
++    # extension module.  And to be compatible with existing protobuf
++    # generated code, that module must be _message.so.
++    pyext_so = name + ".so"
++    symlink(
++        name = name + "_symlink",
++        out = pyext_so,
++        src = "@com_google_protobuf//:python/google/protobuf/pyext/_message.so",
++    )
++
+     native.py_library(
+         name = name,
+         data = select({
+             "@org_tensorflow//tensorflow:windows": [pyd_file],
+-            "//conditions:default": [so_file],
++            "//conditions:default": [pyext_so],
+         }) + pytype_srcs,
+         deps = pytype_deps,
+         srcs_version = srcs_version,

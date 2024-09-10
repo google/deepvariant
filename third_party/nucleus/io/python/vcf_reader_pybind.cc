@@ -30,7 +30,7 @@
  *
  */
 
-#include "third_party/pybind11/include/pybind11/cast.h"
+#include "pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
@@ -40,7 +40,7 @@
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
-#include "third_party/pybind11_protobuf/native_proto_caster.h"
+#include "pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 

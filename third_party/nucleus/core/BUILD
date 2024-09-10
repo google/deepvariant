@@ -27,7 +27,6 @@ cc_library(
     name = "vendor_cpp",
     deps = [
         ":statusor",
-        ":statusor_clif_converters",
         ":statusor_examples",
     ],
 )
@@ -66,17 +65,6 @@ cc_test(
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
-    ],
-)
-
-cc_library(
-    name = "statusor_clif_converters",
-    srcs = ["statusor_clif_converters.cc"],
-    hdrs = ["statusor_clif_converters.h"],
-    deps = [
-        ":statusor",
-        "//third_party/nucleus/core:status",
-        "@clif//:cpp_runtime",
     ],
 )
 

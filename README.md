@@ -226,7 +226,7 @@ specifically call out a few key ones:
 *   [Boost Graph Library](http://www.boost.org/doc/libs/1_65_1/libs/graph/doc/index.html)
 *   [abseil-cpp](https://github.com/abseil/abseil-cpp) and
     [abseil-py](https://github.com/abseil/abseil-py)
-*   [CLIF](https://github.com/google/clif)
+*   [pybind11](https://github.com/pybind/pybind11)
 *   [GNU Parallel](https://www.gnu.org/software/parallel/)
 *   [htslib & samtools](http://www.htslib.org/)
 *   [Nucleus](https://github.com/google/nucleus)

@@ -1,5 +1,5 @@
-load("//third_party:clif.bzl", "py_clif_cc")
 # Placeholder: load py_test
+load("@org_tensorflow//tensorflow:tensorflow.default.bzl", "pybind_extension", "pybind_library")
 
 package(
     #default_applicable_licenses = ["//third_party/nucleus:license"],
@@ -17,21 +17,27 @@ cc_library(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "vcf_reader",
-    srcs = ["vcf_reader.clif"],
-    py_deps = [
-        "//third_party/nucleus/io:clif_postproc",
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:range_pyclif",
-        "//third_party/nucleus/protos:reference_pyclif",
-        "//third_party/nucleus/protos:variants_pyclif",
-    ],
+    srcs = ["vcf_reader_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:vcf_reader",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "vcf_reader_cclib",
+    srcs = ["vcf_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:vcf_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -44,6 +50,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":vcf_reader",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
@@ -52,24 +59,51 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "vcf_writer",
-    srcs = ["vcf_writer.clif"],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:variants_pyclif",
-    ],
+    srcs = ["vcf_writer_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:vcf_writer",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
-    name = "vcf_concat",
-    srcs = ["vcf_concat.clif"],
+pybind_library(
+    name = "vcf_writer_cclib",
+    srcs = ["vcf_writer_pybind.cc"],
     deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:vcf_writer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
+    name = "vcf_concat",
+    srcs = ["vcf_concat_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:vcf_concat",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "vcf_concat_cclib",
+    srcs = ["vcf_concat_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:vcf_concat",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -92,21 +126,27 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "sam_reader",
-    srcs = ["sam_reader.clif"],
-    py_deps = [
-        "//third_party/nucleus/io:clif_postproc",
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:range_pyclif",
-        "//third_party/nucleus/protos:reads_pyclif",
-        "//third_party/nucleus/protos:reference_pyclif",
-    ],
+    srcs = ["sam_reader_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:sam_reader",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "sam_reader_cclib",
+    srcs = ["sam_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:sam_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -129,33 +169,53 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "sam_writer",
-    srcs = ["sam_writer.clif"],
-    py_deps = [
-        "//third_party/nucleus/io:clif_postproc",
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:reads_pyclif",
-    ],
+    srcs = ["sam_writer_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:sam_writer",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
-    name = "reference",
-    srcs = ["reference.clif"],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:fasta_pyclif",
-        "//third_party/nucleus/protos:range_pyclif",
-        "//third_party/nucleus/protos:reference_pyclif",
-    ],
+pybind_library(
+    name = "sam_writer_cclib",
+    srcs = ["sam_writer_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:sam_writer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
+    name = "reference",
+    srcs = ["reference_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:reader_base",
         "//third_party/nucleus/io:reference",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "reference_cclib",
+    srcs = ["reference_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:reader_base",
+        "//third_party/nucleus/io:reference",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -168,6 +228,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":reference",
+        "//third_party/nucleus/protos:fasta_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
@@ -175,19 +236,27 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "bed_reader",
-    srcs = ["bed_reader.clif"],
-    py_deps = [
-        "//third_party/nucleus/io:clif_postproc",
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:bed_pyclif",
-    ],
+    srcs = ["bed_reader_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:bed_reader",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "bed_reader_cclib",
+    srcs = ["bed_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:bed_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -200,6 +269,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":bed_reader",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/protos:bed_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
@@ -207,16 +277,27 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "bed_writer",
-    srcs = ["bed_writer.clif"],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:bed_pyclif",
-    ],
+    srcs = ["bed_writer_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:bed_writer",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "bed_writer_cclib",
+    srcs = ["bed_writer_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:bed_writer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -237,48 +318,75 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "bedgraph_reader",
-    srcs = ["bedgraph_reader.clif"],
-    py_deps = [
-        "//third_party/nucleus/io:clif_postproc",
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:bedgraph_pyclif",
-    ],
+    srcs = ["bedgraph_reader_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:bedgraph_reader",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
+pybind_library(
+    name = "bedgraph_reader_cclib",
+    srcs = ["bedgraph_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:bedgraph_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
     name = "bedgraph_writer",
-    srcs = ["bedgraph_writer.clif"],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:bedgraph_pyclif",
-    ],
+    srcs = ["bedgraph_writer_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:bedgraph_writer",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
-    name = "fastq_reader",
-    srcs = ["fastq_reader.clif"],
-    py_deps = [
-        "//third_party/nucleus/io:clif_postproc",
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:fastq_pyclif",
-    ],
+pybind_library(
+    name = "bedgraph_writer_cclib",
+    srcs = ["bedgraph_writer_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:bedgraph_writer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
+    name = "fastq_reader",
+    srcs = ["fastq_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:fastq_reader",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "fastq_reader_cclib",
+    srcs = ["fastq_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:fastq_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -291,6 +399,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":fastq_reader",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/protos:fastq_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
@@ -298,16 +407,27 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "fastq_writer",
-    srcs = ["fastq_writer.clif"],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:fastq_pyclif",
-    ],
+    srcs = ["fastq_writer_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:fastq_writer",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "fastq_writer_cclib",
+    srcs = ["fastq_writer_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:fastq_writer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -320,6 +440,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":fastq_writer",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io:fastq",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:fastq_py_pb2",
@@ -329,11 +450,27 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "hts_verbose",
-    srcs = ["hts_verbose.clif"],
+    srcs = ["hts_verbose_pybind.cc"],
     deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:hts_verbose",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "hts_verbose_cclib",
+    srcs = ["hts_verbose_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:hts_verbose",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -349,19 +486,27 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "gff_reader",
-    srcs = ["gff_reader.clif"],
-    py_deps = [
-        "//third_party/nucleus/io:clif_postproc",
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:gff_pyclif",
-    ],
+    srcs = ["gff_reader_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:gff_reader",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "gff_reader_cclib",
+    srcs = ["gff_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:gff_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -374,6 +519,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":gff_reader",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/protos:gff_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
@@ -381,19 +527,27 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "gff_writer",
-    srcs = ["gff_writer.clif"],
-    py_deps = [
-        "//third_party/nucleus/io:clif_postproc",
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:gff_pyclif",
-    ],
+    srcs = ["gff_writer_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:gff_writer",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "gff_writer_cclib",
+    srcs = ["gff_writer_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:gff_writer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -406,6 +560,7 @@ py_test(
     srcs_version = "PY3",
     deps = [
         ":gff_writer",
+        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:gff_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
@@ -415,48 +570,122 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "tabix_indexer",
-    srcs = ["tabix_indexer.clif"],
+    srcs = ["tabix_indexer_pybind.cc"],
     deps = [
-        "//third_party/nucleus/core:statusor_clif_converters",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:tabix_indexer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
-    name = "tfrecord_reader",
-    srcs = ["tfrecord_reader.clif"],
+pybind_library(
+    name = "tabix_indexer_cclib",
+    srcs = ["tabix_indexer_pybind.cc"],
     deps = [
-        ":tstring_clif_conversions",
-        "//third_party/nucleus/io:tfrecord_reader",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:tabix_indexer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "tfrecord_writer",
-    srcs = ["tfrecord_writer.clif"],
+    srcs = ["tfrecord_writer_pybind.cc"],
     deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:tfrecord_writer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
+pybind_library(
+    name = "tfrecord_writer_cclib",
+    srcs = ["tfrecord_writer_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:tfrecord_writer",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
+    name = "tfrecord_reader",
+    srcs = ["tfrecord_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:tfrecord_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "tfrecord_reader_cclib",
+    srcs = ["tfrecord_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:tfrecord_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
     name = "gfile",
-    srcs = ["gfile.clif"],
+    srcs = ["gfile_pybind.cc"],
     deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:gfile_cc",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
-    name = "merge_variants",
-    srcs = ["merge_variants.clif"],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:range_pyclif",
-        "//third_party/nucleus/protos:variants_pyclif",
-    ],
+pybind_library(
+    name = "gfile_cclib",
+    srcs = ["gfile_pybind.cc"],
     deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:gfile_cc",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
+    name = "merge_variants",
+    srcs = ["merge_variants_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/io:merge_variants",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "merge_variants_cclib",
+    srcs = ["merge_variants_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:merge_variants",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )

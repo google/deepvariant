@@ -109,7 +109,7 @@ py_test(
 
 py_test(
     name = "py_utils_test",
-    size = "small",
+    size = "medium",
     srcs = ["utils_test.py"],
     main = "utils_test.py",
     python_version = "PY3",
@@ -362,19 +362,6 @@ cc_library(
     name = "proto_ptr",
     hdrs = [
         "proto_ptr.h",
-    ],
-)
-
-cc_library(
-    name = "proto_clif_converter",
-    srcs = ["proto_clif_converter.cc"],
-    hdrs = ["proto_clif_converter.h"],
-    deps = [
-        ":proto_ptr",
-        "@clif//:cpp_runtime",
-        "@com_google_protobuf//:proto_api",
-        "@com_google_protobuf//:protobuf",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 

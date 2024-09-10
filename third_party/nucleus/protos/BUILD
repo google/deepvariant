@@ -1,5 +1,4 @@
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
-load("//third_party:clif.bzl", "pyclif_proto_library")
 
 package(default_visibility = [
     "//visibility:public",
@@ -399,63 +398,4 @@ py_proto_library(
     deps = [
         ":feature_py_pb2",
     ],
-)
-
-# ----------------------------------------------------------------------
-# pyclif targets
-# ----------------------------------------------------------------------
-
-pyclif_proto_library(
-    name = "bed_pyclif",
-    proto_lib = ":bed_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "bedgraph_pyclif",
-    proto_lib = ":bedgraph_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "gff_pyclif",
-    proto_lib = ":gff_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "fasta_pyclif",
-    proto_lib = ":fasta_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "fastq_pyclif",
-    proto_lib = ":fastq_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "position_pyclif",
-    proto_lib = ":position_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "range_pyclif",
-    proto_lib = ":range_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "reads_pyclif",
-    proto_lib = ":reads_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "reference_pyclif",
-    proto_lib = ":reference_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "variants_pyclif",
-    proto_lib = ":variants_proto",  # NO COPYBARA
-)
-
-pyclif_proto_library(
-    name = "cigar_pyclif",  # NO COPYBARA
-    proto_lib = ":cigar_proto",
 )

@@ -1,5 +1,5 @@
-load("//third_party:clif.bzl", "py_clif_cc")
 # Placeholder: load py_test
+load("@org_tensorflow//tensorflow:tensorflow.default.bzl", "pybind_extension", "pybind_library")
 
 package(
     default_visibility = [
@@ -7,21 +7,31 @@ package(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "allelecounter",
-    srcs = ["allelecounter.clif"],
-    clif_deps = [
-        "//third_party/nucleus/io/python:reference",
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:reads_pyclif",
-        "//third_party/nucleus/protos:range_pyclif",
-        "//third_party/nucleus/protos:cigar_pyclif",
-        "//deepvariant/protos:deepvariant_pyclif",
-    ],
+    srcs = ["allelecounter_pybind.cc"],
     deps = [
         "//deepvariant:allelecounter",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:reference",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "allelecounter_cclib",
+    srcs = ["allelecounter_pybind.cc"],
+    deps = [
+        "//deepvariant:allelecounter",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:reference",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -48,29 +58,58 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "postprocess_variants",
-    srcs = ["postprocess_variants.clif"],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:range_pyclif",
-        "//third_party/nucleus/protos:reference_pyclif",
-        "//deepvariant/protos:deepvariant_pyclif",
+    srcs = ["postprocess_variants_pybind.cc"],
+    deps = [
+        "//deepvariant:postprocess_variants_lib",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
-    deps = ["//deepvariant:postprocess_variants_lib"],
 )
 
-py_clif_cc(
+pybind_library(
+    name = "postprocess_variants_cclib",
+    srcs = ["postprocess_variants_pybind.cc"],
+    deps = [
+        "//deepvariant:postprocess_variants_lib",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
     name = "variant_calling",
-    srcs = ["variant_calling.clif"],
-    clif_deps = [
-        ":allelecounter",
-        "//third_party/nucleus/io/python:reference",  # other py_clif_cc rules
-        "//third_party/nucleus/io/python:vcf_reader",
+    srcs = ["variant_calling_pybind.cc"],
+    deps = [
+        "//deepvariant:variant_calling",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:vcf_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
-    pyclif_deps = [
-        "//deepvariant/protos:deepvariant_pyclif",
+)
+
+pybind_library(
+    name = "variant_calling_cclib",
+    srcs = ["variant_calling_pybind.cc"],
+    deps = [
+        "//deepvariant:variant_calling",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:vcf_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
-    deps = ["//deepvariant:variant_calling"],
 )
 
 py_test(
@@ -94,57 +133,79 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "direct_phasing",
-    srcs = ["direct_phasing.clif"],
+    srcs = ["direct_phasing_pybind.cc"],
     deps = [
         "//deepvariant:direct_phasing",
-        "//deepvariant/protos:deepvariant_pyclif",
-        "//third_party/nucleus/protos:reads_pyclif",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
+pybind_library(
+    name = "direct_phasing_cclib",
+    srcs = ["direct_phasing_pybind.cc"],
+    deps = [
+        "//deepvariant:direct_phasing",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
     name = "pileup_image_native",
-    srcs = ["pileup_image_native.clif"],
+    srcs = ["pileup_image_native_pybind.cc"],
     deps = [
-        ":clif_converters",
-        "//deepvariant:pileup_image_native",
-        "//deepvariant/protos:deepvariant_pyclif",
-        "//third_party/nucleus/protos:reads_pyclif",
-        "//third_party/nucleus/util:proto_clif_converter",
-    ],
-)
-
-cc_library(
-    name = "clif_converters",
-    srcs = ["clif_converters.cc"],
-    hdrs = ["clif_converters.h"],
-    deps = [
-        "//deepvariant:pileup_channel_lib",
         "//deepvariant:pileup_image_native",
         "//deepvariant/protos:deepvariant_cc_pb2",
-        "@clif//:cpp_runtime",
-        "@com_google_absl//absl/log:check",
-        "@local_config_python//:numpy_headers",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
-py_clif_cc(
+pybind_library(
+    name = "pileup_image_native_cclib",
+    srcs = ["pileup_image_native_pybind.cc"],
+    deps = [
+        "//deepvariant:pileup_image_native",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
     name = "variant_calling_multisample",
-    srcs = ["variant_calling_multisample.clif"],
-    clif_deps = [
-        ":allelecounter",
-        "//third_party/nucleus/io/python:reference",  # other py_clif_cc rules
-        "//third_party/nucleus/io/python:vcf_reader",
-    ],
-    pyclif_deps = [
-        "//deepvariant/protos:deepvariant_pyclif",
-    ],
+    srcs = ["variant_calling_multisample_pybind.cc"],
     deps = [
         "//deepvariant:variant_calling_multisample",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "variant_calling_multisample_cclib",
+    srcs = ["variant_calling_multisample_pybind.cc"],
+    deps = [
+        "//deepvariant:variant_calling_multisample",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -169,19 +230,26 @@ py_test(
     ],
 )
 
-py_clif_cc(
+pybind_extension(
     name = "make_examples_native",
-    srcs = ["make_examples_native.clif"],
-    clif_deps = [
-    ],
-    pyclif_deps = [
-        "//third_party/nucleus/protos:range_pyclif",
-        "//third_party/nucleus/protos:variants_pyclif",
-        "//deepvariant/protos:deepvariant_pyclif",
-    ],
+    srcs = ["make_examples_native_pybind.cc"],
     deps = [
         "//deepvariant:make_examples_native",
-        "//third_party/nucleus/protos:reads_pyclif",
-        "//third_party/nucleus/util:proto_clif_converter",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "make_examples_native_cclib",
+    srcs = ["make_examples_native_pybind.cc"],
+    deps = [
+        "//deepvariant:make_examples_native",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )

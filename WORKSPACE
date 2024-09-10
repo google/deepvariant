@@ -98,6 +98,15 @@ http_archive(
     ],
 )
 
+http_archive(
+    name = "pybind11_protobuf",
+    sha256 = "21e0c32d81ece8039a3a8e6daafbd7f64cb0c2744492f3b00f11baa0e276d1a5",
+    strip_prefix = "pybind11_protobuf-de94308491982c32ddfe305a5dfc3c38bc9ff2bc",
+    urls = [
+        "https://github.com/pichuan/pybind11_protobuf/archive/de94308491982c32ddfe305a5dfc3c38bc9ff2bc.zip",
+    ],
+)
+
 # Import all of the tensorflow dependencies.
 # Copied from tensorflow/WORKSPACE. Updated in v2.5.0:
 load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")

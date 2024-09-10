@@ -41,8 +41,8 @@
 #include "absl/log/absl_log.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "google/protobuf/message.h"
-#include "third_party/py/google/protobuf/proto_api.h"
-#include "third_party/pybind11/include/pybind11/gil_safe_call_once.h"
+#include "python/google/protobuf/proto_api.h"
+#include "pybind11/gil_safe_call_once.h"
 
 namespace nucleus {
 namespace internal {

@@ -54,7 +54,7 @@ class SamReaderTest(parameterized.TestCase):
         reads_path=self.bam, ref_path='', options=self.options)
     with reader:
       iterable = reader.iterate()
-      self.assertIsInstance(iterable, clif_postproc.WrappedCppIterable)
+      self.assertIsInstance(iterable, clif_postproc.WrappedSamIterable)
       self.assertEqual(test_utils.iterable_len(iterable), 106)
 
   def test_bam_query(self):
@@ -65,7 +65,7 @@ class SamReaderTest(parameterized.TestCase):
     with reader:
       for interval, n_expected in expected:
         with reader.query(interval) as iterable:
-          self.assertIsInstance(iterable, clif_postproc.WrappedCppIterable)
+          self.assertIsInstance(iterable, clif_postproc.WrappedSamIterable)
           self.assertEqual(test_utils.iterable_len(iterable), n_expected)
 
   def test_bam_samples(self):
@@ -139,10 +139,10 @@ class SamReaderTest(parameterized.TestCase):
     with reader:
       with reader.query(region) as query_iterable1:
         self.assertIsNotNone(query_iterable1)
-        self.assertIsInstance(query_iterable1, clif_postproc.WrappedCppIterable)
+        self.assertIsInstance(query_iterable1, clif_postproc.WrappedSamIterable)
       with reader.query(region) as query_iterable2:
         self.assertIsNotNone(query_iterable2)
-        self.assertIsInstance(query_iterable2, clif_postproc.WrappedCppIterable)
+        self.assertIsInstance(query_iterable2, clif_postproc.WrappedSamIterable)
 
   def test_from_file_raises_with_missing_bam(self):
     # TODO: OpError exception not propagated.
