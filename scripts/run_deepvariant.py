@@ -544,6 +544,9 @@ def postprocess_variants_command(
   cpus = _POSTPROCESS_CPUS.value
   if cpus is None:
     cpus = _NUM_SHARDS.value
+    # WES does not benefit from multiprocessing.
+    if ModelType(_MODEL_TYPE.value) == ModelType.WES:
+      cpus = 0
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
