@@ -92,7 +92,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
             'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
             ' --infile'
             ' "/tmp/pangenome_aware_deepvariant_tmp_output/call_variants_output.tfrecord.gz"'
-            ' --outfile "your_vcf" --cpus 0 --gvcf_outfile "your_gvcf"'
+            ' --outfile "your_vcf" --gvcf_outfile "your_gvcf"'
             ' --nonvariant_site_tfrecord_path'
             ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
         ),
@@ -161,7 +161,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
         ' --infile'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/call_variants_output.tfrecord.gz"'
-        ' --outfile "your_vcf" --cpus 0',
+        ' --outfile "your_vcf"',
     )
 
   @parameterized.parameters(
@@ -375,7 +375,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
         ' --infile'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/call_variants_output.tfrecord.gz"'
-        ' --outfile "your_vcf" --cpus 0 --gvcf_outfile "your_gvcf"'
+        ' --outfile "your_vcf" --gvcf_outfile "your_gvcf"'
         ' --nonvariant_site_tfrecord_path'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz" %s'
         % expected_args,

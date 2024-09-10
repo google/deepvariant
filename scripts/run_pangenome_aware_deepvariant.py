@@ -433,7 +433,6 @@ def postprocess_variants_command(
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
-  command.extend(['--cpus 0'])
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
