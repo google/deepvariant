@@ -12,11 +12,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 274m43.57s
-call_variants                    | 502m25.45s
-postprocess_variants (with gVCF) | 36m1.23s
-vcf_stats_report (optional)      | 7m56.12s
-total                            | 837m49.66s (13h57m49.66s)
+make_examples                    | 280m30.78s
+call_variants                    | 513m36.12s
+postprocess_variants (with gVCF) | 43m0.96s
+vcf_stats_report (optional)      | 9m40.03s
+total                            | 863m32.85s (14h23m32.85s)
 
 ### Accuracy
 
