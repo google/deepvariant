@@ -420,6 +420,6 @@ For example, suppose the `only_mapping_quality` model encounters an example with
 The results of this analysis suggest that DeepVariant’s CNN is adept at picking up as many visual signals as possible. In the absence of rich visual information, DeepVariant will use indirect clues to minimize its loss function during training. While the `read_supports_variant` channel is critical for multiallelic variants, representational information such as read length distribution also allows DeepVariant to differentiate the genotypes of insertions. 
 
 
-Acknowledgements
+## Acknowledgements
 
 We thank Maria Nattestad for a great deal of initial work developing concepts and initial explorations with channel ablation and modification. Maria's early investigations also led to improvements such as the ALT-aligned channel by noticing the importance of the reads_supports_variant channel and identifying ways to expand the information provided there.
