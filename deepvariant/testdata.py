@@ -68,6 +68,7 @@ GOLDEN_CALLING_CANDIDATES = None
 GOLDEN_CANDIDATE_POSITIONS = None
 GOLDEN_CALLING_EXAMPLES = None
 GOLDEN_CALLING_EXAMPLES_SHARDED = None
+GOLDEN_CALLING_EXAMPLES_WITH_FLAGS = None
 GOLDEN_CALLING_EMPTY_EXAMPLES = None
 CONFIDENT_REGIONS_BED = None
 TRUTH_VARIANTS_VCF = None
@@ -131,6 +132,7 @@ def init():
   global GOLDEN_CANDIDATE_POSITIONS
   global GOLDEN_CALLING_EXAMPLES
   global GOLDEN_CALLING_EXAMPLES_SHARDED
+  global GOLDEN_CALLING_EXAMPLES_WITH_FLAGS
   global GOLDEN_CALLING_EMPTY_EXAMPLES
   global CONFIDENT_REGIONS_BED
   global TRUTH_VARIANTS_VCF
@@ -199,6 +201,9 @@ def init():
   )
   GOLDEN_CALLING_EXAMPLES_SHARDED = deepvariant_testdata(
       'golden.calling_examples.tfrecord.gz@3'
+  )
+  GOLDEN_CALLING_EXAMPLES_WITH_FLAGS = deepvariant_testdata(
+      'golden.calling_examples.with_flags.tfrecord.gz'
   )
   GOLDEN_CALLING_EMPTY_EXAMPLES = deepvariant_testdata(
       'golden.calling_examples_empty.tfrecord.gz'

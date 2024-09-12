@@ -401,6 +401,23 @@ time ./bazel-bin/deepvariant/postprocess_variants \
   --novcf_stats_report \
   --cpus 0
 
+GOLDEN_CALLING_EXAMPLES_WITH_FLAGS=${TESTDATA_DIR}/golden.calling_examples.with_flags.tfrecord.gz
+# Test with --min_mapping_quality=1 --keep_legacy_allele_counter_behavior
+# --normalize_reads : these are standard flags for VG Giraffe mapper
+time ./bazel-bin/deepvariant/make_examples \
+  --mode calling \
+  --ref "${REF}" \
+  --reads "${READS}" \
+  --regions chr20:10,000,000-10,010,000 \
+  --examples "${GOLDEN_CALLING_EXAMPLES_WITH_FLAGS}" \
+  --channel_list='read_base,base_quality,mapping_quality,strand,read_supports_variant,base_differs_from_ref,insert_size' \
+  --min_mapping_quality 1 \
+  --keep_legacy_allele_counter_behavior \
+  --normalize_reads \
+  --write_run_info \
+  --deterministic_serialization
+rm -f "${GOLDEN_CALLING_EXAMPLES_WITH_FLAGS}".run_info.pbtxt
+
 # Remove anything that started with DELETEME.
 rm -f "${TESTDATA_DIR}"/DELETME.*
 
