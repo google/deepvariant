@@ -576,7 +576,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
-// Next ID: 16.
+// Next ID: 17.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -639,6 +639,9 @@ message SampleOptions {
     VARIANT_TYPE_INDEL = 2;
   }
   repeated VariantType variant_types_to_blank = 15;
+
+  // If true, skip phasing for this sample.
+  bool skip_phasing = 16;
 }
 
 // High-level options that encapsulates all of the parameters needed to run

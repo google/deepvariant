@@ -2486,7 +2486,7 @@ class RegionProcessor:
           right_padding=right_padding,
       )
 
-      if self.options.phase_reads and sample.options.role != 'pangenome':
+      if self.options.phase_reads and not sample.options.skip_phasing:
         if padded_region is not None:
           reads_to_phase = list(
               sample.in_memory_sam_reader.query(padded_region)
