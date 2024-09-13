@@ -56,7 +56,6 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 
-using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 using std::vector;
 
