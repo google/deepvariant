@@ -49,6 +49,11 @@ PYBIND11_MODULE(direct_phasing, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
   using namespace ::learning::genomics::deepvariant;  // NOLINT
 
+  py::class_<PhasedVariant>(m, "PhasedVariant")
+      .def_readwrite("position", &PhasedVariant::position)
+      .def_readwrite("phase_1_bases", &PhasedVariant::phase_1_bases)
+      .def_readwrite("phase_2_bases", &PhasedVariant::phase_2_bases);
+
   py::classh<DirectPhasing>(m, "DirectPhasing")
       .def(py::init<>())
       .def("graphviz", &DirectPhasing::GraphViz)
