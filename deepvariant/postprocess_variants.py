@@ -34,7 +34,7 @@ import itertools
 import os
 import tempfile
 import time
-from typing import Any, Iterable, Iterator, Sequence
+from typing import Any, Iterable, Iterator, List, Sequence
 
 
 
@@ -1123,17 +1123,18 @@ def _transform_call_variant_group_to_output_variant(
 
 def _transform_call_variants_output_to_variants(
     input_sorted_tfrecord_path,
+    sample_name,
 ):
   """Yields Variant protos in sorted order from CallVariantsOutput protos.
 
   Args:
     input_sorted_tfrecord_path: str. TFRecord format file containing sorted
       CallVariantsOutput protos.
+    sample_name: str. Sample name use in the output VCF and gVCF.
 
   Yields:
     Variant protos in sorted order representing the CallVariantsOutput calls.
   """
-  sample_name = get_sample_name()
   for call_variant_group in group_call_variants_outputs(
       input_sorted_tfrecord_path, FLAGS.group_variants
   ):
@@ -1185,6 +1186,7 @@ def process_contiguous_partition(
     contigs: Sequence[reference_pb2.ContigInfo],
     cvo_paths: Sequence[str],
     temp_file_name: str,
+    sample_name: str,
 ) -> Iterator[variants_pb2.Variant]:
   """Postprocess all CVOs in the given partition and returns an iterator.
 
@@ -1193,6 +1195,7 @@ def process_contiguous_partition(
     contigs: all contigs from ref
     cvo_paths: paths to all CVO files
     temp_file_name: path to temp file to variants to.
+    sample_name: the sample name to use for the output VCF and gVCF.
 
   Returns:
     An iterator of processed variants.
@@ -1218,7 +1221,8 @@ def process_contiguous_partition(
 
   logging.info('Transforming call_variants_output to variants.')
   independent_variants = _transform_call_variants_output_to_variants(
-      input_sorted_tfrecord_path=temp_file_name
+      input_sorted_tfrecord_path=temp_file_name,
+      sample_name=sample_name,
   )
   variant_generator = haplotypes.maybe_resolve_conflicting_variants(
       independent_variants
@@ -1276,18 +1280,18 @@ def build_index(vcf_file, csi=False):
     tabix.build_index(vcf_file)
 
 
-def get_cvo_paths_and_first_record():
-  """Returns sharded filenames for and one record from CVO input file."""
-  if sharded_file_utils.is_sharded_file_spec(FLAGS.infile):
+def get_cvo_paths(cvo_file_spec: str) -> List[str]:
+  """Returns sharded filenames for the `cvo_file_spec` parameter."""
+  if sharded_file_utils.is_sharded_file_spec(cvo_file_spec):
     # Input is already sharded, so dynamic sharding check is disabled.
-    paths = sharded_file_utils.maybe_generate_sharded_filenames(FLAGS.infile)
+    paths = sharded_file_utils.maybe_generate_sharded_filenames(cvo_file_spec)
   else:
     # Input is expected to be dynamically sharded.
-    filename_resolver = FLAGS.infile.replace('.tfrecord.gz', '*')
+    filename_resolver = cvo_file_spec.replace('.tfrecord.gz', '*')
     all_files = sharded_file_utils.glob_list_sharded_file_patterns(
         filename_resolver
     )
-    filename_pattern = FLAGS.infile.replace(
+    filename_pattern = cvo_file_spec.replace(
         '.tfrecord.gz', '@' + str(len(all_files)) + '.tfrecord.gz'
     )
     paths = sharded_file_utils.maybe_generate_sharded_filenames(
@@ -1297,16 +1301,22 @@ def get_cvo_paths_and_first_record():
     # paths we create, otherwise we have multiple file patterns.
     if sorted(all_files) != sorted(paths):
       raise ValueError(
-          'Found multiple file patterns in input filename space: ', FLAGS.infile
+          'Found multiple file patterns in input filename space: ',
+          cvo_file_spec,
       )
+  return paths
 
-  record = dv_utils.get_one_example_from_examples_path(
+
+def get_first_cvo_record(
+    paths: Sequence[str],
+) -> deepvariant_pb2.CallVariantsOutput | None:
+  """Returns the first record from the given paths."""
+  return dv_utils.get_one_example_from_examples_path(
       ','.join(paths), proto=deepvariant_pb2.CallVariantsOutput
   )
-  return paths, record
 
 
-def get_sample_name():
+def get_sample_name(cvo_paths: Sequence[str]) -> str:
   """Determines the sample name to be used for the output VCF and gVCF.
 
   We check the following sources to determine the sample name and use the first
@@ -1316,11 +1326,14 @@ def get_sample_name():
     3) --sample_name flag
     4) default sample name
 
+  Args:
+    cvo_paths: file paths to all CVO files.
+
   Returns:
     sample_name used when writing the output VCF and gVCF.
   """
 
-  _, record = get_cvo_paths_and_first_record()
+  record = get_first_cvo_record(cvo_paths)
   if FLAGS.nonvariant_site_tfrecord_path:
     gvcf_record = dv_utils.get_one_example_from_examples_path(
         FLAGS.nonvariant_site_tfrecord_path, proto=variants_pb2.Variant
@@ -1379,6 +1392,7 @@ def run_postprocess_variants_on_region(
     all_cvo_paths: Sequence[str],
     header: variants_pb2.VcfHeader,
     is_empty: bool,
+    sample_name: str,
 ):
   """Runs postprocess_variants on the given partition.
 
@@ -1393,6 +1407,7 @@ def run_postprocess_variants_on_region(
     all_cvo_paths: paths to all CVO files
     header: the VCF header
     is_empty: if the partition is empty.
+    sample_name: the sample name to use for the output VCF and gVCF.
 
   Returns:
     None (the output is written to the output_vcf and output_gvcf files).
@@ -1405,6 +1420,7 @@ def run_postprocess_variants_on_region(
         contigs,
         all_cvo_paths,
         temp.name,
+        sample_name,
     )
     pon_reader = (
         vcf.VcfReader(_PON_FILTERING.value) if _PON_FILTERING.value else None
@@ -1499,18 +1515,13 @@ def main(argv=()):
           )
       )
 
-    sample_name = get_sample_name()
-    cvo_paths, cvo_record = get_cvo_paths_and_first_record()
-    is_empty = cvo_record is None
+    cvo_paths = get_cvo_paths(FLAGS.infile)
     small_model_cvo_paths = []
     if FLAGS.small_model_cvo_records:
-      small_model_cvo_paths = (
-          sharded_file_utils.maybe_generate_sharded_filenames(
-              FLAGS.small_model_cvo_records
-          )
-      )
+      small_model_cvo_paths = get_cvo_paths(FLAGS.small_model_cvo_records)
     all_cvo_paths = cvo_paths + small_model_cvo_paths
 
+    sample_name = get_sample_name(all_cvo_paths)
     header = dv_vcf_constants.deepvariant_header(
         contigs=contigs,
         sample_names=[sample_name],
@@ -1536,6 +1547,7 @@ def main(argv=()):
           )
       )
 
+    is_empty = get_first_cvo_record(all_cvo_paths) is None
     if _CPUS.value > 1:
       calling_regions = calling_regions_utils.build_calling_regions(
           contigs=contigs,
@@ -1569,6 +1581,7 @@ def main(argv=()):
                       all_cvo_paths,
                       header,
                       is_empty,
+                      sample_name,
                   ),
               )
           )
@@ -1591,6 +1604,7 @@ def main(argv=()):
           all_cvo_paths,
           header,
           is_empty,
+          sample_name,
       )
 
     start_time = time.time()

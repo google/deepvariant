@@ -226,6 +226,10 @@ def make_golden_dataset(compressed_inputs=False):
   return source_path
 
 
+def make_empty_dataset():
+  return test_utils.test_tmpfile('empty.tfrecord.gz')
+
+
 def create_outfile(file_name, compressed_outputs=False, only_keep_pass=False):
   if only_keep_pass:
     file_name += '.pass_only'
@@ -336,6 +340,39 @@ class PostprocessVariantsTest(parameterized.TestCase):
     self.assertEqual(
         _read_contents(FLAGS.gvcf_outfile),
         _read_contents(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT_HAPLOID),
+    )
+
+  @parameterized.parameters(
+      dict(call_variants_cvo_empty=True, small_model_cvo_empty=True),
+      dict(call_variants_cvo_empty=False, small_model_cvo_empty=True),
+      dict(call_variants_cvo_empty=True, small_model_cvo_empty=False),
+  )
+  @flagsaver.flagsaver
+  def test_small_model_cvo_records(
+      self, call_variants_cvo_empty, small_model_cvo_empty
+  ):
+    if call_variants_cvo_empty:
+      FLAGS.infile = testdata.GOLDEN_POSTPROCESS_INPUT_EMPTY
+    else:
+      FLAGS.infile = testdata.GOLDEN_POSTPROCESS_INPUT
+    if small_model_cvo_empty:
+      FLAGS.small_model_cvo_records = testdata.GOLDEN_POSTPROCESS_INPUT_EMPTY
+    else:
+      FLAGS.small_model_cvo_records = testdata.GOLDEN_POSTPROCESS_INPUT
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.outfile = create_outfile('small_model_cvo_records.calls.vcf')
+    FLAGS.nonvariant_site_tfrecord_path = testdata.GOLDEN_POSTPROCESS_GVCF_INPUT
+    FLAGS.gvcf_outfile = create_outfile(
+        'small_model_cvo_records.gvcf_calls.vcf'
+    )
+    FLAGS.cpus = 0
+    postprocess_variants.main(['postprocess_variants.py'])
+    vcf_output = testdata.GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL
+    if call_variants_cvo_empty and small_model_cvo_empty:
+      vcf_output = testdata.GOLDEN_POSTPROCESS_OUTPUT_EMPTY
+    self.assertEqual(
+        _read_contents(FLAGS.outfile),
+        _read_contents(vcf_output),
     )
 
   @flagsaver.flagsaver

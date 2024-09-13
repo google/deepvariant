@@ -75,10 +75,13 @@ TRUTH_VARIANTS_VCF = None
 TRUTH_VARIANTS_VCF_WITH_TYPES = None
 GOLDEN_POSTPROCESS_INPUT = None
 GOLDEN_POSTPROCESS_INPUT_SHARDED = None
+GOLDEN_POSTPROCESS_INPUT_EMPTY = None
 GOLDEN_POSTPROCESS_OUTPUT = None
 GOLDEN_POSTPROCESS_OUTPUT_PASS_ONLY = None
 GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED = None
 GOLDEN_POSTPROCESS_OUTPUT_HAPLOID = None
+GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL = None
+GOLDEN_POSTPROCESS_OUTPUT_EMPTY = None
 GOLDEN_POSTPROCESS_GVCF_INPUT = None
 GOLDEN_POSTPROCESS_GVCF_OUTPUT = None
 GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED = None
@@ -139,10 +142,13 @@ def init():
   global TRUTH_VARIANTS_VCF_WITH_TYPES
   global GOLDEN_POSTPROCESS_INPUT
   global GOLDEN_POSTPROCESS_INPUT_SHARDED
+  global GOLDEN_POSTPROCESS_INPUT_EMPTY
   global GOLDEN_POSTPROCESS_OUTPUT
   global GOLDEN_POSTPROCESS_OUTPUT_PASS_ONLY
   global GOLDEN_POSTPROCESS_OUTPUT_COMPRESSED
   global GOLDEN_POSTPROCESS_OUTPUT_HAPLOID
+  global GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL
+  global GOLDEN_POSTPROCESS_OUTPUT_EMPTY
   global GOLDEN_POSTPROCESS_GVCF_INPUT
   global GOLDEN_POSTPROCESS_GVCF_OUTPUT
   global GOLDEN_POSTPROCESS_GVCF_OUTPUT_COMPRESSED
@@ -223,6 +229,9 @@ def init():
   GOLDEN_POSTPROCESS_INPUT_SHARDED = deepvariant_testdata(
       'golden.postprocess_single_site_input-00000-of-00001.tfrecord.gz'
   )
+  GOLDEN_POSTPROCESS_INPUT_EMPTY = deepvariant_testdata(
+      'golden.postprocess_empty_input.tfrecord.gz'
+  )
   GOLDEN_POSTPROCESS_OUTPUT = deepvariant_testdata(
       'golden.postprocess_single_site_output.vcf'
   )
@@ -234,6 +243,12 @@ def init():
   )
   GOLDEN_POSTPROCESS_OUTPUT_HAPLOID = deepvariant_testdata(
       'golden.haploid_chr20.postprocess_single_site_output.vcf'
+  )
+  GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL = deepvariant_testdata(
+      'golden.postprocess_single_site_output_with_small_model.vcf'
+  )
+  GOLDEN_POSTPROCESS_OUTPUT_EMPTY = deepvariant_testdata(
+      'golden.postprocess_empty_output.vcf'
   )
   GOLDEN_POSTPROCESS_GVCF_INPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_input.tfrecord.gz'
