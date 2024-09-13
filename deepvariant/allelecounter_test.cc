@@ -51,6 +51,7 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/reference.h"
@@ -109,7 +110,7 @@ class AlleleCounterTest : public ::testing::Test {
   }
 
   // Creates a new AlleleCount on specified chr from start to end.
-  std::unique_ptr<AlleleCounter> MakeCounter(const string& chr,
+  std::unique_ptr<AlleleCounter> MakeCounter(absl::string_view chr,
                                              const int64_t start,
                                              const int64_t end) {
     Range range = MakeRange(chr, start, end);
@@ -122,10 +123,8 @@ class AlleleCounterTest : public ::testing::Test {
   // Creates a new AlleleCount with custom Reference and on specified chr from
   // start to end.
   std::unique_ptr<AlleleCounter> MakeCounter(
-      const nucleus::GenomeReference* ref,
-      const string& chr,
-      const int64_t start,
-      const int64_t end) {
+      const nucleus::GenomeReference* ref, absl::string_view chr,
+      const int64_t start, const int64_t end) {
     Range range = MakeRange(chr, start, end);
     // tensorflow/compiler/xla/ptr_util.h.
     return std::make_unique<AlleleCounter>(ref, range, std::vector<int>(),
