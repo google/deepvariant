@@ -838,7 +838,6 @@ def shared_flags_to_options(
       # We assume that the name is example_info.json if checkpoint flag points
       # to a saved model.
       # File name may vary if checkpoint is set with cktp path.
-      model_example_info_json = None
       # If checkpoint is a directory containing saved_model.pb then it is a
       # saved model.
       if gfile.Exists(f'{flags_obj.checkpoint}/saved_model.pb'):
@@ -848,18 +847,16 @@ def shared_flags_to_options(
         # to get the directory. Inside, we need to find the file which ends
         # with example_info.json.
         model_dir = os.path.dirname(flags_obj.checkpoint)
-        for dirname, subdir, fnames in gfile.Walk(model_dir):
-          if subdir:
-            continue
-          for fname in fnames:
-            if fname.endswith('example_info.json'):
-              model_example_info_json = f'{dirname}/{fname}'
-              break
-      if model_example_info_json:
-        _, channels_enum = dv_utils.get_shape_and_channels_from_json(
-            f'{model_example_info_json}'
+        # We expect the json file to be in the same directory as the checkpoint.
+        model_example_info_json = f'{model_dir}/example_info.json'
+      if not gfile.Exists(model_example_info_json):
+        raise ValueError(
+            f'example_info.json not found in {flags_obj.checkpoint}. Please'
+            ' check the checkpoint path.'
         )
-
+      _, channels_enum = dv_utils.get_shape_and_channels_from_json(
+          f'{model_example_info_json}'
+      )
     if channels_enum is not None:
       for c_enum in channels_enum:
         if c_enum not in dv_constants.CHANNEL_ENUM_TO_STRING:
