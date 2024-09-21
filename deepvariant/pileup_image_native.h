@@ -102,7 +102,7 @@ class PileupImageEncoderNative {
 
   // Return all the channels in this image, as a list of enums.
   std::vector<DeepVariantChannelEnum> AllChannelsEnum(
-      const std::string& alt_aligned_representation);
+      absl::string_view alt_aligned_representation);
 
   // Create read pileup image section for one sample.
   std::vector<std::unique_ptr<ImageRow>> BuildPileupForOneSample(
@@ -152,7 +152,7 @@ class PileupImageEncoderNative {
       const nucleus::ConstProtoPtr<
           const learning::genomics::deepvariant::DeepVariantCall>&
           wrapped_dv_call,
-      const string& ref_bases,
+      absl::string_view ref_bases,
       const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>&
           wrapped_read,
       int image_start_pos, const std::vector<std::string>& alt_alleles) {

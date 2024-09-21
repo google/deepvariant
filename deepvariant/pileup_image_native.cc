@@ -106,7 +106,7 @@ PileupImageEncoderNative::PileupImageEncoderNative(
 }
 
 vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
-    const std::string& alt_aligned_representation) {
+    absl::string_view alt_aligned_representation) {
   std::vector<DeepVariantChannelEnum> channels_list;
 
   // Fill "default" channels from OptChannel set
