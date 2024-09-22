@@ -100,6 +100,7 @@ cc_library(
     hdrs = ["read_supports_variant_channel.h"],
     deps = [
         ":channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
@@ -176,6 +177,7 @@ cc_library(
     hdrs = ["strand_channel.h"],
     deps = [
         ":channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",

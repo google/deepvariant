@@ -31,6 +31,8 @@
 
 #include "deepvariant/channels/channel.h"
 
+#include "deepvariant/protos/deepvariant.pb.h"
+
 using learning::genomics::deepvariant::PileupImageOptions;
 
 namespace learning {

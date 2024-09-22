@@ -36,6 +36,7 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/check.h"
 namespace learning {
 namespace genomics {

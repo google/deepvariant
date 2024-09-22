@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "deepvariant/channels/channel.h"
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
