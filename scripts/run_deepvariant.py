@@ -285,6 +285,7 @@ class SmallModelConfig:
   small_model_checkpoint: str
   snp_gq_threshold: int
   indel_gq_threshold: int
+  vaf_context_window: int
 
 
 SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
@@ -292,21 +293,25 @@ SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
         small_model_checkpoint='/opt/smallmodels/wgs',
         snp_gq_threshold=25,
         indel_gq_threshold=30,
+        vaf_context_window=11,
     ),
     ModelType.PACBIO: SmallModelConfig(
         small_model_checkpoint='/opt/smallmodels/pacbio',
         snp_gq_threshold=25,
         indel_gq_threshold=30,
+        vaf_context_window=51,
     ),
     ModelType.ONT_R104: SmallModelConfig(
         small_model_checkpoint='/opt/smallmodels/ont_r104',
         snp_gq_threshold=20,
         indel_gq_threshold=25,
+        vaf_context_window=51,
     ),
     ModelType.HYBRID_PACBIO_ILLUMINA: SmallModelConfig(
         small_model_checkpoint='/opt/smallmodels/hybrid_pacbio_illumina',
         snp_gq_threshold=25,
         indel_gq_threshold=30,
+        vaf_context_window=11,
     ),
 }
 
@@ -406,13 +411,15 @@ def _set_small_model_config(
   if not _use_small_model():
     return
   special_args['call_small_model_examples'] = True
+  config = SMALL_MODEL_CONFIG_BY_MODEL_TYPE.get(model_type)
   if customized_small_model:
     special_args['trained_small_model_path'] = customized_small_model
-  elif model_type in SMALL_MODEL_CONFIG_BY_MODEL_TYPE:
-    config = SMALL_MODEL_CONFIG_BY_MODEL_TYPE[model_type]
+  elif config:
     special_args['trained_small_model_path'] = config.small_model_checkpoint
+  if config:
     special_args['small_model_snp_gq_threshold'] = config.snp_gq_threshold
     special_args['small_model_indel_gq_threshold'] = config.indel_gq_threshold
+    special_args['small_model_vaf_context_window'] = config.vaf_context_window
 
 
 def make_examples_command(
