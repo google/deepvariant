@@ -27,10 +27,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Module for calling variants on examples using a trained keras model."""
-
+import os
 from typing import List, Sequence, Tuple
 
 import numpy as np
+# pylint: disable=g-import-not-at-top
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 
 from deepvariant.protos import deepvariant_pb2
