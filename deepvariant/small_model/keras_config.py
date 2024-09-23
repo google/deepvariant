@@ -94,7 +94,8 @@ def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
   model = tf.keras.Sequential()
   input_shape = len(
       make_small_model_examples.SmallModelExampleFactory(
-          vaf_context_window_size=model_params.vaf_context_window_size
+          vaf_context_window_size=model_params.vaf_context_window_size,
+          expand_by_haplotype=model_params.expand_by_haplotype,
       ).inference_features
   )
   if model_params.features:

@@ -46,7 +46,7 @@ using std::string;
 // Creates an allele with the provided bases, type, and count.
 Allele MakeAllele(absl::string_view bases, AlleleType type, int count,
                   bool is_low_quality = false, int mapping_quality = 0,
-                  int avg_base_quality = 0);
+                  int avg_base_quality = 0, bool is_reverse_strand = false);
 
 // First simplifies ref and alt by removing the common suffix, and the returns
 // simplified_ref->simplified_alt.

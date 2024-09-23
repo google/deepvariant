@@ -654,6 +654,7 @@ void VariantCaller::AddSupportingReads(
         read_info->set_is_low_quality(allele.is_low_quality());
         read_info->set_mapping_quality(allele.mapping_quality());
         read_info->set_average_base_quality(allele.avg_base_quality());
+        read_info->set_is_reverse_strand(allele.is_reverse_strand());
       } else {
         call->add_ref_support(read_name);
         DeepVariantCall_SupportingReadsExt& support_infos =
@@ -666,6 +667,7 @@ void VariantCaller::AddSupportingReads(
         read_info->set_is_low_quality(allele.is_low_quality());
         read_info->set_mapping_quality(allele.mapping_quality());
         read_info->set_average_base_quality(allele.avg_base_quality());
+        read_info->set_is_reverse_strand(allele.is_reverse_strand());
       }
     }
   }

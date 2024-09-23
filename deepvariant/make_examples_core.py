@@ -1056,6 +1056,7 @@ class OutputsWriter:
             options.small_model_vaf_context_window_size,
             accept_snps=options.small_model_snp_gq_threshold > -1,
             accept_indels=options.small_model_indel_gq_threshold > -1,
+            expand_by_haplotype=options.phase_reads,
         )
     )
 
@@ -1295,7 +1296,8 @@ class RegionProcessor:
       )
     self.make_small_model_examples = (
         make_small_model_examples.SmallModelExampleFactory(
-            self.options.small_model_vaf_context_window_size
+            self.options.small_model_vaf_context_window_size,
+            expand_by_haplotype=self.options.phase_reads,
         )
     )
 
@@ -1763,6 +1765,7 @@ class RegionProcessor:
   def write_small_model_examples_in_region(
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      read_phases: Dict[str, int],
       region: range_pb2.Range,
       writer: OutputsWriter,
       n_stats: Dict[str, int],
@@ -1772,6 +1775,7 @@ class RegionProcessor:
 
     Args:
       candidates: List of candidates to be processed into examples.
+      read_phases: A dictionary of read names to haplotype phases.
       region: The region to generate examples.
       writer: A OutputsWriter used to write out examples.
       n_stats: A dictionary that is used to accumulate counts for reporting.
@@ -1785,12 +1789,13 @@ class RegionProcessor:
 
     small_model_examples = (
         self.make_small_model_examples.encode_training_examples(
-            list(self.label_candidates(candidates, region))
+            list(self.label_candidates(candidates, region)),
+            read_phases,
         )
     )
     writer.write_small_model_examples(*small_model_examples)
 
-    n_stats['n_small_model_examples'] += 1
+    n_stats['n_small_model_examples'] += len(small_model_examples)
     runtimes['make small_model_examples'] = trim_runtime(
         time.time() - before_make_summaries
     )
@@ -1798,6 +1803,7 @@ class RegionProcessor:
   def call_small_model_examples_in_region(
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      read_phases: Dict[str, int],
       writer: OutputsWriter,
       n_stats: Dict[str, int],
       runtimes: Dict[str, float],
@@ -1806,6 +1812,7 @@ class RegionProcessor:
 
     Args:
       candidates: List of candidates to be processed into examples.
+      read_phases: A dictionary of read names to haplotype phases.
       writer: A OutputsWriter used to write out examples.
       n_stats: A dictionary that is used to accumulate counts for reporting.
       runtimes: A dictionary that recorded runtime information for reporting.
@@ -1818,7 +1825,9 @@ class RegionProcessor:
 
     # skip candidates not suitable for the small model, e.g. indels.
     skipped_candidates, kept_candidates, examples = (
-        self.make_small_model_examples.encode_inference_examples(candidates)
+        self.make_small_model_examples.encode_inference_examples(
+            candidates, read_phases
+        )
     )
     runtimes['small model generate examples'] = trim_runtime(
         time.time() - before_generate_small_model_examples
@@ -2015,6 +2024,7 @@ class RegionProcessor:
       Dict[str, Sequence[variants_pb2.Variant]],
       # TODO: Use | instead.
       Dict[str, Union[float, int]],
+      Dict[str, Dict[str, int]],
   ]:
     """Finds candidates and creates corresponding examples in a region.
 
@@ -2032,6 +2042,8 @@ class RegionProcessor:
       reference sites, if gvcf generation is enabled, otherwise this value is
       [].
       3. runtimes: A dict of runtimes in seconds keyed by stage.
+      4. read_phases_by_sample: A dict keyed by sample role, each a dict of
+      read_name & read_number to read_phase.
     """
     runtimes = {}
 
@@ -2081,12 +2093,15 @@ class RegionProcessor:
           region, padding_fraction, self.contig_dict
       )
 
-      candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(
-          region=region, region_n=region_n, padded_region=region_expanded
+      candidates_by_sample, gvcfs_by_sample, read_phases_by_sample = (
+          self.candidates_in_region(
+              region=region, region_n=region_n, padded_region=region_expanded
+          )
       )
+
     else:
-      candidates_by_sample, gvcfs_by_sample = self.candidates_in_region(
-          region=region, region_n=region_n
+      candidates_by_sample, gvcfs_by_sample, read_phases_by_sample = (
+          self.candidates_in_region(region=region, region_n=region_n)
       )
 
     for sample in self.samples:
@@ -2140,7 +2155,12 @@ class RegionProcessor:
     runtimes['num candidates'] = sum(
         [len(x) for x in candidates_by_sample.values()]
     )
-    return candidates_by_sample, gvcfs_by_sample, runtimes
+    return (
+        candidates_by_sample,
+        gvcfs_by_sample,
+        runtimes,
+        read_phases_by_sample,
+    )
 
   def region_reads_norealign(
       self,
@@ -2354,6 +2374,7 @@ class RegionProcessor:
   ) -> Tuple[
       Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]],
       Dict[str, Sequence[variants_pb2.Variant]],
+      Dict[str, Dict[str, int]],
   ]:
     """Finds candidates in the region using the designated variant caller.
 
@@ -2365,7 +2386,7 @@ class RegionProcessor:
         region.
 
     Returns:
-      A 2-tuple of (candidates, gvcfs).
+      A 3-tuple of (candidates, gvcfs, read_phases).
       The first value, candidates, is a dict keyed by sample role, where each
       item is a list of deepvariant_pb2.DeepVariantCalls objects, in
       coordidate order.
@@ -2373,6 +2394,10 @@ class RegionProcessor:
       each item is a list of nucleus.genomics.v1.Variant protos containing gVCF
       information for all reference sites, if gvcf generation is enabled,
       otherwise the gvcfs value is [].
+      The third value, read_phases, is a dict keyed by sample role, where each
+      item is a dict keyed by the read name and number, where the value is the
+      phase/HP tag of the
+      read.
     """
     for sample in self.samples:
       sample.reads = sample.in_memory_sam_reader.query(region)
@@ -2381,7 +2406,7 @@ class RegionProcessor:
     if not main_sample.reads and not gvcf_output_enabled(self.options):
       # If we are generating gVCF output we cannot safely abort early here as
       # we need to return the gVCF records calculated by the caller below.
-      return {}, {}
+      return {}, {}, {}
 
     allele_counters = {}
     candidate_positions = []
@@ -2465,6 +2490,7 @@ class RegionProcessor:
 
     candidates = {}
     gvcfs = {}
+    read_phases_by_sample = {}
     left_padding = 0
     right_padding = 0
     if padded_region is not None:
@@ -2477,6 +2503,7 @@ class RegionProcessor:
         writer = self.writers_dict[role]
       if not sample.options.reads_filenames:
         continue
+      read_phases_by_sample[role] = {}
       candidates[role], gvcfs[role] = sample.variant_caller.calls_and_gvcfs(
           allele_counters=allele_counters,
           target_sample=sample.options.name,
@@ -2518,6 +2545,8 @@ class RegionProcessor:
               if read_phase in [1, 2]:
                 read_phase = 1 + (read_phase % 2)
             read.info['HP'].values.add(int_value=read_phase)
+            key = f'{read.fragment_name}/{read.read_number}'
+            read_phases_by_sample[role][key] = read_phase
             if writer and self.options.read_phases_output:
               writer.write_read_phase(read, read_phase, region_n)
           # This logic below will write out the DOT files under the directory
@@ -2536,7 +2565,7 @@ class RegionProcessor:
             candidates[role], region
         )
 
-    return candidates, gvcfs
+    return candidates, gvcfs, read_phases_by_sample
 
   def get_channels(self) -> List[int]:
     # All the example would have the same list of channels.
@@ -3039,7 +3068,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
           )
       continue
 
-    (candidates_by_sample, gvcfs_by_sample, runtimes) = (
+    (candidates_by_sample, gvcfs_by_sample, runtimes, read_phases_by_sample) = (
         region_processor.process(region, region_n)
     )
     for sample in samples_that_need_writers:
@@ -3055,6 +3084,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       if options.write_small_model_examples:
         region_processor.write_small_model_examples_in_region(
             candidates_by_sample[role],
+            read_phases_by_sample[role],
             region,
             writer,
             n_stats,
@@ -3068,6 +3098,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
         candidates_not_called_by_small_model = (
             region_processor.call_small_model_examples_in_region(
                 candidates_by_sample[role],
+                read_phases_by_sample[role],
                 writer,
                 n_stats,
                 runtimes,

@@ -57,10 +57,13 @@ def set_wes_config(config: ml_collections.ConfigDict) -> None:
 
 
 def set_pacbio_config(config: ml_collections.ConfigDict) -> None:
-  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b356435536v2_pacbio/ttl=14d/b356435536v2_pacbio_train_ME_*.tfrecord.gz.small_model.tsv"
-  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b356435536v2_pacbio/ttl=14d/b356435536v2_pacbio_tune_ME_*.tfrecord.gz.small_model.tsv"
+  config.train_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b366282091_pacbio/ttl=14d/b366282091_pacbio_train_ME_*.tfrecord.gz.small_model.tsv"
+  config.tune_tsv_directory = "/cns/oz-d/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b366282091_pacbio/ttl=14d/b366282091_pacbio_tune_ME_*.tfrecord.gz.small_model.tsv"
   config.num_train_samples = 2968008448
   config.num_tune_samples = 81352840
+  config.model_params.expand_by_haplotype = True
+  config.model_params.vaf_context_window_size = 51
+  config.model_params.hidden_layer_sizes = (750, 750)
 
 
 def set_ont_config(config: ml_collections.ConfigDict) -> None:
@@ -98,16 +101,17 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Model hyperparameters
   model_params = ml_collections.ConfigDict()
   model_params.activation = "relu"
-  model_params.hidden_layer_sizes = (200, 300)
+  model_params.hidden_layer_sizes = (500, 500)
   model_params.optimizer = "adam"
   model_params.learning_rate = 0.0000001
   model_params.weight_decay = 0.0000001
   model_params.features = ()
   model_params.vaf_context_window_size = 11
+  model_params.expand_by_haplotype = False
 
   # Training parameters
   config = ml_collections.ConfigDict()
-  config.epochs = 15
+  config.epochs = 100
   config.batch_size = 256
   config.logging_frequency = 8192
   config.train_tsv_directory = ""
@@ -123,12 +127,11 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.tensorboard_directory = None
   config.is_xmanager_run = False
 
+  config.model_params = model_params
   try:
     preset_config = PresetConfig(config_name)
     set_preset_config(preset_config, config)
   except ValueError as e:
     raise ValueError(f"Unknown preset config name: {config_name}") from e
-
-  config.model_params = model_params
 
   return config

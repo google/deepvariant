@@ -412,7 +412,8 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
   int avg_base_quality = GetAvgBaseQuality(read, cigar, read_offset, op_len);
   return ReadAllele(interval_offset - 1, StrCat(prev_base, bases), type,
                     is_low_quality_read_allele,
-                    read.alignment().mapping_quality(), avg_base_quality);
+                    read.alignment().mapping_quality(), avg_base_quality,
+                    read.alignment().position().reverse_strand());
 }
 
 void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
@@ -459,7 +460,8 @@ void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
       const string key = ReadKey(read);
       const Allele allele = MakeAllele(
           to_add_i.bases(), to_add_i.type(), 1, to_add_i.is_low_quality(),
-          to_add_i.mapping_quality(), to_add_i.avg_base_quality());
+          to_add_i.mapping_quality(), to_add_i.avg_base_quality(),
+          to_add_i.is_reverse_strand());
 
       // Naively, there should never be multiple counts for the same read key.
       // We detect such a situation here but only write out a warning. It would

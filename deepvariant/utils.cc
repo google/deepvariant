@@ -43,7 +43,8 @@ namespace deepvariant {
 
 Allele MakeAllele(absl::string_view bases, const AlleleType type,
                   const int count, const bool is_low_quality,
-                  const int mapping_quality, const int avg_base_quality) {
+                  const int mapping_quality, const int avg_base_quality,
+                  const bool is_reverse_strand) {
   Allele allele;
   allele.set_bases(std::string(bases));
   allele.set_type(type);
@@ -51,6 +52,7 @@ Allele MakeAllele(absl::string_view bases, const AlleleType type,
   allele.set_is_low_quality(is_low_quality);
   allele.set_mapping_quality(mapping_quality);
   allele.set_avg_base_quality(avg_base_quality);
+  allele.set_is_reverse_strand(is_reverse_strand);
   return allele;
 }
 

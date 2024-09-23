@@ -109,13 +109,14 @@ class ReadAllele {
   // Creates a ReadAllele with position, bases, and type.
   ReadAllele(int position, absl::string_view bases, const AlleleType& type,
              bool is_low_quality = false, uint8_t mapping_quality = 0,
-             uint8_t avg_base_quality = 0)
+             uint8_t avg_base_quality = 0, bool is_reverse_strand = false)
       : position_(position),
         bases_(bases),
         type_(type),
         low_quality_allele_(is_low_quality),
         mapping_quality_(mapping_quality),
-        avg_base_quality_(avg_base_quality) {}
+        avg_base_quality_(avg_base_quality),
+        is_reverse_strand_(is_reverse_strand){}
 
   // Gets the position of this ReadAllele. Can be < 0 or >= IntervalLength(),
   // indicating that the ReadAllele refers to a position outside of the
@@ -137,6 +138,8 @@ class ReadAllele {
 
   uint8_t avg_base_quality() const { return avg_base_quality_; }
 
+  bool is_reverse_strand() const { return is_reverse_strand_; }
+
  private:
   static constexpr int kInvalidPosition = -1;
 
@@ -146,6 +149,7 @@ class ReadAllele {
   bool low_quality_allele_ = false;
   uint8_t mapping_quality_ = 0;
   uint8_t avg_base_quality_ = 0;
+  bool is_reverse_strand_ = false;
 };
 
 // Workhorse class to compute AlleleCounts over an interval on the genome.
