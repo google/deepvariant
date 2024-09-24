@@ -305,9 +305,9 @@ class AlleleCounter {
   // Simple wrapper around Add() that allows us to efficiently pass large
   // protobufs in from Python. Simply unwraps the ConstProtoPtr objects and
   // calls Add(read).
-  void AddPython(const nucleus::ConstProtoPtr<
-                     const nucleus::genomics::v1::Read>& wrapped,
-                 const string& sample) {
+  void AddPython(
+      const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>& wrapped,
+      absl::string_view sample) {
     Add(*(wrapped.p_), sample, nullptr);
   }
 
