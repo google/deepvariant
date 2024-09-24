@@ -40,6 +40,56 @@ http_archive(
     ],
 )
 
+http_archive(
+    name = "gbwt",
+    build_file = "//:third_party/gbwt.BUILD",
+    sha256 = "eb90732969ba646702c7490e00859ec99bb9d5fa5e017bdfd5ddd13dc0c4ddc6",
+    strip_prefix = "gbwt-420f0f494a4cc4b258335d29bf43c58d59cfcd2e",
+    urls = [
+        "https://github.com/mobinasri/gbwt/archive/420f0f494a4cc4b258335d29bf43c58d59cfcd2e.zip",
+    ],
+)
+
+http_archive(
+    name = "libhandlegraph",
+    build_file = "//:third_party/libhandlegraph.BUILD",
+    sha256 = "078dee9ab07996193117b54d75f6e4cfd881851da5e3c3e3d8c669c7eefeaaa2",
+    strip_prefix = "libhandlegraph-b2fc22c552440076b340306fc660b4fa309fb005",
+    urls = [
+        "https://github.com/mobinasri/libhandlegraph/archive/b2fc22c552440076b340306fc660b4fa309fb005.zip",
+    ],
+)
+
+http_archive(
+    name = "sdsl_lite",
+    build_file = "//:third_party/sdsl_lite.BUILD",
+    sha256 = "4d240a073f81c3b5b8f3eaf0fa25af7d6609ca68afd1ca3f354d3a2d58dd73c0",
+    strip_prefix = "sdsl_lite-d51299437e7a25a5f8349098716295b0b7ca34cc",
+    urls = [
+        "https://github.com/mobinasri/sdsl_lite/archive/d51299437e7a25a5f8349098716295b0b7ca34cc.zip",
+    ],
+)
+
+http_archive(
+    name = "gbwtgraph",
+    build_file = "//:third_party/gbwtgraph.BUILD",
+    sha256 = "74ce1e0958c094717bbcf9e0c8d820ccc13b20b2c7824f2cca0045c764554748",
+    strip_prefix = "gbwtgraph-98661b0253a298838d645e71f65bdb9ddedfd408",
+    urls = [
+        "https://github.com/mobinasri/gbwtgraph/archive/98661b0253a298838d645e71f65bdb9ddedfd408.zip",
+    ],
+)
+
+http_archive(
+    name = "libdivsufsort",
+    build_file = "//:third_party/libdivsufsort.BUILD",
+    sha256 = "6a94e0ae99824b027a732062fab2ebd16091ada33ba1b90ba0e9892f2afec8b8",
+    strip_prefix = "libdivsufsort-22e6b23e619ff50fd086844b6e618d53ca9d53bd",
+    urls = [
+        "https://github.com/simongog/libdivsufsort/archive/22e6b23e619ff50fd086844b6e618d53ca9d53bd.zip",
+    ],
+)
+
 # Import tensorflow.  Note path.
 local_repository(
     name = "org_tensorflow",
