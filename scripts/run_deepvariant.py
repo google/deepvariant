@@ -419,7 +419,9 @@ def _set_small_model_config(
   if config:
     special_args['small_model_snp_gq_threshold'] = config.snp_gq_threshold
     special_args['small_model_indel_gq_threshold'] = config.indel_gq_threshold
-    special_args['small_model_vaf_context_window'] = config.vaf_context_window
+    special_args['small_model_vaf_context_window_size'] = (
+        config.vaf_context_window
+    )
 
 
 def make_examples_command(
