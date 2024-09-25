@@ -245,10 +245,10 @@ def init():
       'golden.haploid_chr20.postprocess_single_site_output.vcf'
   )
   GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL = deepvariant_testdata(
-      'golden.postprocess_single_site_output_with_small_model.vcf'
+      'golden.postprocess_single_site_output_with_small_model.vcf.gz'
   )
   GOLDEN_POSTPROCESS_OUTPUT_EMPTY = deepvariant_testdata(
-      'golden.postprocess_empty_output.vcf'
+      'golden.postprocess_empty_output.vcf.gz'
   )
   GOLDEN_POSTPROCESS_GVCF_INPUT = deepvariant_testdata(
       'golden.postprocess_gvcf_input.tfrecord.gz'

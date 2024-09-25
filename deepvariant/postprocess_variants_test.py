@@ -301,6 +301,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     FLAGS.gvcf_outfile = create_outfile(
         'gvcf_calls.vcf', compressed_inputs_and_outputs, only_keep_pass
     )
+    FLAGS.small_model_cvo_records = None
     FLAGS.only_keep_pass = only_keep_pass
     FLAGS.cpus = 0
     postprocess_variants.main(['postprocess_variants.py'])
@@ -361,10 +362,6 @@ class PostprocessVariantsTest(parameterized.TestCase):
       FLAGS.small_model_cvo_records = testdata.GOLDEN_POSTPROCESS_INPUT
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.outfile = create_outfile('small_model_cvo_records.calls.vcf')
-    FLAGS.nonvariant_site_tfrecord_path = testdata.GOLDEN_POSTPROCESS_GVCF_INPUT
-    FLAGS.gvcf_outfile = create_outfile(
-        'small_model_cvo_records.gvcf_calls.vcf'
-    )
     FLAGS.cpus = 0
     postprocess_variants.main(['postprocess_variants.py'])
     vcf_output = testdata.GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL
@@ -372,7 +369,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       vcf_output = testdata.GOLDEN_POSTPROCESS_OUTPUT_EMPTY
     self.assertEqual(
         _read_contents(FLAGS.outfile),
-        _read_contents(vcf_output),
+        _read_contents(vcf_output, decompress=True),
     )
 
   @flagsaver.flagsaver
