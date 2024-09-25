@@ -85,6 +85,7 @@ pybind_extension(
         "//third_party/nucleus/core/python:type_caster_nucleus_status",
         "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@com_google_absl//absl/strings",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
@@ -97,6 +98,7 @@ pybind_library(
         "//third_party/nucleus/core/python:type_caster_nucleus_status",
         "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
         "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@com_google_absl//absl/strings",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )

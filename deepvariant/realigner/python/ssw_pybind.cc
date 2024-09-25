@@ -29,6 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "absl/strings/string_view.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
@@ -103,7 +104,7 @@ PYBIND11_MODULE(ssw, m) {
       .def_property(
           "cigar_string",
           [](const Alignment* self) { return py::bytes(self->cigar_string); },
-          [](Alignment* self, const std::string& value) {
+          [](Alignment* self, absl::string_view value) {
             self->cigar_string = value;
           });
 }
