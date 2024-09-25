@@ -73,7 +73,9 @@ _PANGENOME = flags.DEFINE_string(
     None,
     (
         'Required. Pangenome haplotypes to aid the variant calling process.'
-        'Aligned, sorted, indexed BAM file. '
+        'Aligned, sorted, indexed BAM file. It can also be a gbz file. If'
+        'a gbz file is used make sure to set --sample_name_pangenome and '
+        '--pangenome_ref_name'
         'Should be aligned to a reference genome compatible with --ref. '
         'Can provide multiple BAMs (comma-separated).'
     ),
@@ -89,11 +91,12 @@ _SAMPLE_NAME_READS = flags.DEFINE_string(
 )
 _SAMPLE_NAME_PANGENOME = flags.DEFINE_string(
     'sample_name_pangenome',
-    '',
+    'pangenome',
     (
         'Sample name for pangenome panel to use for our sample_name in the'
         'output Variant/DeepVariantCall protos. If not specified, will be'
-        'inferred from the header information from --pangenome.'
+        'inferred from the header information from --pangenome'
+        '(if the pangenome is saved as a bam file).'
     ),
 )
 _DOWNSAMPLE_FRACTION_READS = flags.DEFINE_float(
@@ -140,6 +143,18 @@ _VARIANT_TYPES_TO_BLANK = flags.DEFINE_list(
         '[optional] A comma-separated list of variant types to blank out in the'
         ' pangenome sample pileup image.'
         ' The possible values are INDEL, and SNP.'
+    ),
+)
+
+_PANGENOME_REF_NAME = flags.DEFINE_string(
+    'pangenome_ref_name',
+    'GRCh38',
+    (
+        'The name of the reference genome in the pangenome gbz file.'
+        'This reference should match the reference used for the reads. This'
+        'flag is added since the exact name assigned to the pangenome reference'
+        'can be different from the name of the reference fasta used for '
+        'the reads.'
     ),
 )
 
@@ -263,6 +278,8 @@ def default_options(add_flags=True, flags_obj=None):
       sample_role_to_train=sample_role_to_train,
       main_sample_index=MAIN_SAMPLE_INDEX,
   )
+  if flags_obj.pangenome_ref_name:
+    options.pangenome_ref_name = flags_obj.pangenome_ref_name
 
   if add_flags:
     options.bam_fname = f'{os.path.basename(flags_obj.reads)}|{os.path.basename(flags_obj.pangenome)}'

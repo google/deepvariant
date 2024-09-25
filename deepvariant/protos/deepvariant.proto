@@ -649,7 +649,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 79.
+// Next ID: 80.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -910,6 +910,12 @@ message MakeExamplesOptions {
   // than on the whole genome. This is useful in the case of WES where the
   // regions that have reads are 2 percent of the genome.
   bool sample_mean_coverage_on_calling_regions = 75;
+
+  // The name of the reference genome in the pangenome gbz file.
+  // This reference should match the reference used for the reads. This
+  // attribute is added since the exact name assigned to the pangenome reference
+  // can be different from the name of the reference fasta used for the reads.
+  string pangenome_ref_name = 79;
 }
 
 // Config describe information needed for a dataset that can be used for

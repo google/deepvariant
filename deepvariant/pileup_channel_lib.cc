@@ -177,8 +177,15 @@ bool Channels::CalculateChannels(
               // size 1 vector.
               if (read_level_data_[index].size() == 1) {
                 data_[index][col] = read_level_data_[index][0];
-              } else {
+              } else if (index >= 0 && index < read_level_data_.size() &&
+                         read_i >= 0 &&
+                         read_i < read_level_data_[index].size()) {
                 data_[index][col] = read_level_data_[index][read_i];
+              } else {
+                // This is an error
+                LOG(WARNING) << "Warning. Read level data seems off after "
+                                "cigar operations.";
+                return false;
               }
             }
           }

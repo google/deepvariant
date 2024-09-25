@@ -1452,7 +1452,9 @@ class RegionProcessor:
     return image_tensor.tostring(), image_tensor.shape
 
   def _make_sam_readers(
-      self, reads_filenames: Sequence[str], downsample_fraction: float
+      self,
+      reads_filenames: Sequence[str],
+      downsample_fraction: float,
   ) -> Optional[List[sam.SamReader]]:
     """Creates a list of SamReaders, one from each filename.
 
@@ -1481,6 +1483,7 @@ class RegionProcessor:
         readers.append(
             sam.SamReader(
                 reads_filename,
+                ref_name=self.options.pangenome_ref_name,
                 ref_path=self.options.reference_filename
                 if self.options.use_ref_for_cram
                 else None,
