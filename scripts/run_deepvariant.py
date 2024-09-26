@@ -293,7 +293,7 @@ SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
         small_model_checkpoint='/opt/smallmodels/wgs',
         snp_gq_threshold=25,
         indel_gq_threshold=30,
-        vaf_context_window=11,
+        vaf_context_window=51,
     ),
     ModelType.PACBIO: SmallModelConfig(
         small_model_checkpoint='/opt/smallmodels/pacbio',
@@ -311,7 +311,7 @@ SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
         small_model_checkpoint='/opt/smallmodels/hybrid_pacbio_illumina',
         snp_gq_threshold=25,
         indel_gq_threshold=30,
-        vaf_context_window=11,
+        vaf_context_window=51,
     ),
 }
 
