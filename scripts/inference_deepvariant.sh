@@ -80,16 +80,17 @@ SAVE_INTERMEDIATE_RESULTS=false
 SKIP_HAPPY=false
 # Strings; sorted alphabetically.
 BAM=""
-DOCKER_SOURCE="google/deepvariant"
 BIN_VERSION="latest"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
 CUSTOMIZED_SMALL_MODEL=""
+DOCKER_SOURCE="google/deepvariant"
 MAIN_BINARY_NAME="run_deepvariant"
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
+NUM_SHARDS="$(nproc)"
 PANGENOME=""
 PAR_REGIONS_BED=""
 POPULATION_VCFS=""
@@ -265,6 +266,11 @@ while (( "$#" )); do
         echo "$USAGE" >&2
         exit 1
       fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --num_shards)
+      NUM_SHARDS="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -704,7 +710,7 @@ function run_deepvariant_with_docker() {
     --reads="/input/$(basename $BAM)" \
     --output_vcf="/output/${OUTPUT_VCF}" \
     --output_gvcf="/output/${OUTPUT_GVCF}" \
-    --num_shards "$(nproc)" \
+    --num_shards "${NUM_SHARDS}" \
     --logging_dir="/output/logs" \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log""

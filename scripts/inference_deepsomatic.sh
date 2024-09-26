@@ -81,14 +81,15 @@ SKIP_SOMPY=false
 # Strings; sorted alphabetically.
 unset BAM_NORMAL
 BAM_TUMOR=""
-DOCKER_SOURCE="google/deepsomatic"
 BIN_VERSION="1.7.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
+DOCKER_SOURCE="google/deepsomatic"
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
+NUM_SHARDS="$(nproc)"
 PON_FILTERING=""
 POPULATION_VCFS=""
 POSTPROCESS_VARIANTS_ARGS=""
@@ -281,6 +282,11 @@ while (( "$#" )); do
       ;;
     --sample_name_tumor)
       SAMPLE_NAME_TUMOR="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --num_shards)
+      NUM_SHARDS="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -803,7 +809,7 @@ function run_deepsomatic_with_docker() {
     --ref="/input/$(basename $REF).gz" \
     --reads_tumor="/input/$(basename $BAM_TUMOR)" \
     --output_vcf="/output/${OUTPUT_VCF}" \
-    --num_shards "$(nproc)" \
+    --num_shards "${NUM_SHARDS}" \
     --logging_dir="/output/logs" \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepsomatic_runtime.log""

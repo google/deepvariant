@@ -92,6 +92,7 @@ DOCKER_SOURCE="google/deepvariant"
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
+NUM_SHARDS="$(nproc)"
 PAR_REGIONS_BED=""
 POSTPROCESS_VARIANTS_CHILD_ARGS=""
 POSTPROCESS_VARIANTS_PARENT1_ARGS=""
@@ -289,6 +290,11 @@ while (( "$#" )); do
       ;;
     --proposed_variants)
       PROPOSED_VARIANTS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --num_shards)
+      NUM_SHARDS="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -767,7 +773,7 @@ function run_deeptrio() {
     --sample_name_child "${SAMPLE_NAME_CHILD}" \
     --sample_name_parent1 "${SAMPLE_NAME_PARENT1}" \
     --sample_name_parent2 "${SAMPLE_NAME_PARENT2}" \
-    --num_shards "$(nproc)" \
+    --num_shards "${NUM_SHARDS}" \
     --output_gvcf_child "/output/${OUTPUT_GVCF_CHILD}" \
     --output_gvcf_parent1 "/output/${OUTPUT_GVCF_PARENT1}" \
     --output_gvcf_parent2 "/output/${OUTPUT_GVCF_PARENT2}" \
