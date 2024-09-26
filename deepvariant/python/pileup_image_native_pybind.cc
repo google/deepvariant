@@ -29,6 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "third_party/nucleus/util/proto_ptr.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>

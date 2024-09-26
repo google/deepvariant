@@ -29,6 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "deepvariant/protos/deepvariant.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/util/proto_ptr.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
 #include <pybind11/pybind11.h>
