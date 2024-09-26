@@ -120,6 +120,7 @@ py_library(
         ":genomics_reader",
         ":genomics_writer",
         "//third_party/nucleus/io:clif_postproc",
+        "//third_party/nucleus/io/python:gbz_reader",
         "//third_party/nucleus/io/python:sam_reader",
         "//third_party/nucleus/io/python:sam_writer",
         "//third_party/nucleus/protos:reads_py_pb2",
@@ -653,6 +654,29 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf_lite",
         "@htslib",
+    ],
+)
+
+cc_library(
+    name = "gbz_reader",
+    srcs = ["gbz_reader.cc"],
+    hdrs = ["gbz_reader.h"],
+    deps = [
+        ":reader_base",
+        "//third_party/nucleus/core:status",
+        "//third_party/nucleus/core:statusor",
+        "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:range_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@gbwt",
+        "@gbwtgraph",
+        "@libhandlegraph",
     ],
 )
 

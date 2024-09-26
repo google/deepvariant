@@ -39,9 +39,13 @@ filegroup(
         "//third_party:boost.LICENSE",
         "@com_google_protobuf//:LICENSE",
         "@com_googlesource_code_re2//:LICENSE",
+        "@gbwt//:LICENSE",
+        "@gbwtgraph//:LICENSE",
         "@htslib//:LICENSE",
+        "@libdivsufsort//:LICENSE",
         "@libssw//:README.md",  # SSW license embedded in the README.
         "@org_tensorflow//:LICENSE",
+        "@sdsl_lite//:COPYING",
     ],
 )
 
@@ -73,6 +77,7 @@ cc_library(
         "//third_party/nucleus/io/python:bedgraph_writer_cclib",
         "//third_party/nucleus/io/python:fastq_reader_cclib",
         "//third_party/nucleus/io/python:fastq_writer_cclib",
+        "//third_party/nucleus/io/python:gbz_reader_cclib",
         "//third_party/nucleus/io/python:gff_reader_cclib",
         "//third_party/nucleus/io/python:gff_writer_cclib",
         "//third_party/nucleus/io/python:gfile_cclib",

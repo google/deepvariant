@@ -36,8 +36,8 @@
 #include <vector>
 #include <string>
 
-#include "third_party/gbwtgraph/include/gbwtgraph/gbz.h"
-#include "third_party/gbwtgraph/include/gbwtgraph/subgraph.h"
+#include "include/gbwtgraph/gbz.h"
+#include "include/gbwtgraph/subgraph.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/protos/cigar.pb.h"

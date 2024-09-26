@@ -20,23 +20,21 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <fstream>  // IWYU pragma: keep
 #include <iostream>
 #include <memory>
 #include <regex>
 #include <string>
 #include <vector>
 
-#include "file/base/file.h"
-#include "file/base/options.h"
-#include "file/iostream/file_iostream.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include "third_party/gbwt/include/gbwt/metadata.h"
-#include "third_party/gbwt/include/gbwt/support.h"
-#include "third_party/gbwt/include/gbwt/utils.h"
-#include "third_party/gbwtgraph/include/gbwtgraph/subgraph.h"
-#include "third_party/libhandlegraph/src/include/handlegraph/types.hpp"
+#include "include/gbwt/metadata.h"
+#include "include/gbwt/support.h"
+#include "include/gbwt/utils.h"
+#include "include/gbwtgraph/subgraph.h"
+#include "src/include/handlegraph/types.hpp"
 #include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/platform/types.h"
@@ -57,7 +55,8 @@ GbzReader::GbzReader(const std::string& gbz_path,
   double start = gbwt::readTimer();
 
   // Open GBZ file in read mode.
-  file::FileInStream in(file::OpenOrDie(gbz_path, "r", file::Defaults()));
+  std::ifstream in(gbz_path);
+
   // Create an empty GBZ object.
   this->gbz_ = gbwtgraph::GBZ();
   // Load the GBZ file into the GBZ object.
@@ -114,7 +113,7 @@ nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
 
     updateCache(reads);
 
-    return StatusOr<std::vector<nucleus::genomics::v1::Read>>(reads);
+    return nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>>(reads);
 }
 
 nucleus::StatusOr<std::shared_ptr<SamIterable>> GbzReader::Iterate() const {

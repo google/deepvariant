@@ -130,6 +130,7 @@ from __future__ import print_function
 
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
+from third_party.nucleus.io.python import gbz_reader
 from third_party.nucleus.io.python import sam_reader
 from third_party.nucleus.io.python import sam_writer
 from third_party.nucleus.protos import reads_pb2
@@ -257,6 +258,8 @@ class SamReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading Read protos from SAM/BAM/CRAM or TFRecord files."""
 
   def _native_reader(self, input_path, ref_name='', **kwargs):
+    if input_path.endswith('.gbz'):
+      return gbz_reader.GbzReader(input_path, ref_name)
     return NativeSamReader(input_path, **kwargs)
 
   def _record_proto(self):

@@ -127,6 +127,30 @@ py_test(
 )
 
 pybind_extension(
+    name = "gbz_reader",
+    srcs = ["gbz_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:gbz_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "gbz_reader_cclib",
+    srcs = ["gbz_reader_pybind.cc"],
+    deps = [
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/io:gbz_reader",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
     name = "sam_reader",
     srcs = ["sam_reader_pybind.cc"],
     deps = [
