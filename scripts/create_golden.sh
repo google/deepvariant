@@ -93,8 +93,11 @@ GOLDEN_CALLING_EMPTY_EXAMPLES=${TESTDATA_DIR}/golden.calling_examples_empty.tfre
 CALLING_EXAMPLES_TEMP=${TESTDATA_DIR}/tmp.examples.tfrecord.gz
 GOLDEN_CANDIDATE_POSITIONS="${TESTDATA_DIR}"/golden.candidate_positions
 GOLDEN_POSTPROCESS_INPUT=${TESTDATA_DIR}/golden.postprocess_single_site_input.tfrecord.gz
+GOLDEN_POSTPROCESS_INPUT_EMPTY=${TESTDATA_DIR}/golden.postprocess_empty_input.tfrecord.gz
 GOLDEN_POSTPROCESS_OUTPUT=${TESTDATA_DIR}/golden.postprocess_single_site_output.vcf
 GOLDEN_POSTPROCESS_OUTPUT_PASS_ONLY=${TESTDATA_DIR}/golden.postprocess_single_site_output.pass_only.vcf
+GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL=${TESTDATA_DIR}/golden.postprocess_single_site_output_with_small_model.vcf
+GOLDEN_POSTPROCESS_OUTPUT_EMPTY=${TESTDATA_DIR}/golden.postprocess_empty_output.vcf.gz
 GOLDEN_POSTPROCESS_GVCF_INPUT=${TESTDATA_DIR}/golden.postprocess_gvcf_input.tfrecord.gz
 GOLDEN_POSTPROCESS_GVCF_OUTPUT=${TESTDATA_DIR}/golden.postprocess_gvcf_output.g.vcf
 GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES=${TESTDATA_DIR}/golden.vcf_candidate_importer.training_examples.tfrecord.gz
@@ -212,6 +215,11 @@ done
 
 # Create empty examples file.
 touch "${GOLDEN_CALLING_EMPTY_EXAMPLES}"
+time ./bazel-bin/deepvariant/call_variants \
+  --outfile "${GOLDEN_POSTPROCESS_INPUT_EMPTY}" \
+  --examples "${GOLDEN_CALLING_EMPTY_EXAMPLES}" \
+  --checkpoint "${MODEL}" \
+  --allow_empty_examples
 
 # This calls `call_variants` and generate the input for `postprocess_variants`.
 time ./bazel-bin/deepvariant/call_variants \
@@ -226,6 +234,15 @@ time ./bazel-bin/deepvariant/postprocess_variants \
   --ref "${REF}" \
   --nonvariant_site_tfrecord_path "${GOLDEN_POSTPROCESS_GVCF_INPUT}" \
   --gvcf_outfile "${GOLDEN_POSTPROCESS_GVCF_OUTPUT}" \
+  --novcf_stats_report \
+  --cpus 0
+
+# Create a VCF with the small model, which specifies a FORMAT field the header.
+time ./bazel-bin/deepvariant/postprocess_variants \
+  --infile "${GOLDEN_POSTPROCESS_INPUT}" \
+  --small_model_cvo_records "${GOLDEN_POSTPROCESS_INPUT_EMPTY}" \
+  --outfile "${GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL}.gz" \
+  --ref "${REF}" \
   --novcf_stats_report \
   --cpus 0
 
@@ -253,6 +270,14 @@ time ./bazel-bin/deepvariant/postprocess_variants \
   --ref "${REF}" \
   --novcf_stats_report \
   --only_keep_pass \
+  --cpus 0
+
+# Create empty output VCF
+time ./bazel-bin/deepvariant/postprocess_variants \
+  --infile "${GOLDEN_POSTPROCESS_INPUT_EMPTY}" \
+  --small_model_cvo_records "${GOLDEN_POSTPROCESS_INPUT_EMPTY}" \
+  --outfile "${GOLDEN_POSTPROCESS_OUTPUT_EMPTY}" \
+  --ref "${REF}" \
   --cpus 0
 
 time ./bazel-bin/deepvariant/labeler/labeled_examples_to_vcf \
