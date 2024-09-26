@@ -33,6 +33,7 @@
 #define THIRD_PARTY_NUCLEUS_IO_GBZ_READER_H_
 
 #include <memory>
+#include <vector>
 #include <string>
 
 #include "third_party/gbwtgraph/include/gbwtgraph/gbz.h"
@@ -66,10 +67,10 @@ class GbzReader : public Reader {
   // created or an error code indicating the error that occurred.
   GbzReader(const std::string& gbz_path, const std::string& sample_name);
 
-  absl::StatusOr<std::vector<nucleus::genomics::v1::Read>> Query(
+  nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> Query(
       const nucleus::genomics::v1::Range& range);
 
-  absl::StatusOr<std::shared_ptr<SamIterable>> Iterate() const;
+  nucleus::StatusOr<std::shared_ptr<SamIterable>> Iterate() const;
 
  private:
   // The filename of the GBZ file.

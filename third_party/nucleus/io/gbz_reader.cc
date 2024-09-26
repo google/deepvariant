@@ -31,14 +31,15 @@
 #include "file/iostream/file_iostream.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/status/status.h"
-#include "third_party/gbwt/include/gbwt/support.h"
 #include "absl/strings/str_cat.h"
-#include "third_party/libhandlegraph/src/include/handlegraph/types.hpp"
-#include "third_party/nucleus/platform/types.h"
 #include "third_party/gbwt/include/gbwt/metadata.h"
+#include "third_party/gbwt/include/gbwt/support.h"
 #include "third_party/gbwt/include/gbwt/utils.h"
 #include "third_party/gbwtgraph/include/gbwtgraph/subgraph.h"
+#include "third_party/libhandlegraph/src/include/handlegraph/types.hpp"
+#include "third_party/nucleus/core/status.h"
+#include "third_party/nucleus/core/statusor.h"
+#include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
@@ -66,7 +67,7 @@ GbzReader::GbzReader(const std::string& gbz_path,
   LOG(INFO) << "Loading GBZ file took " << end - start << " seconds";
 }
 
-absl::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
+nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
     const Range& range) {
   double start = gbwt::readTimer();
 
@@ -90,7 +91,7 @@ absl::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
         metadata.sample(sample_name_), metadata.contig(contig_name));
 
     if (path_ids.empty()) {
-      return absl::NotFoundError(absl::StrCat(
+      return nucleus::NotFound(absl::StrCat(
           "Pangenome path ids not found for pangenome sample name: ",
           sample_name_));
     }
@@ -113,11 +114,11 @@ absl::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
 
     updateCache(reads);
 
-    return absl::StatusOr<std::vector<nucleus::genomics::v1::Read>>(reads);
+    return StatusOr<std::vector<nucleus::genomics::v1::Read>>(reads);
 }
 
-absl::StatusOr<std::shared_ptr<SamIterable>> GbzReader::Iterate() const {
-  return absl::UnimplementedError("Iterate is not implemented for GbzReader.");
+nucleus::StatusOr<std::shared_ptr<SamIterable>> GbzReader::Iterate() const {
+  return nucleus::Unimplemented("Iterate is not implemented for GbzReader.");
 }
 
 void GbzReader::updateCache(

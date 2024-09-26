@@ -36,8 +36,7 @@
 
 #include <pybind11/stl.h>
 
-#include "third_party/pybind11_abseil/absl_casters.h"
-#include "third_party/pybind11_abseil/status_casters.h"
+#include <string>
 
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
@@ -51,7 +50,7 @@ PYBIND11_MODULE(gbz_reader, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
   using namespace ::nucleus;  // NOLINT
 
-  pybind11::classh<nucleus::GbzReader>(m, "GbzReader")
-      .def(pybind11::init<std::string, std::string>())
-      .def("query", &nucleus::GbzReader::Query, pybind11::arg("region"));
+  py::classh<GbzReader>(m, "GbzReader")
+      .def(py::init<std::string, std::string>())
+      .def("query", &GbzReader::Query, py::arg("region"));
 }
