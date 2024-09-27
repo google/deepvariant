@@ -473,7 +473,7 @@ def make_examples_command(
     special_args['parse_sam_aux_fields'] = True
     special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
-    special_args['pileup_image_width'] = 99
+    special_args['pileup_image_width'] = 147
     special_args['realign_reads'] = False
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
