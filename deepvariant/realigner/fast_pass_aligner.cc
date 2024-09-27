@@ -237,7 +237,7 @@ void FastPassAligner::FastAlignReadsToHaplotype(
   std::vector<int> coverage(haplotype.size(), 0);
   // In the loop we try to align reads for each position in haplotype up to
   // lastPos.
-  const auto& lastPos = haplotype.length() - kmer_size_;
+  int lastPos = haplotype.length() - kmer_size_;
   for (int i = 0; i <= lastPos; i++) {
     // get all reads that are aligned against i-th position
     auto index_it = kmer_index_.find(haplotype.substr(i, kmer_size_));

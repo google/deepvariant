@@ -12,7 +12,7 @@
 ##FORMAT=<ID=VAF,Number=A,Type=Float,Description="Variant allele fractions.">
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods rounded to the closest integer">
 ##FORMAT=<ID=MED_DP,Number=1,Type=Integer,Description="Median DP observed within the GVCF block rounded to the nearest integer.">
-##DeepVariant_version=1.6.1
+##DeepVariant_version=1.7.0
 ##contig=<ID=20,length=63025520>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	child
 20	10000117	.	C	T	13.1	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:12:18:6,12:0.666667:12,0,20
@@ -70,7 +70,7 @@
 20	10006682	.	T	A	32.9	PASS	.	GT:GQ:DP:AD:VAF:PL	1/1:12:23:0,23:1:32,11,0
 20	10006819	.	AAAAC	A	33.7	PASS	.	GT:GQ:DP:AD:VAF:PL	1/1:15:25:0,25:1:33,14,0
 20	10007150	.	G	C	38.5	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:37:32:13,19:0.59375:38,0,43
-20	10007175	.	C	T	13.4	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:13:33:17,16:0.484848:13,0,25
+20	10007175	.	C	T	13.4	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:13:33:17,16:0.484848:13,0,24
 20	10007352	.	C	T	32.4	PASS	.	GT:GQ:DP:AD:VAF:PL	1/1:16:26:0,26:1:32,15,0
 20	10007531	.	A	G	30.5	PASS	.	GT:GQ:DP:AD:VAF:PL	1/1:7:21:0,21:1:29,6,0
 20	10007980	.	A	C	22.5	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:8:21:1,20:0.952381:21,0,7

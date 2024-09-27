@@ -3534,6 +3534,7 @@ options {
       skip_uncalled_genotypes: true
       track_ref_reads: true
       phase_reads_region_padding_pct: 20
+      small_model_vaf_context_window_size: 11
     }
     pileup_height: 100
     order: 0
@@ -3560,6 +3561,7 @@ options {
       skip_uncalled_genotypes: true
       track_ref_reads: true
       phase_reads_region_padding_pct: 20
+      small_model_vaf_context_window_size: 11
     }
     pileup_height: 100
     order: 0
@@ -3585,6 +3587,7 @@ options {
       skip_uncalled_genotypes: true
       track_ref_reads: true
       phase_reads_region_padding_pct: 20
+      small_model_vaf_context_window_size: 11
     }
     pileup_height: 100
     order: 2
@@ -3605,6 +3608,9 @@ options {
   deterministic_serialization: true
   small_model_snp_gq_threshold: -1
   shm_buffer_size: 10485760
+  exclude_variants_af_threshold: 0.05000000074505806
+  small_model_inference_batch_size: 128
+  small_model_vaf_context_window_size: 11
   small_model_indel_gq_threshold: -1
 }
 labeling_metrics {
@@ -3623,14 +3629,14 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 6
-  cpu_frequency_mhz: 3416.4934166666667
-  total_memory_mb: 63900
-  wall_time_seconds: 16.636067390441895
-  cpu_user_time_seconds: 21.899335
-  cpu_system_time_seconds: 0.560905
-  memory_peak_rss_mb: 1018
-  write_bytes: 12288
+  physical_core_count: 12
+  cpu_frequency_mhz: 3325.791833333334
+  total_memory_mb: 128668
+  wall_time_seconds: 16.009812831878662
+  cpu_user_time_seconds: 28.9562
+  cpu_system_time_seconds: 1.133645
+  memory_peak_rss_mb: 1764
+  write_bytes: 8937472
 }
 stats {
   num_examples: 167

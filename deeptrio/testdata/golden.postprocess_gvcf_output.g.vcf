@@ -12,7 +12,7 @@
 ##FORMAT=<ID=VAF,Number=A,Type=Float,Description="Variant allele fractions.">
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods rounded to the closest integer">
 ##FORMAT=<ID=MED_DP,Number=1,Type=Integer,Description="Median DP observed within the GVCF block rounded to the nearest integer.">
-##DeepVariant_version=1.6.1
+##DeepVariant_version=1.7.0
 ##contig=<ID=20,length=63025520>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	child
 20	10000000	.	T	<*>	0	.	END=10000011	GT:GQ:MIN_DP:PL	0/0:48:16:0,48,479
@@ -1001,7 +1001,7 @@
 20	10007000	.	T	<*>	0	.	END=10007149	GT:GQ:MIN_DP:PL	0/0:50:27:0,105,1049
 20	10007150	.	G	C,<*>	38.5	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:37:32:13,19,0:0.59375,0:38,0,43,990,990,990
 20	10007151	.	G	<*>	0	.	END=10007174	GT:GQ:MIN_DP:PL	0/0:50:29:0,93,929
-20	10007175	.	C	T,<*>	13.4	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:13:33:17,16,0:0.484848,0:13,0,25,990,990,990
+20	10007175	.	C	T,<*>	13.4	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:13:33:17,16,0:0.484848,0:13,0,24,990,990,990
 20	10007176	.	T	<*>	0	.	END=10007246	GT:GQ:MIN_DP:PL	0/0:50:21:0,99,989
 20	10007247	.	G	<*>	0	.	END=10007247	GT:GQ:MIN_DP:PL	0/0:36:22:0,36,599
 20	10007248	.	C	<*>	0	.	END=10007265	GT:GQ:MIN_DP:PL	0/0:50:22:0,66,659

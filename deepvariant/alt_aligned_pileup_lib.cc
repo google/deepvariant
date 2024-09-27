@@ -56,7 +56,7 @@ namespace deepvariant {
 namespace {
 
 // Margin added to the reference sequence for the aligner module.
-constexpr int64_t kRefAlignMargin = 20;
+constexpr int64_t kRefAlignMargin = 0;
 
 using ::nucleus::genomics::v1::CigarUnit;
 using ::nucleus::genomics::v1::Read;

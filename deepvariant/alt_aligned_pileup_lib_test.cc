@@ -333,7 +333,8 @@ INSTANTIATE_TEST_SUITE_P(
              {
                  // Local alignment cannot resolve GGG deletion, instead it is 3
                  // bases soft clip at the end.
-                 MakeRead(1, "TTTTTTTTTACGTACGTAAAAAA", {"20M", "3S"},
+                 MakeRead(20, "TTTTTTTTTACGTACGTAAAAAA",
+                          {"9S", "8M", "3D", "6M"},
                           "read_1"),
                  MakeRead(20, "ACGTACGTAAAAAAGTGTGATC", {"8M", "3D", "14M"},
                           "read_2"),
