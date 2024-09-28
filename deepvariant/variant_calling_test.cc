@@ -233,10 +233,10 @@ class VariantCallingTest : public ::testing::Test {
   // properties from the arguments. Returns the resulting DeepVariantCall
   // produced by CallVariants for further testing in the callee.
   std::optional<DeepVariantCall> CheckCall(const absl::string_view ref,
-                                      const VariantCaller& caller,
-                                      const std::vector<Allele>& alleles,
-                                      const ExpectedVariant expect_variant,
-                                      const Variant& expected_variant) {
+                                           const VariantCaller& caller,
+                                           absl::Span<const Allele> alleles,
+                                           const ExpectedVariant expect_variant,
+                                           const Variant& expected_variant) {
     AlleleCount allele_count = ConstructAlleleCount(ref, alleles);
     const std::optional<DeepVariantCall> optional_variant =
         caller.CallVariant(allele_count);

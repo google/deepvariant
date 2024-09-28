@@ -69,8 +69,7 @@ void CreateTestSeq(const std::string& name, int pos_in_fasta,
 // Creates Read proto.
 nucleus::genomics::v1::Read MakeRead(
     absl::string_view chromosome, int start, const std::string& bases,
-    const std::vector<std::string>& cigar_elements,
-    absl::string_view read_name,
+    absl::Span<const std::string> cigar_elements, absl::string_view read_name,
     int hp_tag = -1);
 
 // Creates a simple variant for unit testing.
@@ -82,7 +81,7 @@ DeepVariantCall MakeDeepVariantCall(
     const nucleus::genomics::v1::Variant& variant);
 
 std::unique_ptr<ImageRow> MakeImageRow(
-    const std::vector<std::vector<unsigned char>>& data, int width,
+    absl::Span<const std::vector<unsigned char>> data, int width,
     int num_channels);
 
 PileupImageOptions MakeDefaultPileupImageOptions(int width,

@@ -73,9 +73,8 @@ void CreateTestSeq(const std::string& name, const int pos_in_fasta,
 
 nucleus::genomics::v1::Read MakeRead(
     const absl::string_view chr, const int start, const std::string& bases,
-    const std::vector<std::string>& cigar_elements,
-    const absl::string_view read_name,
-    int hp_tag) {
+    absl::Span<const std::string> cigar_elements,
+    const absl::string_view read_name, int hp_tag) {
   nucleus::genomics::v1::Read read = nucleus::MakeRead(
       std::string(chr), start, bases,
       std::vector<std::string>(cigar_elements.begin(), cigar_elements.end()));
@@ -114,9 +113,8 @@ DeepVariantCall MakeDeepVariantCall(
   return dv_call;
 }
 
-
 std::unique_ptr<ImageRow> MakeImageRow(
-    const std::vector<std::vector<unsigned char>>& data, int width,
+    absl::Span<const std::vector<unsigned char>> data, int width,
     int num_channels) {
   ImageRow row(width, num_channels);
   int channel_index = 0;
