@@ -137,7 +137,7 @@ class Channels {
   // Base Channels //
   //---------------//
   int BaseColor(char base, const PileupImageOptions& options);
-  std::vector<std::uint8_t> BaseColorVector(const std::string& bases,
+  std::vector<std::uint8_t> BaseColorVector(absl::string_view bases,
                                             const PileupImageOptions& options);
 
   // Returns a value based on whether the current read base matched the

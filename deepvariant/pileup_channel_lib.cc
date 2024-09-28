@@ -420,7 +420,7 @@ int Channels::BaseColor(char base, const PileupImageOptions& options) {
 }
 
 std::vector<std::uint8_t> Channels::BaseColorVector(
-    const std::string& bases, const PileupImageOptions& options) {
+    absl::string_view bases, const PileupImageOptions& options) {
   std::vector<std::uint8_t> base_colors;
   base_colors.reserve(bases.size());
   for (const char base : bases) {
