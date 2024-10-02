@@ -303,7 +303,7 @@ void AddGenotypes(const std::string& sample_name,
 }
 
 AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
-                         const std::vector<Allele>& alt_alleles,
+                         absl::Span<const Allele> alt_alleles,
                          const std::string& ref_bases) {
   AlleleMap allele_map;
 
