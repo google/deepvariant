@@ -51,6 +51,6 @@ PYBIND11_MODULE(gbz_reader, m) {
   using namespace ::nucleus;  // NOLINT
 
   py::classh<GbzReader>(m, "GbzReader")
-      .def(py::init<std::string, std::string>())
+      .def(py::init<std::string, std::string, int, std::string>())
       .def("query", &GbzReader::Query, py::arg("region"));
 }

@@ -651,7 +651,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 80.
+// Next ID: 81.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -917,7 +917,13 @@ message MakeExamplesOptions {
   // This reference should match the reference used for the reads. This
   // attribute is added since the exact name assigned to the pangenome reference
   // can be different from the name of the reference fasta used for the reads.
-  string pangenome_ref_name = 79;
+  string ref_name_pangenome = 79;
+
+  // The prefix to add to the chromosome name in the pangenome gbz file. It
+  // is empty by default. However sometimes we need to add a prefix
+  // (like "GRCh38.") to the chromosome name in the pangenome gbz file to match
+  // the chromosome name in the reads.
+  string ref_chrom_prefix = 80;
 }
 
 // Config describe information needed for a dataset that can be used for

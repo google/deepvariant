@@ -65,7 +65,10 @@ class GbzReader : public Reader {
   //
   // Returns a StatusOr that is OK if the GbzReader could be successfully
   // created or an error code indicating the error that occurred.
-  GbzReader(const std::string& gbz_path, const std::string& sample_name);
+  GbzReader(const std::string& gbz_path,
+            const std::string& sample_name,
+            int context,
+            const std::string& chrom_prefix);
 
   nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> Query(
       const nucleus::genomics::v1::Range& range);
@@ -79,6 +82,12 @@ class GbzReader : public Reader {
   std::string sample_name_;
   // The GBZ object.
   gbwtgraph::GBZ gbz_;
+  // The PathIndex  object.
+  std::unique_ptr<gbwtgraph::PathIndex> path_index_;
+  // context size
+  int context_;
+  // chrom prefix
+  std::string chrom_prefix_;
 
   std::vector<nucleus::genomics::v1::Read> reads_cache_;
   int cache_start_pos_ = 0;
@@ -96,7 +105,9 @@ class GbzReader : public Reader {
   static genomics::v1::CigarUnit_Operation ParseCigarOpStr(const char op);
   static std::vector<std::string> GetCigarElements(const std::string& input);
   static std::vector<nucleus::genomics::v1::Read> GetReadsFromSubgraph(
-      const gbwtgraph::Subgraph& subgraph, const gbwtgraph::GBZ& gbz);
+      const gbwtgraph::Subgraph& subgraph,
+      const gbwtgraph::GBZ& gbz,
+      const std::string& chrom_prefix);
 };
 
 }  // namespace nucleus

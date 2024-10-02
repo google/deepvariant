@@ -1483,7 +1483,9 @@ class RegionProcessor:
         readers.append(
             sam.SamReader(
                 reads_filename,
-                ref_name=self.options.pangenome_ref_name,
+                ref_name=self.options.ref_name_pangenome,
+                context=self.options.allele_counter_options.partition_size,
+                chrom_prefix=self.options.ref_chrom_prefix,
                 ref_path=self.options.reference_filename
                 if self.options.use_ref_for_cram
                 else None,

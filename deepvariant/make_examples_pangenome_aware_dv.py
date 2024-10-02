@@ -75,7 +75,7 @@ _PANGENOME = flags.DEFINE_string(
         'Required. Pangenome haplotypes to aid the variant calling process.'
         'Aligned, sorted, indexed BAM file. It can also be a gbz file. If'
         'a gbz file is used make sure to set --sample_name_pangenome and '
-        '--pangenome_ref_name'
+        '--ref_name_pangenome'
         'Should be aligned to a reference genome compatible with --ref. '
         'Can provide multiple BAMs (comma-separated).'
     ),
@@ -146,8 +146,8 @@ _VARIANT_TYPES_TO_BLANK = flags.DEFINE_list(
     ),
 )
 
-_PANGENOME_REF_NAME = flags.DEFINE_string(
-    'pangenome_ref_name',
+_REF_NAME_PANGENOME = flags.DEFINE_string(
+    'ref_name_pangenome',
     'GRCh38',
     (
         'The name of the reference genome in the pangenome gbz file.'
@@ -155,6 +155,17 @@ _PANGENOME_REF_NAME = flags.DEFINE_string(
         'flag is added since the exact name assigned to the pangenome reference'
         'can be different from the name of the reference fasta used for '
         'the reads.'
+    ),
+)
+
+_REF_CHROM_PREFIX = flags.DEFINE_string(
+    'ref_chrom_prefix',
+    '',
+    (
+        'The prefix to add to the chromosome name in the pangenome gbz file. It'
+        'is empty by default. However sometimes we need to add a prefix '
+        '(like "GRCh38.") to the chromosome name in the pangenome gbz file to '
+        'match the chromosome name in the reads.'
     ),
 )
 
@@ -279,8 +290,10 @@ def default_options(add_flags=True, flags_obj=None):
       sample_role_to_train=sample_role_to_train,
       main_sample_index=MAIN_SAMPLE_INDEX,
   )
-  if flags_obj.pangenome_ref_name:
-    options.pangenome_ref_name = flags_obj.pangenome_ref_name
+  if flags_obj.ref_name_pangenome:
+    options.ref_name_pangenome = flags_obj.ref_name_pangenome
+  if flags_obj.ref_chrom_prefix:
+    options.ref_chrom_prefix = flags_obj.ref_chrom_prefix
 
   if add_flags:
     options.bam_fname = f'{os.path.basename(flags_obj.reads)}|{os.path.basename(flags_obj.pangenome)}'

@@ -257,9 +257,14 @@ class NativeSamReader(genomics_reader.GenomicsReader):
 class SamReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading Read protos from SAM/BAM/CRAM or TFRecord files."""
 
-  def _native_reader(self, input_path, ref_name='', **kwargs):
+  def _native_reader(self,
+                     input_path,
+                     ref_name='',
+                     context=1000,
+                     chrom_prefix='',
+                     **kwargs):
     if input_path.endswith('.gbz'):
-      return gbz_reader.GbzReader(input_path, ref_name)
+      return gbz_reader.GbzReader(input_path, ref_name, context, chrom_prefix)
     return NativeSamReader(input_path, **kwargs)
 
   def _record_proto(self):

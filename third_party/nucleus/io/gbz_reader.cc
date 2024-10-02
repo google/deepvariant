@@ -50,8 +50,11 @@ using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
 
 GbzReader::GbzReader(const std::string& gbz_path,
-                     const std::string& sample_name)
-    : sample_name_(sample_name) {
+                     const std::string& sample_name,
+                     int context,
+                     const std::string& chrom_prefix)
+    : sample_name_(sample_name), context_(context),
+      chrom_prefix_(chrom_prefix) {
   double start = gbwt::readTimer();
 
   // Open GBZ file in read mode.
@@ -61,6 +64,11 @@ GbzReader::GbzReader(const std::string& gbz_path,
   this->gbz_ = gbwtgraph::GBZ();
   // Load the GBZ file into the GBZ object.
   gbz_.simple_sds_load(in);
+  // Create a PathIndex object.
+  this->path_index_ = std::make_unique<gbwtgraph::PathIndex>(this->gbz_);
+  // Size of the context window from each side
+  this->context_ = context;
+  this->chrom_prefix_ = chrom_prefix;
 
   double end = gbwt::readTimer();
   LOG(INFO) << "Loading GBZ file took " << end - start << " seconds";
@@ -68,7 +76,6 @@ GbzReader::GbzReader(const std::string& gbz_path,
 
 nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
     const Range& range) {
-  double start = gbwt::readTimer();
 
     const std::string& contig_name = range.reference_name();
     const size_t start_pos = range.start();
@@ -76,18 +83,20 @@ nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
 
     if (start_pos >= cache_start_pos_ + 300 &&
         end_pos <= std::max(cache_end_pos_ - 300, 0)) {
-      // Chahe hit
-      std::cerr << "[********* gbz_reader.cc line 60] Cache hit in c++:  "
-              << gbwt::readTimer() - start << " seconds.\n";
       return reads_cache_;
     }
 
 
     const gbwt::Metadata& metadata = gbz_.index.metadata;
 
+    // remove the prefix from the contig name
+    std::string contig_name_without_prefix =
+        contig_name.substr(chrom_prefix_.length());
+
     // Get the path ids for the sample and contig
     std::vector<gbwt::size_type> path_ids = metadata.findPaths(
-        metadata.sample(sample_name_), metadata.contig(contig_name));
+        metadata.sample(sample_name_),
+        metadata.contig(contig_name_without_prefix));
 
     if (path_ids.empty()) {
       return nucleus::NotFound(absl::StrCat(
@@ -98,18 +107,15 @@ nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
         gbz_.graph.path_to_handle(path_ids.front());
 
     gbwtgraph::SubgraphQuery query = gbwtgraph::SubgraphQuery::path_interval(
-        path, start_pos, end_pos, /*context=*/ 1000,
+        path, start_pos, end_pos, context_,
         gbwtgraph::SubgraphQuery::HaplotypeOutput::all_haplotypes);
 
-    auto path_index = std::make_unique<gbwtgraph::PathIndex>(gbz_);
 
-    gbwtgraph::Subgraph subgraph(gbz_, path_index.get(), query);
+    gbwtgraph::Subgraph subgraph(gbz_, path_index_.get(), query);
 
     const std::vector<nucleus::genomics::v1::Read>& reads =
-        GetReadsFromSubgraph(subgraph, gbz_);
+        GetReadsFromSubgraph(subgraph, gbz_, chrom_prefix_);
 
-    std::cerr << "Query in c++:  "
-              << gbwt::readTimer() - start << " seconds.\n";
 
     updateCache(reads);
 
@@ -154,7 +160,9 @@ void GbzReader::updateCache(
 }
 
 std::vector<nucleus::genomics::v1::Read> GbzReader::GetReadsFromSubgraph(
-    const gbwtgraph::Subgraph& subgraph, const gbwtgraph::GBZ& gbz) {
+    const gbwtgraph::Subgraph& subgraph,
+    const gbwtgraph::GBZ& gbz,
+    const std::string& chrom_prefix) {
   // W-lines: reference path
   std::string contig_name = "unknown";
   int start = 0;
@@ -182,7 +190,10 @@ std::vector<nucleus::genomics::v1::Read> GbzReader::GetReadsFromSubgraph(
     const std::string bases = GbzReader::GetBases(path, gbz);
     // make a Read object for the haplotype and its alignment
     nucleus::genomics::v1::Read read =
-        MakeRead(contig_name, start, bases, cigar_elements,
+        MakeRead(std::string(chrom_prefix) + contig_name,
+                 start,
+                 bases,
+                 cigar_elements,
                  std::string("haplotype_") + std::to_string(haplotype_id));
     // add Read object to the vector
     reads.push_back(read);
