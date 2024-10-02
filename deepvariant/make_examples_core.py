@@ -2439,7 +2439,10 @@ class RegionProcessor:
             allele_counters=allele_counters, sample_name=sample.options.name
         )
       if sample.options.reads_filenames:
-        if self.options.allele_counter_options.normalize_reads:
+        if (
+            self.options.allele_counter_options.normalize_reads
+            and not sample.options.skip_normalization
+        ):
           reads_start = region.start
           reads_end = region.end
           for read in sample.reads:
@@ -2474,7 +2477,10 @@ class RegionProcessor:
             )
 
         for read in sample.reads:
-          if self.options.allele_counter_options.normalize_reads:
+          if (
+              self.options.allele_counter_options.normalize_reads
+              and not sample.options.skip_normalization
+          ):
             cigar_list, read_shift = sample.allele_counter.normalize_and_add(
                 read, sample.options.name
             )
