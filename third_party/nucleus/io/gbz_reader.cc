@@ -93,10 +93,16 @@ nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
     std::string contig_name_without_prefix =
         contig_name.substr(chrom_prefix_.length());
 
+    gbwt::size_type contig_id = metadata.contig(contig_name_without_prefix);
+    // If the contig is not found, return an empty vector of reads
+    if (contig_id == metadata.contig_names.size()) {
+      std::vector<nucleus::genomics::v1::Read> reads_empty;
+      return reads_empty;
+    }
     // Get the path ids for the sample and contig
     std::vector<gbwt::size_type> path_ids = metadata.findPaths(
         metadata.sample(sample_name_),
-        metadata.contig(contig_name_without_prefix));
+        contig_id);
 
     if (path_ids.empty()) {
       return nucleus::NotFound(absl::StrCat(
