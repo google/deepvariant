@@ -1277,6 +1277,7 @@ class RegionProcessor:
     self._population_vcf_readers = None
     self._ref_reader = None
     self._make_examples_native = None
+    self.region_number = 0
     if self.options.phase_reads:
       # One instance of DirectPhasing per lifetime of make_examples.
       self.direct_phasing_cpp = self._make_direct_phasing_obj()
@@ -1866,7 +1867,6 @@ class RegionProcessor:
     """Finds all candidate positions within a given region."""
     main_sample = self.samples[self.options.main_sample_index]
     for sample in self.samples:
-      # TODO: Refactor this loop. It is used in other places.
       reads = itertools.chain()
       for _, sam_reader in enumerate(sample.sam_readers):
         reads = itertools.chain(reads, sam_reader.query(region))
@@ -2027,7 +2027,6 @@ class RegionProcessor:
   ) -> Tuple[
       Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]],
       Dict[str, Sequence[variants_pb2.Variant]],
-      # TODO: Use | instead.
       Dict[str, Union[float, int]],
       Dict[str, Dict[str, int]],
   ]:
@@ -2055,6 +2054,8 @@ class RegionProcessor:
     if not self.initialized:
       self.initialize()
 
+    # Keep track the number of regions processed.
+    self.region_number += 1
     before_get_reads = time.time()
     runtimes['num reads'] = 0
     # Collect reads from multiple BAMs. Each BAM contains a sample.
@@ -2371,6 +2372,100 @@ class RegionProcessor:
       with epath.Path(dest_file).open('w') as f:
         f.write(graph.graphviz())
 
+  def add_phasing_to_candidate(self, candidates, read_id_to_phase):
+    """Adds phasing information to candidates.
+
+    Args:
+      candidates: A list of DeepVariantCall protos where is written to.
+      read_id_to_phase: A dict of read key to phase.
+
+    This function populates the ALT_PS and PS_CONTIG info fields in the
+    candidate variant protos. The ALT_PS field is a phased genotype.
+    The PS_CONTIG field is a string that identifies the continious contig
+    within which the phasing is consistent.
+    """
+    # Calling into direct_phasing_cpp to get phased alleles.
+    # direct_phasing_cpp preserves the state until the next call to
+    # phase().
+    phased_variants = self.direct_phasing_cpp.get_phased_variants()
+    # phased_variants contains a subset of candidates because not all
+    # candidates are phased. We iterate over candidates and
+    # phased_variants simultaneously. If candidate is phased, we add phase
+    # information to it. If candidate is not phased, we infer phase from
+    # supporting reads.
+    phased_variants_index = 0
+    phase_contig = f'{self.options.task_id}-x'
+    for candidate in candidates:
+      # if phased_variants_index >= len(phased_variants):
+      #   break
+      # If variant is phased we can use phasing information from
+      # phased_variants.
+      if (
+          phased_variants_index < len(phased_variants)
+          and candidate.variant.start
+          == phased_variants[phased_variants_index].position
+      ):
+        alt_alleles = list(candidate.variant.alternate_bases).copy()
+        alt_alleles.insert(0, 'REF')
+        phased_genotype = [0] * (len(alt_alleles))
+        # phased_variants contains alleles ordered by phase.
+        alt_1_order = [
+            i
+            for i, e in enumerate(alt_alleles)
+            if e == phased_variants[phased_variants_index].phase_1_bases
+        ]
+        alt_2_order = [
+            i
+            for i, e in enumerate(alt_alleles)
+            if e == phased_variants[phased_variants_index].phase_2_bases
+        ]
+        if alt_1_order and alt_2_order:
+          phased_genotype[alt_1_order[0]] = 1
+          phased_genotype[alt_2_order[0]] = 2
+          variant_utils.set_info(candidate.variant, 'ALT_PS', phased_genotype)
+          variant_utils.set_info(candidate.variant, 'PS_CONTIG', phase_contig)
+        phased_variants_index += 1
+      # If variant is not phased, we infer phase from read phases and supporting
+      # reads.
+      else:
+        # Count the number of reads of each phase supporting the allele.
+        # Assign phase to the allele that is supported by more reads. The
+        # difference between the number of reads supporting each phase must be
+        # at least 2.
+        phased_genotype = [0] * (len(candidate.variant.alternate_bases) + 1)
+        index = 0
+        for allele_index in range(len(candidate.variant.alternate_bases) + 1):
+          phases = [0, 0, 0]  # number of reads supporting each phase.
+          # allele_index == 0 is REF
+          if allele_index == 0:
+            # Get REF supporting reads.
+            for ref_read_support in candidate.ref_support_ext.read_infos:
+              # In multi-sample mode we have reads that support an allele but
+              # come from a non-target sample. We ignore these reads.
+              if ref_read_support.read_name in read_id_to_phase:
+                phases[read_id_to_phase[ref_read_support.read_name]] += 1
+          else:
+            # Find allele bases, then get supporting reads.
+            if (
+                allele_index > len(candidate.variant.alternate_bases)
+                or allele_index < 1
+            ):
+              continue
+            alt_bases = candidate.variant.alternate_bases[allele_index - 1]
+            for read_support in candidate.allele_support_ext[
+                alt_bases
+            ].read_infos:
+              if read_support.read_name in read_id_to_phase:
+                phases[read_id_to_phase[read_support.read_name]] += 1
+
+          if phases[1] > phases[2] and phases[1] - phases[2] > 1:
+            phased_genotype[index] = 1
+          elif phases[2] > phases[1] and phases[2] - phases[1] > 1:
+            phased_genotype[index] = 2
+          index += 1
+        variant_utils.set_info(candidate.variant, 'ALT_PS', phased_genotype)
+        variant_utils.set_info(candidate.variant, 'PS_CONTIG', phase_contig)
+
   def candidates_in_region(
       self,
       region: range_pb2.Range,
@@ -2549,17 +2644,21 @@ class RegionProcessor:
               candidates[role], reads_to_phase
           )
           # Assign phase tag to reads.
+          read_id_to_phase = {}
           for read_phase, read in zip(read_phases, reads_to_phase):
             # Remove existing values
             del read.info['HP'].values[:]
+            read_key = read.fragment_name + '/' + str(read.read_number)
+            read_id_to_phase[read_key] = read_phase
             if self.options.pic_options.reverse_haplotypes:
               if read_phase in [1, 2]:
                 read_phase = 1 + (read_phase % 2)
             read.info['HP'].values.add(int_value=read_phase)
-            key = f'{read.fragment_name}/{read.read_number}'
-            read_phases_by_sample[role][key] = read_phase
+            read_phases_by_sample[role][read_key] = read_phase
             if writer and self.options.read_phases_output:
               writer.write_read_phase(read, read_phase, region_n)
+          if self.options.output_phase_info:
+            self.add_phasing_to_candidate(candidates[role], read_id_to_phase)
           # This logic below will write out the DOT files under the directory
           # specified by the flag --realigner_diagnostics, if phase_reads is
           # set to True.

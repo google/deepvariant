@@ -730,6 +730,12 @@ _EXCLUDE_VARIANTS_AF_THRESHOLD = flags.DEFINE_float(
     'candidates with alts below this threshold.',
 )
 
+_OUTPUT_PHASE_INFO = flags.DEFINE_bool(
+    'output_phase_info',
+    False,
+    'If True, output phase information to the candidates.',
+)
+
 
 def shared_flags_to_options(
     add_flags,
@@ -1068,6 +1074,7 @@ def shared_flags_to_options(
     options.stream_examples = _STREAM_EXAMPLES.value
     options.shm_prefix = _SHM_PREFIX.value
     options.shm_buffer_size = _SHM_BUFFER_SIZE.value
+    options.output_phase_info = _OUTPUT_PHASE_INFO.value
     if _STREAM_EXAMPLES.value:
       if _SHM_BUFFER_SIZE.value < 200000 or _SHM_BUFFER_SIZE.value > 1073741824:
         errors.log_and_raise(

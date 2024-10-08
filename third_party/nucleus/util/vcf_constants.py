@@ -165,6 +165,16 @@ RESERVED_INFO_FIELDS = [
         number='0',
         type=FLAG_TYPE,
         description='1000 Genomes membership'),
+    variants_pb2.VcfInfo(
+        id='ALT_PS',
+        number='R',
+        type=INTEGER_TYPE,
+        description='Allele phases'),
+    variants_pb2.VcfInfo(
+        id='PS_CONTIG',
+        number='1',
+        type=STRING_TYPE,
+        description='Contig for continuous phase set'),
 ]
 
 # Reserved FORMAT field definitions, as per the VCF 4.3 spec.

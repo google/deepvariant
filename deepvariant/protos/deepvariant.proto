@@ -651,7 +651,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 81.
+// Next ID: 82.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -924,6 +924,8 @@ message MakeExamplesOptions {
   // (like "GRCh38.") to the chromosome name in the pangenome gbz file to match
   // the chromosome name in the reads.
   string ref_chrom_prefix = 80;
+
+  bool output_phase_info = 81;
 }
 
 // Config describe information needed for a dataset that can be used for
