@@ -89,30 +89,41 @@ class SmallModelVariantCaller:
         batch_size,
     )
 
-  def _accept_call_result(self, candidate, probability) -> bool:
+  def _cast_to_np_array(
+      self, examples: Sequence[tf.train.Example]
+  ) -> np.ndarray:
+    """Casts the given examples to a numpy array."""
+    return np.array([
+        example.features.feature[
+            make_small_model_examples.FEATURES_ENCODED
+        ].int64_list.value
+        for example in examples
+    ])
+
+  def _accept_call_result(self, candidate, genotype_probabilities) -> bool:
     """Determine if the given probability is above the GQ threshold."""
     threshold = (
         self.snp_gq_threshold
         if variant_utils.is_snp(candidate.variant)
         else self.indel_gq_threshold
     )
-    return genomics_math.ptrue_to_bounded_phred(max(probability)) >= threshold
+    return (
+        genomics_math.ptrue_to_bounded_phred(max(genotype_probabilities))
+        >= threshold
+    )
 
   def _get_call_variant_outputs(
-      self, candidate, prediction, probability
+      self, candidate, genotype_probabilities
   ) -> deepvariant_pb2.CallVariantsOutput:
     """Returns a CallVariantsOutput for the given candidate and prediction."""
     variant = candidate.variant
     variant_call = candidate.variant.calls[0]
-    del variant_call.genotype[:]
-    variant_call.genotype.extend(GENOTYPE_BY_ENCODING[prediction])
     variantcall_utils.set_model_id(variant_call, SMALL_MODEL_ID)
     del variant.calls[:]
     variant.calls.append(variant_call)
-    variant.quality = genomics_math.ptrue_to_bounded_phred(max(probability))
     return deepvariant_pb2.CallVariantsOutput(
         variant=variant,
-        genotype_probabilities=probability,
+        genotype_probabilities=genotype_probabilities,
         debug_info=None,
         alt_allele_indices=deepvariant_pb2.CallVariantsOutput.AltAlleleIndices(
             indices=[0]
@@ -131,20 +142,19 @@ class SmallModelVariantCaller:
   def call_variants(
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
-      examples: Sequence[Sequence[int]],
+      examples: Sequence[tf.train.Example],
   ) -> Tuple[
       List[deepvariant_pb2.CallVariantsOutput],
       List[deepvariant_pb2.DeepVariantCall],
   ]:
     """Calls variants on the given examples."""
-    probabilities = self.classify(np.array(examples))
+    probabilities = self.classify(self._cast_to_np_array(examples))
     call_variant_outputs = []
     filtered_candidates = []
-    for candidate, probability in zip(candidates, probabilities):
-      if self._accept_call_result(candidate, probability):
-        prediction = np.argmax(probability)
+    for candidate, genotype_probabilities in zip(candidates, probabilities):
+      if self._accept_call_result(candidate, genotype_probabilities):
         call_variant_outputs.append(
-            self._get_call_variant_outputs(candidate, prediction, probability)
+            self._get_call_variant_outputs(candidate, genotype_probabilities)
         )
       else:
         filtered_candidates.append(candidate)

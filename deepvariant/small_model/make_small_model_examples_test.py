@@ -28,11 +28,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from absl.testing import absltest
 from absl.testing import parameterized
+import tensorflow as tf
 
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.protos import variants_pb2
+
 
 FAKE_VARIANT_HET = variants_pb2.Variant(
     reference_name="chr9",
@@ -133,132 +135,102 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
   @parameterized.named_parameters(
       dict(
           testcase_name="contig_feature",
-          feature=make_small_model_examples.SmallModelFeature.CONTIG.value,
+          feature=make_small_model_examples.IdentifyingFeature.CONTIG.value,
           expected_value="chr9",
       ),
       dict(
           testcase_name="start_feature",
-          feature=make_small_model_examples.SmallModelFeature.START.value,
+          feature=make_small_model_examples.IdentifyingFeature.START.value,
           expected_value=5000,
       ),
       dict(
           testcase_name="end_feature",
-          feature=make_small_model_examples.SmallModelFeature.END.value,
+          feature=make_small_model_examples.IdentifyingFeature.END.value,
           expected_value=5001,
       ),
       dict(
           testcase_name="ref_feature",
-          feature=make_small_model_examples.SmallModelFeature.REF.value,
+          feature=make_small_model_examples.IdentifyingFeature.REF.value,
           expected_value="A",
       ),
       dict(
           testcase_name="alt_1_feature",
-          feature=make_small_model_examples.SmallModelFeature.ALT_1.value,
+          feature=make_small_model_examples.IdentifyingFeature.ALT_1.value,
           expected_value="C",
       ),
       dict(
           testcase_name="num_reads_supports_ref_feature",
-          feature=make_small_model_examples.SmallModelFeature.NUM_READS_SUPPORTS_REF.value,
+          feature=make_small_model_examples.BaseFeature.NUM_READS_SUPPORTS_REF.value,
           expected_value=3,
       ),
       dict(
           testcase_name="num_reads_supports_alt_1_feature",
-          feature=make_small_model_examples.SmallModelFeature.NUM_READS_SUPPORTS_ALT_1.value,
+          feature=make_small_model_examples.BaseFeature.NUM_READS_SUPPORTS_ALT_1.value,
           expected_value=3,
       ),
       dict(
           testcase_name="total_depth_feature",
-          feature=make_small_model_examples.SmallModelFeature.TOTAL_DEPTH.value,
+          feature=make_small_model_examples.BaseFeature.TOTAL_DEPTH.value,
           expected_value=6,
       ),
       dict(
           testcase_name="variant_allele_frequency_1_feature",
-          feature=make_small_model_examples.SmallModelFeature.VARIANT_ALLELE_FREQUENCY_1.value,
+          feature=make_small_model_examples.BaseFeature.VARIANT_ALLELE_FREQUENCY_1.value,
           expected_value=50,
       ),
       dict(
-          testcase_name="genotype_feature",
-          feature=make_small_model_examples.SmallModelFeature.GENOTYPE.value,
-          expected_value=make_small_model_examples.GenotypeEncoding.HET.value,
-      ),
-      dict(
           testcase_name="ref_mapping_quality_feature",
-          feature=make_small_model_examples.SmallModelFeature.REF_MAPPING_QUALITY.value,
+          feature=make_small_model_examples.BaseFeature.REF_MAPPING_QUALITY.value,
           expected_value=40,
       ),
       dict(
           testcase_name="alt_1_mapping_quality_feature",
-          feature=make_small_model_examples.SmallModelFeature.ALT_1_MAPPING_QUALITY.value,
+          feature=make_small_model_examples.BaseFeature.ALT_1_MAPPING_QUALITY.value,
           expected_value=50,
       ),
       dict(
           testcase_name="ref_base_quality_feature",
-          feature=make_small_model_examples.SmallModelFeature.REF_BASE_QUALITY.value,
+          feature=make_small_model_examples.BaseFeature.REF_BASE_QUALITY.value,
           expected_value=30,
       ),
       dict(
           testcase_name="alt_1_base_quality_feature",
-          feature=make_small_model_examples.SmallModelFeature.ALT_1_BASE_QUALITY.value,
+          feature=make_small_model_examples.BaseFeature.ALT_1_BASE_QUALITY.value,
           expected_value=50,
-      ),
-      dict(
-          testcase_name="variant_allele_frequency_at_minus_3_feature",
-          feature="variant_allele_frequency_at_minus_3",
-          expected_value=0,
-      ),
-      dict(
-          testcase_name="variant_allele_frequency_at_minus_1_feature",
-          feature="variant_allele_frequency_at_minus_1",
-          expected_value=50,
-      ),
-      dict(
-          testcase_name="variant_allele_frequency_at_plus_0_feature",
-          feature="variant_allele_frequency_at_plus_0",
-          expected_value=87,
-      ),
-      dict(
-          testcase_name="variant_allele_frequency_at_plus_1_feature",
-          feature="variant_allele_frequency_at_plus_1",
-          expected_value=30,
-      ),
-      dict(
-          testcase_name="variant_allele_frequency_at_plus_2_feature",
-          feature="variant_allele_frequency_at_plus_2",
-          expected_value=40,
       ),
       dict(
           testcase_name="is_snp_feature",
-          feature=make_small_model_examples.SmallModelFeature.IS_SNP.value,
+          feature=make_small_model_examples.VariantFeature.IS_SNP.value,
           expected_value=1,
       ),
       dict(
           testcase_name="is_insertion",
-          feature=make_small_model_examples.SmallModelFeature.IS_INSERTION.value,
+          feature=make_small_model_examples.VariantFeature.IS_INSERTION.value,
           expected_value=0,
       ),
       dict(
           testcase_name="is_deletion_feature",
-          feature=make_small_model_examples.SmallModelFeature.IS_DELETION.value,
+          feature=make_small_model_examples.VariantFeature.IS_DELETION.value,
           expected_value=0,
       ),
       dict(
           testcase_name="insertion_length_feature",
-          feature=make_small_model_examples.SmallModelFeature.INSERTION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.INSERTION_LENGTH.value,
           expected_value=0,
       ),
       dict(
           testcase_name="deletion_length_feature",
-          feature=make_small_model_examples.SmallModelFeature.DELETION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.DELETION_LENGTH.value,
           expected_value=0,
       ),
       dict(
           testcase_name="ref_reverse_strand_ratio_feature",
-          feature=make_small_model_examples.SmallModelFeature.REF_REVERSE_STRAND_RATIO.value,
+          feature=make_small_model_examples.BaseFeature.REF_REVERSE_STRAND_RATIO.value,
           expected_value=66,
       ),
       dict(
           testcase_name="alt_1_reverse_strand_ratio_feature",
-          feature=make_small_model_examples.SmallModelFeature.ALT_1_REVERSE_STRAND_RATIO.value,
+          feature=make_small_model_examples.BaseFeature.ALT_1_REVERSE_STRAND_RATIO.value,
           expected_value=0,
       ),
   )
@@ -272,74 +244,109 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         expected_value,
     )
 
+  def test_feature_encoder_one_hot_encode_label(self):
+    self.assertEqual(
+        make_small_model_examples.FeatureEncoder(
+            FAKE_VARIANT_CALL_HET
+        ).one_hot_encode_label(FAKE_VARIANT_CALL_HET_LABEL),
+        [0, 1, 0],
+    )
+
   @parameterized.named_parameters(
       dict(
           testcase_name="is_snp_feature_insertion",
-          feature=make_small_model_examples.SmallModelFeature.IS_SNP.value,
+          feature=make_small_model_examples.VariantFeature.IS_SNP.value,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=0,
       ),
       dict(
           testcase_name="is_snp_feature_deletion",
-          feature=make_small_model_examples.SmallModelFeature.IS_SNP.value,
+          feature=make_small_model_examples.VariantFeature.IS_SNP.value,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=0,
       ),
       dict(
           testcase_name="is_insertion_feature_insertion",
-          feature=make_small_model_examples.SmallModelFeature.IS_INSERTION.value,
+          feature=make_small_model_examples.VariantFeature.IS_INSERTION.value,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=1,
       ),
       dict(
           testcase_name="is_insertion_feature_deletion",
-          feature=make_small_model_examples.SmallModelFeature.IS_INSERTION.value,
+          feature=make_small_model_examples.VariantFeature.IS_INSERTION.value,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=0,
       ),
       dict(
           testcase_name="is_deletion_feature_insertion",
-          feature=make_small_model_examples.SmallModelFeature.IS_DELETION.value,
+          feature=make_small_model_examples.VariantFeature.IS_DELETION.value,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=0,
       ),
       dict(
           testcase_name="is_deletion_feature_deletion",
-          feature=make_small_model_examples.SmallModelFeature.IS_DELETION.value,
+          feature=make_small_model_examples.VariantFeature.IS_DELETION.value,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=1,
       ),
       dict(
           testcase_name="insertion_length_feature_insertion",
-          feature=make_small_model_examples.SmallModelFeature.INSERTION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.INSERTION_LENGTH.value,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=2,
       ),
       dict(
           testcase_name="insertion_length_feature_deletion",
-          feature=make_small_model_examples.SmallModelFeature.INSERTION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.INSERTION_LENGTH.value,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=0,
       ),
       dict(
           testcase_name="deletion_length_feature_insertion",
-          feature=make_small_model_examples.SmallModelFeature.DELETION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.DELETION_LENGTH.value,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=0,
       ),
       dict(
           testcase_name="deletion_length_feature_deletion",
-          feature=make_small_model_examples.SmallModelFeature.DELETION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.DELETION_LENGTH.value,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=3,
       ),
   )
-  def test_encode_indel_feature(self, feature, candidate, expected_value):
+  def test_encode_variant_feature(self, feature, candidate, expected_value):
+    self.assertEqual(
+        make_small_model_examples.FeatureEncoder(candidate).encode_feature(
+            feature,
+        ),
+        expected_value,
+    )
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="vaf_context_window_size_3",
+          vaf_context_window_size=3,
+          expected_value=[50, 87, 30],
+      ),
+      dict(
+          testcase_name="vaf_context_window_size_5",
+          vaf_context_window_size=5,
+          expected_value=[0, 50, 87, 30, 40],
+      ),
+      dict(
+          testcase_name="vaf_context_window_size_7",
+          vaf_context_window_size=7,
+          expected_value=[0, 0, 50, 87, 30, 40, 0],
+      ),
+  )
+  def test_feature_encoder_encode_variant_allele_frequency_at_position(
+      self, vaf_context_window_size, expected_value
+  ):
     self.assertEqual(
         make_small_model_examples.FeatureEncoder(
-            candidate, label=None
-        ).encode_feature(
-            feature,
+            FAKE_VARIANT_CALL_HET
+        ).encode_variant_allele_frequency_at_position(
+            vaf_context_window_size,
         ),
         expected_value,
     )
@@ -349,177 +356,6 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           window_size=0,
           expand_by_haplotype=False,
           expected_columns=[
-              "contig",
-              "start",
-              "end",
-              "ref",
-              "alt_1",
-              "genotype",
-              "num_reads_supports_ref",
-              "num_reads_supports_alt_1",
-              "total_depth",
-              "variant_allele_frequency_1",
-              "ref_mapping_quality",
-              "alt_1_mapping_quality",
-              "ref_base_quality",
-              "alt_1_base_quality",
-              "ref_reverse_strand_ratio",
-              "alt_1_reverse_strand_ratio",
-              "is_snp",
-              "is_insertion",
-              "is_deletion",
-              "insertion_length",
-              "deletion_length",
-          ],
-      ),
-      dict(
-          window_size=3,
-          expand_by_haplotype=False,
-          expected_columns=[
-              "contig",
-              "start",
-              "end",
-              "ref",
-              "alt_1",
-              "genotype",
-              "num_reads_supports_ref",
-              "num_reads_supports_alt_1",
-              "total_depth",
-              "variant_allele_frequency_1",
-              "ref_mapping_quality",
-              "alt_1_mapping_quality",
-              "ref_base_quality",
-              "alt_1_base_quality",
-              "ref_reverse_strand_ratio",
-              "alt_1_reverse_strand_ratio",
-              "is_snp",
-              "is_insertion",
-              "is_deletion",
-              "insertion_length",
-              "deletion_length",
-              "variant_allele_frequency_at_minus_1",
-              "variant_allele_frequency_at_plus_0",
-              "variant_allele_frequency_at_plus_1",
-          ],
-      ),
-      dict(
-          window_size=11,
-          expand_by_haplotype=False,
-          expected_columns=[
-              "contig",
-              "start",
-              "end",
-              "ref",
-              "alt_1",
-              "genotype",
-              "num_reads_supports_ref",
-              "num_reads_supports_alt_1",
-              "total_depth",
-              "variant_allele_frequency_1",
-              "ref_mapping_quality",
-              "alt_1_mapping_quality",
-              "ref_base_quality",
-              "alt_1_base_quality",
-              "ref_reverse_strand_ratio",
-              "alt_1_reverse_strand_ratio",
-              "is_snp",
-              "is_insertion",
-              "is_deletion",
-              "insertion_length",
-              "deletion_length",
-              "variant_allele_frequency_at_minus_5",
-              "variant_allele_frequency_at_minus_4",
-              "variant_allele_frequency_at_minus_3",
-              "variant_allele_frequency_at_minus_2",
-              "variant_allele_frequency_at_minus_1",
-              "variant_allele_frequency_at_plus_0",
-              "variant_allele_frequency_at_plus_1",
-              "variant_allele_frequency_at_plus_2",
-              "variant_allele_frequency_at_plus_3",
-              "variant_allele_frequency_at_plus_4",
-              "variant_allele_frequency_at_plus_5",
-          ],
-      ),
-      dict(
-          window_size=3,
-          expand_by_haplotype=True,
-          expected_columns=[
-              "contig",
-              "start",
-              "end",
-              "ref",
-              "alt_1",
-              "genotype",
-              "num_reads_supports_ref",
-              "num_reads_supports_alt_1",
-              "total_depth",
-              "variant_allele_frequency_1",
-              "ref_mapping_quality",
-              "alt_1_mapping_quality",
-              "ref_base_quality",
-              "alt_1_base_quality",
-              "ref_reverse_strand_ratio",
-              "alt_1_reverse_strand_ratio",
-              "is_snp",
-              "is_insertion",
-              "is_deletion",
-              "insertion_length",
-              "deletion_length",
-              "variant_allele_frequency_at_minus_1",
-              "variant_allele_frequency_at_plus_0",
-              "variant_allele_frequency_at_plus_1",
-              "num_reads_supports_ref_hp_0",
-              "num_reads_supports_alt_1_hp_0",
-              "total_depth_hp_0",
-              "variant_allele_frequency_1_hp_0",
-              "ref_mapping_quality_hp_0",
-              "alt_1_mapping_quality_hp_0",
-              "ref_base_quality_hp_0",
-              "alt_1_base_quality_hp_0",
-              "ref_reverse_strand_ratio_hp_0",
-              "alt_1_reverse_strand_ratio_hp_0",
-              "num_reads_supports_ref_hp_1",
-              "num_reads_supports_alt_1_hp_1",
-              "total_depth_hp_1",
-              "variant_allele_frequency_1_hp_1",
-              "ref_mapping_quality_hp_1",
-              "alt_1_mapping_quality_hp_1",
-              "ref_base_quality_hp_1",
-              "alt_1_base_quality_hp_1",
-              "ref_reverse_strand_ratio_hp_1",
-              "alt_1_reverse_strand_ratio_hp_1",
-              "num_reads_supports_ref_hp_2",
-              "num_reads_supports_alt_1_hp_2",
-              "total_depth_hp_2",
-              "variant_allele_frequency_1_hp_2",
-              "ref_mapping_quality_hp_2",
-              "alt_1_mapping_quality_hp_2",
-              "ref_base_quality_hp_2",
-              "alt_1_base_quality_hp_2",
-              "ref_reverse_strand_ratio_hp_2",
-              "alt_1_reverse_strand_ratio_hp_2",
-          ],
-      ),
-  )
-  def test_small_model_example_factory_training_features(
-      self, window_size, expand_by_haplotype, expected_columns
-  ):
-    small_model_example_factory = (
-        make_small_model_examples.SmallModelExampleFactory(
-            vaf_context_window_size=window_size,
-            expand_by_haplotype=expand_by_haplotype,
-        )
-    )
-    self.assertEqual(
-        small_model_example_factory.training_features,
-        expected_columns,
-    )
-
-  @parameterized.parameters(
-      dict(
-          window_size=0,
-          expand_by_haplotype=False,
-          expected_columns=[
               "num_reads_supports_ref",
               "num_reads_supports_alt_1",
               "total_depth",
@@ -648,7 +484,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           ],
       ),
   )
-  def test_small_model_example_factory_inference_features(
+  def test_small_model_example_factory_model_features(
       self, window_size, expand_by_haplotype, expected_columns
   ):
     small_model_example_factory = (
@@ -658,7 +494,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         )
     )
     self.assertEqual(
-        small_model_example_factory.inference_features,
+        small_model_example_factory.model_features,
         expected_columns,
     )
 
@@ -676,32 +512,52 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     )
     self.assertEqual(
         small_model_examples[0],
-        [
-            "chr9",
-            5000,
-            5001,
-            "A",
-            "C",
-            1,
-            3,
-            3,
-            6,
-            50,
-            40,
-            50,
-            30,
-            50,
-            66,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            50,
-            87,
-            30,
-        ],
+        tf.train.Example(
+            features=tf.train.Features(
+                feature={
+                    make_small_model_examples.FEATURES_ENCODED: (
+                        tf.train.Feature(
+                            int64_list=tf.train.Int64List(
+                                value=[
+                                    3,
+                                    3,
+                                    6,
+                                    50,
+                                    40,
+                                    50,
+                                    30,
+                                    50,
+                                    66,
+                                    0,
+                                    1,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    50,
+                                    87,
+                                    30,
+                                ]
+                            )
+                        )
+                    ),
+                    make_small_model_examples.IDS_ENCODED: tf.train.Feature(
+                        bytes_list=tf.train.BytesList(
+                            value=[
+                                b"chr9",
+                                b"5000",
+                                b"5001",
+                                b"A",
+                                b"C",
+                            ]
+                        )
+                    ),
+                    make_small_model_examples.LABEL_ENCODED: tf.train.Feature(
+                        int64_list=tf.train.Int64List(value=[0, 1, 0])
+                    ),
+                }
+            )
+        ),
     )
 
   def test_encode_inference_examples(self):
@@ -719,28 +575,40 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     self.assertEqual(kept, [FAKE_VARIANT_CALL_HET])
     self.assertEqual(
         examples[0],
-        [
-            3,
-            3,
-            6,
-            50,
-            40,
-            50,
-            30,
-            50,
-            66,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            50,
-            87,
-            30,
-            40,
-        ],
+        tf.train.Example(
+            features=tf.train.Features(
+                feature={
+                    make_small_model_examples.FEATURES_ENCODED: (
+                        tf.train.Feature(
+                            int64_list=tf.train.Int64List(
+                                value=[
+                                    3,
+                                    3,
+                                    6,
+                                    50,
+                                    40,
+                                    50,
+                                    30,
+                                    50,
+                                    66,
+                                    0,
+                                    1,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    50,
+                                    87,
+                                    30,
+                                    40,
+                                ]
+                            )
+                        )
+                    ),
+                }
+            )
+        ),
     )
 
   def test_encode_inference_examples_expand_by_haplotype(self):
@@ -760,58 +628,70 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     self.assertEqual(kept, [FAKE_VARIANT_CALL_HET])
     self.assertEqual(
         examples[0],
-        [
-            3,
-            3,
-            6,
-            50,
-            40,
-            50,
-            30,
-            50,
-            66,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            50,
-            87,
-            30,
-            40,
-            1,
-            0,
-            1,
-            0,
-            40,
-            0,
-            25,
-            0,
-            100,
-            0,
-            1,
-            2,
-            3,
-            66,
-            60,
-            45,
-            30,
-            55,
-            0,
-            0,
-            1,
-            1,
-            2,
-            50,
-            20,
-            60,
-            35,
-            40,
-            100,
-            0,
-        ],
+        tf.train.Example(
+            features=tf.train.Features(
+                feature={
+                    make_small_model_examples.FEATURES_ENCODED: (
+                        tf.train.Feature(
+                            int64_list=tf.train.Int64List(
+                                value=[
+                                    3,
+                                    3,
+                                    6,
+                                    50,
+                                    40,
+                                    50,
+                                    30,
+                                    50,
+                                    66,
+                                    0,
+                                    1,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    50,
+                                    87,
+                                    30,
+                                    40,
+                                    1,
+                                    0,
+                                    1,
+                                    0,
+                                    40,
+                                    0,
+                                    25,
+                                    0,
+                                    100,
+                                    0,
+                                    1,
+                                    2,
+                                    3,
+                                    66,
+                                    60,
+                                    45,
+                                    30,
+                                    55,
+                                    0,
+                                    0,
+                                    1,
+                                    1,
+                                    2,
+                                    50,
+                                    20,
+                                    60,
+                                    35,
+                                    40,
+                                    100,
+                                    0,
+                                ],
+                            )
+                        )
+                    ),
+                }
+            )
+        ),
     )
 
 

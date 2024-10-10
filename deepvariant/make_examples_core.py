@@ -1112,15 +1112,12 @@ class OutputsWriter:
       self._add_writer('sitelist', epath.Path(sitelist_fname).open('w'))
 
     if options.write_small_model_examples:
-      summaries_fname = options.examples_filename + '.small_model.tsv'
       self._add_writer(
-          'small_model_examples', epath.Path(summaries_fname).open('w')
+          'small_model_examples',
+          dv_utils.get_tf_record_writer(
+              self._add_suffix(self.examples_filename, 'small_model')
+          ),
       )
-      writer = self._writers['small_model_examples']
-      if writer is not None:
-        writer.__enter__()
-        columns = self.make_small_model_examples.training_features
-        writer.write('\t'.join(columns) + '\n')
 
     self._deterministic_serialization = options.deterministic_serialization
 
@@ -1149,6 +1146,9 @@ class OutputsWriter:
 
   def write_call_variant_outputs(self, *call_variant_outputs):
     self._write('call_variant_outputs', *call_variant_outputs)
+
+  def write_small_model_examples(self, *examples):
+    self._write('small_model_examples', *examples)
 
   def write_site(
       self,
@@ -1183,15 +1183,6 @@ class OutputsWriter:
     if writer is not None:
       read_key = read.fragment_name + '/' + str(read.read_number)
       writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
-
-  def write_small_model_examples(self, *examples: Sequence[Union[str, int]]):
-    writer = self._writers['small_model_examples']
-    if writer is None:
-      raise ValueError(
-          'Small model examples writer unexpectedly found to be None.'
-      )
-    for row in examples:
-      writer.write('\t'.join(map(str, row)) + '\n')
 
   def _add_writer(self, name: str, writer: tf_record.TFRecordWriter):
     if name not in self._writers:

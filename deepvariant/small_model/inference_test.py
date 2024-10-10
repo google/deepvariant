@@ -27,12 +27,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for small_model/inference.py."""
-
 from unittest import mock
 from absl.testing import absltest
 from absl.testing import parameterized
+import tensorflow as tf
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import inference
+from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 
@@ -67,6 +68,15 @@ FAKE_VARIANT_CALL_DELETION = deepvariant_pb2.DeepVariantCall(
         alternate_bases=["T"],
     )
 )
+FAKE_EXAMPLE = tf.train.Example(
+    features=tf.train.Features(
+        feature={
+            make_small_model_examples.FEATURES_ENCODED: tf.train.Feature(
+                int64_list=tf.train.Int64List(value=[])
+            ),
+        }
+    )
+)
 
 
 class SmallModelVariantCallerTest(parameterized.TestCase):
@@ -96,7 +106,12 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
                 FAKE_VARIANT_CALL_INSERTION,
                 FAKE_VARIANT_CALL_DELETION,
             ],
-            examples=[[], [], [], [], []],
+            examples=[
+                tf.train.Example(),
+                tf.train.Example(),
+                tf.train.Example(),
+                tf.train.Example(),
+            ],
         )
     )
     self.assertEqual(
@@ -105,12 +120,11 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
             deepvariant_pb2.CallVariantsOutput(
                 variant=variants_pb2.Variant(
                     reference_name=FAKE_VARIANT_CALL_1.variant.reference_name,
-                    quality=29.999999999999996,
                     reference_bases="A",
                     alternate_bases=["C"],
                     calls=[
                         variants_pb2.VariantCall(
-                            genotype=(0, 1),
+                            genotype=[-1],
                             info={
                                 "MID": struct_pb2.ListValue(
                                     values=[
@@ -132,12 +146,11 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
             deepvariant_pb2.CallVariantsOutput(
                 variant=variants_pb2.Variant(
                     reference_name=FAKE_VARIANT_CALL_INSERTION.variant.reference_name,
-                    quality=29.999999999999996,
                     reference_bases="T",
                     alternate_bases=["CCT"],
                     calls=[
                         variants_pb2.VariantCall(
-                            genotype=(1, 1),
+                            genotype=[-1],
                             info={
                                 "MID": struct_pb2.ListValue(
                                     values=[

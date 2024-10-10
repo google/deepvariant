@@ -31,7 +31,6 @@
 This module is used by the training and inference libraries.
 """
 import os
-from typing import Sequence
 import ml_collections
 import tensorflow as tf
 import tensorflow_addons.metrics as tfa_metrics
@@ -96,7 +95,7 @@ def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
       make_small_model_examples.SmallModelExampleFactory(
           vaf_context_window_size=model_params.vaf_context_window_size,
           expand_by_haplotype=model_params.expand_by_haplotype,
-      ).inference_features
+      ).model_features
   )
   if model_params.features:
     input_shape = len(model_params.features)
@@ -155,7 +154,7 @@ def get_keras_training_callbacks(
     logging_frequency: int,
     batch_size: int,
     num_train_samples: int,
-) -> Sequence[tf.keras.callbacks.Callback]:
+) -> list[tf.keras.callbacks.Callback]:
   """If provisioned, provides a callback to log metrics to Xmanager/TB."""
   metric_loggers = []
   checkpoint_path_template = (

@@ -114,9 +114,9 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.epochs = 100
   config.batch_size = 256
   config.logging_frequency = 8192
-  config.train_tsv_directory = ""
+  config.train_tfrecord_directory = ""
   config.num_train_samples = 0
-  config.tune_tsv_directory = ""
+  config.tune_tfrecord_directory = ""
   config.num_tune_samples = 0
 
   # Local training only
