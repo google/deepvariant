@@ -99,7 +99,7 @@ def get_exome_config(config: ml_collections.ConfigDict):
 
   config.best_checkpoint_metric = 'tune/f1_weighted'
   config.batch_size = 16384
-  config.num_epochs = 4
+  config.num_epochs = 50
   config.optimizer = 'adam'
   config.beta_1 = 0.9575875572181167
   config.beta_2 = 0.9475272158875401
@@ -108,10 +108,10 @@ def get_exome_config(config: ml_collections.ConfigDict):
   config.optimizer_weight_decay = 0.0
 
   config.early_stopping_patience = 250
-  config.learning_rate = 0.00008663001151624387
+  config.learning_rate = 0.000007515842928920994
   config.learning_rate_num_epochs_per_decay = 2.25
   config.learning_rate_decay_rate = 0.5
-  config.warmup_steps = 27249
+  config.warmup_steps = 0
 
   config.backbone_dropout_rate = 0.0
 
@@ -155,6 +155,36 @@ def get_ont_config(config: ml_collections.ConfigDict):
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
+
+
+def get_hybrid_config(config: ml_collections.ConfigDict):
+  """Training parameters."""
+  config.num_epochs = 10
+  config.num_validation_examples = 0
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = '/path/to/warmstart/checkpoint'
+
+  config.best_checkpoint_metric = 'tune/categorical_accuracy'
+  config.batch_size = 16384
+  config.optimizer = 'adam'
+  config.beta_1 = 0.9651804083266324
+  config.beta_2 = 0.9665259112630292
+  config.adaptive_epsilon = True
+  config.weight_decay = 0.00004
+  config.optimizer_weight_decay = 0.0
+
+  config.early_stopping_patience = 100
+  config.learning_rate = 0.0001301058824747517
+  config.learning_rate_num_epochs_per_decay = 2.66
+  config.learning_rate_decay_rate = 0.9999
+  config.warmup_steps = 0
+
+  config.backbone_dropout_rate = 0.0
+
+  # Exponential Moving Average
+  config.use_ema = True
+  config.ema_momentum = 0.991463134331829
 
 
 # =====================#
@@ -353,6 +383,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_pacbio_config(config)
   elif config_name == 'ont':
     get_ont_config(config)
+  elif config_name == 'hybrid':
+    get_hybrid_config(config)
   elif config_name == 'deepsomatic_wgs':
     get_deepsomatic_wgs_config(config)
   elif config_name == 'deepsomatic_wgs_tumor_only':
