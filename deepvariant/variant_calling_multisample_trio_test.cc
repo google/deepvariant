@@ -49,6 +49,7 @@
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/util/utils.h"
@@ -221,7 +222,7 @@ class VariantCallingTest : public ::testing::Test {
   }
 
   AlleleCount ConstructAlleleCount(const std::string& ref,
-                                   const std::vector<Allele>& alleles,
+                                   absl::Span<const Allele> alleles,
                                    const std::string& sample_id) {
     // Construct the synthetic AlleleCount we'll use to call.
     AlleleCount allele_count;

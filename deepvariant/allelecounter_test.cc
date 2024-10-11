@@ -200,7 +200,7 @@ class AlleleCounterTest : public ::testing::Test {
   // Same as full AddAndCheckReads() but uses standard AlleleCounter produced by
   // MakeCounter() and accepts a single read.
   void AddAndCheckReads(const Read& read,
-                        const std::vector<CountLiteral>& expected) {
+                        absl::Span<const CountLiteral> expected) {
     AddAndCheckReads(std::vector<Read>{read}, expected);
   }
 

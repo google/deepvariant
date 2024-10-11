@@ -48,6 +48,7 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/util/utils.h"
@@ -99,7 +100,7 @@ VariantCallerOptions BasicOptions() {
 }
 
 Variant MakeExpectedVariant(const std::string& ref,
-                            const std::vector<std::string>& alts,
+                            absl::Span<const std::string> alts,
                             const int64_t start = kStart) {
   Variant variant;
   variant.set_reference_name(kChr);

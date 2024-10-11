@@ -197,7 +197,7 @@ Variant NoVariant(absl::string_view ref = "A") {
 class VariantCallingTest : public ::testing::Test {
  protected:
   void CheckCall(const absl::string_view ref, const int min_alt_count,
-                 const std::vector<Allele>& alleles,
+                 absl::Span<const Allele> alleles,
                  const ExpectedVariant expect_variant,
                  const Variant& partial_expected_variant) {
     CheckCall(ref, VariantCaller(MakeOptions(min_alt_count)), alleles,
@@ -222,7 +222,7 @@ class VariantCallingTest : public ::testing::Test {
 
   void CheckCallFromComputeVariantWithSameProposedVariant(
       absl::string_view ref, const int min_alt_count,
-      const std::vector<Allele>& alleles, const ExpectedVariant expect_variant,
+      absl::Span<const Allele> alleles, const ExpectedVariant expect_variant,
       const Variant& partial_expected_variant) {
     CheckCallFromComputeVariantWithSameProposedVariant(
         ref, VariantCaller(MakeOptions(min_alt_count)), alleles, expect_variant,

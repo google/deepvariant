@@ -123,8 +123,8 @@ class PileupImageEncoderNative {
           const learning::genomics::deepvariant::DeepVariantCall>&
           wrapped_dv_call,
       const string& ref_bases,
-      const std::vector<
-          nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>>&
+      absl::Span<
+          const nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>>
           wrapped_reads,
       int image_start_pos, const std::vector<std::string>& alt_alleles,
       const SampleOptions& sample_options) {
