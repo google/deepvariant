@@ -63,6 +63,7 @@ CHR20_BAM_FIRST_HALF = None
 CHR20_BAM_SECOND_HALF = None
 NOCHR20_BAM = None
 CHR20_CRAM = None
+CHR20_PACBIO_BAM = None
 GOLDEN_TRAINING_EXAMPLES = None
 GOLDEN_CALLING_CANDIDATES = None
 GOLDEN_CANDIDATE_POSITIONS = None
@@ -70,6 +71,7 @@ GOLDEN_CALLING_EXAMPLES = None
 GOLDEN_CALLING_EXAMPLES_SHARDED = None
 GOLDEN_CALLING_EXAMPLES_WITH_FLAGS = None
 GOLDEN_CALLING_EMPTY_EXAMPLES = None
+GOLDEN_PACBIO_EXAMPLES = None
 CONFIDENT_REGIONS_BED = None
 TRUTH_VARIANTS_VCF = None
 TRUTH_VARIANTS_VCF_WITH_TYPES = None
@@ -130,6 +132,7 @@ def init():
   global CHR20_BAM_SECOND_HALF
   global NOCHR20_BAM
   global CHR20_CRAM
+  global CHR20_PACBIO_BAM
   global GOLDEN_TRAINING_EXAMPLES
   global GOLDEN_CALLING_CANDIDATES
   global GOLDEN_CANDIDATE_POSITIONS
@@ -137,6 +140,7 @@ def init():
   global GOLDEN_CALLING_EXAMPLES_SHARDED
   global GOLDEN_CALLING_EXAMPLES_WITH_FLAGS
   global GOLDEN_CALLING_EMPTY_EXAMPLES
+  global GOLDEN_PACBIO_EXAMPLES
   global CONFIDENT_REGIONS_BED
   global TRUTH_VARIANTS_VCF
   global TRUTH_VARIANTS_VCF_WITH_TYPES
@@ -193,6 +197,18 @@ def init():
       'input/HG002_NIST_150bp_downsampled_30x.chr20.10_10p1mb.bam'
   )
   CHR20_CRAM = deepvariant_testdata('input/NA12878_S1.chr20.10_10p1mb.cram')
+  # pylint: disable=line-too-long
+  # Created from case study BAM with:
+  # samtools view -h -b  ~/data/HG003.chr20.pfda_challenge.35x.grch38.bam \
+  #   hr20:9000000-9100000" > /tmp/test.bam
+  # samtools view -H /tmp/test.bam > /tmp/header.sam
+  # samtools view /tmp/test.bam \
+  #   | cat /tmp/header.sam - \
+  #   | samtools view -Sb - > learning/genomics/deepvariant/testdata/input/test_pacbio.chr20_100kbp_at_9mb.bam
+  # samtools index learning/genomics/deepvariant/testdata/input/test_pacbio.chr20_100kbp_at_9mb.bam
+  CHR20_PACBIO_BAM = deepvariant_testdata(
+      'input/test_pacbio.chr20_100kbp_at_9mb.bam'
+  )
   GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'golden.training_examples.tfrecord.gz'
   )
@@ -213,6 +229,9 @@ def init():
   )
   GOLDEN_CALLING_EMPTY_EXAMPLES = deepvariant_testdata(
       'golden.calling_examples_empty.tfrecord.gz'
+  )
+  GOLDEN_PACBIO_EXAMPLES = deepvariant_testdata(
+      'golden.pacbio_examples.tfrecord.gz'
   )
   CONFIDENT_REGIONS_BED = deepvariant_testdata(
       'input/test_nist.b37_chr20_100kbp_at_10mb.bed'

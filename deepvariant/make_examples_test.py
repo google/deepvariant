@@ -795,6 +795,43 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertEqual(decode_example(examples[0])['image/shape'], expected_shape)
 
   @flagsaver.flagsaver
+  def test_make_examples_training_end2end_phased_candidates(self):
+    region = ranges.parse_literal('chr20:9,000,000-9,100,000')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.ref = testdata.GRCH38_FASTA
+    FLAGS.reads = testdata.CHR20_PACBIO_BAM
+    FLAGS.examples = test_utils.test_tmpfile('examples.tfrecord')
+    FLAGS.channel_list = ','.join(
+        dv_constants.PILEUP_DEFAULT_CHANNELS + ['haplotype']
+    )
+    FLAGS.mode = 'calling'
+    FLAGS.realign_reads = False
+    FLAGS.alt_aligned_pileup = 'diff_channels'
+    FLAGS.min_mapping_quality = 1
+    FLAGS.parse_sam_aux_fields = True
+    FLAGS.partition_size = 25000
+    FLAGS.phase_reads = True
+    FLAGS.pileup_image_width = 199
+    FLAGS.sort_by_haplotypes = True
+    FLAGS.track_ref_reads = True
+    FLAGS.trim_reads_for_pileup = True
+    FLAGS.vsc_min_fraction_indels = 0.12
+    FLAGS.output_phase_info = True
+    options = make_examples.default_options(add_flags=True)
+    # Run make_examples with the flags above.
+    make_examples_core.make_examples_runner(options)
+    golden_file = testdata.GOLDEN_PACBIO_EXAMPLES
+    # Verify examples.
+    examples = self.verify_examples(
+        FLAGS.examples, region, options, verify_labels=False
+    )
+    # Verify examples and variants in them against the golden set.
+    self.assertDeepVariantExamplesEqual(
+        examples,
+        list(tfrecord.read_tfrecords(golden_file, compression_type='GZIP')),
+    )
+
+  @flagsaver.flagsaver
   def test_make_examples_runtime_by_region(self):
     region = ranges.parse_literal('chr20:10,000,000-10,010,000')
     FLAGS.ref = testdata.CHR20_FASTA
