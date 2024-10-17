@@ -51,6 +51,7 @@
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -177,9 +178,8 @@ TEST(DirectPhasingTest, TestSubstitutionAllelesDepth1UncalledAnd2Indels) {
 }
 
 void PopulateReadSupportInfo(
-    const std::vector<std::pair<std::string, bool>>& read_supports,
-    google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>&
-        read_support_proto) {
+    absl::Span<const std::pair<std::string, bool>> read_supports,
+    google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& read_support_proto) {
   for (const auto& read_support : read_supports) {
     learning::genomics::deepvariant::DeepVariantCall_ReadSupport*
         read_support_item = read_support_proto.Add();
