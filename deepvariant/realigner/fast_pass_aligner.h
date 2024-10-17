@@ -233,10 +233,10 @@ using KmerIndexType =
 // alignment for the final result.
 class FastPassAligner {
  public:
-  void set_reference(const string& reference);
+  void set_reference(absl::string_view reference);
   void set_reads(const std::vector<string>& reads);
   std::vector<string> get_reads() const { return reads_; }
-  void set_ref_start(const string& chromosome, uint64_t position);
+  void set_ref_start(absl::string_view chromosome, uint64_t position);
   void set_haplotypes(const std::vector<string>& haplotypes);
   void set_normalize_reads(bool normalize_reads) {
     normalize_reads_ = normalize_reads;

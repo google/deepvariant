@@ -59,7 +59,7 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-void FastPassAligner::set_reference(const string& reference) {
+void FastPassAligner::set_reference(absl::string_view reference) {
   this->reference_ = reference;
 }
 
@@ -67,7 +67,7 @@ void FastPassAligner::set_reads(const std::vector<string>& reads) {
   this->reads_ = reads;
 }
 
-void FastPassAligner::set_ref_start(const string& chromosome,
+void FastPassAligner::set_ref_start(absl::string_view chromosome,
                                     uint64_t position) {
   this->region_chromosome_ = chromosome;
   this->region_position_in_chr_ = position;
