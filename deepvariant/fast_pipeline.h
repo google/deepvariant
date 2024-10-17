@@ -50,11 +50,15 @@ class FastPipeline {
   FastPipeline(int num_shards, int buffer_size, absl::string_view shm_prefix,
                absl::string_view path_to_make_examples_flags,
                absl::string_view path_to_call_variants_flags,
+               absl::string_view path_to_postprocess_variants_flags,
                absl::string_view dv_bin_path);
   void SetGlobalObjects();
-  void SpawnMakeExamples();
-  void SpawnCallVariants();
-  void WaitForProcesses();
+  std::vector<std::unique_ptr<boost::process::child>> SpawnMakeExamples();
+  std::unique_ptr<boost::process::child> SpawnCallVariants();
+  std::vector<std::unique_ptr<boost::process::child>>
+  SpawnPostprocessVariants();
+  void WaitForProcesses(
+      const std::vector<std::unique_ptr<boost::process::child>>& processes);
   void ClearGlobalObjects();
 
  private:
@@ -70,11 +74,9 @@ class FastPipeline {
   std::vector<std::unique_ptr<boost::interprocess::named_mutex>>
       make_examples_shard_finished_;
 
-  std::vector<std::unique_ptr<boost::process::child>> make_examples_processes_;
-  std::vector<std::unique_ptr<boost::process::child>> call_variants_processes_;
-
   std::vector<std::string> make_examples_flags_;
   std::vector<std::string> call_variants_flags_;
+  std::vector<std::string> postprocess_variants_flags_;
 };
 
 }  // namespace deepvariant

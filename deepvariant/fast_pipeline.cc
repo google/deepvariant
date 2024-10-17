@@ -37,6 +37,7 @@
 #include <ios>
 #include <memory>
 #include <string>
+#include <vector>
 
 
 #include "deepvariant/fast_pipeline_utils.h"
@@ -59,6 +60,8 @@ ABSL_FLAG(std::string, make_example_flags, "",
           "file containing make_examples flags");
 ABSL_FLAG(std::string, call_variants_flags, "",
           "file containing call_variants flags");
+ABSL_FLAG(std::string, postprocess_variants_flags, "",
+          "file containing postprocess_variants flags");
 ABSL_FLAG(std::string, shm_prefix, "", "prefix for shared memory objects");
 ABSL_FLAG(int, num_shards, 0, "number of make_examples shards");
 ABSL_FLAG(int, buffer_size, 10485760,
@@ -75,14 +78,13 @@ FastPipeline::FastPipeline(int num_shards, int buffer_size,
                            absl::string_view shm_prefix,
                            absl::string_view path_to_make_examples_flags,
                            absl::string_view path_to_call_variants_flags,
+                           absl::string_view path_to_postprocess_variants_flags,
                            absl::string_view dv_bin_path)
     : num_shards_(num_shards),
       buffer_size_(buffer_size),
       shm_prefix_(shm_prefix),
       dv_bin_path_(dv_bin_path) {
   shm_.resize(num_shards_);
-  make_examples_processes_.resize(num_shards_);
-  call_variants_processes_.resize(1);
   buffer_empty_.resize(num_shards_);
   items_available_.resize(num_shards_);
   make_examples_shard_finished_.resize(num_shards_);
@@ -92,16 +94,28 @@ FastPipeline::FastPipeline(int num_shards, int buffer_size,
                                 std::ios::in);
   call_variants_flags_file.open(path_to_call_variants_flags.data(),
                                 std::ios::in);
+  std::ifstream postprocess_variants_flags_file;
+  postprocess_variants_flags_file.open(
+      path_to_postprocess_variants_flags.data(), std::ios::in);
+  // TODO Find a better way to parse flags. With this solution each flag
+  // entry must be separated by the '=' sign and no spaces are allowed at the
+  // end or beginning of the line.
   if (make_examples_flags_file.is_open()) {
     std::string line;
     while (std::getline(make_examples_flags_file, line)) {
-      make_examples_flags_.push_back(line);
+      if (!line.empty()) make_examples_flags_.push_back(line);
     }
   }
   if (call_variants_flags_file.is_open()) {
     std::string line;
     while (std::getline(call_variants_flags_file, line)) {
-      call_variants_flags_.push_back(line);
+      if (!line.empty()) call_variants_flags_.push_back(line);
+    }
+  }
+  if (postprocess_variants_flags_file.is_open()) {
+    std::string line;
+    while (std::getline(postprocess_variants_flags_file, line)) {
+      if (!line.empty()) postprocess_variants_flags_.push_back(line);
     }
   }
 }
@@ -151,7 +165,8 @@ void FastPipeline::ClearGlobalObjects() {
 }
 
 // Spawn make_examples processes.
-void FastPipeline::SpawnMakeExamples() {
+std::vector<std::unique_ptr<boost::process::child>>
+FastPipeline::SpawnMakeExamples() {
   std::filesystem::path make_examples_bin = dv_bin_path_;
   make_examples_bin /= "make_examples";
   LOG(INFO) << "make_examples_bin: " << make_examples_bin;
@@ -159,21 +174,20 @@ void FastPipeline::SpawnMakeExamples() {
   make_examples_flags_.push_back(
       absl::StrCat("--shm_buffer_size=", buffer_size_));
   make_examples_flags_.push_back("--stream_examples");
+  std::vector<std::unique_ptr<boost::process::child>> make_examples_processes;
   for (int shard = 0; shard < num_shards_; ++shard) {
     LOG(INFO) << "Spawning make_examples process for shard " << shard;
-    make_examples_processes_[shard] =
-        std::make_unique<bp::child>(bp::child(
-            make_examples_bin.c_str(),
-            make_examples_flags_,
-            absl::StrCat("--task=", shard),
-            bp::std_out > bp::null,
-            bp::std_err > stderr));
+    make_examples_processes.emplace_back(std::make_unique<bp::child>(
+        bp::child(make_examples_bin.c_str(), make_examples_flags_,
+                  absl::StrCat("--task=", shard), bp::std_out > bp::null,
+                  bp::std_err > stderr)));
     LOG(INFO) << "make_examples process " << shard << " process stared";
   }
+  return make_examples_processes;
 }
 
 // Spawn call_variants processes.
-void FastPipeline::SpawnCallVariants() {
+std::unique_ptr<boost::process::child> FastPipeline::SpawnCallVariants() {
   std::filesystem::path call_variants_bin = dv_bin_path_;
   call_variants_bin /= "call_variants";
   LOG(INFO) << "call_variants_bin: " << call_variants_bin;
@@ -182,32 +196,47 @@ void FastPipeline::SpawnCallVariants() {
   call_variants_flags_.push_back(
       absl::StrCat("--num_input_shards=", num_shards_));
   LOG(INFO) << "Spawning call_variants process";
-  call_variants_processes_[0] =
-      std::make_unique<bp::child>(
-          bp::child(call_variants_bin.c_str(),
-                    call_variants_flags_,
-                    bp::std_out > bp::null,
-                    bp::std_err > stderr));
-  LOG(INFO) << "call_variants process stared";
+  return std::make_unique<bp::child>(
+      bp::child(call_variants_bin.c_str(), call_variants_flags_,
+                bp::std_out > bp::null, bp::std_err > stderr));
 }
 
-void FastPipeline::WaitForProcesses() {
-  // TODO Maybe there is a better way to wait for all processes. Groups?
-  for (int shard = 0; shard < num_shards_; ++shard) {
-    make_examples_processes_[shard]->wait();
+std::vector<std::unique_ptr<boost::process::child>>
+FastPipeline::SpawnPostprocessVariants() {
+  std::vector<std::unique_ptr<boost::process::child>>
+      postprocess_variants_processes;
+  std::filesystem::path postprocess_variants_bin = dv_bin_path_;
+  postprocess_variants_bin /= "postprocess_variants";
+  LOG(INFO) << "postprocess_variants_bin: " << postprocess_variants_bin;
+  LOG(INFO) << "Spawning postprocess_variants process";
+  postprocess_variants_processes.emplace_back(std::make_unique<bp::child>(
+      bp::child(postprocess_variants_bin.c_str(), postprocess_variants_flags_,
+                bp::std_out > bp::null, bp::std_err > stderr)));
+  LOG(INFO) << "postprocess_variants process stared";
+  return postprocess_variants_processes;
+}
+
+void FastPipeline::WaitForProcesses(
+    const std::vector<std::unique_ptr<boost::process::child>>& processes) {
+  for (auto& process : processes) {
+    process->wait();
   }
-  call_variants_processes_[0]->wait();
 }
 
 void RunFastPipeline(absl::string_view dv_bin_path) {
   FastPipeline fast_pipeline(
       absl::GetFlag(FLAGS_num_shards), absl::GetFlag(FLAGS_buffer_size),
       absl::GetFlag(FLAGS_shm_prefix), absl::GetFlag(FLAGS_make_example_flags),
-      absl::GetFlag(FLAGS_call_variants_flags), dv_bin_path);
+      absl::GetFlag(FLAGS_call_variants_flags),
+      absl::GetFlag(FLAGS_postprocess_variants_flags), dv_bin_path);
   fast_pipeline.SetGlobalObjects();
-  fast_pipeline.SpawnMakeExamples();
-  fast_pipeline.SpawnCallVariants();
-  fast_pipeline.WaitForProcesses();
+  // Start make_examples and call_variants processes in parallel.
+  auto parallel_processes = fast_pipeline.SpawnMakeExamples();
+  parallel_processes.push_back(fast_pipeline.SpawnCallVariants());
+  LOG(INFO) << "Waiting for make_examples and call_variantsprocesses to finish";
+  fast_pipeline.WaitForProcesses(parallel_processes);
+  // Postprocess_variants is the last process in the pipeline.
+  fast_pipeline.WaitForProcesses(fast_pipeline.SpawnPostprocessVariants());
   fast_pipeline.ClearGlobalObjects();
 }
 

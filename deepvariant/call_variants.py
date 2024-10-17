@@ -392,7 +392,7 @@ def _create_cvo_proto(
   return call_variants_output
 
 
-# This calss implements the stream dataset.
+# This class implements the stream dataset.
 class FromStreamDataset(tf.data.Dataset):
   """Dataset implementation for streaming examples from shared memory."""
 
