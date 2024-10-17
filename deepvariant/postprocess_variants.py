@@ -438,7 +438,67 @@ def uncall_homref_gt_if_lowqual(variant, min_homref_gq):
     vcall.genotype[:] = [-1, -1]
 
 
-def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
+def maybe_phase_genotype(
+    variant: variants_pb2.Variant,
+    genotype: list[int],
+) -> tuple[bool, list[int]]:
+  """Phases the genotype if phase information is available.
+
+  The `ALT_PS` field contains phases assigned to each allele in range [0..2],
+  for HP tags 0,1,2. The length of this array is number of alleles + 1, since
+  REF is added implicitly.
+
+  For example, [1,2] means that REF allele is assigned phase 1 and ALT_1 allele
+  is assigned a phase 2. [2,1] means that REF allele is assigned phase 2 and
+  ALT_1 allele is assigned phase 1. [2,2,1,1] means REF is phase 2, ALT_1 is
+  phase 2, ALT_2 is phase 1, and ALT_3 is phase 1, etc.
+
+  Args:
+    variant: third_party.nucleus.protos.Variant proto.
+    genotype: list of ints. The genotype indices to be written to the VCF.
+
+  Returns:
+    is_phased: bool. Whether it was possible to phase the genotype.
+    genotype: genotype in the correct phasing order, if phased.
+  """
+  if not (
+      variant_utils.get_info(variant, 'PS_CONTIG')
+      and variant_utils.get_info(variant, 'ALT_PS')
+  ):
+    return False, genotype
+  phase_info = [p.int_value for p in variant.info['ALT_PS'].values]
+  if max(genotype) >= len(phase_info):
+    logging.warning(
+        (
+            'Genotype %s is out of range for phase info %s for variant %s. '
+            'Phasing was not applied.'
+        ),
+        genotype,
+        phase_info,
+        variant,
+    )
+    return False, genotype
+
+  allele_1_haplotype = phase_info[genotype[0]]
+  allele_2_haplotype = phase_info[genotype[1]]
+  is_phased = (
+      0 not in (allele_1_haplotype, allele_2_haplotype)
+      and allele_1_haplotype != allele_2_haplotype
+  )
+  if is_phased:
+    genotype = [
+        genotype[allele_1_haplotype - 1],
+        genotype[allele_2_haplotype - 1],
+    ]
+  return is_phased, genotype
+
+
+def add_call_to_variant(
+    variant: variants_pb2.Variant,
+    predictions: list[float],
+    qual_filter: int = 0,
+    sample_name: str | None = None,
+) -> variants_pb2.Variant:
   """Fills in Variant record using the prediction probabilities.
 
   This functions sets the call[0].genotype, call[0].info['GQ'],
@@ -467,6 +527,9 @@ def add_call_to_variant(variant, predictions, qual_filter=0, sample_name=None):
   index, genotype = most_likely_genotype(predictions, n_alleles=n_alleles)
   gq, variant.quality = compute_quals(predictions, index)
   call.call_set_name = sample_name
+  call.is_phased, genotype = maybe_phase_genotype(variant, genotype)
+  if call.is_phased:
+    variantcall_utils.set_ps(call, variant_utils.get_info(variant, 'PS_CONTIG'))
   variantcall_utils.set_gt(call, genotype)
   variantcall_utils.set_gq(call, gq)
   gls = [genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions]

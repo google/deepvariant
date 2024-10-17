@@ -41,6 +41,9 @@ from third_party.nucleus.util import vcf_constants
 _GL = 'GL'
 _GT = 'GT'
 
+# The max number of regions we can expect to be processed by a single shard.
+_MAX_REGIONS_INSIDE_SHARD = 100_000
+
 
 def set_format(variant_call, field_name, value, vcf_object=None):
   """Sets a field of the info map of the `VariantCall` to the given value(s).
@@ -214,6 +217,13 @@ def set_bam_fname(variant_call, bam_fname):
   """Sets 'BAM_FNAME' field of the VariantCall."""
   return struct_utils.set_string_field(variant_call.info, 'BAM_FNAME',
                                        bam_fname)
+
+
+def set_ps(variant_call, ps):
+  """Sets the 'PS' field of the VariantCall."""
+  task_id, region_n = ps.split('-')
+  phase_set = int(task_id) * _MAX_REGIONS_INSIDE_SHARD + int(region_n)
+  set_format(variant_call, 'PS', phase_set)
 
 
 def has_genotypes(variant_call):

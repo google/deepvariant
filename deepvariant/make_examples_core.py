@@ -2385,7 +2385,7 @@ class RegionProcessor:
     # information to it. If candidate is not phased, we infer phase from
     # supporting reads.
     phased_variants_index = 0
-    phase_contig = f'{self.options.task_id}-x'
+    phase_contig = f'{self.options.task_id}-{self.region_number}'
     for candidate in candidates:
       # if phased_variants_index >= len(phased_variants):
       #   break

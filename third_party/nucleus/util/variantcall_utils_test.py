@@ -45,8 +45,6 @@ from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import variantcall_utils
 
 
-
-
 class VariantcallUtilsTests(parameterized.TestCase):
 
   def _assert_struct_lists_equal(self, actual, expected):
@@ -117,32 +115,38 @@ class VariantcallUtilsTests(parameterized.TestCase):
           field_name='AD',
           setter=variantcall_utils.set_ad,
           getter=variantcall_utils.get_ad,
-          values=[[1, 5], [30, 29]]),
+          values=[[1, 5], [30, 29]],
+      ),
       dict(
           field_name='GL',
           setter=variantcall_utils.set_gl,
           getter=variantcall_utils.get_gl,
-          values=[[-1, -2, -3.3], [-0.001, -3, -10]]),
+          values=[[-1, -2, -3.3], [-0.001, -3, -10]],
+      ),
       dict(
           field_name='GQ',
           setter=variantcall_utils.set_gq,
           getter=variantcall_utils.get_gq,
-          values=range(10)),
+          values=range(10),
+      ),
       dict(
           field_name='GT',
           setter=variantcall_utils.set_gt,
           getter=variantcall_utils.get_gt,
-          values=[[0, 1], [1, 1], [1, 2]]),
+          values=[[0, 1], [1, 1], [1, 2]],
+      ),
       dict(
           field_name='MIN_DP',
           setter=variantcall_utils.set_min_dp,
           getter=variantcall_utils.get_min_dp,
-          values=range(10)),
+          values=range(10),
+      ),
       dict(
           field_name='MED_DP',
           setter=variantcall_utils.set_med_dp,
           getter=variantcall_utils.get_med_dp,
-          values=range(10)),
+          values=range(10),
+      ),
   )
   def test_variantcall_format_roundtrip(self, field_name, setter, getter,
                                         values):
@@ -154,6 +158,11 @@ class VariantcallUtilsTests(parameterized.TestCase):
         self.assertIn(field_name, vc.info)
       actual = getter(vc)
       self.assertEqual(actual, value)
+
+  def test_set_ps(self):
+    vc = variants_pb2.VariantCall()
+    variantcall_utils.set_ps(vc, '1-81')
+    self.assertEqual(vc.info['PS'].values[0].int_value, 100_081)
 
   @parameterized.parameters(
       dict(genotype=[], expected=False),

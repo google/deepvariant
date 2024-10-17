@@ -70,6 +70,8 @@ FLAGS = flags.FLAGS
 
 _DEFAULT_SAMPLE_NAME = 'NA12878'
 
+_DEFAULT_PS_CONTIG = '1-81'
+
 _GVCF_ALT_ALLELE_GL = -99
 
 _FILTERED_ALT_PROB = postprocess_variants._FILTERED_ALT_PROB
@@ -1346,6 +1348,57 @@ class PostprocessVariantsTest(parameterized.TestCase):
         expected.calls[0].genotype_likelihood,
     ):
       self.assertAlmostEqual(gl, expected_gl, places=6)
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='het_call_with_two_phased_alleles',
+          genotype=[0, 1],
+          phasing_info=[1, 2],
+          expected_is_phased=True,
+          expected_genotype=[0, 1],
+      ),
+      dict(
+          testcase_name='het_call_with_one_unphased_allele',
+          genotype=[0, 1],
+          phasing_info=[1, 0],
+          expected_is_phased=False,
+          expected_genotype=[0, 1],
+      ),
+      dict(
+          testcase_name='het_call_with_two_phased_alleles_reverse_order',
+          genotype=[0, 1],
+          phasing_info=[2, 1],
+          expected_is_phased=True,
+          expected_genotype=[1, 0],
+      ),
+      dict(
+          testcase_name='multi_allelic_het_different_phases',
+          genotype=[0, 2],
+          phasing_info=[2, 2, 1, 1],
+          expected_is_phased=True,
+          expected_genotype=[2, 0],
+      ),
+      dict(
+          testcase_name='het_call_ref_and_alt_same_phase',
+          genotype=[0, 1],
+          phasing_info=[2, 2, 1, 1],
+          expected_is_phased=False,
+          expected_genotype=[0, 1],
+      ),
+  )
+  def test_maybe_phase_genotype(
+      self, genotype, phasing_info, expected_is_phased, expected_genotype
+  ):
+    variant = variants_pb2.Variant()
+    variant_utils.set_info(variant, 'PS_CONTIG', _DEFAULT_PS_CONTIG)
+    variant_utils.set_info(variant, 'ALT_PS', phasing_info)
+
+    is_phased, genotype = postprocess_variants.maybe_phase_genotype(
+        variant, genotype
+    )
+
+    self.assertEqual(genotype, expected_genotype)
+    self.assertEqual(is_phased, expected_is_phased)
 
   @parameterized.parameters(
       (
