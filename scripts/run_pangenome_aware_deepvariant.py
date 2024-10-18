@@ -35,6 +35,8 @@ If you want to access more flags that are available in
 you can also call them separately using the binaries in the Docker image.
 """
 
+import dataclasses
+import enum
 import os
 import subprocess
 import sys
@@ -48,13 +50,18 @@ import tensorflow as tf
 
 FLAGS = flags.FLAGS
 
+
+class ModelType(enum.Enum):
+  WGS = 'WGS'
+  WES = 'WES'
+  PACBIO = 'PACBIO'
+
+
 # Required flags.
 _MODEL_TYPE = flags.DEFINE_enum(
     'model_type',
-    'WGS',
-    [
-        'WGS', 'WES', 'PACBIO'
-    ],
+    None,
+    [m.value for m in ModelType],
     (
         'Required. Type of model to use for variant calling. Set this flag to'
         ' use the default model associated with each type, and it will set'
@@ -142,6 +149,20 @@ _CUSTOMIZED_MODEL = flags.DEFINE_string(
         ' step. If not set, the default for each --model_type will be used'
     ),
 )
+_DISABLE_SMALL_MODEL = flags.DEFINE_boolean(
+    'disable_small_model',
+    True,
+    'Optional. Disable the use of the small model to call variants during '
+    'the `make_examples` step.',
+)
+_CUSTOMIZED_SMALL_MODEL = flags.DEFINE_string(
+    'customized_small_model',
+    None,
+    (
+        'Optional. A path to a small model checkpoint to call variants during '
+        'the `make_examples` step.'
+    ),
+)
 # Optional flags for make_examples_pangenome_aware_dv.
 _NUM_SHARDS = flags.DEFINE_integer(
     'num_shards',
@@ -194,6 +215,14 @@ _CALL_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
         ' has to be flag_name=true or flag_name=false.'
     ),
 )
+# Optional flag for postprocess variants
+_POSTPROCESS_CPUS = flags.DEFINE_integer(
+    'postprocess_cpus',
+    None,
+    'Optional. Number of cpus to use during'
+    ' postprocess_variants. Set to 0 to disable multiprocessing. Default is'
+    ' None which sets to num_shards.',
+)
 _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
     'postprocess_variants_extra_args',
     None,
@@ -233,6 +262,24 @@ MODEL_TYPE_MAP = {
     ),
     'WES': (
         '/opt/models/pangenome_aware_deepvariant/wes/weights-31-0.987898.ckpt'
+    ),
+}
+
+
+@dataclasses.dataclass
+class SmallModelConfig:
+  small_model_checkpoint: str
+  snp_gq_threshold: int
+  indel_gq_threshold: int
+  vaf_context_window: int
+
+
+SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
+    ModelType.WGS: SmallModelConfig(
+        small_model_checkpoint='/opt/smallmodels/wgs',
+        snp_gq_threshold=25,
+        indel_gq_threshold=30,
+        vaf_context_window=51,
     ),
 }
 
@@ -308,14 +355,45 @@ def _update_kwargs_with_warning(kwargs, extra_args):
   return kwargs
 
 
+def _use_small_model() -> bool:
+  """Determines if the small model is enabled based on flags and model type."""
+  if _DISABLE_SMALL_MODEL.value:
+    return False
+  if _CUSTOMIZED_SMALL_MODEL.value:
+    return True
+  return ModelType(_MODEL_TYPE.value) in SMALL_MODEL_CONFIG_BY_MODEL_TYPE
+
+
+def _set_small_model_config(
+    special_args: Dict[str, Any],
+    model_type: ModelType,
+    customized_small_model: str | None,
+) -> None:
+  """Sets small model config parameters."""
+  if not _use_small_model():
+    return
+  special_args['call_small_model_examples'] = True
+  config = SMALL_MODEL_CONFIG_BY_MODEL_TYPE.get(model_type)
+  if customized_small_model:
+    special_args['trained_small_model_path'] = customized_small_model
+  elif config:
+    special_args['trained_small_model_path'] = config.small_model_checkpoint
+  if config:
+    special_args['small_model_snp_gq_threshold'] = config.snp_gq_threshold
+    special_args['small_model_indel_gq_threshold'] = config.indel_gq_threshold
+    special_args['small_model_vaf_context_window_size'] = (
+        config.vaf_context_window
+    )
+
+
 def make_examples_pangenome_aware_dv_command(
-    ref,
-    reads,
-    pangenome,
-    examples,
-    model_ckpt,
-    extra_args,
-    runtime_by_region_path=None,
+    ref: str,
+    reads: str,
+    pangenome: str,
+    examples: str,
+    model_ckpt: str,
+    extra_args: Optional[str],
+    runtime_by_region_path: Optional[str] = None,
     **kwargs,
 ) -> Tuple[str, Optional[str]]:
   """Returns a make_examples_pangenome_aware_dv (command, logfile) for subprocess.
@@ -353,15 +431,15 @@ def make_examples_pangenome_aware_dv_command(
     )
 
   special_args = {}
-  if _MODEL_TYPE.value == 'WGS' or _MODEL_TYPE.value == 'WES':
+  model_type = ModelType(_MODEL_TYPE.value)
+  if model_type == ModelType.WGS or model_type == ModelType.WES:
     # Specific flags that are not default can be added here.
     special_args['keep_only_window_spanning_haplotypes'] = True
     special_args['keep_supplementary_alignments'] = True
     special_args['sort_by_haplotypes'] = True
     # Already default for make_examples_pangenome_aware_dv. Set just in case.
     special_args['trim_reads_for_pileup'] = True
-    kwargs = _update_kwargs_with_warning(kwargs, special_args)
-  elif _MODEL_TYPE.value == 'PACBIO':
+  elif model_type == ModelType.PACBIO:
     special_args['alt_aligned_pileup'] = 'diff_channels'
     special_args['max_reads_per_partition'] = 5000  # Different; might be slow.
     special_args['min_mapping_quality'] = 1
@@ -377,10 +455,13 @@ def make_examples_pangenome_aware_dv_command(
     special_args['keep_only_window_spanning_haplotypes'] = True
     special_args['keep_supplementary_alignments'] = True
     special_args['variant_types_to_blank'] = 'INDEL'
-    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   else:
     raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
 
+  _set_small_model_config(
+      special_args, model_type, _CUSTOMIZED_SMALL_MODEL.value
+  )
+  kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
@@ -399,6 +480,7 @@ def call_variants_command(
     examples: str,
     model_ckpt: str,
     extra_args: str,
+    allow_empty_examples: bool,
 ) -> Tuple[str, Optional[str]]:
   """Returns a call_variants (command, logfile) for subprocess."""
   binary_name = 'call_variants'
@@ -406,6 +488,8 @@ def call_variants_command(
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
+  if allow_empty_examples:
+    command.extend(['--allow_empty_examples'])
   if extra_args and 'use_openvino' in extra_args:
     raise RuntimeError(
         'OpenVINO is not installed by default in DeepVariant '
@@ -425,14 +509,27 @@ def postprocess_variants_command(
     ref: str,
     infile: str,
     outfile: str,
+    small_model_cvo_records: str,
     extra_args: str,
     **kwargs,
 ) -> Tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
+  cpus = _POSTPROCESS_CPUS.value
+  if cpus is None:
+    cpus = _NUM_SHARDS.value
+    # WES does not benefit from multiprocessing.
+    if ModelType(_MODEL_TYPE.value) == ModelType.WES:
+      cpus = 0
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
+  command.extend(['--cpus', '"{}"'.format(cpus)])
+  if _use_small_model():
+    command.extend(
+        ['--small_model_cvo_records', '"{}"'.format(small_model_cvo_records)]
+    )
+
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
@@ -526,6 +623,17 @@ def check_flags():
         _MODEL_TYPE.value,
         _CUSTOMIZED_MODEL.value,
     )
+  if _CUSTOMIZED_SMALL_MODEL.value is not None:
+    logging.info(
+        (
+            'You set --customized_small_model. Instead of using the default'
+            ' small model for %s, `make_examples` will load %s* instead. Make'
+            ' sure you set the GQ thresholds explicitly via'
+            ' make_examples_extra_args.'
+        ),
+        _MODEL_TYPE.value,
+        _CUSTOMIZED_SMALL_MODEL.value,
+    )
 
 
 def get_model_ckpt(model_type, customized_model):  # pylint: disable=unused-argument
@@ -556,6 +664,11 @@ def create_all_commands_and_logfiles(
       'make_examples_pangenome_aware_dv.tfrecord@{}.gz'.format(
           _NUM_SHARDS.value
       ),
+  )
+  small_model_cvo_records = os.path.join(
+      intermediate_results_dir,
+      'make_examples_pangenome_aware_dv_call_variant_outputs.tfrecord@{}.gz'
+      .format(_NUM_SHARDS.value),
   )
 
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
@@ -605,6 +718,7 @@ def create_all_commands_and_logfiles(
           examples=examples,
           model_ckpt=model_ckpt,
           extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
+          allow_empty_examples=_CUSTOMIZED_SMALL_MODEL.value is not None,
       )
   )
 
@@ -614,6 +728,7 @@ def create_all_commands_and_logfiles(
           ref=_REF.value,
           infile=call_variants_output,
           outfile=_OUTPUT_VCF.value,
+          small_model_cvo_records=small_model_cvo_records,
           extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,

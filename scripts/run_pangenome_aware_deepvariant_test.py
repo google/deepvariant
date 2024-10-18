@@ -52,6 +52,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     FLAGS.output_vcf = 'your_vcf'
     FLAGS.output_gvcf = 'your_gvcf'
     FLAGS.num_shards = 64
+    FLAGS.disable_small_model = False
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
     commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
         '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
@@ -62,6 +63,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
     )
 
+    # pyformat: disable
     self.assertEqual(
         commands[0][0],
         'time seq 0 63 | parallel -q --halt 2 --line-buffer'
@@ -69,12 +71,20 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --ref "your_ref" --reads "your_bam" --pangenome "your_pangenome_bam"'
         ' --examples'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/wgs/model.ckpt" %s'
+        ' --checkpoint "/opt/models/wgs/model.ckpt"'
+        ' --call_small_model_examples %s'
         ' --keep_only_window_spanning_haplotypes'
         ' --keep_supplementary_alignments --sample_name_pangenome "hprc_v1.1"'
-        ' --sort_by_haplotypes --trim_reads_for_pileup --task {}'
+        ' --small_model_indel_gq_threshold "30"'
+        ' --small_model_snp_gq_threshold "25"'
+        ' --small_model_vaf_context_window_size "51"'
+        ' --sort_by_haplotypes'
+        ' --trained_small_model_path "/opt/smallmodels/wgs"'
+        ' --trim_reads_for_pileup'
+        ' --task {}'
         % (extra_args_plus_gvcf),
     )
+    # pyformat: enable
     call_variants_bin = 'call_variants'
     self.assertEqual(
         commands[1][0],
@@ -86,17 +96,23 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
             call_variants_bin, model_type.lower()
         ),
     )
+    # pyformat: disable
     self.assertEqual(
         commands[2][0],
         (
             'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
             ' --infile'
             ' "/tmp/pangenome_aware_deepvariant_tmp_output/call_variants_output.tfrecord.gz"'
-            ' --outfile "your_vcf" --gvcf_outfile "your_gvcf"'
+            ' --outfile "your_vcf"'
+            ' --cpus "64"'
+            ' --small_model_cvo_records'
+            ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv_call_variant_outputs.tfrecord@64.gz"'
+            ' --gvcf_outfile "your_gvcf"'
             ' --nonvariant_site_tfrecord_path'
             ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
         ),
     )
+    # pyformat: enable
 
   @parameterized.parameters(
       # If I set pangenome_sample_name to None, I get:
@@ -122,6 +138,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     FLAGS.sample_name_reads = sample_name_reads
     FLAGS.sample_name_pangenome = sample_name_pangenome
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.disable_small_model = False
     commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
         '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
     )
@@ -134,6 +151,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     if sample_name_reads is not None:
       extra_sample_name_flag += f' --sample_name_reads "{sample_name_reads}"'
 
+    # pyformat: disable
     self.assertEqual(
         commands[0][0],
         'time seq 0 63 | parallel -q --halt 2 --line-buffer'
@@ -142,8 +160,15 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --examples'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
+        ' --call_small_model_examples'
         ' --keep_only_window_spanning_haplotypes'
-        ' --keep_supplementary_alignments%s --sort_by_haplotypes'
+        ' --keep_supplementary_alignments'
+        '%s'
+        ' --small_model_indel_gq_threshold "30"'
+        ' --small_model_snp_gq_threshold "25"'
+        ' --small_model_vaf_context_window_size "51"'
+        ' --sort_by_haplotypes'
+        ' --trained_small_model_path "/opt/smallmodels/wgs"'
         ' --trim_reads_for_pileup --task {}' % extra_sample_name_flag,
     )
     self.assertEqual(
@@ -161,17 +186,27 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
         ' --infile'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/call_variants_output.tfrecord.gz"'
-        ' --outfile "your_vcf"',
+        ' --outfile "your_vcf"'
+        ' --cpus "64"'
+        ' --small_model_cvo_records'
+        ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv_call_variant_outputs.tfrecord@64.gz"',
     )
+    # pyformat: enable
 
   @parameterized.parameters(
+      # pyformat: disable
       (
           'keep_secondary_alignments=true',
           ' --keep_only_window_spanning_haplotypes'
           + ' --keep_secondary_alignments'
           + ' --keep_supplementary_alignments'
           + ' --sample_name_pangenome "hprc_v1.1"'
-          + ' --sort_by_haplotypes --trim_reads_for_pileup',
+          + ' --small_model_indel_gq_threshold "30"'
+          + ' --small_model_snp_gq_threshold "25"'
+          + ' --small_model_vaf_context_window_size "51"'
+          + ' --sort_by_haplotypes'
+          + ' --trained_small_model_path "/opt/smallmodels/wgs"'
+          + ' --trim_reads_for_pileup',
       ),
       (
           'keep_secondary_alignments=false',
@@ -179,7 +214,12 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --nokeep_secondary_alignments'
           + ' --keep_supplementary_alignments'
           + ' --sample_name_pangenome "hprc_v1.1"'
-          + ' --sort_by_haplotypes --trim_reads_for_pileup',
+          + ' --small_model_indel_gq_threshold "30"'
+          + ' --small_model_snp_gq_threshold "25"'
+          + ' --small_model_vaf_context_window_size "51"'
+          + ' --sort_by_haplotypes'
+          + ' --trained_small_model_path "/opt/smallmodels/wgs"'
+          + ' --trim_reads_for_pileup',
       ),
       (
           'keep_secondary_alignments=true,keep_supplementary_alignments=true',
@@ -187,7 +227,12 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --keep_secondary_alignments'
           + ' --keep_supplementary_alignments'
           + ' --sample_name_pangenome "hprc_v1.1"'
-          + ' --sort_by_haplotypes --trim_reads_for_pileup',
+          + ' --small_model_indel_gq_threshold "30"'
+          + ' --small_model_snp_gq_threshold "25"'
+          + ' --small_model_vaf_context_window_size "51"'
+          + ' --sort_by_haplotypes'
+          + ' --trained_small_model_path "/opt/smallmodels/wgs"'
+          + ' --trim_reads_for_pileup',
       ),
       (
           'use_ref_for_cram=true,keep_secondary_alignments=true,'
@@ -196,8 +241,15 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --keep_secondary_alignments'
           + ' --nokeep_supplementary_alignments'
           + ' --sample_name_pangenome "hprc_v1.1"'
-          + ' --sort_by_haplotypes --trim_reads_for_pileup --use_ref_for_cram',
+          + ' --small_model_indel_gq_threshold "30"'
+          + ' --small_model_snp_gq_threshold "25"'
+          + ' --small_model_vaf_context_window_size "51"'
+          + ' --sort_by_haplotypes'
+          + ' --trained_small_model_path "/opt/smallmodels/wgs"'
+          + ' --trim_reads_for_pileup'
+          + ' --use_ref_for_cram',
       ),
+      # pyformat: enable
   )
   @flagsaver.flagsaver
   def test_make_examples_extra_args_boolean(
@@ -212,9 +264,11 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.make_examples_extra_args = make_examples_extra_args
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.disable_small_model = False
     commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
         '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
     )
+    # pyformat: disable
     self.assertEqual(
         commands[0][0],
         'time seq 0 63 | parallel -q --halt 2 --line-buffer'
@@ -222,10 +276,13 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --ref "your_ref" --reads "your_bam" --pangenome "your_pangenome_bam"'
         ' --examples'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/wgs/model.ckpt" --gvcf'
+        ' --checkpoint "/opt/models/wgs/model.ckpt"'
+        ' --call_small_model_examples'
+        ' --gvcf'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"%s'
         ' --task {}' % full_expected_args,
     )
+    # pyformat: enable
 
   @flagsaver.flagsaver
   def test_logging_dir(self):
@@ -238,10 +295,12 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.logging_dir = '/tmp/pangenome_aware_deepvariant_tmp_output/LOGDIR'
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.disable_small_model = False
     commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
         '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
     )
 
+    # pyformat: disable
     self.assertEqual(
         commands[0][0],
         (
@@ -250,14 +309,23 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
             ' calling --ref "your_ref" --reads "your_bam" --pangenome'
             ' "your_pangenome_bam" --examples'
             ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
-            ' --checkpoint "/opt/models/wgs/model.ckpt" --gvcf'
+            ' --checkpoint "/opt/models/wgs/model.ckpt"'
+            ' --call_small_model_examples'
+            ' --gvcf'
             ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
             ' --keep_only_window_spanning_haplotypes'
-            ' --keep_supplementary_alignments --sample_name_pangenome'
-            ' "hprc_v1.1" --sort_by_haplotypes --trim_reads_for_pileup'
+            ' --keep_supplementary_alignments'
+            ' --sample_name_pangenome "hprc_v1.1"'
+            ' --small_model_indel_gq_threshold "30"'
+            ' --small_model_snp_gq_threshold "25"'
+            ' --small_model_vaf_context_window_size "51"'
+            ' --sort_by_haplotypes'
+            ' --trained_small_model_path "/opt/smallmodels/wgs"'
+            ' --trim_reads_for_pileup'
             ' --task {}'
         ),
     )
+    # pyformat: enable
 
   @parameterized.parameters(
       ('chr1:20-30', '--regions "chr1:20-30"'),
@@ -275,10 +343,12 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.regions = regions
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.disable_small_model = False
     commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
         '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
     )
 
+    # pyformat: disable
     self.assertEqual(
         commands[0][0],
         'time seq 0 63 | parallel -q --halt 2 --line-buffer'
@@ -286,13 +356,23 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --ref "your_ref" --reads "your_bam" --pangenome "your_pangenome_bam"'
         ' --examples'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
-        ' --checkpoint "/opt/models/wgs/model.ckpt" --gvcf'
+        ' --checkpoint "/opt/models/wgs/model.ckpt"'
+        ' --call_small_model_examples'
+        ' --gvcf'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
         ' --keep_only_window_spanning_haplotypes'
-        ' --keep_supplementary_alignments %s --sample_name_pangenome'
-        ' "hprc_v1.1" --sort_by_haplotypes --trim_reads_for_pileup --task {}'
+        ' --keep_supplementary_alignments %s'
+        ' --sample_name_pangenome "hprc_v1.1"'
+        ' --small_model_indel_gq_threshold "30"'
+        ' --small_model_snp_gq_threshold "25"'
+        ' --small_model_vaf_context_window_size "51"'
+        ' --sort_by_haplotypes'
+        ' --trained_small_model_path "/opt/smallmodels/wgs"'
+        ' --trim_reads_for_pileup'
+        ' --task {}'
         % expected_args,
     )
+    # pyformat: enable
 
   @flagsaver.flagsaver
   @flagsaver.flagsaver
@@ -306,6 +386,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.make_examples_extra_args = 'keep_secondary_alignments'
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.disable_small_model = False
     with self.assertRaisesRegex(ValueError, 'not enough values to unpack'):
       _ = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
           '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
@@ -337,6 +418,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.call_variants_extra_args = call_variants_extra_args
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.disable_small_model = False
     commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
         '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
     )
@@ -366,20 +448,27 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     FLAGS.num_shards = 64
     FLAGS.postprocess_variants_extra_args = postprocess_variants_extra_args
     FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.disable_small_model = False
     commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
         '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
     )
 
+    # pyformat: disable
     self.assertEqual(
         commands[2][0],
         'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
         ' --infile'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/call_variants_output.tfrecord.gz"'
-        ' --outfile "your_vcf" --gvcf_outfile "your_gvcf"'
+        ' --outfile "your_vcf"'
+        ' --cpus "64"'
+        ' --small_model_cvo_records'
+        ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv_call_variant_outputs.tfrecord@64.gz"'
+        ' --gvcf_outfile "your_gvcf"'
         ' --nonvariant_site_tfrecord_path'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz" %s'
         % expected_args,
     )
+    # pyformat: enable
 
 
 if __name__ == '__main__':
