@@ -137,7 +137,7 @@ def get_pacbio_config(config: ml_collections.ConfigDict):
   config.weight_decay = 0.00004
   config.optimizer_weight_decay = 0.0
 
-  config.early_stopping_patience = 100
+  config.early_stopping_patience = 20
   config.learning_rate = 0.00008663001151624387
   config.learning_rate_num_epochs_per_decay = 2.66
   config.learning_rate_decay_rate = 0.8514735277962562
