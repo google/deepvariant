@@ -1,4 +1,4 @@
-f# DeepVariant usage guide
+# DeepVariant usage guide
 
 ## Overview
 
