@@ -295,7 +295,7 @@ std::vector<Read> RealignReadsToHaplotype(
   std::string ref_suffix = ref_reader.GetBases(
       MakeRange(std::string(contig), ref_end, ref_end_ext)).ValueOrDie();
   realigner.set_reference(absl::StrCat(ref_prefix, haplotype, ref_suffix));
-  realigner.set_ref_start(std::string(contig), ref_start_ext);
+  realigner.set_ref_start(contig, ref_start_ext);
   realigner.set_ref_prefix_len(ref_start - ref_start_ext);
   realigner.set_ref_suffix_len(ref_end_ext - ref_end);
   realigner.set_haplotypes({absl::StrCat(ref_prefix, haplotype, ref_suffix)});
