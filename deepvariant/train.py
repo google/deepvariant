@@ -75,10 +75,6 @@ _EXPERIMENT_DIR = flags.DEFINE_string(
     ),
 )
 
-_LIMIT = flags.DEFINE_integer(
-    'limit', None, 'Limit the number of steps per epoch used for train/eval.'
-)
-
 _DEBUG = flags.DEFINE_bool(
     'debug', False, 'Run tensorflow eagerly in debug mode.'
 )
@@ -158,9 +154,9 @@ def train(config: ml_collections.ConfigDict):
       or tune_dataset_config.num_examples // config.batch_size
   )
 
-  if _LIMIT.value:
-    steps_per_epoch = _LIMIT.value
-    steps_per_tune = min(_LIMIT.value, steps_per_tune)
+  if config.limit:
+    steps_per_epoch = config.limit
+    steps_per_tune = min(config.limit, steps_per_tune)
 
   # =========== #
   # Setup Model #
@@ -321,8 +317,12 @@ def train(config: ml_collections.ConfigDict):
   # for the optimizer, step, and train/tune metrics.
   pre_ema_checkpoint_path = os.path.join(model_dir, 'pre_ema')
   ema_checkpoint_path = os.path.join(model_dir, 'ema')
-  best_checkpoint_path = os.path.join(model_dir, 'best')
-  last_checkpoint_path = os.path.join(model_dir, 'last')
+  # Define the set of checkpoints to be copied depending on ema status.
+  if config.use_ema:
+    use_checkpoint_path = ema_checkpoint_path
+  else:
+    use_checkpoint_path = pre_ema_checkpoint_path
+
   ckpt_manager = keras_modeling.create_state(
       config,
       pre_ema_checkpoint_path,
@@ -562,27 +562,19 @@ def train(config: ml_collections.ConfigDict):
             # Run tune using EMA model.
             original_weights = model.get_weights()
             optimizer.finalize_variable_values(model.trainable_weights)
-            run_tune(train_step, epoch, steps_per_tune)
+
+          run_tune(train_step, epoch, steps_per_tune)
+
+          if config.use_ema:
             save_checkpoint(
                 os.path.join(
                     ema_checkpoint_path,
                     f'checkpoint-{train_step}-{get_checkpoint_metric():.5f}',
                 )
             )
-          else:
-            run_tune(train_step, epoch, steps_per_tune)
 
           if get_checkpoint_metric() > state.best_checkpoint_value:
             state.best_checkpoint_value = get_checkpoint_metric()
-            best_checkpoint_name = (
-                f'checkpoint-{train_step}-{state.best_checkpoint_value:.5f}'
-            )
-            save_checkpoint(
-                os.path.join(
-                    best_checkpoint_path,
-                    best_checkpoint_name,
-                )
-            )
             # Reset early stopping counter
             state.early_stopping.assign(0)
             logging.info(
@@ -597,12 +589,6 @@ def train(config: ml_collections.ConfigDict):
                 >= config.early_stopping_patience
             ):
               logging.info('Early Stop Reached. Finalizing model weights.')
-              save_checkpoint(
-                  os.path.join(
-                      last_checkpoint_path,
-                      f'checkpoint-{train_step}-{get_checkpoint_metric():.5f}',
-                  )
-              )
               break
             logging.info(
                 'Early Stopping Count +1: %s=%s < previous best %s=%s',
@@ -620,12 +606,6 @@ def train(config: ml_collections.ConfigDict):
 
           if is_last_step:
             logging.info('Finalizing model weights.')
-            save_checkpoint(
-                os.path.join(
-                    last_checkpoint_path,
-                    f'checkpoint-{train_step}-{get_checkpoint_metric():.5f}',
-                )
-            )
             break
 
           # Revert weights to original weights to resume training.
@@ -636,7 +616,7 @@ def train(config: ml_collections.ConfigDict):
           for metric in state.tune_metrics:
             metric.reset_states()
 
-    if not ckpt_manager.latest_checkpoint:
+    if not tf.train.latest_checkpoint(use_checkpoint_path):
       logging.info('No checkpoint found.')
       return
 
