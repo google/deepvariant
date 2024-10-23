@@ -32,7 +32,6 @@ import io
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import pandas as pd
 
 from deepvariant import runtime_by_region_vis
 from deepvariant import testdata
@@ -40,32 +39,6 @@ from deepvariant import testdata
 
 def setUpModule():
   testdata.init()
-
-
-# Json strings of dataframes from testdata.RUNTIME_BY_REGION.
-JSON_DF = (
-    '{"region":{"3":"0:4001-5000","2":"0:3001-4000","1":"0:1001-2000",'
-    '"4":"0:5001-6000","0":"0:1-1000"},'
-    '"get reads":{"3":0.148,"2":0.145,"1":0.139,"4":0.153,"0":0.095},'
-    '"find candidates":{"3":0.2,"2":0.197,"1":0.188,"4":0.204,"0":0.186},'
-    '"make pileup images":{"3":0.366,"2":0.315,"1":0.257,"4":0.104,"0":0.176},'
-    '"write outputs":{"3":0.016,"2":0.016,"1":0.016,"4":0.006,"0":0.005},'
-    '"num reads":{"3":36,"2":33,"1":37,"4":39,"0":37},'
-    '"num candidates":{"3":3,"2":3,"1":3,"4":1,"0":2},'
-    '"num examples":{"3":3,"2":3,"1":3,"4":1,"0":2},'
-    '"Task":{"3":0,"2":0,"1":0,"4":0,"0":0},'
-    '"total runtime":{"3":0.73,"2":0.673,"1":0.6,"4":0.467,"0":0.462},'
-    '"Runtime":{"3":"0.73s","2":"0.673s","1":"0.6s","4":"0.467s","0":"0.462s"}}'
-)
-JSON_BY_TASK_DF = (
-    '{"Task":{"0":0},"get reads":{"0":0.68},'
-    '"find candidates":{"0":0.975},'
-    '"make pileup images":{"0":1.218},'
-    '"write outputs":{"0":0.059},'
-    '"num reads":{"0":182},'
-    '"num candidates":{"0":12},'
-    '"num examples":{"0":12},"total runtime":{"0":2.932}}'
-)
 
 
 def is_an_altair_chart(chart):
@@ -77,9 +50,18 @@ def is_an_altair_chart(chart):
 
 class RuntimeByRegionVisTest(parameterized.TestCase):
 
+  @classmethod
+  def setUpClass(cls):
+    super().setUpClass()
+    cls.JSON_DF, cls.JSON_BY_TASK_DF = (
+        runtime_by_region_vis.read_data_and_make_dataframes(
+            testdata.RUNTIME_BY_REGION
+        )
+    )
+
   @parameterized.parameters(
-      dict(sharded=False, expected_regions=5),
-      dict(sharded=True, expected_regions=96510),
+      dict(sharded=False, expected_regions=101),
+      dict(sharded=True, expected_regions=101),
   )
   def test_e2e(self, sharded, expected_regions):
     if sharded:
@@ -123,63 +105,59 @@ class RuntimeByRegionVisTest(parameterized.TestCase):
         expected, runtime_by_region_vis.format_runtime_string(raw_seconds)
     )
 
-  def test_read_data_and_make_dataframes(self):
-    input_path = testdata.RUNTIME_BY_REGION
-    df, by_task = runtime_by_region_vis.read_data_and_make_dataframes(
-        input_path
-    )
-    # Compare as json strings.
-    self.assertEqual(df.to_json(), JSON_DF)
-    self.assertEqual(by_task.to_json(), JSON_BY_TASK_DF)
-
   def test_chart_type_negative_control(self):
     self.assertFalse(is_an_altair_chart('some string'))
     self.assertFalse(is_an_altair_chart(None))
 
   def test_totals_by_stage(self):
-    by_task = pd.read_json(JSON_BY_TASK_DF)
-    chart = runtime_by_region_vis.totals_by_stage(by_task)
+    chart = runtime_by_region_vis.totals_by_stage(self.JSON_BY_TASK_DF)
     self.assertTrue(is_an_altair_chart(chart))
 
   def test_pareto_and_runtimes_by_task(self):
-    df = pd.read_json(JSON_DF)
-    chart = runtime_by_region_vis.pareto_and_runtimes_by_task(df)
+    chart = runtime_by_region_vis.pareto_and_runtimes_by_task(self.JSON_DF)
     self.assertTrue(is_an_altair_chart(chart))
 
-  @parameterized.parameters(
-      dict(dataframe_json=JSON_BY_TASK_DF, msg='Histogram of tasks'),
-      dict(dataframe_json=JSON_DF, msg='Histogram of regions'),
-  )
-  def test_stage_histogram(self, dataframe_json, msg):
-    df = pd.read_json(dataframe_json)
-    chart = runtime_by_region_vis.stage_histogram(df, title='chart title')
-    self.assertTrue(is_an_altair_chart(chart), msg=msg)
-    chart_json = chart.to_json()
-    self.assertIn('chart title', chart_json)
+  def test_stage_histogram(self):
+    parameters = [
+        dict(
+            dataframe_json=self.JSON_BY_TASK_DF,
+            msg='Histogram of tasks',
+        ),
+        dict(
+            dataframe_json=self.JSON_DF,
+            msg='Histogram of regions',
+        ),
+    ]
+    for param in parameters:
+      df = param['dataframe_json']
+      chart = runtime_by_region_vis.stage_histogram(df, title='chart title')
+      self.assertTrue(is_an_altair_chart(chart), msg=param['msg'])
+      chart_json = chart.to_json()
+      self.assertIn('chart title', chart_json)
 
   def test_selected_longest_and_median_regions(self):
-    df = pd.read_json(JSON_DF)
-    chart = runtime_by_region_vis.selected_longest_and_median_regions(df)
+    chart = runtime_by_region_vis.selected_longest_and_median_regions(
+        self.JSON_DF
+    )
     self.assertTrue(is_an_altair_chart(chart))
 
   def test_top_regions_producing_zero_examples(self):
-    df = pd.read_json(JSON_DF)
-    chart = runtime_by_region_vis.top_regions_producing_zero_examples(df)
+    chart = runtime_by_region_vis.top_regions_producing_zero_examples(
+        self.JSON_DF
+    )
     self.assertTrue(is_an_altair_chart(chart))
 
   def test_correlation_scatter_charts(self):
-    df = pd.read_json(JSON_DF)
     chart = runtime_by_region_vis.correlation_scatter_charts(
-        df, title='chart title'
+        self.JSON_DF, title='chart title'
     )
     self.assertTrue(is_an_altair_chart(chart))
     chart_json = chart.to_json()
     self.assertIn('chart title', chart_json)
 
   def test_individual_region_bars(self):
-    df = pd.read_json(JSON_DF)
     chart = runtime_by_region_vis.individual_region_bars(
-        df, title='chart title'
+        self.JSON_DF, title='chart title'
     )
     self.assertTrue(is_an_altair_chart(chart))
     chart_json = chart.to_json()

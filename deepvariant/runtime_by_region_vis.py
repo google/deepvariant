@@ -79,6 +79,7 @@ RUNTIME_COLUMNS = [
     'find candidates',
     'make pileup images',
     'write outputs',
+    'small model total',
 ]
 COUNT_COLUMNS = ['num reads', 'num candidates', 'num examples']
 
@@ -270,6 +271,41 @@ def totals_by_stage(d: pd.DataFrame) -> alt.Chart:
           fill=alt.Fill('Stage', sort=None),
       )
       .properties(title='Overall runtime by stage')
+  )
+
+
+def small_model_runtimes_by_stage(d: pd.DataFrame) -> alt.Chart:
+  """Plots total runtimes for small model stages.
+
+  Args:
+    d: A dataframe of runtimes.
+
+  Returns:
+    An altair chart.
+  """
+  small_model_totals_series = d.sum()[[
+      'small model generate examples',
+      'small model call examples',
+      'small model write variants',
+  ]]
+  small_model_totals = pd.DataFrame(
+      small_model_totals_series, columns=['Runtime (seconds)']
+  )
+  small_model_totals.reset_index(inplace=True)
+  small_model_totals = small_model_totals.rename(columns={'index': 'Stage'})
+  small_model_totals['Runtime'] = small_model_totals['Runtime (seconds)'].apply(
+      format_runtime_string
+  )
+  return (
+      alt.Chart(small_model_totals)
+      .mark_bar()
+      .encode(
+          x='Runtime (seconds)',
+          y=alt.Y('Stage', sort=None),
+          tooltip=['Runtime'],
+          fill=alt.Fill('Stage', sort=None),
+      )
+      .properties(title='Small Model runtime by stage')
   )
 
 
@@ -508,6 +544,10 @@ def make_all_charts(
   """
   charts = [
       {'id': 'total_by_stage', 'chart': totals_by_stage(by_task)},
+      {
+          'id': 'small_model_by_stage',
+          'chart': small_model_runtimes_by_stage(by_task),
+      },
       {
           'id': 'pareto_and_runtimes_by_task',
           'chart': pareto_and_runtimes_by_task(df),
