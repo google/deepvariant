@@ -158,17 +158,30 @@ def train(config: ml_collections.ConfigDict):
     steps_per_epoch = config.limit
     steps_per_tune = min(config.limit, steps_per_tune)
 
+  def finalize_vars(trainable_variables, optimizer):
+    """Finalizes variables for evaluating model after EMA."""
+    for var, average_var in zip(
+        trainable_variables,
+        optimizer._model_variables_moving_average,  # pylint: disable=protected-access
+    ):
+      var.assign(average_var)
+
   # =========== #
   # Setup Model #
   # =========== #
 
   with strategy.scope():
+
     model = keras_modeling.inceptionv3(
         input_shape=input_shape,
         weights=config.init_checkpoint,
         init_backbone_with_imagenet=config.init_backbone_with_imagenet,
         config=config,
     )
+
+    ema_model = tf.keras.models.clone_model(
+        model
+    )  # Used to save ema checkpoints
 
     decay_steps = int(
         steps_per_epoch * config.learning_rate_num_epochs_per_decay
@@ -231,7 +244,6 @@ def train(config: ml_collections.ConfigDict):
       raise ValueError(f'Unknown optimizer: {config.optimizer}')
 
     # Define Loss Function.
-    # TODO: Add function for retrieving custom loss fn.
     loss_function = tf.keras.losses.CategoricalCrossentropy(
         label_smoothing=config.label_smoothing,
         reduction=tf.keras.losses.Reduction.NONE,
@@ -289,12 +301,17 @@ def train(config: ml_collections.ConfigDict):
       model_input = dv_utils.preprocess_images(model_input)
       labels = tf.squeeze(tf.one_hot(labels, dv_constants.NUM_CLASSES))
       # The build_classification_head performs a softmax.
-      probabilities = model(model_input, training=False)
+      if config.use_ema:
+        probabilities = ema_model(model_input, training=False)
+        model_losses = ema_model.losses
+      else:
+        probabilities = model(model_input, training=False)
+        model_losses = model.losses
       loss = compute_loss(
           probabilities=probabilities,
           labels=labels,
           sample_weight=sample_weight,
-          model_losses=model.losses,
+          model_losses=model_losses,
       )
       tune_loss = loss * strategy.num_replicas_in_sync
 
@@ -332,7 +349,7 @@ def train(config: ml_collections.ConfigDict):
   )
   state = ckpt_manager.checkpoint
 
-  def save_checkpoint(path):
+  def save_checkpoint(path, model):
     logging.info('Saving checkpoint to %s', path)
     tf.io.gfile.makedirs(os.path.dirname(path))
     local_example_info_json = os.path.join(
@@ -344,9 +361,10 @@ def train(config: ml_collections.ConfigDict):
           example_info_json_path,
           local_example_info_json,
       )
+    checkpoint_options = tf.train.CheckpointOptions(enable_async=True)
     tf.train.Checkpoint(
         model,
-    ).save(path)
+    ).save(path, options=checkpoint_options)
 
   # ============== #
   # Setup Datasets #
@@ -430,7 +448,7 @@ def train(config: ml_collections.ConfigDict):
       def run_tune(train_step, epoch, steps_per_tune):
         """Runs evaluation on held out eval set."""
         logging.info(
-            'Running tune with ema weights at step=%d epoch=%d',
+            'Running tune at step=%d epoch=%d',
             train_step,
             epoch,
         )
@@ -556,22 +574,22 @@ def train(config: ml_collections.ConfigDict):
         ):
 
           # ckpt_manager saves checkpoints without ema averaging.
-          ckpt_manager.save(train_step)
+          checkpoint_options = tf.train.CheckpointOptions(enable_async=True)
+          ckpt_manager.save(train_step, options=checkpoint_options)
 
           if config.use_ema:
-            # Run tune using EMA model.
-            original_weights = model.get_weights()
-            optimizer.finalize_variable_values(model.trainable_weights)
-
-          run_tune(train_step, epoch, steps_per_tune)
-
-          if config.use_ema:
+            ema_model.set_weights(model.get_weights())
+            finalize_vars(ema_model.trainable_weights, optimizer)
+            run_tune(train_step, epoch, steps_per_tune)
             save_checkpoint(
                 os.path.join(
                     ema_checkpoint_path,
                     f'checkpoint-{train_step}-{get_checkpoint_metric():.5f}',
-                )
+                ),
+                ema_model,
             )
+          else:
+            run_tune(train_step, epoch, steps_per_tune)
 
           if get_checkpoint_metric() > state.best_checkpoint_value:
             state.best_checkpoint_value = get_checkpoint_metric()
@@ -607,10 +625,6 @@ def train(config: ml_collections.ConfigDict):
           if is_last_step:
             logging.info('Finalizing model weights.')
             break
-
-          # Revert weights to original weights to resume training.
-          if config.use_ema:
-            model.set_weights(original_weights)
 
           # Reset tune metrics
           for metric in state.tune_metrics:
