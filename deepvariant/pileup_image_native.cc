@@ -156,6 +156,8 @@ PileupImageEncoderNative::BuildPileupForOneSample(
   rows.reserve(pileup_height);
 
   // Reference band at the top of the image.
+  // TODO Calculate the reference band once and reuse it for each
+  // row.
   for (int i = 0; i < options_.reference_band_height(); i++) {
     rows.push_back(EncodeReference(ref_bases));
   }
@@ -287,17 +289,19 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
 
   // Calculate Channels
   Channels channel_set{options_};
+  // TODO Allocate all the channel vectors to ref_bases.size() here
+  // instead of in the channel subclasses to improve efficiency and readability.
+  img_row.channel_data =
+      std::vector<std::vector<unsigned char>>(channel_enums_.size());
   bool ok = channel_set.CalculateChannels(
-      channel_enums_, read, ref_bases, dv_call, alt_alleles, image_start_pos,
-      channels_enum_to_blank);
+      img_row.channel_data, channel_enums_, read, ref_bases, dv_call,
+      alt_alleles, image_start_pos, channels_enum_to_blank);
   // Bail out if we found an issue while calculating channels
   // (a low-quality base at the call site, mapping quality is too low, etc)
   if (!ok) {
     return nullptr;
   }
 
-  // Fill Channel set.
-  img_row.channel_data = std::move(channel_set.data_);
   return std::make_unique<ImageRow>(img_row);
 }
 
@@ -308,9 +312,9 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeReference(
   // Calculate reference rows at the top of each channel image.
   // These are retrieved for each position in the loop below.
   Channels channel_set{options_};
-  channel_set.CalculateRefRows(channel_enums_, ref_bases);
-
-  img_row.channel_data = std::move(channel_set.ref_data_);
+  img_row.channel_data =
+      std::vector<std::vector<unsigned char>>(channel_enums_.size());
+  channel_set.CalculateRefRows(img_row.channel_data, channel_enums_, ref_bases);
 
   return std::make_unique<ImageRow>(img_row);
 }

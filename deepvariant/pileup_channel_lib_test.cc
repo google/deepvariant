@@ -522,48 +522,94 @@ TEST_P(GetChannelDataTest, ReadData) {
   DeepVariantCall dv_call = DeepVariantCall::default_instance();
   std::vector<std::string> alt_alleles = {};
 
-  channel_set.CalculateChannels(channel_enums, read,
+  std::vector<std::vector<unsigned char>> data =
+      std::vector<std::vector<unsigned char>>(channel_enums.size());
+  channel_set.CalculateChannels(data, channel_enums, read,
                                 ref_read.aligned_sequence(), dv_call,
                                 alt_alleles, 0, param.channels_enum_to_blank);
   if (!param.channels_enum_to_blank.contains(
           DeepVariantChannelEnum::CH_READ_BASE)) {
-    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 11), 4);
-    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 9), 2);
-    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 1), 3);
-    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 4), 1);
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_READ_BASE)][11],
+              4);
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_READ_BASE)][9],
+              2);
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_READ_BASE)][1],
+              3);
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_READ_BASE)][4],
+              1);
   } else {
-    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 11), 0);
-    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 9), 0);
-    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 1), 0);
-    EXPECT_EQ(channel_set.GetChannelData(ch_read_base, 4), 0);
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_READ_BASE)][11],
+              0);
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_READ_BASE)][9],
+              0);
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_READ_BASE)][1],
+              0);
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_READ_BASE)][4],
+              0);
   }
-  EXPECT_EQ(channel_set.GetChannelData(ch_base_quality, 1),
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_BASE_QUALITY)][1],
             kMaxPixelValueAsFloat);
   if (!param.channels_enum_to_blank.contains(
           DeepVariantChannelEnum::CH_MAPPING_QUALITY)) {
-    EXPECT_EQ(channel_set.GetChannelData(ch_mapping_quality, 1),
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_MAPPING_QUALITY)][1],
               static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
   } else {
-    EXPECT_EQ(channel_set.GetChannelData(ch_mapping_quality, 1), 0);
+    EXPECT_EQ(data[channel_set.GetChannelIndex(
+                  DeepVariantChannelEnum::CH_MAPPING_QUALITY)][1],
+              0);
   }
-  EXPECT_EQ(channel_set.GetChannelData(ch_strand, 1), 20);
-  EXPECT_EQ(channel_set.GetChannelData(ch_read_supports_variant, 1),
+  EXPECT_EQ(
+      data[channel_set.GetChannelIndex(DeepVariantChannelEnum::CH_STRAND)][1],
+      20);
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT)][1],
             static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetChannelData(ch_base_differs_from_ref, 1),
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF)][1],
             kMaxPixelValueAsFloat);
-  EXPECT_EQ(channel_set.GetChannelData(ch_read_mapping_percent, 3), 231);
-  EXPECT_EQ(channel_set.GetChannelData(ch_avg_base_quality, 3), 90);
-  EXPECT_EQ(channel_set.GetChannelData(ch_identity, 9), 231);
-  EXPECT_EQ(channel_set.GetChannelData(ch_gap_compressed_identity, 9),
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT)][3],
+            231);
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_AVG_BASE_QUALITY)][3],
+            90);
+  EXPECT_EQ(
+      data[channel_set.GetChannelIndex(DeepVariantChannelEnum::CH_IDENTITY)][9],
+      231);
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_GAP_COMPRESSED_IDENTITY)][9],
             static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetChannelData(ch_gc_content, 3), 127);
-  EXPECT_EQ(channel_set.GetChannelData(ch_is_homopolymer, 1),
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_GC_CONTENT)][3],
+            127);
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_IS_HOMOPOLYMER)][1],
             static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetChannelData(ch_is_homopolymer, 4), 0);
-  EXPECT_EQ(channel_set.GetChannelData(ch_homopolymer_weighted, 1), 25);
-  EXPECT_EQ(channel_set.GetChannelData(ch_homopolymer_weighted, 9), 33);
-  EXPECT_EQ(channel_set.GetChannelData(ch_blank, 1), 0);
-  EXPECT_EQ(channel_set.GetChannelData(ch_insert_size, 1), 254);
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_IS_HOMOPOLYMER)][4],
+            0);
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED)][1],
+            25);
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED)][9],
+            33);
+  EXPECT_EQ(
+      data[channel_set.GetChannelIndex(DeepVariantChannelEnum::CH_BLANK)][1],
+      0);
+  EXPECT_EQ(data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_INSERT_SIZE)][1],
+            254);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -618,49 +664,68 @@ TEST(GetRefChannelDataTest, ReadData) {
   for (size_t i = 0; i < ref_read.aligned_sequence().size(); ++i) {
     ref_read.set_aligned_quality(i, base_quality);
   }
-  channel_set.CalculateRefRows(channel_enums, ref_read.aligned_sequence());
-  EXPECT_EQ(channel_set.GetRefRows(DeepVariantChannelEnum::CH_READ_BASE, 10),
+  std::vector<std::vector<unsigned char>> ref_data =
+      std::vector<std::vector<unsigned char>>(channel_enums.size());
+  channel_set.CalculateRefRows(ref_data, channel_enums,
+                               ref_read.aligned_sequence());
+
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_READ_BASE)][10],
             4);
-  EXPECT_EQ(channel_set.GetRefRows(DeepVariantChannelEnum::CH_READ_BASE, 8), 2);
-  EXPECT_EQ(channel_set.GetRefRows(DeepVariantChannelEnum::CH_READ_BASE, 0), 3);
-  EXPECT_EQ(channel_set.GetRefRows(DeepVariantChannelEnum::CH_READ_BASE, 3), 1);
-  EXPECT_EQ(channel_set.GetRefRows(DeepVariantChannelEnum::CH_BASE_QUALITY, 0),
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_READ_BASE)][8],
+            2);
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_READ_BASE)][0],
+            3);
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_READ_BASE)][3],
+            1);
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_BASE_QUALITY)][0],
             kMaxPixelValueAsFloat);
-  EXPECT_EQ(
-      channel_set.GetRefRows(DeepVariantChannelEnum::CH_MAPPING_QUALITY, 1),
-      static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetRefRows(DeepVariantChannelEnum::CH_STRAND, 1), 20);
-  EXPECT_EQ(channel_set.GetRefRows(
-                DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT, 1),
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_MAPPING_QUALITY)][1],
             static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetRefRows(
-                DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF, 0),
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_STRAND)][1],
+            20);
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT)][1],
+            static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF)][0],
             kMaxPixelValueAsFloat);
-  EXPECT_EQ(channel_set.GetRefRows(
-                DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT, 3),
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT)][3],
             static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(
-      channel_set.GetRefRows(DeepVariantChannelEnum::CH_AVG_BASE_QUALITY, 3),
-      static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetRefRows(DeepVariantChannelEnum::CH_IDENTITY, 9),
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_AVG_BASE_QUALITY)][3],
+            static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_IDENTITY)][9],
             254);
-  EXPECT_EQ(channel_set.GetRefRows(
-                DeepVariantChannelEnum::CH_GAP_COMPRESSED_IDENTITY, 9),
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_GAP_COMPRESSED_IDENTITY)][9],
             static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(channel_set.GetRefRows(DeepVariantChannelEnum::CH_GC_CONTENT, 3),
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_GC_CONTENT)][3],
             127);
-  EXPECT_EQ(
-      channel_set.GetRefRows(DeepVariantChannelEnum::CH_IS_HOMOPOLYMER, 1),
-      static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
-  EXPECT_EQ(
-      channel_set.GetRefRows(DeepVariantChannelEnum::CH_IS_HOMOPOLYMER, 4), 0);
-  EXPECT_EQ(channel_set.GetRefRows(
-                DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED, 1),
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_IS_HOMOPOLYMER)][1],
+            static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_IS_HOMOPOLYMER)][4],
+            0);
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED)][1],
             25);
-  EXPECT_EQ(channel_set.GetRefRows(
-                DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED, 9),
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_HOMOPOLYMER_WEIGHTED)][9],
             33);
-  EXPECT_EQ(channel_set.GetRefRows(DeepVariantChannelEnum::CH_BLANK, 0), 0);
+  EXPECT_EQ(ref_data[channel_set.GetChannelIndex(
+                DeepVariantChannelEnum::CH_BLANK)][0],
+            0);
 }
 
 }  // namespace deepvariant

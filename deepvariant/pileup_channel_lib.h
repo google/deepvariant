@@ -151,26 +151,24 @@ class Channels {
   static DeepVariantChannelEnum ChannelStrToEnum(const std::string& channel);
 
   const PileupImageOptions& options_;
-  std::vector<std::vector<unsigned char>> ref_data_;
 
-  std::vector<std::vector<unsigned char>> read_level_data_;
-  std::vector<std::vector<unsigned char>> data_;
   std::vector<int> channel_enum_to_index_;
 
   bool CalculateChannels(
+      std::vector<std::vector<unsigned char>>& data,
       const std::vector<DeepVariantChannelEnum>& channel_enums,
       const nucleus::genomics::v1::Read& read, absl::string_view ref_bases,
       const DeepVariantCall& dv_call,
       const std::vector<std::string>& alt_alleles, int image_start_pos,
-      absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank =
-          {});
+      absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank = {});
 
   // Calculate values for channels that only depend on information at the
   // granularity of an entire read.
-  bool CalculateReadLevelData(DeepVariantChannelEnum channel_enum,
-                              const nucleus::genomics::v1::Read& read,
-                              const DeepVariantCall& dv_call,
-                              const std::vector<std::string>& alt_alleles);
+  bool CalculateReadLevelData(
+      std::vector<std::vector<unsigned char>>& read_level_data,
+      DeepVariantChannelEnum channel_enum,
+      const nucleus::genomics::v1::Read& read, const DeepVariantCall& dv_call,
+      const std::vector<std::string>& alt_alleles);
 
   // Calculate values for channels that depend on information at the
   // granularity of bases within the read and/or reference sequence.
@@ -183,9 +181,12 @@ class Channels {
   std::uint8_t GetChannelData(const std::string& channel, int col);
 
   void CalculateRefRows(
+      std::vector<std::vector<unsigned char>>& ref_data,
       const std::vector<DeepVariantChannelEnum>& channel_enums,
       const std::string& ref_bases);
   std::uint8_t GetRefRows(DeepVariantChannelEnum channel_enum, int col);
+
+  int GetChannelIndex(DeepVariantChannelEnum channel_enum);
 };
 }  // namespace deepvariant
 }  // namespace genomics
