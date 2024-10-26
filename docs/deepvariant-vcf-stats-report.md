@@ -6,10 +6,11 @@ statistics from a VCF file (output of DeepVariant).
 
 ## How to create a VCF stats report
 
-For new DeepVariant runs, this report is included in the outputs by default (to
-turn this off, add a --novcf_stats_report flag). For previous DeepVariant runs
-you can generate a report for an existing VCF file using the vcf_stats_report
-binary:
+For new DeepVariant runs, you can turn on this report by adding a
+`--vcf_stats_report` flag.
+
+For previous DeepVariant runs you can generate a report for an existing VCF file
+using the vcf_stats_report binary:
 
 ```bash
 sudo docker run \

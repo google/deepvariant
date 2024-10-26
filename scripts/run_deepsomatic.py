@@ -232,7 +232,7 @@ _OUTPUT_GVCF = flags.DEFINE_string(
 # Optional flags for vcf_stats_report.
 _VCF_STATS_REPORT = flags.DEFINE_boolean(
     'vcf_stats_report',
-    True,
+    False,
     (
         'Optional. Output a visual report (HTML) of '
         'statistics about the output VCF.'
