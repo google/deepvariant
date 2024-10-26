@@ -46,14 +46,14 @@
 #include "deepvariant/utils.h"
 #include "absl/container/btree_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/core/statusor.h"
-#include "absl/log/log.h"
 
 namespace learning {
 namespace genomics {

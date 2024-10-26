@@ -36,6 +36,8 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/pileup_image_native.h"
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -44,8 +46,6 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "google/protobuf/text_format.h"
-#include "deepvariant/pileup_image_native.h"
-#include "deepvariant/protos/deepvariant.pb.h"
 
 namespace learning {
 namespace genomics {

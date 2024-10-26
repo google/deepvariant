@@ -39,13 +39,14 @@
 
 #define NO_SANITIZE __attribute__((no_sanitize("all")))
 
+#include "deepvariant/fast_pipeline_utils.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
-#include "boost/interprocess/managed_shared_memory.hpp" // NOLINT
-#include "boost/interprocess/shared_memory_object.hpp" // NOLINT
-#include "boost/interprocess/sync/named_mutex.hpp" // NOLINT
+#include "boost/interprocess/managed_shared_memory.hpp"  // NOLINT
+#include "boost/interprocess/shared_memory_object.hpp"  // NOLINT
+#include "boost/interprocess/sync/named_mutex.hpp"  // NOLINT
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/op_requires.h"
 #include "tensorflow/core/framework/resource_mgr.h"  // copybara: quotes ""
@@ -61,7 +62,6 @@
 #include "tensorflow/core/platform/types.h"
 #include "tensorflow/tsl/platform/errors.h"
 #include "tensorflow/tsl/platform/thread_annotations.h"
-#include "deepvariant/fast_pipeline_utils.h"
 
 namespace learning {
 namespace genomics {
