@@ -105,6 +105,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   model_params.optimizer = "adam"
   model_params.learning_rate = 0.0000001
   model_params.weight_decay = 0.0000001
+  model_params.steps_per_execution = 128
   model_params.features = ()
   model_params.vaf_context_window_size = 11
   model_params.expand_by_haplotype = False
@@ -112,15 +113,21 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Training parameters
   config = ml_collections.ConfigDict()
   config.epochs = 100
-  config.batch_size = 256
-  config.logging_frequency = 8192
+  config.batch_size = 512
+  config.logging_frequency = 16384
+  config.interleave_cycle_length = 4
+  config.interleave_parallel_calls = 64
+  config.shuffle_buffer_elements = 100_000
+  config.tfrecord_buffer_size = 64 * 1000 * 1000
+  config.tfrecord_num_parallel_calls = 12
+  config.prefetch_buffer_size = 12
+  config.read_ahead_buffer = "128M"
+  config.map_parallel_calls = 100
+
   config.train_tfrecord_directory = ""
   config.num_train_samples = 0
   config.tune_tfrecord_directory = ""
   config.num_tune_samples = 0
-
-  # Local training only
-  config.test_fraction = 0.2
 
   # Training environment
   config.trial_id = 1

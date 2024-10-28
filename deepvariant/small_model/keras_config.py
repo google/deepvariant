@@ -121,6 +121,7 @@ def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
           learning_rate=model_params.learning_rate,
           weight_decay=model_params.weight_decay,
       ),
+      steps_per_execution=model_params.steps_per_execution,
       loss="categorical_crossentropy",
       metrics=keras_model_metrics(),
   )
