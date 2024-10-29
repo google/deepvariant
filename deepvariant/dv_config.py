@@ -57,7 +57,6 @@ def get_test_config(config: ml_collections.ConfigDict):
 def get_wgs_config(config: ml_collections.ConfigDict):
   """Config parameters for wgs training."""
 
-  # WGS Dataset
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
@@ -67,12 +66,15 @@ def get_wgs_config(config: ml_collections.ConfigDict):
   config.best_checkpoint_metric = 'tune/f1_weighted'
   config.batch_size = 16384
   config.num_epochs = 10
+
+  # Optimizer hparams
   config.optimizer = 'sgd'
-  config.beta_1 = 0.9651804083266324
-  config.beta_2 = 0.9665259112630292
-  config.weight_decay = 0.0001
-  config.adaptive_epsilon = True
+  config.momentum = 0.9
+  config.use_ema = True
+  config.ema_momentum = 0.99
   config.optimizer_weight_decay = 0.0
+
+  config.weight_decay = 0.0001
 
   config.early_stopping_patience = 100
   config.learning_rate = 0.01
@@ -83,15 +85,10 @@ def get_wgs_config(config: ml_collections.ConfigDict):
   config.label_smoothing = 0.01
   config.backbone_dropout_rate = 0.2
 
-  # Exponential Moving Average
-  config.use_ema = True
-  config.ema_momentum = 0.99
-
 
 def get_exome_config(config: ml_collections.ConfigDict):
   """Config parameters for exome training."""
 
-  # Exome Dataset
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = '/path/to/warmstart/checkpoint'
@@ -100,25 +97,25 @@ def get_exome_config(config: ml_collections.ConfigDict):
 
   config.best_checkpoint_metric = 'tune/f1_weighted'
   config.batch_size = 16384
-  config.num_epochs = 50
-  config.optimizer = 'adam'
-  config.beta_1 = 0.9575875572181167
-  config.beta_2 = 0.9475272158875401
-  config.adaptive_epsilon = True
-  config.weight_decay = 0.00004
+  config.num_epochs = 20
+
+  # Optimizer hparams
+  config.optimizer = 'sgd'
+  config.momentum = 0.9
+  config.use_ema = True
+  config.ema_momentum = 0.99
   config.optimizer_weight_decay = 0.0
 
+  config.weight_decay = 0.00001
+
   config.early_stopping_patience = 250
-  config.learning_rate = 0.000007515842928920994
+  config.learning_rate = 0.01
   config.learning_rate_num_epochs_per_decay = 2.25
   config.learning_rate_decay_rate = 0.5
-  config.warmup_steps = 0
+  config.warmup_steps = 5000
 
-  config.backbone_dropout_rate = 0.0
-
-  # Exponential Moving Average
-  config.use_ema = True
-  config.ema_momentum = 0.9725254942104883
+  config.label_smoothing = 0.01
+  config.backbone_dropout_rate = 0.2
 
 
 def get_pacbio_config(config: ml_collections.ConfigDict):
