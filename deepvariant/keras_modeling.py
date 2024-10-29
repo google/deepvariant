@@ -437,15 +437,12 @@ def create_state(
 
     if ckpt_manager.latest_checkpoint:
       ckpt_manager.restore_or_initialize()
-      best_checkpoint_metric_idx = [
-          f'tune/{x.name}' for x in state.tune_metrics
-      ].index(config.best_checkpoint_metric)
       logging.info(
           'Restored checkpoint %s at step=%s. %s=%s',
           os.path.basename(ckpt_manager.latest_checkpoint),
           global_step.numpy(),
           config.best_checkpoint_metric,
-          state.tune_metrics[best_checkpoint_metric_idx].result(),
+          state.best_checkpoint_value,
       )
     else:
       logging.info('Initialized Checkpoint')
