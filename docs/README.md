@@ -13,6 +13,9 @@
 *   [DeepVariant hybrid (PacBio and Illumina) case study](deepvariant-hybrid-case-study.md)
 *   [DeepVariant Complete Genomics T7 case study](deepvariant-complete-t7-case-study.md)
 *   [DeepVariant Complete Genomics G400 case study](deepvariant-complete-g400-case-study.md)
+*   [RNA-seq Case Study](deepvariant-rnaseq-case-study.md) for Illumina
+    RNA-seq.
+*   [PacBio Iso-Seq/MAS-Seq Case Study](deepvariant-masseq-case-study.md).
 *   [Runtime and accuracy metrics for all DeepVariant models](metrics.md)
 *   [Best practices for multi-sample variant calling](trio-merge-case-study.md)
 *   [Using graph genomes: VG Giraffe + DeepVariant case study](deepvariant-vg-case-study.md)
