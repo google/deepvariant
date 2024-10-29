@@ -238,6 +238,16 @@ def train(config: ml_collections.ConfigDict):
           momentum=config.momentum,
           epsilon=config.epsilon,
           use_ema=config.use_ema,
+          ema_momentum=config.ema_momentum,
+          weight_decay=config.optimizer_weight_decay,
+      )
+    elif config.optimizer == 'sgd':
+      optimizer = tf.keras.optimizers.SGD(
+          learning_rate=learning_rate,
+          nesterov=True,
+          momentum=config.momentum,
+          use_ema=config.use_ema,
+          ema_momentum=config.ema_momentum,
           weight_decay=config.optimizer_weight_decay,
       )
     else:
@@ -340,6 +350,15 @@ def train(config: ml_collections.ConfigDict):
   else:
     use_checkpoint_path = pre_ema_checkpoint_path
 
+  tf.io.gfile.makedirs(ema_checkpoint_path)
+  tf.io.gfile.makedirs(pre_ema_checkpoint_path)
+
+  tf.io.gfile.copy(
+      example_info_json_path,
+      os.path.join(use_checkpoint_path, 'example_info.json'),
+      overwrite=True,
+  )
+
   ckpt_manager = keras_modeling.create_state(
       config,
       pre_ema_checkpoint_path,
@@ -427,6 +446,7 @@ def train(config: ml_collections.ConfigDict):
   # ============= #
 
   metric_writer = metric_writers.create_default_writer(logdir=experiment_dir)
+  metric_writer.write_hparams(config.to_dict())
   report_progress = periodic_actions.ReportProgress(
       num_train_steps=num_train_steps,
       writer=metric_writer,

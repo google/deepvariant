@@ -57,7 +57,7 @@ def get_test_config(config: ml_collections.ConfigDict):
 def get_wgs_config(config: ml_collections.ConfigDict):
   """Config parameters for wgs training."""
 
-  # Exome Dataset
+  # WGS Dataset
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
@@ -66,25 +66,26 @@ def get_wgs_config(config: ml_collections.ConfigDict):
 
   config.best_checkpoint_metric = 'tune/f1_weighted'
   config.batch_size = 16384
-  config.num_epochs = 20
-  config.optimizer = 'adam'
+  config.num_epochs = 10
+  config.optimizer = 'sgd'
   config.beta_1 = 0.9651804083266324
   config.beta_2 = 0.9665259112630292
-  config.weight_decay = 0.00004
+  config.weight_decay = 0.0001
   config.adaptive_epsilon = True
   config.optimizer_weight_decay = 0.0
 
   config.early_stopping_patience = 100
-  config.learning_rate = 0.0000796142074327502
+  config.learning_rate = 0.01
   config.learning_rate_num_epochs_per_decay = 2.25
   config.learning_rate_decay_rate = 0.9999
   config.warmup_steps = 0
 
+  config.label_smoothing = 0.01
   config.backbone_dropout_rate = 0.2
 
   # Exponential Moving Average
   config.use_ema = True
-  config.ema_momentum = 0.991463134331829
+  config.ema_momentum = 0.99
 
 
 def get_exome_config(config: ml_collections.ConfigDict):
@@ -343,7 +344,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.warmup_steps = 10_000
   config.init_checkpoint = ''
   config.init_backbone_with_imagenet = False
-  config.best_metrics = 'tune/f1_weighted'
+  config.best_checkpoint_metric = 'tune/f1_weighted'
   config.weight_decay = 0.00004
   config.backbone_dropout_rate = 0.2
   # Stop training when this many consecutive evaluations yield no improvement.
@@ -358,6 +359,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # TensorBoard Options
   config.log_every_steps = 1_280
   # Tuning happens at every epoch. The frequency can be increased here.
+  # Use 0 to disable.
   config.tune_every_steps = 12_800
 
   # Data Pipeline Options
