@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -76,7 +77,7 @@ PYBIND11_MODULE(allelecounter, m) {
            [](AlleleCounter* self,
               ::nucleus::ConstProtoPtr<const ::nucleus::genomics::v1::Read>
                   wrapped,
-              const string& sample) {
+              absl::string_view sample) {
              int read_shift;
              std::unique_ptr<std::vector<nucleus::genomics::v1::CigarUnit>>
                  cpp_result =

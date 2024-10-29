@@ -29,6 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
@@ -88,7 +89,7 @@ PYBIND11_MODULE(pileup_image_native, m) {
           [](PileupImageEncoderNative* self,
              const nucleus::ConstProtoPtr<const DeepVariantCall>&
                  wrapped_dv_call,
-             const string& ref_bases,
+             absl::string_view ref_bases,
              const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>&
                  wrapped_read,
              int image_start_pos, const std::vector<std::string>& alt_alleles) {
