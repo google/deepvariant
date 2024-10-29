@@ -1,5 +1,13 @@
 # Runtime and accuracy metrics for Pangenome-aware DeepVariant
 
+## How to reproduce the metrics on this page
+
+We report runtime with a n1-highmem-96 machine, and we ran with
+`--num_shards 50` to avoid OOM.
+
+This is NOT the fastest or cheapest configuration. We plan to improve the high
+memory usage in the future.
+
 ## WGS (Illumina)
 
 BAM: We used the VG Giraffe mapped BAM file. You can find it in:
@@ -12,21 +20,24 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 280m30.78s
-call_variants                    | 513m36.12s
-postprocess_variants (with gVCF) | 43m0.96s
-vcf_stats_report (optional)      | 9m40.03s
-total                            | 863m32.85s (14h23m32.85s)
+make_examples                    | 170m2.87s
+call_variants                    | 522m44.28s
+postprocess_variants (with gVCF) | 10m20.44s
+vcf_stats_report (optional)      | 9m4.78s
+total                            | 721m14.42s (12h1m14.42s)
 
 ### Accuracy
 
 hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
 held out while training.
 
+TODO: Update this table after retraining with pangenome=GBZ. Note that
+these numbers are not a correct base for future comparison.
+
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502516   | 1985     | 1315     | 0.996065      | 0.997496         | 0.99678         |
-| SNP   | 3320314  | 7182     | 3580     | 0.997842      | 0.998924         | 0.998382        |
+| INDEL | 501918   | 2583     | 1757     | 0.99488       | 0.996652         | 0.995765        |
+| SNP   | 3318596  | 8900     | 8158     | 0.997325      | 0.997549         | 0.997437        |
 
 ## WES (Illumina)
 
@@ -49,12 +60,4 @@ hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
 held out while training.
 
 TODO
-
-## How to reproduce the metrics on this page
-
-For simplicity and consistency, we report runtime with a
-[CPU instance with 64 CPUs](deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform)
-This is NOT the fastest or cheapest configuration.
-
-[CPU instance with 64 CPUs]: deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform
 
