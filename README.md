@@ -18,6 +18,7 @@ DeepVariant supports germline variant-calling in diploid organisms.
     RNA-seq.
 *   PacBio HiFi data, see the
     [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
+*   [PacBio Iso-Seq/MAS-Seq Case Study](docs/deepvariant-masseq-case-study.md).
 *   Oxford Nanopore R10.4.1 Simplex or Duplex data, see the
     [ONT R10.4.1 Simplex case study](docs/deepvariant-ont-r104-simplex-case-study.md)
     and
