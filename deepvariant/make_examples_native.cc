@@ -51,6 +51,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/tfrecord_writer.h"
 #include "third_party/nucleus/protos/range.pb.h"
@@ -319,7 +320,7 @@ void UpdateStats(enum EncodedVariantType variant_type,
 }
 
 std::string EncodeAltAlleles(const Variant& variant,
-                             const std::vector<std::string>& alt_combination,
+                             absl::Span<const std::string> alt_combination,
                              absl::flat_hash_set<int>* alt_indices_set) {
   absl::flat_hash_map<std::string, int> alt_indices;
   int i = 0;
@@ -357,8 +358,8 @@ std::string EncodeVariant(const Variant& variant, const VariantLabel* label) {
 }  // namespace
 
 std::string ExamplesGenerator::EncodeExample(
-    const std::vector<std::unique_ptr<ImageRow>>& image,
-    const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
+    absl::Span<const std::unique_ptr<ImageRow>> image,
+    absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_image,
     const Variant& variant, const std::vector<std::string>& alt_combination,
     std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
     const std::unique_ptr<VariantLabel>& label) const {

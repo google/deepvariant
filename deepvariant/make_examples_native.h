@@ -44,6 +44,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/tfrecord_writer.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -200,8 +201,8 @@ class ExamplesGenerator {
 
   // Encodes a variant into a pileup example.
   std::string EncodeExample(
-      const std::vector<std::unique_ptr<ImageRow>>& image,
-      const std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_image,
+      absl::Span<const std::unique_ptr<ImageRow>> image,
+      absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_image,
       const nucleus::genomics::v1::Variant& variant,
       const std::vector<std::string>& alt_combination,
       std::unordered_map<std::string, int>& stats,
