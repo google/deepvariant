@@ -19,6 +19,9 @@
 *   [Runtime and accuracy metrics for all DeepVariant models](metrics.md)
 *   [Best practices for multi-sample variant calling](trio-merge-case-study.md)
 *   [Using graph genomes: VG Giraffe + DeepVariant case study](deepvariant-vg-case-study.md)
+*   Pangenome-aware DeepVariant WGS:
+    [Mapped with BWA](pangenome-aware-wgs-bwa-case-study.md),
+    [Mapped with VG](pangenome-aware-wgs-vg-case-study.md)
 
 ## Visualization and analysis
 
