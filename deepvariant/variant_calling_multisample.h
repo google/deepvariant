@@ -201,7 +201,7 @@ class VariantCaller {
   // Adds supporting reads to the DeepVariantCall.
   void AddSupportingReads(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-      const AlleleMap& allele_map, const std::string& target_sample,
+      const AlleleMap& allele_map, absl::string_view target_sample,
       DeepVariantCall* call) const;
 
   // Adds allele counts in window around the position of the DeepVariantCall.

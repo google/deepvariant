@@ -614,7 +614,7 @@ AlleleMap::const_iterator FindAllele(const Allele& allele,
 
 void VariantCaller::AddSupportingReads(
     const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    const AlleleMap& allele_map, const std::string& target_sample,
+    const AlleleMap& allele_map, absl::string_view target_sample,
     DeepVariantCall* call) const {
   // Iterate over each read in the allele_count, and add its name to the
   // supporting reads of for the Variant allele it supports.
