@@ -49,6 +49,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -84,7 +85,7 @@ std::vector<T> AsVector(const google::protobuf::RepeatedPtrField<T>& container) 
 
 // Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
 // "GQ" key of info with a numerical value of gq, if provided) to variant.
-void AddGenotypes(const string& sample_name, const std::vector<int>& genotypes,
+void AddGenotypes(const string& sample_name, absl::Span<const int> genotypes,
                   Variant* variant) {
   CHECK(variant != nullptr);
 
@@ -97,7 +98,7 @@ void AddGenotypes(const string& sample_name, const std::vector<int>& genotypes,
 
 void FillVariant(const string& reference_name, int variant_start,
                  const string& ref_bases, const string& sample_name,
-                 const std::vector<std::string>& alternate_bases,
+                 absl::Span<const std::string> alternate_bases,
                  Variant* variant) {
   variant->set_reference_name(reference_name);
   variant->set_start(variant_start);
@@ -111,7 +112,7 @@ void FillVariant(const string& reference_name, int variant_start,
 }
 
 void MakeVariantConsistentWithRefAndAlts(const string& refbases,
-                                         const std::vector<Allele>& alt_alleles,
+                                         absl::Span<const Allele> alt_alleles,
                                          Variant* variant_to_fix) {
   if (variant_to_fix->reference_bases() == refbases) {
     // No fix needed if the reference bases are identical.
@@ -171,7 +172,7 @@ int DeletionSize(const Allele& allele) {
 // use those bases as our reference.  And if there are multiple deletions
 // at a site, we need to use the longest deletion allele.
 string CalcRefBases(const string& ref_bases,
-                    const std::vector<Allele>& alt_alleles) {
+                    absl::Span<const Allele> alt_alleles) {
   if (alt_alleles.empty()) {
     // We don't have any alternate alleles, so used the provided ref_bases.
     return ref_bases;
@@ -261,7 +262,7 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
 }
 
 AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
-                         const std::vector<Allele>& alt_alleles,
+                         absl::Span<const Allele> alt_alleles,
                          const string& ref_bases) {
   AlleleMap allele_map;
 
@@ -490,7 +491,7 @@ std::vector<int> VariantCaller::CallPositionsFromVcf(
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(
     const std::vector<AlleleCount>& allele_counts,
-    const std::vector<Variant>& variants_in_region) const {
+    absl::Span<const Variant> variants_in_region) const {
   std::vector<DeepVariantCall> calls;
   // For each variant in the region, loop through AlleleCounts to find a match
   // to the variant position. At each match, add the supporting reads.

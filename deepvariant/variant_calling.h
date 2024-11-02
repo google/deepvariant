@@ -42,6 +42,7 @@
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
@@ -179,7 +180,7 @@ class VariantCaller {
 
   std::vector<DeepVariantCall> CallsFromVariantsInRegion(
       const std::vector<AlleleCount>& allele_counts,
-      const std::vector<nucleus::genomics::v1::Variant>& variants_in_region)
+      absl::Span<const nucleus::genomics::v1::Variant> variants_in_region)
       const;
 
   // Primary interface function for calling variants.
