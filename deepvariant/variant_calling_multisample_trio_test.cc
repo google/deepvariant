@@ -136,7 +136,7 @@ VariantCallerOptions MakeOptions(
 }
 
 Variant MakeExpectedVariant(const std::string& ref,
-                            const std::vector<std::string>& alts,
+                            absl::Span<const std::string> alts,
                             const int64_t start = kStart) {
   Variant variant;
   variant.set_reference_name(kChr);
