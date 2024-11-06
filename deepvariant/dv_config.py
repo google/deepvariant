@@ -185,6 +185,19 @@ def get_hybrid_config(config: ml_collections.ConfigDict):
   config.ema_momentum = 0.991463134331829
 
 
+# ====================================#
+# Pangenome-aware DeepVariant Configs #
+# ====================================#
+
+
+def get_pangenome_wgs_config(config: ml_collections.ConfigDict):
+  """Config parameters for pangenome-aware wgs training."""
+  get_wgs_config(config)
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  # If set to 0, use full validation dataset.
+
+
 # =====================#
 # DeepSomatic Configs #
 # =====================#
@@ -384,6 +397,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_ont_config(config)
   elif config_name == 'hybrid':
     get_hybrid_config(config)
+  elif config_name == 'pangenome_wgs':
+    get_pangenome_wgs_config(config)
   elif config_name == 'deepsomatic_wgs':
     get_deepsomatic_wgs_config(config)
   elif config_name == 'deepsomatic_wgs_tumor_only':
