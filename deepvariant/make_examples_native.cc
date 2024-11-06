@@ -146,12 +146,6 @@ ExamplesGenerator::ExamplesGenerator(
   } else {
     // Initialize TFRecord writers for each sample.
     // TFRecord writers are not used if examples are streamed.
-    int samples_that_need_writers = 0;
-    for (auto& [role, sample] : samples_) {
-      if (!sample.sample_options.skip_output_generation()) {
-        samples_that_need_writers++;
-      }
-    }
     for (auto& [role, sample] : samples_) {
       if (sample.sample_options.skip_output_generation()) {
         continue;
