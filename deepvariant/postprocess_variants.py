@@ -36,8 +36,6 @@ import tempfile
 import time
 from typing import Iterable, Iterator, Sequence
 
-
-
 from absl import flags
 from absl import logging
 import numpy as np

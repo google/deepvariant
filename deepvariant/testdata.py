@@ -30,8 +30,6 @@
 
 import os
 
-
-
 from third_party.nucleus.testing import test_utils as nucleus_test_utils
 
 DEEPVARIANT_DATADIR = ''

@@ -30,8 +30,6 @@
 
 import enum
 
-
-
 from deepvariant import dv_utils
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.util import ranges

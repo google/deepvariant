@@ -28,8 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Encodes reference and read data into a PileupImage for DeepVariant."""
 
-
-
 from deepvariant import dv_constants
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.protos import reads_pb2

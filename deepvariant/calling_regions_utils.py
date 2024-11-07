@@ -30,8 +30,6 @@
 
 from typing import Optional, Sequence, Union
 
-
-
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.util import ranges

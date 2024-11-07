@@ -29,8 +29,6 @@
 """Tests for learning.genomics.deepvariant.data_provider."""
 
 
-
-
 from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf

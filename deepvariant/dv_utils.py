@@ -35,8 +35,6 @@ file includes broader utilities we use in DeepVariant.
 import json
 from typing import Optional, Tuple
 
-
-
 from absl import logging
 import numpy as np
 import tensorflow as tf

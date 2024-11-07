@@ -35,8 +35,6 @@ training and evaluating germline calling accuracy.
 import itertools
 from typing import Callable, Dict, Tuple, Union
 
-
-
 import ml_collections
 import tensorflow as tf
 

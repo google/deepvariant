@@ -33,8 +33,6 @@ import os
 import time
 from typing import Any, Sequence
 
-
-
 from absl import flags
 from absl import logging
 import numpy as np

@@ -28,8 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant .exclude_contigs."""
 
-
-
 from absl.testing import absltest
 
 from deepvariant import exclude_contigs

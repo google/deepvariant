@@ -38,8 +38,6 @@ import shutil
 import sys
 from unittest import mock
 
-
-
 from absl import flags
 from absl import logging
 from absl.testing import absltest

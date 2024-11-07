@@ -29,8 +29,6 @@
 """Tests for deepvariant .haplotypes."""
 
 import types
-
-
 from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver

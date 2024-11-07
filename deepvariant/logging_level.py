@@ -37,7 +37,6 @@ There's no flag to override that.
 """
 
 import logging
-
 from absl import flags
 
 flags.DEFINE_string(
