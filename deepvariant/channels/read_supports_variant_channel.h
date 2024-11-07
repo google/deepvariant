@@ -38,6 +38,7 @@
 
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -64,7 +65,7 @@ class ReadSupportsVariantChannel : public Channel {
   // aren't considering?
   // Public for testing
   int ReadSupportsAlt(const DeepVariantCall& dv_call, const Read& read,
-                      const std::vector<std::string>& alt_alleles);
+                      absl::Span<const std::string> alt_alleles);
   // Public for testing
   int SupportsAltColor(int read_supports_alt) const;
 };

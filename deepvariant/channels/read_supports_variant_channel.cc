@@ -38,6 +38,7 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 namespace learning {
 namespace genomics {
 namespace deepvariant {
@@ -61,7 +62,7 @@ void ReadSupportsVariantChannel::FillRefData(
 // aren't considering?
 int ReadSupportsVariantChannel::ReadSupportsAlt(
     const DeepVariantCall& dv_call, const Read& read,
-    const std::vector<std::string>& alt_alleles) {
+    absl::Span<const std::string> alt_alleles) {
   std::string key =
       (read.fragment_name() + "/" + std::to_string(read.read_number()));
 
