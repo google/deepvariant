@@ -261,7 +261,7 @@ class FastPassAligner {
   // cigars.
   // This function is an entry point for FastPassAligner.
   std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> AlignReads(
-      const std::vector<nucleus::genomics::v1::Read>& reads_param);
+      absl::Span<const nucleus::genomics::v1::Read> reads_param);
 
   // Build K-mer index for all reads.
   void BuildIndex();

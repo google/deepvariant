@@ -131,8 +131,7 @@ void FastPassAligner::CalculateSswAlignmentScoreThreshold() {
 // could not be realigned with a high enough score.
 std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>
 FastPassAligner::AlignReads(
-    const std::vector<nucleus::genomics::v1::Read>& reads_param) {
-
+    absl::Span<const nucleus::genomics::v1::Read> reads_param) {
   // Copy reads
   for (const auto& read : reads_param) {
     reads_.push_back(absl::AsciiStrToUpper(read.aligned_sequence()));
