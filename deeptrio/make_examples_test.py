@@ -329,7 +329,8 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
               compression_type='GZIP',
           )
       )
-      # Despite its name, assertCountEqual checks that all items are equal.
+
+
       self.assertCountEqual(gvcfs, expected_gvcfs)
 
     if (

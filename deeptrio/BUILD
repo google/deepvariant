@@ -94,6 +94,8 @@ py_test(
         "//deepvariant:make_examples_core",
         "//deepvariant/labeler:variant_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
+        # BEGIN_INTERNAL
+        "//net/proto2/contrib/pyutil:compare",
         "//third_party/nucleus/io:fasta",
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tfrecord",
