@@ -28,8 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant .run_deepsomatic."""
 
-
-
 from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver

@@ -28,8 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for VariantCalling CLIF python wrappers."""
 
-
-
 from absl.testing import absltest
 
 from third_party.nucleus.io import fasta

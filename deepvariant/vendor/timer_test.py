@@ -28,8 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant .vendor.timer."""
 
-
-
 from absl.testing import absltest
 
 from deepvariant.vendor import timer
