@@ -29,8 +29,6 @@
 """Tests for deepvariant .variant_labeler."""
 
 import collections
-
-
 from absl.testing import absltest
 from absl.testing import parameterized
 

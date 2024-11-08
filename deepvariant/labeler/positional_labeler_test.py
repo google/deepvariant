@@ -28,8 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for deepvariant .variant_labeler."""
 
-
-
 from absl.testing import absltest
 from absl.testing import parameterized
 

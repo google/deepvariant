@@ -30,8 +30,6 @@
 
 import abc
 
-
-
 from absl import logging
 
 from deepvariant import dv_utils

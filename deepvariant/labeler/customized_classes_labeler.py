@@ -28,8 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """variant_labeler for DeepVariant."""
 
-
-
 from deepvariant.labeler import positional_labeler
 from deepvariant.labeler import variant_labeler
 from third_party.nucleus.util import struct_utils

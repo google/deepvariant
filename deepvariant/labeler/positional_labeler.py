@@ -28,8 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """variant_labeler for DeepVariant."""
 
-
-
 from absl import logging
 
 from third_party.nucleus.protos import variants_pb2
