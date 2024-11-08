@@ -39,6 +39,7 @@ Flags:
 --docker_build (true|false)  Whether to build docker image. (default: false)
 --dry_run (true|false)  If true, print out the main commands instead of running. (default: false)
 --use_gpu (true|false)   Whether to use GPU when running case study. Make sure to specify vm_zone that is equipped with GPUs. (default: false)
+--shm_size Size of the shared memory in GB.
 --docker_source Where to pull the Docker image from. Default: google/deepvariant.
 --bin_version Version of DeepVariant model to use
 --customized_model Path to checkpoint directory containing model checkpoint.
@@ -76,6 +77,7 @@ BUILD_DOCKER=false
 DRY_RUN=false
 DISABLE_SMALL_MODEL=false
 USE_GPU=false
+SHM_SIZE=""
 SAVE_INTERMEDIATE_RESULTS=false
 SKIP_HAPPY=false
 # Strings; sorted alphabetically.
@@ -131,6 +133,11 @@ while (( "$#" )); do
         echo "$USAGE" >&2
         exit 1
       fi
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --shm_size)
+      SHM_SIZE="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -605,6 +612,9 @@ function get_docker_image() {
       python3 -c 'import tensorflow as tf; \
       tf.test.is_gpu_available() or exit(1)' \
       2> /dev/null || exit 1"
+  fi
+  if [[ ! -z "${SHM_SIZE}" ]]; then
+    docker_args+=( --shm-size "${SHM_SIZE}")
   fi
 }
 
