@@ -694,7 +694,10 @@ function setup_args() {
   fi
   if [[ "${DISABLE_SMALL_MODEL}" = true ]]; then
     echo "Disabling small model"
-    extra_args+=( --disable_small_model "true")
+    extra_args+=( --disable_small_model )
+  else
+    echo "Enabling small model"
+    extra_args+=( --nodisable_small_model )
   fi
   # If you're running an older version (before 1.2) that doesn't have this flag,
   # you'll need to comment out this line.
