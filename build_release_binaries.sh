@@ -168,6 +168,7 @@ bazel build  -c opt \
 # TODO: Replace this hand-made list with a find command.
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/train"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/call_variants"
+fix_zip_file "bazel-out/k8-opt/bin/deepvariant/load_gbz_into_shared_memory"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples_pangenome_aware_dv"
 fix_zip_file "bazel-out/k8-opt/bin/deepvariant/make_examples_somatic"

@@ -169,6 +169,27 @@ _REF_CHROM_PREFIX = flags.DEFINE_string(
     ),
 )
 
+_USE_LOADED_GBZ_SHARED_MEMORY = flags.DEFINE_bool(
+    'use_loaded_gbz_shared_memory',
+    False,
+    (
+        'If enabled, the sequences of the gbz file are already loaded into'
+        'shared memory using load_gbz_into_shared_memory.py and the SamReader'
+        'reads the sequences from the shared memory.'
+    ),
+)
+
+_GBZ_SHARED_MEMORY_NAME = flags.DEFINE_string(
+    'gbz_shared_memory_name',
+    'GBZ_SHARED_MEMORY',
+    (
+        'Name of the shared memory segment that contains the sequences of the'
+        'gbz format. If --use_loaded_gbz_shared_memory is enabled, this flag '
+        'must be set based on the name of the shared memory created by'
+        'load_gbz_into_shared_memory.py'
+    ),
+)
+
 # Change any flag defaults that differ for Pangenome-aware DeepVariant.
 # I'm setting this to float('inf') because we don't want to include any
 # candidates from the non-target (i.e., pangenome) sample.
@@ -294,6 +315,12 @@ def default_options(add_flags=True, flags_obj=None):
     options.ref_name_pangenome = flags_obj.ref_name_pangenome
   if flags_obj.ref_chrom_prefix:
     options.ref_chrom_prefix = flags_obj.ref_chrom_prefix
+  if flags_obj.use_loaded_gbz_shared_memory:
+    options.use_loaded_gbz_shared_memory = (
+        flags_obj.use_loaded_gbz_shared_memory
+    )
+  if flags_obj.gbz_shared_memory_name:
+    options.gbz_shared_memory_name = flags_obj.gbz_shared_memory_name
 
   if add_flags:
     options.bam_fname = f'{os.path.basename(flags_obj.reads)}|{os.path.basename(flags_obj.pangenome)}'

@@ -386,6 +386,35 @@ def _set_small_model_config(
     )
 
 
+def load_gbz_into_shared_memory_command(
+    gbz,
+    gbz_shared_memory_name,
+    gbz_shared_memory_size_gb,
+) -> Tuple[str, Optional[str]]:
+  """Returns a load_gbz_into_shared_memory (command, logfile) for subprocess.
+
+  Args:
+    gbz: Input pangenome GBZ file(s).
+    gbz_shared_memory_name: Name of the shared memory region to create.
+    gbz_shared_memory_size_gb: Size of the shared memory region to create.
+
+  Returns:
+    (string, string) A command to run, and a log file to output to.
+  """
+  command = ['time', '/opt/deepvariant/bin/load_gbz_into_shared_memory']
+  command.extend(['--pangenome_gbz', '"{}"'.format(gbz)])
+  command.extend(
+      ['--shared_memory_name', '"{}"'.format(gbz_shared_memory_name)]
+  )
+  command.extend(['--shared_memory_size_gb', str(gbz_shared_memory_size_gb)])
+  command.extend(['--num_shards', '"{}"'.format(_NUM_SHARDS.value)])
+
+  logfile = None
+  if _LOGGING_DIR.value:
+    logfile = '{}/load_gbz_into_shared_memory.log'.format(_LOGGING_DIR.value)
+  return (' '.join(command), logfile)
+
+
 def make_examples_pangenome_aware_dv_command(
     ref: str,
     reads: str,
@@ -690,6 +719,15 @@ def create_all_commands_and_logfiles(
   else:
     runtime_by_region_path = None
 
+  # Load pangenome GBZ into shared memory.
+  if _PANGENOME.value is not None and _PANGENOME.value.endswith('.gbz'):
+    commands.append(
+        load_gbz_into_shared_memory_command(
+            gbz=_PANGENOME.value,
+            gbz_shared_memory_name='GBZ_SHARED_MEMORY',
+            gbz_shared_memory_size_gb=10,
+        )
+    )
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
   commands.append(
       make_examples_pangenome_aware_dv_command(

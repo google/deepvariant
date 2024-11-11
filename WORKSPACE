@@ -43,10 +43,10 @@ http_archive(
 http_archive(
     name = "gbwt",
     build_file = "//:third_party/gbwt.BUILD",
-    sha256 = "eb90732969ba646702c7490e00859ec99bb9d5fa5e017bdfd5ddd13dc0c4ddc6",
-    strip_prefix = "gbwt-420f0f494a4cc4b258335d29bf43c58d59cfcd2e",
+    sha256 = "81eb0a9dc05100195f5dce7b537732d9c0e7896b118a6dd01e5fe1ac63b5deca",
+    strip_prefix = "gbwt-dbd5ba7c34687184ab46dd9df884f0223fdf1e18",
     urls = [
-        "https://github.com/mobinasri/gbwt/archive/420f0f494a4cc4b258335d29bf43c58d59cfcd2e.zip",
+        "https://github.com/mobinasri/gbwt/archive/dbd5ba7c34687184ab46dd9df884f0223fdf1e18.zip",
     ],
 )
 
@@ -73,10 +73,10 @@ http_archive(
 http_archive(
     name = "gbwtgraph",
     build_file = "//:third_party/gbwtgraph.BUILD",
-    sha256 = "74ce1e0958c094717bbcf9e0c8d820ccc13b20b2c7824f2cca0045c764554748",
-    strip_prefix = "gbwtgraph-98661b0253a298838d645e71f65bdb9ddedfd408",
+    sha256 = "40c41c34b152a1eea6991e1acfdad8875e0c738e24cd36ca22dab5187c99a910",
+    strip_prefix = "gbwtgraph-c96ca88b65fc40ac4bd371319a29111015d38904",
     urls = [
-        "https://github.com/mobinasri/gbwtgraph/archive/98661b0253a298838d645e71f65bdb9ddedfd408.zip",
+        "https://github.com/mobinasri/gbwtgraph/archive/c96ca88b65fc40ac4bd371319a29111015d38904.zip",
     ],
 )
 
@@ -115,9 +115,9 @@ http_archive(
 # That BUILD file must be kept in sync with the version of protobuf used.
 http_archive(
     name = "com_google_protobuf",
+    build_file = "//:third_party/protobuf.BUILD",
     patch_args = ["-p1"],
     patches = ["//:third_party/protobuf.patch"],
-    build_file = "//:third_party/protobuf.BUILD",
     sha256 = "cfcba2df10feec52a84208693937c17a4b5df7775e1635c1e3baffc487b24c9b",
     # This protobuf release is based on protobuf 3.9.2.
     strip_prefix = "protobuf-3.9.2",
@@ -136,7 +136,6 @@ http_archive(
         "https://github.com/google/glog/archive/028d37889a1e80e8a07da1b8945ac706259e5fd8.tar.gz",
     ],
 )
-
 
 # bazel_skylib is now a required dependency of protobuf_archive.
 http_archive(

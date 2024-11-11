@@ -926,6 +926,14 @@ message MakeExamplesOptions {
   string ref_chrom_prefix = 80;
 
   bool output_phase_info = 81;
+
+  // If true, the sequences of the gbz file is already loaded into shared
+  // memory and the SamReader reads the sequences from the shared memory.
+  bool use_loaded_gbz_shared_memory = 83;
+
+  // The name of the shared memory segment that contains the sequences of the
+  // gbz file.
+  string gbz_shared_memory_name = 84;
 }
 
 // Config describe information needed for a dataset that can be used for

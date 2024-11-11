@@ -36,6 +36,7 @@
 #include <vector>
 #include <string>
 
+#include "include/gbwt/utils.h"
 #include "include/gbwtgraph/gbz.h"
 #include "include/gbwtgraph/subgraph.h"
 #include "third_party/nucleus/core/statusor.h"
@@ -43,6 +44,11 @@
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
+
+#include "boost/interprocess/managed_shared_memory.hpp"  // NOLINT
+#include "boost/interprocess/shared_memory_object.hpp"  // NOLINT
+#include "boost/interprocess/sync/named_mutex.hpp"  // NOLINT
+
 
 namespace nucleus {
 
@@ -68,12 +74,19 @@ class GbzReader : public Reader {
   GbzReader(const std::string& gbz_path,
             const std::string& sample_name,
             int context,
-            const std::string& chrom_prefix);
+            const std::string& chrom_prefix = "",
+            const std::string& shared_memory_name = "GBZ_SHARED_MEMORY",
+            bool create_shared_memory = true,
+            int shared_memory_size_gb = 10,
+            int num_processes = 0);
+
+  ~GbzReader(){this->close_shared_memory();}
 
   nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> Query(
       const nucleus::genomics::v1::Range& range);
 
   nucleus::StatusOr<std::shared_ptr<SamIterable>> Iterate() const;
+
 
  private:
   // The filename of the GBZ file.
@@ -81,7 +94,7 @@ class GbzReader : public Reader {
   // The sample name of the sample for query.
   std::string sample_name_;
   // The GBZ object.
-  gbwtgraph::GBZ gbz_;
+  std::unique_ptr<gbwtgraph::GBZ<gbwt::SharedMemCharAllocatorType>> gbz_;
   // The PathIndex  object.
   std::unique_ptr<gbwtgraph::PathIndex> path_index_;
   // context size
@@ -89,14 +102,32 @@ class GbzReader : public Reader {
   // chrom prefix
   std::string chrom_prefix_;
 
+  // shared memory
+  boost::interprocess::managed_shared_memory* shared_memory_;
+  // shared memory name
+  std::string shared_memory_name_;
+  // shared memory size
+  int shared_memory_size_gb_;
+  // shared memory status
+  bool create_shared_memory_;
+  // number of processes that will use shared memory excluding the one that
+  // created it.
+  // it is used to make sure that the shared memory is not deleted before all
+  // processes are done using it.
+  int num_processes_;
+
+  void create_or_open_shared_memory();
+  void close_shared_memory();
+
   std::vector<nucleus::genomics::v1::Read> reads_cache_;
   int cache_start_pos_ = 0;
   int cache_end_pos_ = 0;
 
   void updateCache(const std::vector<nucleus::genomics::v1::Read>& reads);
 
+  template <typename CharAllocatorType>
   static std::string GetBases(const gbwt::vector_type& path,
-                              const gbwtgraph::GBZ& gbz);
+                              const gbwtgraph::GBZ<CharAllocatorType>& gbz);
   static std::string GetReverseComplement(const std::string& sequence);
   static nucleus::genomics::v1::Read MakeRead(
       const std::string& chr, const int start, const std::string& bases,
@@ -104,9 +135,11 @@ class GbzReader : public Reader {
       const std::string& read_name);
   static genomics::v1::CigarUnit_Operation ParseCigarOpStr(const char op);
   static std::vector<std::string> GetCigarElements(const std::string& input);
+
+  template <typename CharAllocatorType>
   static std::vector<nucleus::genomics::v1::Read> GetReadsFromSubgraph(
       const gbwtgraph::Subgraph& subgraph,
-      const gbwtgraph::GBZ& gbz,
+      const gbwtgraph::GBZ<CharAllocatorType>& gbz,
       const std::string& chrom_prefix);
 };
 

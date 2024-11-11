@@ -262,9 +262,22 @@ class SamReader(genomics_reader.DispatchingGenomicsReader):
                      ref_name='',
                      context=1000,
                      chrom_prefix='',
+                     shared_memory_name='GBZ_SHARED_MEMORY',
+                     create_shared_memory=True,
+                     shared_memory_size_gb=10,
+                     num_processes=0,
                      **kwargs):
     if input_path.endswith('.gbz'):
-      return gbz_reader.GbzReader(input_path, ref_name, context, chrom_prefix)
+      print('gbzReader python')
+      return gbz_reader.GbzReader(input_path,
+                                  ref_name,
+                                  context,
+                                  chrom_prefix,
+                                  shared_memory_name,
+                                  create_shared_memory,
+                                  shared_memory_size_gb,
+                                  num_processes)
+
     return NativeSamReader(input_path, **kwargs)
 
   def _record_proto(self):

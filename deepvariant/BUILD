@@ -12,6 +12,7 @@ filegroup(
     name = "binaries",
     srcs = [
         "call_variants",
+        "load_gbz_into_shared_memory",
         "make_examples",
         "make_examples_pangenome_aware_dv",
         "make_examples_somatic",
@@ -709,6 +710,24 @@ py_binary(
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
+    ],
+)
+
+py_binary(
+    name = "load_gbz_into_shared_memory",
+    srcs = [
+        "load_gbz_into_shared_memory.py",
+    ],
+    main = "load_gbz_into_shared_memory.py",
+    python_version = "PY3",
+    deps = [
+        ":logging_level",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io/python:gbz_reader",
+        "//third_party/nucleus/io/python:hts_verbose",
+        "//third_party/nucleus/util:errors",
+        "@absl_py//absl:app",
+        "@absl_py//absl/flags",
     ],
 )
 

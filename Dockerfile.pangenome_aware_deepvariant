@@ -65,6 +65,7 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/postproces
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/vcf_stats_report.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examples.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/runtime_by_region_vis.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/load_gbz_into_shared_memory.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_pangenome_aware_deepvariant.py .
 RUN ./run-prereq.sh
 
@@ -100,6 +101,10 @@ RUN \
     /opt/deepvariant/bin/runtime_by_region_vis && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
+    'python3 /opt/deepvariant/bin/load_gbz_into_shared_memory.zip "$@"' > \
+    /opt/deepvariant/bin/load_gbz_into_shared_memory && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
     'python3 -u /opt/deepvariant/bin/run_pangenome_aware_deepvariant.py "$@"' > \
     /opt/deepvariant/bin/run_pangenome_aware_deepvariant && \
   chmod +x /opt/deepvariant/bin/make_examples_pangenome_aware_dv \
@@ -108,6 +113,7 @@ RUN \
     /opt/deepvariant/bin/vcf_stats_report \
     /opt/deepvariant/bin/show_examples \
     /opt/deepvariant/bin/runtime_by_region_vis \
+    /opt/deepvariant/bin/load_gbz_into_shared_memory \
     /opt/deepvariant/bin/run_pangenome_aware_deepvariant
 
 # Copy models.
