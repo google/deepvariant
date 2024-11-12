@@ -613,6 +613,13 @@ function get_docker_image() {
       tf.test.is_gpu_available() or exit(1)' \
       2> /dev/null || exit 1"
   fi
+  # Set a default value of 12gb for shared memory size when we're running
+  # pangenome-aware-deepvariant with gbz pangenome.
+  if [[ "${MAIN_BINARY_NAME}" = "run_pangenome_aware_deepvariant" ]] && \
+     [[ -z "${SHM_SIZE}" ]] && \
+     [[ "${PANGENOME}" == *.gbz ]]; then
+     docker_args+=( --shm-size 12gb)
+  fi
   if [[ ! -z "${SHM_SIZE}" ]]; then
     docker_args+=( --shm-size "${SHM_SIZE}")
   fi

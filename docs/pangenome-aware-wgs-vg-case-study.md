@@ -89,6 +89,7 @@ sudo docker run \
   -v "${PWD}/input":"/input" \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
+  --shm-size 12gb \
   ${DOCKER} \
   /opt/deepvariant/bin/run_pangenome_aware_deepvariant \
   --model_type WGS \

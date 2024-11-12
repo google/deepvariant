@@ -490,7 +490,14 @@ def make_examples_pangenome_aware_dv_command(
   _set_small_model_config(
       special_args, model_type, _CUSTOMIZED_SMALL_MODEL.value
   )
+  # By default, use pangenome GBZ that's already into shared memory
+  # load_gbz_into_shared_memory should be run
+  # before make_examples_pangenome_aware_dv to have the GBZ loaded into shared
+  # memory.
+  if pangenome is not None and pangenome.endswith('.gbz'):
+    special_args['use_loaded_gbz_shared_memory'] = True
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
+
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
