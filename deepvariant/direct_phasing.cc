@@ -62,7 +62,6 @@ namespace deepvariant {
 
 const int kMinRefAlleleDepth = 3;
 const int kMinAllelesToPhase = 2;
-const float kMinEdgeWeight = 2.0;
 constexpr absl::string_view kRef = "REF";
 const int kNumOfPhases = 2;
 
@@ -672,13 +671,6 @@ void DirectPhasing::Build(
   // Also, investigate if it helps the algorithm.
   //  Prune();
   RebuildIndexMap();
-}
-
-void DirectPhasing::Prune() {
-  // Remove low-weight edges.
-  boost::remove_edge_if(
-      [this](const Edge& e) { return graph_[e].weight < kMinEdgeWeight; },
-      graph_);
 }
 
 void DirectPhasing::RebuildIndexMap() {

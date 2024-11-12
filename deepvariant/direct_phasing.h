@@ -203,9 +203,6 @@ class DirectPhasing {
       const std::vector<
           nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
 
-  void Build(const std::vector<DeepVariantCall>& candidates,
-             const std::vector<nucleus::genomics::v1::Read>& reads);
-
   // Add nodes to the graph for each allele of the candidate. Fill auxiliary
   // data structures.
   void AddCandidate(const DeepVariantCall& candidate);
@@ -228,8 +225,6 @@ class DirectPhasing {
   // starting and ending vertices.
   Edge AddEdge(const Vertex& in_vertex, bool is_low_quality_in,
                const Vertex& out_vertex, bool is_low_quality_out);
-
-  void Prune();
 
   void RebuildIndexMap();
 
@@ -281,8 +276,6 @@ class DirectPhasing {
 
  private:
   BoostGraph graph_;
-  Vertex source_;
-  Vertex sink_;
   RawVertexIndexMap vertex_index_map_;  // This is needed for GraphViz.
   absl::flat_hash_set<int> hom_positions_;
 
@@ -312,13 +305,7 @@ class DirectPhasing {
   // Unit test helper functions.
   struct ReadFields {
     std::string read_name;
-    ReadIndex read_index;
   };
-  void PopulateReadsTest(const std::vector<ReadFields>& reads) {
-    for (const auto& read : reads) {
-      read_to_index_.insert(std::pair(read.read_name, read.read_index));
-    }
-  }
 
   FRIEND_TEST(DirectPhasingTest, ReadSupportFromProtoSimple);
   FRIEND_TEST(DirectPhasingTest, ReadSupportFromProtoLQReads);
