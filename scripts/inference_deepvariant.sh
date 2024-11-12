@@ -75,7 +75,7 @@ Note: All paths to dataset must be of the form "gs://..."
 # Booleans; sorted alphabetically.
 BUILD_DOCKER=false
 DRY_RUN=false
-DISABLE_SMALL_MODEL=false
+DISABLE_SMALL_MODEL=""
 USE_GPU=false
 SHM_SIZE=""
 SAVE_INTERMEDIATE_RESULTS=false
@@ -268,8 +268,8 @@ while (( "$#" )); do
       ;;
     --disable_small_model)
       DISABLE_SMALL_MODEL="$2"
-      if [[ ${DISABLE_SMALL_MODEL} != "true" ]] && [[ ${DISABLE_SMALL_MODEL} != "false" ]]; then
-        echo "Error: --disable_small_model needs to have value (true|false)." >&2
+      if [[ -n "${DISABLE_SMALL_MODEL}" ]] && [[ ${DISABLE_SMALL_MODEL} != "true" ]] && [[ ${DISABLE_SMALL_MODEL} != "false" ]]; then
+        echo "Error: --disable_small_model needs to have value (true|false), or empty." >&2
         echo "$USAGE" >&2
         exit 1
       fi
@@ -699,12 +699,14 @@ function setup_args() {
       happy_args+=( -l "${REGIONS}")
     fi
   fi
-  if [[ "${DISABLE_SMALL_MODEL}" = true ]]; then
-    echo "Disabling small model"
-    extra_args+=( --disable_small_model )
-  else
-    echo "Enabling small model"
-    extra_args+=( --nodisable_small_model )
+  if [[ -n "${DISABLE_SMALL_MODEL}" ]]; then
+    if [[ "${DISABLE_SMALL_MODEL}" = true ]]; then
+      echo "Disabling small model"
+      extra_args+=( --disable_small_model )
+    else
+      echo "Enabling small model"
+      extra_args+=( --nodisable_small_model )
+    fi
   fi
   # If you're running an older version (before 1.2) that doesn't have this flag,
   # you'll need to comment out this line.
