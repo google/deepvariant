@@ -304,7 +304,7 @@ void AddGenotypes(const std::string& sample_name,
 
 AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
                          absl::Span<const Allele> alt_alleles,
-                         const std::string& ref_bases) {
+                         absl::string_view ref_bases) {
   AlleleMap allele_map;
 
   // Compute the alt alleles, recording the mapping from each Allele to its
