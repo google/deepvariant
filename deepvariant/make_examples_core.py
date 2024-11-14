@@ -488,7 +488,7 @@ def common_contigs(
 
     def is_common(contig1: reference_pb2.ContigInfo) -> bool:
       contig2 = map2.get(contig1.name, None)
-      return contig2 and contig1.n_bases == contig2.n_bases
+      return contig2 and contig1.n_bases == contig2.n_bases  # pytype: disable=bad-return-type
 
     return [c for c in contigs1 if is_common(c)]
 
