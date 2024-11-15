@@ -49,6 +49,8 @@ from deepvariant import dv_utils
 from deepvariant import keras_modeling
 from official.modeling import optimization
 
+_CHECKPOINT_OPTIONS = tf.train.CheckpointOptions(enable_async=True)
+
 _LEADER = flags.DEFINE_string(
     'leader',
     'local',
@@ -380,10 +382,9 @@ def train(config: ml_collections.ConfigDict):
           example_info_json_path,
           local_example_info_json,
       )
-    checkpoint_options = tf.train.CheckpointOptions(enable_async=True)
     tf.train.Checkpoint(
         model,
-    ).save(path, options=checkpoint_options)
+    ).save(path, options=_CHECKPOINT_OPTIONS)
 
   # ============== #
   # Setup Datasets #
@@ -513,7 +514,7 @@ def train(config: ml_collections.ConfigDict):
         ):
           logging.info('Performing initial evaluation of warmstart model.')
           run_tune(train_step, epoch, steps_per_tune)
-          state.best_checkpoint_value = get_checkpoint_metric()
+          state.best_checkpoint_value.assign(get_checkpoint_metric())
           logging.info(
               'Warmstart checkpoint best checkpoint metric: %s=%s',
               config.best_checkpoint_metric,
@@ -593,26 +594,16 @@ def train(config: ml_collections.ConfigDict):
             or is_last_step
         ):
 
-          # ckpt_manager saves checkpoints without ema averaging.
-          checkpoint_options = tf.train.CheckpointOptions(enable_async=True)
-          ckpt_manager.save(train_step, options=checkpoint_options)
-
           if config.use_ema:
             ema_model.set_weights(model.get_weights())
             finalize_vars(ema_model.trainable_weights, optimizer)
-            run_tune(train_step, epoch, steps_per_tune)
-            save_checkpoint(
-                os.path.join(
-                    ema_checkpoint_path,
-                    f'checkpoint-{train_step}-{get_checkpoint_metric():.5f}',
-                ),
-                ema_model,
-            )
-          else:
-            run_tune(train_step, epoch, steps_per_tune)
 
+          run_tune(train_step, epoch, steps_per_tune)
+
+          logging.info('Checking checkpoint val')
           if get_checkpoint_metric() > state.best_checkpoint_value:
-            state.best_checkpoint_value = get_checkpoint_metric()
+            logging.info('setting best checkpoint value')
+            state.best_checkpoint_value.assign(get_checkpoint_metric())
             # Reset early stopping counter
             state.early_stopping.assign(0)
             logging.info(
@@ -620,7 +611,19 @@ def train(config: ml_collections.ConfigDict):
                 train_step,
                 epoch,
             )
-          else:
+
+          # Save checkpoint after best_checkpoint_value established.
+          ckpt_manager.save(train_step, options=_CHECKPOINT_OPTIONS)
+          if config.use_ema:
+            save_checkpoint(
+                os.path.join(
+                    ema_checkpoint_path,
+                    f'checkpoint-{train_step}-{get_checkpoint_metric():.5f}',
+                ),
+                ema_model,
+            )
+
+          if get_checkpoint_metric() <= state.best_checkpoint_value:
             if (
                 config.early_stopping_patience
                 and state.early_stopping.value()
@@ -633,7 +636,7 @@ def train(config: ml_collections.ConfigDict):
                 config.best_checkpoint_metric,
                 get_checkpoint_metric(),
                 config.best_checkpoint_metric,
-                state.best_checkpoint_value,
+                state.best_checkpoint_value.numpy(),
             )
             state.early_stopping.assign_add(1)
           if config.early_stopping_patience:

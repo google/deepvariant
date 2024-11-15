@@ -411,13 +411,25 @@ def create_state(
   with strategy.scope():
     # TODO: Load model and optimizer within this function.
     global_step = tf.Variable(
-        0, trainable=False, name='global_step', dtype=tf.int64
+        0,
+        trainable=False,
+        name='global_step',
+        dtype=tf.int64,
+        aggregation=tf.VariableAggregation.ONLY_FIRST_REPLICA,
     )
     early_stopping = tf.Variable(
-        0, trainable=False, name='early_stopping', dtype=tf.int64
+        0,
+        trainable=False,
+        name='early_stopping',
+        dtype=tf.int64,
+        aggregation=tf.VariableAggregation.ONLY_FIRST_REPLICA,
     )
     best_checkpoint_value = tf.Variable(
-        0, trainable=False, name='best_checkpoint_value', dtype=tf.float64
+        0.0,
+        trainable=False,
+        name='best_checkpoint_value',
+        dtype=tf.float32,
+        aggregation=tf.VariableAggregation.ONLY_FIRST_REPLICA,
     )
 
     state = tf.train.Checkpoint(
@@ -438,11 +450,11 @@ def create_state(
     if ckpt_manager.latest_checkpoint:
       ckpt_manager.restore_or_initialize()
       logging.info(
-          'Restored checkpoint %s at step=%s. %s=%s',
+          'Restored checkpoint %s at step=%s. Best %s=%s',
           os.path.basename(ckpt_manager.latest_checkpoint),
-          global_step.numpy(),
+          state.global_step.numpy(),
           config.best_checkpoint_metric,
-          state.best_checkpoint_value,
+          state.best_checkpoint_value.numpy(),
       )
     else:
       logging.info('Initialized Checkpoint')
