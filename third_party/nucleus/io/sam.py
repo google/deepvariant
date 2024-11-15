@@ -264,7 +264,7 @@ class SamReader(genomics_reader.DispatchingGenomicsReader):
                      chrom_prefix='',
                      shared_memory_name='GBZ_SHARED_MEMORY',
                      create_shared_memory=True,
-                     shared_memory_size_gb=10,
+                     shared_memory_size_gb=12,
                      num_processes=0,
                      **kwargs):
     if input_path.endswith('.gbz'):

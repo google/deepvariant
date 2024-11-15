@@ -70,10 +70,8 @@ _SHARED_MEMORY_NAME = flags.DEFINE_string(
 
 _SHARED_MEMORY_SIZE_GB = flags.DEFINE_integer(
     'shared_memory_size_gb',
-    10,
-    (
-        'Size of the shared memory in GB.'
-    ),
+    12,
+    'Size of the shared memory in GB.',
 )
 
 

@@ -77,7 +77,7 @@ class GbzReader : public Reader {
             const std::string& chrom_prefix = "",
             const std::string& shared_memory_name = "GBZ_SHARED_MEMORY",
             bool create_shared_memory = true,
-            int shared_memory_size_gb = 10,
+            int shared_memory_size_gb = 12,
             int num_processes = 0);
 
   ~GbzReader(){this->close_shared_memory();}

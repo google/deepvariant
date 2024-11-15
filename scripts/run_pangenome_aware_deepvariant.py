@@ -732,7 +732,8 @@ def create_all_commands_and_logfiles(
         load_gbz_into_shared_memory_command(
             gbz=_PANGENOME.value,
             gbz_shared_memory_name='GBZ_SHARED_MEMORY',
-            gbz_shared_memory_size_gb=10,
+            # TODO: This might need to be a flag later on.
+            gbz_shared_memory_size_gb=12,
         )
     )
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
