@@ -43,10 +43,10 @@ http_archive(
 http_archive(
     name = "gbwt",
     build_file = "//:third_party/gbwt.BUILD",
-    sha256 = "81eb0a9dc05100195f5dce7b537732d9c0e7896b118a6dd01e5fe1ac63b5deca",
-    strip_prefix = "gbwt-dbd5ba7c34687184ab46dd9df884f0223fdf1e18",
+    sha256 = "21d3679349ef9809a886da50f0a2036eba0c172b97826a7882322f81649397e2",
+    strip_prefix = "gbwt-0b3aacbea6f7d285a3c5fbd0a22b4aa2ac8957d6",
     urls = [
-        "https://github.com/mobinasri/gbwt/archive/dbd5ba7c34687184ab46dd9df884f0223fdf1e18.zip",
+        "https://github.com/mobinasri/gbwt/archive/0b3aacbea6f7d285a3c5fbd0a22b4aa2ac8957d6.zip",
     ],
 )
 
@@ -63,10 +63,10 @@ http_archive(
 http_archive(
     name = "sdsl_lite",
     build_file = "//:third_party/sdsl_lite.BUILD",
-    sha256 = "4d240a073f81c3b5b8f3eaf0fa25af7d6609ca68afd1ca3f354d3a2d58dd73c0",
-    strip_prefix = "sdsl_lite-d51299437e7a25a5f8349098716295b0b7ca34cc",
+    sha256 = "24c454fae9f2b4e5d20ce7df9817027e1315bef2eca519e0f123a0b970b757d2",
+    strip_prefix = "sdsl_lite-4cb63b65854983bec395d799aaff342bd0cc376f",
     urls = [
-        "https://github.com/mobinasri/sdsl_lite/archive/d51299437e7a25a5f8349098716295b0b7ca34cc.zip",
+        "https://github.com/mobinasri/sdsl_lite/archive/4cb63b65854983bec395d799aaff342bd0cc376f.zip",
     ],
 )
 
