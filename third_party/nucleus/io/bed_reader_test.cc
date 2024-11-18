@@ -40,6 +40,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
@@ -47,9 +48,11 @@
 namespace nucleus {
 
 using std::vector;
+using ::nucleus::genomics::v1::Range;
 
 using ::testing::Pointwise;
 
+constexpr char kBedTabixFilename[] = "test.bed.gz";
 constexpr char kBedFilename[] = "test_regions.bed";
 constexpr char kGzippedBedFilename[] = "test_regions.bed.gz";
 constexpr char kMalformedBedFilename[] = "malformed.bed";
@@ -86,10 +89,18 @@ class BedReaderTest : public ::testing::Test {
     second.set_block_starts("100,160");
 
     golden_ = {first, second};
+
+    nucleus::genomics::v1::BedRecord third;
+    third.set_reference_name("chr2");
+    third.set_start(20);
+    third.set_end(30);
+    tabix_query_ = {third};
   }
 
   vector<nucleus::genomics::v1::BedRecord> golden_;
+  vector<nucleus::genomics::v1::BedRecord> tabix_query_;
 };
+
 
 TEST_F(BedReaderTest, NormalIterationWorks) {
   std::unique_ptr<BedReader> reader =
@@ -107,6 +118,18 @@ TEST_F(BedReaderTest, GzippedIterationWorks) {
 
   EXPECT_THAT(as_vector(reader->Iterate()), Pointwise(EqualsProto(), golden_));
 }
+
+TEST_F(BedReaderTest, TabixQueryWorks) {
+  auto opts = nucleus::genomics::v1::BedReaderOptions();
+  std::unique_ptr<BedReader> reader = std::move(
+      BedReader::FromFile(GetTestData(kBedTabixFilename), opts).ValueOrDie());
+  Range range;
+  range.set_reference_name("chr2");
+  range.set_start(19);
+  range.set_end(31);
+  EXPECT_THAT(as_vector(reader->Query(range)), Pointwise(EqualsProto(), tabix_query_));
+}
+
 
 TEST_F(BedReaderTest, FieldRestrictionWorks) {
   auto opts = nucleus::genomics::v1::BedReaderOptions();

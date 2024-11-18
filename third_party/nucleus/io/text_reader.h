@@ -62,6 +62,10 @@ class TextReader {
   //  - otherwise, an appropriate error Status.
   StatusOr<string> ReadLine();
 
+  htsFile * GetHtsFile() const {
+    return hts_file_;
+  }
+
   // Explicitly closes the underlying file stream.
   ::nucleus::Status Close();
 

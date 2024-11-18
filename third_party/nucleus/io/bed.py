@@ -102,15 +102,12 @@ class NativeBedReader(genomics_reader.GenomicsReader):
     bed_path = input_path.encode('utf8')
     options = bed_pb2.BedReaderOptions(num_fields=num_fields)
     self._reader = bed_reader.BedReader.from_file(bed_path, options)
+    self.has_index = self._reader.has_index
     self.header = self._reader.header
 
-  def query(self):
-    """Returns an iterator for going through the records in the region.
-
-    NOTE: This function is not currently implemented by NativeBedReader though
-    it could be implemented for sorted, tabix-indexed BED files.
-    """
-    raise NotImplementedError('Can not currently query a BED file')
+  def query(self, region):
+    """Returns an iterator for going through the records in the region."""
+    return self._reader.query(region)
 
   def iterate(self):
     """Returns an iterable of BedRecord protos in the file."""
@@ -128,6 +125,11 @@ class BedReader(genomics_reader.DispatchingGenomicsReader):
 
   def _record_proto(self):
     return bed_pb2.BedRecord
+
+  def has_index(self):
+    if hasattr(self, '_reader'):
+      return self._reader.has_index()
+    return False
 
 
 class NativeBedWriter(genomics_writer.GenomicsWriter):
@@ -149,8 +151,9 @@ class NativeBedWriter(genomics_writer.GenomicsWriter):
     if header is None:
       header = bed_pb2.BedHeader(num_fields=3)
     writer_options = bed_pb2.BedWriterOptions()
-    self._writer = bed_writer.BedWriter.to_file(output_path, header,
-                                                writer_options)
+    self._writer = bed_writer.BedWriter.to_file(
+        output_path, header, writer_options
+    )
 
   def write(self, proto):
     self._writer.write(proto)

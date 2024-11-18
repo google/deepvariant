@@ -29,24 +29,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+
 // Implementation of bed_reader.h
 #include "third_party/nucleus/io/bed_reader.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
+
+#include "absl/strings/str_cat.h"
+#include "htslib/hts.h"
+#include "htslib/tbx.h"
+#include "htslib/kstring.h"
 
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/util/utils.h"
+#include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/core/statusor.h"
+#include "third_party/nucleus/protos/range.pb.h"
+
+namespace {
+  bool FileTypeIsIndexable(htsFormat format) {
+    return format.format == bed && format.compression == bgzf;
+  }
+}
 
 namespace nucleus {
+
+using nucleus::genomics::v1::Range;
 
 // BED-specific attributes.
 constexpr char BED_COMMENT_PREFIX[] = "#";
@@ -56,6 +75,26 @@ constexpr char BED_COMMENT_PREFIX[] = "#";
 // Reader for BED format data.
 //
 // -----------------------------------------------------------------------------
+
+// Iterable class for traversing BED records found in a query window.
+class BedQueryIterable : public BedIterable {
+ public:
+  // Advance to the next record.
+  StatusOr<bool> Next(nucleus::genomics::v1::BedRecord* out) override;
+
+  // Constructor will be invoked via BedReader::Query.
+  BedQueryIterable(const BedReader* reader, htsFile* fp,
+                   tbx_t* idx, hts_itr_t* iter);
+
+  ~BedQueryIterable() override;
+
+ private:
+  htsFile* fp_;
+  tbx_t* idx_;
+  hts_itr_t* iter_;
+  kstring_t str_;
+};
+
 
 namespace {
 
@@ -177,29 +216,79 @@ StatusOr<std::unique_ptr<BedReader>> BedReader::FromFile(
   StatusOr<std::unique_ptr<TextReader>> status_or =
       TextReader::FromFile(bed_path);
   NUCLEUS_RETURN_IF_ERROR(status_or.status());
+
+  // Try to load the Tabix index if requested.
+  tbx_t* idx = nullptr;
+  htsFile* fp = status_or.ValueOrDie()->GetHtsFile();
+  if (FileTypeIsIndexable(fp->format)) {
+    idx = tbx_index_load(fp->fn);
+    // idx may be null; only an error if we try to Query later.
+  }
+
   return std::unique_ptr<BedReader>(
-      new BedReader(std::move(status_or.ValueOrDie()), options, header));
+      new BedReader(std::move(status_or.ValueOrDie()), options, header, idx));
 }
 
-BedReader::BedReader(std::unique_ptr<TextReader> text_reader,
+BedReader::BedReader(std::unique_ptr<TextReader> bed_reader,
                      const nucleus::genomics::v1::BedReaderOptions& options,
-                     const nucleus::genomics::v1::BedHeader& header)
+                     const nucleus::genomics::v1::BedHeader& header,
+                     tbx_t* idx)
     : options_(options),
       header_(header),
-      text_reader_(std::move(text_reader)) {}
+      bed_reader_(std::move(bed_reader)),
+      idx_(idx){}
 
 BedReader::~BedReader() {
-  if (text_reader_) {
+  if (bed_reader_) {
     NUCLEUS_CHECK_OK(Close());
   }
 }
 
+StatusOr<std::shared_ptr<BedIterable>> BedReader::Query(
+    const Range& region) {
+  fp_ = bed_reader_->GetHtsFile();
+  if (fp_ == nullptr)
+    return ::nucleus::FailedPrecondition("Cannot Query a closed BedReader.");
+  if (!HasIndex()) {
+    return ::nucleus::FailedPrecondition("Cannot query without an index");
+  }
+
+  const char* reference_name = region.reference_name().c_str();
+  if (region.start() < 0 || region.start() >= region.end())
+    return ::nucleus::InvalidArgument(
+        absl::StrCat("Malformed region '", region.ShortDebugString(), "'"));
+
+  // Get the tid (index of reference_name in our tabix index),
+  const int tid = tbx_name2id(idx_, reference_name);
+  hts_itr_t* iter = nullptr;
+  if (tid >= 0) {
+    // Note that query is 0-based inclusive on start and exclusive on end,
+    // matching exactly the logic of our Range.
+    iter = tbx_itr_queryi(idx_, tid, region.start(), region.end());
+    if (iter == nullptr) {
+      return ::nucleus::NotFound(
+          absl::StrCat("region '", region.ShortDebugString(),
+                       "' returned an invalid hts_itr_queryi result"));
+    }
+  }  // implicit else case:
+  // The chromosome isn't reflected in the tabix index (meaning, no
+  // variant records) => return an *empty* iterable by leaving iter empty.
+  return StatusOr<std::shared_ptr<BedQueryIterable>>(
+      MakeIterable<BedQueryIterable>(this, fp_, idx_, iter));
+}
+
+
 ::nucleus::Status BedReader::Close() {
-  if (!text_reader_) {
+  if (!bed_reader_) {
     return ::nucleus::FailedPrecondition("BedReader already closed");
   }
-  ::nucleus::Status status = text_reader_->Close();
-  text_reader_ = nullptr;
+  ::nucleus::Status status = bed_reader_->Close();
+  bed_reader_ = nullptr;
+  if (HasIndex()) {
+    tbx_destroy(idx_);
+    idx_ = nullptr;
+  }
+  // Note: TextReader::Close() closes fp_ (htsFile).
   return status;
 }
 
@@ -213,20 +302,53 @@ BedReader::~BedReader() {
 }
 
 StatusOr<std::shared_ptr<BedIterable>> BedReader::Iterate() const {
-  if (!text_reader_)
+  if (!bed_reader_)
     return ::nucleus::FailedPrecondition("Cannot Iterate a closed BedReader.");
   return StatusOr<std::shared_ptr<BedIterable>>(
       MakeIterable<BedFullFileIterable>(this));
 }
 
 // Iterable class definitions.
+StatusOr<bool> BedQueryIterable::Next(nucleus::genomics::v1::BedRecord* out) {
+  NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
+  const BedReader* bed_reader = static_cast<const BedReader*>(reader_);
+  int numTokens;
+  if ( tbx_itr_next(fp_, idx_, iter_, &str_) < 0) {
+    this->Release();
+    return false;
+  }
+  NUCLEUS_RETURN_IF_ERROR(
+      ConvertToPb(std::string(str_.s), bed_reader->Options().num_fields(),
+                  &numTokens, out));
+  NUCLEUS_RETURN_IF_ERROR(bed_reader->Validate(numTokens));
+  return true;
+}
+
+
+BedQueryIterable::~BedQueryIterable() {
+  hts_itr_destroy(iter_);
+  if (str_.s != nullptr) {
+    free(str_.s);
+  }
+}
+
+BedQueryIterable::BedQueryIterable(const BedReader* reader,
+                                   htsFile* fp,
+                                   tbx_t* idx,
+                                   hts_itr_t* iter)
+    : Iterable(reader),
+      fp_(fp),
+      idx_(idx),
+      iter_(iter),
+      str_({0, 0, nullptr}) {}
+
 StatusOr<bool> BedFullFileIterable::Next(
     nucleus::genomics::v1::BedRecord* out) {
   NUCLEUS_RETURN_IF_ERROR(CheckIsAlive());
   const BedReader* bed_reader = static_cast<const BedReader*>(reader_);
   string line;
   ::nucleus::Status status =
-      NextNonCommentLine(*bed_reader->text_reader_, &line);
+      NextNonCommentLine(*bed_reader->bed_reader_, &line);
   if (::nucleus::IsOutOfRange(status)) {
     return false;
   } else if (!status.ok()) {

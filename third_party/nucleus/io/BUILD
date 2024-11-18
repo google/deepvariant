@@ -412,14 +412,17 @@ cc_library(
     srcs = ["bed_reader.cc"],
     hdrs = ["bed_reader.h"],
     deps = [
+        ":hts_path",
         ":reader_base",
         ":text_reader",
         "//third_party/nucleus/core:status",
         "//third_party/nucleus/core:statusor",
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/protos:bed_cc_pb2",
+        "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_absl//absl/strings",
+        "@htslib",
     ],
 )
 
@@ -430,6 +433,7 @@ cc_test(
     data = ["//third_party/nucleus/testdata"],
     deps = [
         ":bed_reader",
+        "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",

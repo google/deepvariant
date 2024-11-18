@@ -38,6 +38,7 @@ from absl.testing import parameterized
 from third_party.nucleus.io import clif_postproc
 from third_party.nucleus.io.python import bed_reader
 from third_party.nucleus.protos import bed_pb2
+from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.testing import test_utils
 
 
@@ -45,6 +46,7 @@ class BedReaderTest(parameterized.TestCase):
 
   def setUp(self):
     self.bed = test_utils.genomics_core_testdata('test_regions.bed')
+    self.bed_tabix = test_utils.genomics_core_testdata('test.bed.gz')
     self.zipped_bed = test_utils.genomics_core_testdata('test_regions.bed.gz')
     self.options = bed_pb2.BedReaderOptions()
     self.first = bed_pb2.BedRecord(
@@ -59,7 +61,13 @@ class BedReaderTest(parameterized.TestCase):
         item_rgb='255,124,1',
         block_count=3,
         block_sizes='2,6,2',
-        block_starts='10,12,18')
+        block_starts='10,12,18',
+    )
+    self.query_record = bed_pb2.BedRecord(
+        reference_name='chr2',
+        start=20,
+        end=30,
+    )
 
   def test_bed_iterate(self):
     with bed_reader.BedReader.from_file(self.bed, self.options) as reader:
@@ -70,8 +78,9 @@ class BedReaderTest(parameterized.TestCase):
       self.assertLen(actual, 2)
       self.assertEqual(actual[0], self.first)
 
-    zreader = bed_reader.BedReader.from_file(self.zipped_bed,
-                                             bed_pb2.BedReaderOptions())
+    zreader = bed_reader.BedReader.from_file(
+        self.zipped_bed, bed_pb2.BedReaderOptions()
+    )
     self.assertEqual(zreader.header.num_fields, 12)
     with zreader:
       ziterable = zreader.iterate()
@@ -79,6 +88,17 @@ class BedReaderTest(parameterized.TestCase):
       zactual = list(ziterable)
       self.assertLen(zactual, 2)
       self.assertEqual(zactual[0], self.first)
+
+  def test_bed_query_range_pb2(self):
+    with bed_reader.BedReader.from_file(self.bed_tabix, self.options) as reader:
+      r = range_pb2.Range()
+      r.reference_name = 'chr2'
+      r.start = 19
+      r.end = 31
+      query = reader.query(r)
+      line = next(query)
+      self.assertEqual(line, self.query_record)
+      self.assertIsInstance(query, clif_postproc.WrappedCppIterable)
 
   def test_from_file_raises_with_missing_bed(self):
     # TODO: OpError exception not propagated.

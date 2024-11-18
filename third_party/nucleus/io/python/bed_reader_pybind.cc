@@ -40,6 +40,7 @@
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/io/bed_reader.h"
+#include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
 #include "pybind11_protobuf/native_proto_caster.h"
 
@@ -60,6 +61,16 @@ PYBIND11_MODULE(bed_reader, m) {
                  "third_party.nucleus.io.clif_postproc");
              return postproc.attr("WrappedBedIterable")(ret0);
            })
+      .def("query",
+          [](BedReader& self, nucleus::genomics::v1::Range range) {
+            auto cpp_result = self.Query(range);
+            auto ret0 = py::cast(std::move(cpp_result));
+            auto postproc = py::module_::import(
+                "third_party.nucleus.io.clif_postproc");
+            return postproc.attr("WrappedBedIterable")(ret0);
+          },
+          py::arg("region"))
+      .def("has_index", &BedReader::HasIndex)
       .def("__enter__", [](py::object self) { return self; })
       .def("__exit__", [](BedReader& self, py::args) { return self.Close(); })
       .def_property_readonly("header", &BedReader::Header);
@@ -67,5 +78,5 @@ PYBIND11_MODULE(bed_reader, m) {
       .def("PythonNext", &BedIterable::PythonNext, py::arg("bed"))
       .def("Release", &BedIterable::Release)
       .def("__enter__", [](py::object self) { return self; })
-      .def("__exit__", &BedIterable::PythonExit);
+      .def("__exit__", [](BedIterable& self, py::args) { return self.PythonExit(); });
 }

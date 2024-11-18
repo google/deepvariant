@@ -32,8 +32,13 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_BED_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_BED_READER_H_
 
+
 #include <memory>
 #include <string>
+
+
+#include "htslib/hts.h"
+#include "htslib/tbx.h"
 
 #include "third_party/nucleus/io/reader_base.h"
 #include "third_party/nucleus/io/text_reader.h"
@@ -41,8 +46,12 @@
 #include "third_party/nucleus/protos/bed.pb.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/core/status.h"
+#include "third_party/nucleus/protos/range.pb.h"
+
 
 namespace nucleus {
+
+using nucleus::genomics::v1::Range;
 
 
 // Alias for the abstract base class for BED record iterables.
@@ -87,6 +96,16 @@ class BedReader : public Reader {
   // constructed, or not OK otherwise.
   StatusOr<std::shared_ptr<BedIterable>> Iterate() const;
 
+  // Gets a subset of the BED records in this file.
+  //
+  // Operates similar to Iterate(), but allows for querying of specific regions.
+  // If range isn't a valid interval in this BED file a non-OK status value will
+  // be returned.
+  StatusOr<std::shared_ptr<BedIterable>> Query(const Range& region);
+
+  // Returns True if this BedReader loaded an index file.
+  bool HasIndex() const { return idx_ != nullptr; }
+
   // Close the underlying resource descriptors. Returns a Status to indicate if
   // everything went OK with the close.
   ::nucleus::Status Close();
@@ -111,7 +130,8 @@ class BedReader : public Reader {
   // file.
   BedReader(std::unique_ptr<TextReader> text_reader,
             const nucleus::genomics::v1::BedReaderOptions& options,
-            const nucleus::genomics::v1::BedHeader& header);
+            const nucleus::genomics::v1::BedHeader& header,
+            tbx_t* idx);
 
   // Our options that control the behavior of this class.
   const nucleus::genomics::v1::BedReaderOptions options_;
@@ -120,7 +140,14 @@ class BedReader : public Reader {
   const nucleus::genomics::v1::BedHeader header_;
 
   // A pointer to a raw TextReader object.
-  std::unique_ptr<TextReader> text_reader_;
+  std::unique_ptr<TextReader> bed_reader_;
+
+  // A pointer to the htslib file used to access the Bedfile data.
+  htsFile* fp_;
+
+  // The htslib tbx_t data structure for tabix indexed files. May be NULL if no
+  // index was loaded.
+  tbx_t* idx_;
 
   // Allow BedIterable objects to access fp_.
   friend class BedFullFileIterable;
