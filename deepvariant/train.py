@@ -600,9 +600,11 @@ def train(config: ml_collections.ConfigDict):
 
           run_tune(train_step, epoch, steps_per_tune)
 
-          logging.info('Checking checkpoint val')
           if get_checkpoint_metric() > state.best_checkpoint_value:
-            logging.info('setting best checkpoint value')
+            logging.info(
+                'Setting best_checkpoint_value to %s',
+                get_checkpoint_metric(),
+            )
             state.best_checkpoint_value.assign(get_checkpoint_metric())
             # Reset early stopping counter
             state.early_stopping.assign(0)
