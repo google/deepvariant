@@ -57,6 +57,7 @@ PYBIND11_MODULE(gbz_reader, m) {
                     std::string,
                     std::string,
                     bool,
+                    bool,
                     int,
                     int>())
       .def("query", &GbzReader::Query, py::arg("region"));

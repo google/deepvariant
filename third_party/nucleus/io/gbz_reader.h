@@ -76,7 +76,8 @@ class GbzReader : public Reader {
             int context,
             const std::string& chrom_prefix = "",
             const std::string& shared_memory_name = "GBZ_SHARED_MEMORY",
-            bool create_shared_memory = true,
+            bool create_shared_memory = false,
+            bool use_loaded_shared_memory = false,
             int shared_memory_size_gb = 12,
             int num_processes = 0);
 
@@ -93,8 +94,19 @@ class GbzReader : public Reader {
   std::string gbz_filename_;
   // The sample name of the sample for query.
   std::string sample_name_;
-  // The GBZ object.
-  std::unique_ptr<gbwtgraph::GBZ<gbwt::SharedMemCharAllocatorType>> gbz_;
+
+  // Below are the pointers to the GBZ objects in shared memory and in process
+  // memory. Only one of them will be used at a time.
+  // when shared memory is used, gbz_shared_mem_ will be used.
+  // when shared memory is not used, gbz_ will be used.
+  // (TODO mobinasri: maybe use template class later to keep only one pointer)
+  // Pinter to the GBZ object in shared memory.
+  std::unique_ptr<gbwtgraph::GBZ<gbwt::SharedMemCharAllocatorType>>
+      gbz_shared_mem_;
+  // Pinter to the GBZ object in process memory.
+  std::unique_ptr<gbwtgraph::GBZ<std::allocator<char>>>
+      gbz_;
+
   // The PathIndex  object.
   std::unique_ptr<gbwtgraph::PathIndex> path_index_;
   // context size
@@ -108,8 +120,10 @@ class GbzReader : public Reader {
   std::string shared_memory_name_;
   // shared memory size
   int shared_memory_size_gb_;
-  // shared memory status
+  // If True, create shared memory
   bool create_shared_memory_;
+  // If True, use shared memory that is created by other process
+  bool use_loaded_shared_memory_;
   // number of processes that will use shared memory excluding the one that
   // created it.
   // it is used to make sure that the shared memory is not deleted before all

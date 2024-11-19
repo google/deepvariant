@@ -140,6 +140,7 @@ GbzReader::GbzReader(const std::string& gbz_path,
                      const std::string& chrom_prefix,
                      const std::string& shared_memory_name,
                      bool create_shared_memory,
+                     bool use_loaded_shared_memory,
                      int shared_memory_size_gb,
                      int num_processes)
     : sample_name_(sample_name),
@@ -148,6 +149,7 @@ GbzReader::GbzReader(const std::string& gbz_path,
       shared_memory_name_(shared_memory_name),
       shared_memory_size_gb_(shared_memory_size_gb),
       create_shared_memory_(create_shared_memory),
+      use_loaded_shared_memory_(use_loaded_shared_memory),
       num_processes_(num_processes){
   double start = gbwt::readTimer();
 
@@ -155,20 +157,34 @@ GbzReader::GbzReader(const std::string& gbz_path,
   std::ifstream in(gbz_path);
 
   this->shared_memory_ = nullptr;
-  // open shared memory
-  this->create_or_open_shared_memory();
-  // Create an empty GBZ object.
-  this->gbz_ =
-      std::make_unique<gbwtgraph::GBZ<gbwt::SharedMemCharAllocatorType>>(
-          this->shared_memory_
-      );
-  // Load the GBZ file into the GBZ object.
-  gbz_->simple_sds_load(in);
-  // Create a PathIndex object.
-  this->path_index_ = std::make_unique<gbwtgraph::PathIndex>(*this->gbz_);
+  bool shared_memory_is_used = (this->create_shared_memory_ ||
+                                this->use_loaded_shared_memory_);
 
-  if (shared_memory_ == nullptr){
-    LOG(FATAL) << "shared memory is NOT opened/created!\n";
+  // check if we are using shared memory or not
+  if (shared_memory_is_used){
+    // Create/Open a shared memory segment.
+    this->create_or_open_shared_memory();
+    // Create/Load a GBZ object in shared memory.
+    this->gbz_shared_mem_ =
+        std::make_unique<gbwtgraph::GBZ<gbwt::SharedMemCharAllocatorType>>(
+            this->shared_memory_
+        );
+    // Load the GBZ file into the GBZ object.
+    this->gbz_shared_mem_->simple_sds_load(in);
+  } else {
+    // Create a GBZ object in process memory.
+    this->gbz_ = std::make_unique<gbwtgraph::GBZ<std::allocator<char>>>();
+    // Load the GBZ file into the GBZ object.
+    this->gbz_->simple_sds_load(in);
+  }
+
+  // Create a PathIndex object.
+  this->path_index_ = shared_memory_is_used ?
+      std::make_unique<gbwtgraph::PathIndex>(*this->gbz_shared_mem_) :
+      std::make_unique<gbwtgraph::PathIndex>(*this->gbz_);
+
+  if (shared_memory_ == nullptr && shared_memory_is_used){
+    LOG(FATAL) << "shared memory could NOT be opened/created!\n";
   }
 
   if (this->create_shared_memory_ && this->shared_memory_ != nullptr){
@@ -204,9 +220,11 @@ nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
         end_pos <= std::max(cache_end_pos_ - 300, 0)) {
       return reads_cache_;
     }
-
-
-    const gbwt::Metadata& metadata = gbz_->index.metadata;
+    bool shared_memory_is_used = (this->use_loaded_shared_memory_
+                                || this->create_shared_memory_);
+    const gbwt::Metadata& metadata =
+        shared_memory_is_used ? gbz_shared_mem_->index.metadata :
+                                gbz_->index.metadata;
 
     // remove the prefix from the contig name
     std::string contig_name_without_prefix =
@@ -229,6 +247,8 @@ nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
           sample_name_));
     }
     handlegraph::path_handle_t path =
+        shared_memory_is_used ?
+        gbz_shared_mem_->graph.path_to_handle(path_ids.front()):
         gbz_->graph.path_to_handle(path_ids.front());
 
     gbwtgraph::SubgraphQuery query = gbwtgraph::SubgraphQuery::path_interval(
@@ -236,11 +256,14 @@ nucleus::StatusOr<std::vector<nucleus::genomics::v1::Read>> GbzReader::Query(
         gbwtgraph::SubgraphQuery::HaplotypeOutput::all_haplotypes);
 
 
-    gbwtgraph::Subgraph subgraph(*gbz_, path_index_.get(), query);
-
-    const std::vector<nucleus::genomics::v1::Read>& reads =
-        GetReadsFromSubgraph(subgraph, *gbz_, chrom_prefix_);
-
+    std::vector<nucleus::genomics::v1::Read> reads;
+    if (shared_memory_is_used){
+      gbwtgraph::Subgraph subgraph(*gbz_shared_mem_, path_index_.get(), query);
+      reads = GetReadsFromSubgraph(subgraph, *gbz_shared_mem_, chrom_prefix_);
+    }else{
+      gbwtgraph::Subgraph subgraph(*gbz_, path_index_.get(), query);
+      reads = GetReadsFromSubgraph(subgraph, *gbz_, chrom_prefix_);
+    }
 
     updateCache(reads);
 

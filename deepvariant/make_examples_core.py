@@ -1477,7 +1477,8 @@ class RegionProcessor:
                 context=self.options.allele_counter_options.partition_size,
                 chrom_prefix=self.options.ref_chrom_prefix,
                 shared_memory_name=self.options.gbz_shared_memory_name,
-                create_shared_memory=not self.options.use_loaded_gbz_shared_memory,
+                create_shared_memory=False,
+                use_loaded_shared_memory=self.options.use_loaded_gbz_shared_memory,
                 ref_path=self.options.reference_filename
                 if self.options.use_ref_for_cram
                 else None,

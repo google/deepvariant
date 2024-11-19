@@ -263,7 +263,8 @@ class SamReader(genomics_reader.DispatchingGenomicsReader):
                      context=1000,
                      chrom_prefix='',
                      shared_memory_name='GBZ_SHARED_MEMORY',
-                     create_shared_memory=True,
+                     create_shared_memory=False,
+                     use_loaded_shared_memory=False,
                      shared_memory_size_gb=12,
                      num_processes=0,
                      **kwargs):
@@ -275,6 +276,7 @@ class SamReader(genomics_reader.DispatchingGenomicsReader):
                                   chrom_prefix,
                                   shared_memory_name,
                                   create_shared_memory,
+                                  use_loaded_shared_memory,
                                   shared_memory_size_gb,
                                   num_processes)
 

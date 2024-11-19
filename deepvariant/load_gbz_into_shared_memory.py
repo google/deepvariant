@@ -86,11 +86,13 @@ def load_gbz_into_shared_memory(
   context = 1000
   chrom_prefix = ''
   create_shared_memory = True
+  use_loaded_shared_memory = False
   num_processes = num_shards
 
   ## The only parameters that are important are:
   ## - shared_memory_name,
   ## - create_shared_memory,
+  ## - use_loaded_shared_memory,
   ## - shared_memory_size_gb,
   ## - num_processes
   ## The rest are set to default values. This is because the shared memory will
@@ -108,8 +110,9 @@ def load_gbz_into_shared_memory(
       chrom_prefix,
       shared_memory_name,
       create_shared_memory,
+      use_loaded_shared_memory,
       shared_memory_size_gb,
-      num_processes
+      num_processes,
   )
 
 
