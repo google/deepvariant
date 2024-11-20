@@ -443,6 +443,7 @@ py_library(
         "//deepvariant/python:allelecounter",
         "//deepvariant/python:direct_phasing",
         "//third_party/nucleus/io/python:hts_verbose",
+        "//third_party/nucleus/protos:range_py_pb2",
         "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",

@@ -852,9 +852,25 @@ def filter_regions_by_vcf(
 # ---------------------------------------------------------------------------
 
 
-def read_confident_regions(options):
+def read_confident_regions(
+    options: deepvariant_pb2.MakeExamplesOptions,
+    calling_regions: Optional[Sequence[range_pb2.Range]] = None,
+) -> Optional[ranges.RangeSet]:
+  """Reads in bed file of confident regions.
+
+  Args:
+    options: MakeExamplesOptions proto.
+    calling_regions: calling regions to intersect with confident regions.
+
+  Returns:
+    List of ranges from confident region option or none if option is not set.
+  """
   if options.confident_regions_filename:
-    return ranges.RangeSet.from_bed(options.confident_regions_filename)
+    confident_regions = ranges.RangeSet.from_bed(
+        options.confident_regions_filename,
+        intersect_ranges=calling_regions,
+    )
+    return confident_regions
   else:
     return None
 
@@ -1233,32 +1249,40 @@ class OutputsWriter:
 class RegionProcessor:
   """Creates DeepVariant example protos for a single region on the genome.
 
-  This class helps us to run the very sensitive caller, pileup image creator,
-  and variant labeler operations on a single region in parallel across many
-  regions using the PoolExecutor API. In order to do this we need three separate
-  key operations:
+    This class helps us to run the very sensitive caller, pileup image creator,
+    and variant labeler operations on a single region in parallel across many
+    regions using the PoolExecutor API. In order to do this we need three
+    separate
+    key operations:
 
-  (1) Collect all of the info needed to create our resources (e.g., ref reader)
-      at construction. We cannot actually initialize those resources in the
-      constructor, though, since we actually want different resources in each
-      worker process/thread. I.e., we need lazy resource initialization.
+    (1) Collect all of the info needed to create our resources (e.g., ref
+    reader)
+        at construction. We cannot actually initialize those resources in the
+        constructor, though, since we actually want different resources in each
+        worker process/thread. I.e., we need lazy resource initialization.
+  c
+    (2) Actually initialize these resources *after* the worker has been forked
+        in our process pool. This gives us a fresh resource to use in each
+        separate process.
 
-  (2) Actually initialize these resources *after* the worker has been forked
-      in our process pool. This gives us a fresh resource to use in each
-      separate process.
-
-  (3) Process the region to find candidate variants and process those into our
-      tf.Example protos.
+    (3) Process the region to find candidate variants and process those into our
+        tf.Example protos.
   """
 
-  def __init__(self, options: deepvariant_pb2.MakeExamplesOptions):
+  def __init__(
+      self,
+      options: deepvariant_pb2.MakeExamplesOptions,
+      calling_regions: Optional[Sequence[range_pb2.Range]] = None,
+  ):
     """Creates a new RegionProcess.
 
     Args:
       options: deepvariant.MakeExamplesOptions proto used to specify our
         resources for calling (e.g., reference_filename).
+      calling_regions: A list of ranges to call variants in.
     """
     self.options = options
+    self.calling_regions = calling_regions
     self.samples = [
         sample_lib.Sample(options=x) for x in self.options.sample_options
     ]
@@ -1560,7 +1584,9 @@ class RegionProcessor:
         self.options.truth_variants_filename,
         excluded_format_fields=['GL', 'GQ', 'PL'],
     )
-    confident_regions = read_confident_regions(self.options)
+    confident_regions = read_confident_regions(
+        self.options, self.calling_regions
+    )
 
     if (
         self.options.variant_caller
@@ -3076,7 +3102,9 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
     candidates_writer = epath.Path(candidate_positions_filename).open('wb')
 
   # Create a processor to create candidates and examples for each region.
-  region_processor = RegionProcessor(options)
+  # Replace path in calling regions with the actual calling regions.
+  calling_regions = list(calling_regions) if calling_regions else None
+  region_processor = RegionProcessor(options, calling_regions)
   region_processor.initialize()
 
   if options.candidates_filename:

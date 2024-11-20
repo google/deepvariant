@@ -100,8 +100,9 @@ class RangeSet(object):
     if contigs is not None:
       self._contigs = contigs
       self._contig_map = contigs_dict(contigs)
-      self._contig_sort_key_fn = (
-          lambda name: self._contig_map[name].pos_in_fasta)
+      self._contig_sort_key_fn = lambda name: self._contig_map[
+          name
+      ].pos_in_fasta
       self._is_valid_contig = lambda name: name in self._contig_map
     else:
       self._contigs = None
@@ -117,7 +118,8 @@ class RangeSet(object):
     for i, range_ in enumerate(ranges):
       if not self._is_valid_contig(range_.reference_name):
         raise ValueError(
-            'Range {} is on an unrecognized contig.'.format(range_))
+            'Range {} is on an unrecognized contig.'.format(range_)
+        )
       self._by_chr[range_.reference_name].addi(range_.start, range_.end, None)
       if not quiet and i > 0 and i % _LOG_EVERY_N_RANGES_IN_RANGESET_INIT == 0:
         # We do our test directly here on i > 0 so we only see the log messages
@@ -138,7 +140,8 @@ class RangeSet(object):
       are new range protos so can be freely modified.
     """
     for refname in sorted(
-        six.iterkeys(self._by_chr), key=self._contig_sort_key_fn):
+        six.iterkeys(self._by_chr), key=self._contig_sort_key_fn
+    ):
       for start, end, _ in sorted(self._by_chr[refname]):
         yield make_range(refname, start, end)
 
@@ -176,21 +179,27 @@ class RangeSet(object):
     """Creates a RangeSet with an interval covering each base of each contig."""
     return cls(
         (make_range(contig.name, 0, contig.n_bases) for contig in contigs),
-        contigs)
+        contigs,
+    )
 
   @classmethod
-  def from_bed(cls, source, contigs=None, enable_logging=True):
+  def from_bed(
+      cls, source, contigs=None, intersect_ranges=None, enable_logging=True
+  ):
     """Creates a RangeSet containing the intervals from source.
 
     Args:
       source: A path to a BED (or equivalent) file of intervals.
       contigs: An optional list of ContigInfo proto, used by RangeSet
         constructor.
+      intersect_ranges: An optional list of RangeSet objects to intersect with
+        the intervals in the BED file before creating the RangeSet.
+      enable_logging: Enables logging line while reading the file.
 
     Returns:
       A RangeSet.
     """
-    return cls(bed_parser(source, enable_logging), contigs)
+    return cls(bed_parser(source, intersect_ranges, enable_logging), contigs)
 
   def intersection(self, *others: 'RangeSet') -> 'RangeSet':
     """Computes the intersection among this RangeSet and *others RangeSets.
@@ -234,10 +243,15 @@ class RangeSet(object):
         (bigtree, smalltree) = (tree1, tree2)
       else:
         (bigtree, smalltree) = (tree2, tree1)
-      return (make_range(refname, max(interval1.begin, overlapping.begin),
-                         min(interval1.end, overlapping.end))
-              for interval1 in bigtree
-              for overlapping in smalltree.overlap(interval1))
+      return (
+          make_range(
+              refname,
+              max(interval1.begin, overlapping.begin),
+              min(interval1.end, overlapping.end),
+          )
+          for interval1 in bigtree
+          for overlapping in smalltree.overlap(interval1)
+      )
 
     # Iteratively intersect each of our *other RangeSets with this RangeSet.
     # Sort by size so we do the smallest number of element merge first.
@@ -256,7 +270,8 @@ class RangeSet(object):
         other_chr = other._by_chr.get(refname, None)
         if other_chr:
           intersected_intervals.extend(
-              _intersect2(refname, intervals, other_chr))
+              _intersect2(refname, intervals, other_chr)
+          )
 
       # Update our intersected RangeSet with the new intervals.
       intersected = RangeSet(intersected_intervals, self._contigs)
@@ -294,8 +309,11 @@ class RangeSet(object):
 
   __bool__ = __nonzero__  # Python 3 compatibility.
 
-  def variant_overlaps(self, variant: variants_pb2.Variant,
-                       empty_set_return_value: bool = True):
+  def variant_overlaps(
+      self,
+      variant: variants_pb2.Variant,
+      empty_set_return_value: bool = True,
+  ):
     """Returns True if the variant's range overlaps with any in this set."""
     if not self:
       return empty_set_return_value
@@ -386,7 +404,8 @@ def make_position(chrom, position, reverse_strand=False):
       strand.
   """
   return position_pb2.Position(
-      reference_name=chrom, position=position, reverse_strand=reverse_strand)
+      reference_name=chrom, position=position, reverse_strand=reverse_strand
+  )
 
 
 def make_range(chrom, start, end):
@@ -414,8 +433,9 @@ def position_overlaps(chrom, pos, interval):
   Returns:
     True if interval overlaps chr:pos.
   """
-  return (chrom == interval.reference_name and
-          interval.start <= pos < interval.end)
+  return (
+      chrom == interval.reference_name and interval.start <= pos < interval.end
+  )
 
 
 def ranges_overlap(i1, i2):
@@ -428,8 +448,11 @@ def ranges_overlap(i1, i2):
   Returns:
     True if and only if i1 and i2 overlap.
   """
-  return (i1.reference_name == i2.reference_name and i1.end > i2.start and
-          i1.start < i2.end)
+  return (
+      i1.reference_name == i2.reference_name
+      and i1.end > i2.start
+      and i1.start < i2.end
+  )
 
 
 def bedpe_parser(filename: str) -> Iterable[range_pb2.Range]:
@@ -456,7 +479,7 @@ def bedpe_parser(filename: str) -> Iterable[range_pb2.Range]:
         yield make_range(parts[0], int(parts[1]), int(parts[5]))
 
 
-def bed_parser(filename, enable_logging=True):
+def bed_parser(filename, intersect_ranges=None, enable_logging=True):
   """Parses Range objects from a BED-formatted file object.
 
   See http://bedtools.readthedocs.org/en/latest/content/general-usage.html
@@ -464,14 +487,26 @@ def bed_parser(filename, enable_logging=True):
 
   Args:
     filename: File name of a BED-formatted file.
+    intersect_ranges: An optional list of RangeSet objects to intersect with the
+      intervals in the BED file before creating the RangeSet. Requires a tabix
+      index.
     enable_logging: Enables logging line while reading the file.
 
   Yields:
     nucleus.genomics.v1.Range protobuf objects.
   """
   with bed.BedReader(filename, enable_logging) as fin:
-    for r in fin.iterate():
-      yield make_range(r.reference_name, r.start, r.end)
+    if not fin.has_index():
+      logging.warning(
+          'BED file does not have a tabix index. Reading full bed file.'
+      )
+    if intersect_ranges and fin.has_index():
+      for region in intersect_ranges:
+        for r in fin.query(region):
+          yield make_range(r.reference_name, r.start, r.end)
+    else:
+      for r in fin.iterate():
+        yield make_range(r.reference_name, r.start, r.end)
 
 
 def from_regions(regions, contig_map=None):
@@ -494,9 +529,9 @@ def from_regions(regions, contig_map=None):
     regions: iterable[str]. Converts each element of this iterable into
       region(s).
     contig_map: An optional dictionary mapping from contig names to ContigInfo
-      protobufs. If provided, allows literals of the format "contig_name",
-      which will be parsed into a Range with reference_name=contig_name,
-      start=0, end=n_bases where n_bases comes from the ContigInfo.
+      protobufs. If provided, allows literals of the format "contig_name", which
+      will be parsed into a Range with reference_name=contig_name, start=0,
+      end=n_bases where n_bases comes from the ContigInfo.
 
   Yields:
     A Range proto.
@@ -541,8 +576,9 @@ def to_literal(range_pb):
   Returns:
     A string representation of the Range.
   """
-  return '{}:{}-{}'.format(range_pb.reference_name, range_pb.start + 1,
-                           range_pb.end)
+  return '{}:{}-{}'.format(
+      range_pb.reference_name, range_pb.start + 1, range_pb.end
+  )
 
 
 def parse_literal(region_literal, contig_map=None):
@@ -599,7 +635,8 @@ def parse_literal(region_literal, contig_map=None):
       'Could not parse "{}" as a region literal.  Region literals '
       'should have the form "chr:start-stop" or "chr:start" or '
       'just "chr".  A common error is to use the "chr" prefix on '
-      'inputs that don\'t have it, or vice-versa.'.format(region_literal))
+      "inputs that don't have it, or vice-versa.".format(region_literal)
+  )
 
 
 def parse_literals(region_literals, contig_map=None):
@@ -644,6 +681,7 @@ def sorted_ranges(ranges, contigs=None):
     def to_key(range_):
       pos = contig_map[range_.reference_name].pos_in_fasta
       return pos, range_.start, range_.end
+
   else:
     to_key = as_tuple
 
