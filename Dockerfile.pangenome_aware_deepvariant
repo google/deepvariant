@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
-ARG VERSION_DEEPVARIANT=1.7.0
+ARG VERSION_DEEPVARIANT=1.8.0
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
 FROM continuumio/miniconda3 AS conda_setup
@@ -116,18 +116,24 @@ RUN \
     /opt/deepvariant/bin/load_gbz_into_shared_memory \
     /opt/deepvariant/bin/run_pangenome_aware_deepvariant
 
-# Copy models.
-WORKDIR /opt/models/pangenome_aware_deepvariant/wgs
-ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wgs/weights-111-0.995872.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wgs/weights-111-0.995872.ckpt.index .
-ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wgs/example_info.json .
-RUN chmod -R +r /opt/models/pangenome_aware_deepvariant/wgs/*
+# Copy models
+WORKDIR opt/models/pangenome_aware_deepvariant/wgs
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/example_info.json .
+WORKDIR opt/models/pangenome_aware_deepvariant/wgs/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/variables/variables.index .
+RUN chmod -R +r opt/models/pangenome_aware_deepvariant/wgs/*
 
-WORKDIR /opt/models/pangenome_aware_deepvariant/wes
-ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wes/weights-31-0.987898.ckpt.data-00000-of-00001 .
-ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wes/weights-31-0.987898.ckpt.index .
-ADD https://storage.googleapis.com/brain-genomics/pichuan/share/deepvariant/models/PangenomeAwareDeepVariant/${VERSION_DEEPVARIANT}/wes/example_info.json .
-RUN chmod -R +r /opt/models/pangenome_aware_deepvariant/wes/*
+WORKDIR opt/models/pangenome_aware_deepvariant/wes
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/example_info.json .
+WORKDIR opt/models/pangenome_aware_deepvariant/wes/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/variables/variables.index .
+RUN chmod -R +r opt/models/pangenome_aware_deepvariant/wes/*
 
 ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin/pangenome_aware_deepvariant:/opt/deepvariant/bin
 
