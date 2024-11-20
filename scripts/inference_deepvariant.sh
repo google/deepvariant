@@ -671,6 +671,14 @@ function setup_args() {
     if [[ -n "${PROPOSED_VARIANTS}" ]]; then
       MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},proposed_variants=/input/$(basename "$PROPOSED_VARIANTS")"
     fi
+    if [[ -n "${PAR_REGIONS_BED}" ]]; then
+      # Note: currently this following line won't be run if
+      # MAKE_EXAMPLES_ARGS is empty, which means `par_regions_bed` won't
+      # be set if MAKE_EXAMPLES_ARGS is empty. That is the intended
+      # behavior because --par_regions_bed isn't useful unless --haploid_contigs
+      # is set.
+      MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS},par_regions_bed=/input/$(basename "$PAR_REGIONS_BED")"
+    fi
     extra_args+=( --make_examples_extra_args "\"${MAKE_EXAMPLES_ARGS}\"")
   fi
   if [[ -n "${CALL_VARIANTS_ARGS}" ]]; then
