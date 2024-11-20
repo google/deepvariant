@@ -736,6 +736,27 @@ _OUTPUT_PHASE_INFO = flags.DEFINE_bool(
     'If True, output phase information to the candidates.',
 )
 
+_HAPLOID_CONTIGS = flags.DEFINE_string(
+    'haploid_contigs',
+    None,
+    (
+        'Optional list of non autosomal chromosomes. For all listed chromosomes'
+        'HET probabilities are not considered. The list can be either comma '
+        'or space-separated.'
+    ),
+)
+
+_PAR_REGIONS = flags.DEFINE_string(
+    'par_regions_bed',
+    None,
+    (
+        'Optional BED file containing Human Pseudoautosomal Region (PAR) '
+        'regions.'
+        'Variants within this region are unaffected by genotype reallocation '
+        'applied on regions supplied by --haploid_contigs flag.'
+    ),
+)
+
 
 def shared_flags_to_options(
     add_flags,

@@ -371,7 +371,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 19
+// Next ID: 21
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -433,6 +433,10 @@ message VariantCallerOptions {
 
   // Small model context window size
   int32 small_model_vaf_context_window_size = 18;
+
+  repeated string haploid_contigs = 19;
+
+  string par_regions_bed = 20;
 }
 
 // Options to control how we label variant calls.

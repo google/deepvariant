@@ -44,6 +44,7 @@ from deepvariant.python import variant_calling
 from deepvariant.python import variant_calling_multisample
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import genomics_math
+from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
 
@@ -68,6 +69,8 @@ _GVCF = collections.namedtuple(
 )
 
 LOG_10 = math.log(10.0)
+
+IMPOSSIBLE_PROBABILITY_LOG10 = 999.0
 
 
 def _rescale_read_counts_if_necessary(
@@ -127,21 +130,30 @@ class VariantCaller(metaclass=abc.ABCMeta):
         self.options
     )
 
+    self.par_regions = None
+    if self.options.par_regions_bed:
+      self.par_regions = ranges.RangeSet.from_bed(
+          self.options.par_regions_bed, enable_logging=False
+      )
+
     self.max_cache_coverage = max_cache_coverage
     # pylint: disable=g-complex-comprehension
     if use_cache_table:
       self.table = [
           [
-              self._calc_reference_confidence(n_ref, n_total)
-              for n_ref in range(n_total + 1)
+              [
+                  self._calc_reference_confidence(n_ref, n_total, is_haploid)
+                  for n_ref in range(n_total + 1)
+              ]
+              for n_total in range(self.max_cache_coverage + 1)
           ]
-          for n_total in range(self.max_cache_coverage + 1)
+          for is_haploid in [False, True]
       ]
     else:
       self.table = None
     # pylint: enable=g-complex-comprehension
 
-  def reference_confidence(self, n_ref, n_total):
+  def reference_confidence(self, n_ref, n_total, is_haploid=False):
     """Computes the confidence that a site in the genome has no variation.
 
     Computes this confidence using only the counts of the number of reads
@@ -190,6 +202,7 @@ class VariantCaller(metaclass=abc.ABCMeta):
         reference allele.
       n_total: int >= 0 and >= n_ref: The number of reads supporting any allele
         at this site.
+      is_haploid: bool. If True, the position should be haploid.
 
     Returns:
       A tuple of two values. The first is an integer value for the GQ (genotype
@@ -197,14 +210,14 @@ class VariantCaller(metaclass=abc.ABCMeta):
       each of the three genotype configurations.
     """
     if self.table is None:
-      return self._calc_reference_confidence(n_ref, n_total)
+      return self._calc_reference_confidence(n_ref, n_total, is_haploid)
     else:
       ref_index, total_index = _rescale_read_counts_if_necessary(
           n_ref, n_total, self.max_cache_coverage
       )
-      return self.table[total_index][ref_index]
+      return self.table[is_haploid][total_index][ref_index]
 
-  def _calc_reference_confidence(self, n_ref, n_total):
+  def _calc_reference_confidence(self, n_ref, n_total, is_haploid=False):
     """Performs the calculation described in reference_confidence()."""
     if n_ref < 0:
       raise ValueError('n_ref={} must be >= 0'.format(n_ref))
@@ -214,16 +227,23 @@ class VariantCaller(metaclass=abc.ABCMeta):
       raise ValueError(
           'ploidy={} but we only support ploidy=2'.format(self.options.ploidy)
       )
-
     if n_total == 0:
-      # No coverage case - all likelihoods are log10 of 1/3, 1/3, 1/3.
-      log10_probs = genomics_math.normalize_log10_probs([-1.0, -1.0, -1.0])
+      if is_haploid:
+        # No coverage case - all likelihoods are log10 of 1/2, 0, 1/2.
+        log10_probs = genomics_math.normalize_log10_probs(
+            [-1.0, -IMPOSSIBLE_PROBABILITY_LOG10, -1.0]
+        )
+      else:
+        # No coverage case - all likelihoods are log10 of 1/3, 1/3, 1/3.
+        log10_probs = genomics_math.normalize_log10_probs([-1.0, -1.0, -1.0])
     else:
       n_alts = n_total - n_ref
       logp = math.log(self.options.p_error) / LOG_10
       log1p = math.log1p(-self.options.p_error) / LOG_10
       log10_p_ref = n_ref * log1p + n_alts * logp
       log10_p_het = -n_total * math.log(self.options.ploidy) / LOG_10
+      if is_haploid:
+        log10_p_het = -IMPOSSIBLE_PROBABILITY_LOG10
       log10_p_hom_alt = n_ref * logp + n_alts * log1p
       log10_probs = genomics_math.normalize_log10_probs(
           [log10_p_ref, log10_p_het, log10_p_hom_alt]
@@ -261,6 +281,12 @@ class VariantCaller(metaclass=abc.ABCMeta):
       coordinate-sorted order containing gVCF records.
     """
 
+    par_regions = None
+    if self.options.par_regions_bed:
+      par_regions = ranges.RangeSet.from_bed(
+          self.options.par_regions_bed, enable_logging=False
+      )
+
     def with_gq_and_likelihoods(summary_counts):
       """Returns summary_counts along with GQ and genotype likelihoods.
 
@@ -294,7 +320,18 @@ class VariantCaller(metaclass=abc.ABCMeta):
       else:
         n_ref = summary_counts.ref_supporting_read_count
         n_total = summary_counts.total_read_count
-        raw_gq, likelihoods = self.reference_confidence(n_ref, n_total)
+        is_haploid = (
+            summary_counts.reference_name in self.options.haploid_contigs
+            and not (
+                par_regions
+                and par_regions.overlaps(
+                    summary_counts.reference_name, summary_counts.position
+                )
+            )
+        )
+        raw_gq, likelihoods = self.reference_confidence(
+            n_ref, n_total, is_haploid
+        )
         quantized_gq = _quantize_gq(raw_gq, self.options.gq_resolution)
         has_valid_gl = np.amax(likelihoods) == likelihoods[0]
       return _GVCF(

@@ -188,6 +188,7 @@ def assign_sample_name(sample_name_flag: str, reads_filenames: str) -> str:
 def make_vc_options(
     sample_name: str, flags_obj: flags.FlagValues
 ) -> deepvariant_pb2.VariantCallerOptions:
+  haploid_contigs_str = flags_obj.haploid_contigs or ''
   return deepvariant_pb2.VariantCallerOptions(
       min_count_snps=flags_obj.vsc_min_count_snps,
       min_count_indels=flags_obj.vsc_min_count_indels,
@@ -208,6 +209,8 @@ def make_vc_options(
       phase_reads_region_padding_pct=dv_constants.PHASE_READS_REGION_PADDING_PCT,
       track_ref_reads=flags_obj.track_ref_reads,
       small_model_vaf_context_window_size=flags_obj.small_model_vaf_context_window_size,
+      haploid_contigs=haploid_contigs_str.split(','),
+      par_regions_bed=flags_obj.par_regions_bed,
   )
 
 

@@ -103,7 +103,8 @@ class VariantCallerTests(parameterized.TestCase):
     allele_counter.counts.return_value = counts
     return allele_counter
 
-  # R code to produce the testdata expectation table.
+  # R code to produce the testdata expectation table. Haploid test cases were
+  # created manually.
   # expected <- function(n_ref, n_alt, perr, max_gq = 100) {
   #   p_ref <- dbinom(n_alt, n_ref, perr)
   #   p_het <- dbinom(n_alt, n_ref, 0.5)
@@ -187,12 +188,33 @@ class VariantCallerTests(parameterized.TestCase):
       [80, 0, 0.01, 100, [0.000000, -23.733215, -159.650816], 100],
       [90, 0, 0.01, 100, [0.000000, -26.699867, -179.607168], 100],
       [100, 0, 0.01, 100, [0.000000, -29.666519, -199.563519], 100],
+      # Test haploid case.
+      [
+          10,
+          8,
+          0.01,
+          100,
+          [-11.97381, -9.949651e02, -0.0000000000004609646],
+          0,
+          True,
+      ],
+      [10, 1, 0.01, 100, [0.0, -996.960717, -15.965082], 100, True],
+      [10, 5, 0.01, 100, [-0.30103, -989.2792, -0.3010300], 3, True],
   )
   def test_ref_calc(
-      self, total_n, alt_n, p_error, max_gq, expected_likelihoods, expected_gq
+      self,
+      total_n,
+      alt_n,
+      p_error,
+      max_gq,
+      expected_likelihoods,
+      expected_gq,
+      is_haploid=False,
   ):
     caller = PlaceholderVariantCaller(p_error, max_gq)
-    gq, likelihoods = caller.reference_confidence(total_n - alt_n, total_n)
+    gq, likelihoods = caller.reference_confidence(
+        total_n - alt_n, total_n, is_haploid
+    )
     npt.assert_allclose(expected_likelihoods, likelihoods, atol=1e-6)
     self.assertEqual(expected_gq, gq)
 

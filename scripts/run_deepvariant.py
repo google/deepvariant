@@ -742,6 +742,8 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           gvcf=nonvariant_site_tfrecord_path,
           regions=_REGIONS.value,
           sample_name=_SAMPLE_NAME.value,
+          haploid_contigs=_HAPLOID_CONTIGS.value,
+          par_regions_bed=_PAR_REGIONS.value,
       )
   )
 
