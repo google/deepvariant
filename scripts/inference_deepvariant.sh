@@ -49,7 +49,7 @@ Flags:
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
---model_preset Preset case study to run: WGS, WES, PACBIO, ONT_R104, ONT_R104_DUPLEX_CHR20, or HYBRID_PACBIO_ILLUMINA. ONT_R104_DUPLEX_CHR20 will use the ONT_R104 model_type.
+--model_preset Preset case study to run: WGS, WES, PACBIO, ONT_R104, WGS_PANGENOME, WES_PANGENOME, ONT_R104_DUPLEX_CHR20, or HYBRID_PACBIO_ILLUMINA. ONT_R104_DUPLEX_CHR20 will use the ONT_R104 model_type.
 --par_regions_bed Path to BED containing Human Pseudoautosomal Region (PAR) regions. This is used in postprocess_variants. We separate it out as a flag because we need to copy data from gs://.
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
@@ -312,7 +312,7 @@ if [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   BASE="${HOME}/pacbio-case-study"
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-  BAM="${BAM:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.pfda_challenge.35x.grch38.bam}"
+  BAM="${BAM:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.SPRQ.pacbio.GRCh38.40x.nov2024.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
 elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
@@ -343,7 +343,7 @@ elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
     echo "Use VG BAM for pangenome-aware DeepVariant."
     BAM="${BAM:=gs://deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-1.55.0.bam}"
     echo "Add VG default make_examples args for pangenome-aware DeepVariant."
-    MAKE_EXAMPLES_ARGS="min_mapping_quality=0,keep_legacy_allele_counter_behavior=true,normalize_reads=true${MAKE_EXAMPLES_ARGS:+,$MAKE_EXAMPLES_ARGS}"
+    MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS:+,$MAKE_EXAMPLES_ARGS}"
   else
     BAM="${BAM:=${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
   fi
@@ -364,6 +364,23 @@ elif [[ "${MODEL_PRESET}" = "HYBRID_PACBIO_ILLUMINA" ]]; then
   BAM="${BAM:=${GCS_DATA_DIR}/hybrid-case-study-testdata/HG003_hybrid_35x_ilmn_35x_pacb.grch38.phased.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+elif [[ "${MODEL_PRESET}" = "WGS_PANGENOME" ]]; then
+  MODEL_TYPE="WGS"
+  BASE="${HOME}/wgs-pangenome-case-study"
+
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=${GCS_DATA_DIR}/vg-case-study/HG003.novaseq.pcr-free.35x.vg-1.55.0.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+elif [[ "${MODEL_PRESET}" = "WES_PANGENOME" ]]; then
+  MODEL_TYPE="WES"
+  BASE="${HOME}/wes-pangenome-case-study"
+
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=${GCS_DATA_DIR}/exome-case-study-testdata/HG003.novaseq.wes_idt.100x.dedup.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+  CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed}"
 else
   if [[ -n "${MODEL_PRESET}" ]]; then
     echo "Error: --model_preset must be one of WGS, WES, PACBIO, HYBRID_PACBIO_ILLUMINA." >&2
@@ -646,7 +663,6 @@ function setup_args() {
       echo "Using checkpoint"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
-      # Starting from v1.7.0, example_info.json is required.
       CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
       run "gcloud storage cp ${CUSTOMIZED_MODEL_DIR}/example_info.json ${INPUT_DIR}/example_info.json"
       extra_args+=( --customized_model "/input/model.ckpt")
@@ -741,6 +757,7 @@ function run_deepvariant_with_docker() {
     --output_vcf="/output/${OUTPUT_VCF}" \
     --output_gvcf="/output/${OUTPUT_GVCF}" \
     --num_shards "${NUM_SHARDS}" \
+    --vcf_stats_report true \
     --logging_dir="/output/logs" \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepvariant_runtime.log""

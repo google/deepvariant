@@ -81,7 +81,7 @@ SKIP_SOMPY=false
 # Strings; sorted alphabetically.
 unset BAM_NORMAL
 BAM_TUMOR=""
-BIN_VERSION="1.7.0"
+BIN_VERSION="1.8.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
@@ -736,7 +736,6 @@ function setup_args() {
       echo "Using checkpoint"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
-      # Starting from v1.7.0, example_info.json is required.
       CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
       run "gcloud storage cp ${CUSTOMIZED_MODEL_DIR}/example_info.json ${INPUT_DIR}/example_info.json"
       extra_args+=( --customized_model "/input/model.ckpt")
@@ -811,6 +810,7 @@ function run_deepsomatic_with_docker() {
     --output_vcf="/output/${OUTPUT_VCF}" \
     --num_shards "${NUM_SHARDS}" \
     --logging_dir="/output/logs" \
+    --vcf_stats_report true \
     "${extra_args[@]-}" && \
   echo "Done.")) 2>&1 | tee "${LOG_DIR}/deepsomatic_runtime.log""
   echo
