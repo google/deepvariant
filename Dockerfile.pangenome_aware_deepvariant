@@ -117,23 +117,23 @@ RUN \
     /opt/deepvariant/bin/run_pangenome_aware_deepvariant
 
 # Copy models
-WORKDIR opt/models/pangenome_aware_deepvariant/wgs
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/example_info.json .
-WORKDIR opt/models/pangenome_aware_deepvariant/wgs/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pagenome.savedmodel/variables/variables.index .
-RUN chmod -R +r opt/models/pangenome_aware_deepvariant/wgs/*
+WORKDIR /opt/models/pangenome_aware_deepvariant/wgs
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pangenome.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pangenome.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pangenome.savedmodel/example_info.json .
+WORKDIR /opt/models/pangenome_aware_deepvariant/wgs/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pangenome.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wgs.pangenome.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/pangenome_aware_deepvariant/wgs/*
 
-WORKDIR opt/models/pangenome_aware_deepvariant/wes
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/example_info.json .
-WORKDIR opt/models/pangenome_aware_deepvariant/wes/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pagenome.savedmodel/variables/variables.index .
-RUN chmod -R +r opt/models/pangenome_aware_deepvariant/wes/*
+WORKDIR /opt/models/pangenome_aware_deepvariant/wes
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pangenome.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pangenome.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pangenome.savedmodel/example_info.json .
+WORKDIR /opt/models/pangenome_aware_deepvariant/wes/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pangenome.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION_DEEPVARIANT}/pangenome_aware_models/savedmodels/deepvariant.wes.pangenome.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/pangenome_aware_deepvariant/wes/*
 
 ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin/pangenome_aware_deepvariant:/opt/deepvariant/bin
 
