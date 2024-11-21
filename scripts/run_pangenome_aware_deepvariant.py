@@ -54,7 +54,6 @@ FLAGS = flags.FLAGS
 class ModelType(enum.Enum):
   WGS = 'WGS'
   WES = 'WES'
-  PACBIO = 'PACBIO'
 
 
 # Required flags.
@@ -257,12 +256,8 @@ _REPORT_TITLE = flags.DEFINE_string(
 )
 
 MODEL_TYPE_MAP = {
-    'WGS': (
-        '/opt/models/pangenome_aware_deepvariant/wgs/weights-111-0.995872.ckpt'
-    ),
-    'WES': (
-        '/opt/models/pangenome_aware_deepvariant/wes/weights-31-0.987898.ckpt'
-    ),
+    'WGS': '/opt/models/pangenome_aware_deepvariant/wgs',
+    'WES': '/opt/models/pangenome_aware_deepvariant/wes',
 }
 
 
@@ -285,7 +280,7 @@ SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
-DEEP_VARIANT_VERSION = '1.7.0'
+DEEP_VARIANT_VERSION = '1.8.0'
 
 
 def _is_quoted(value):
@@ -461,29 +456,20 @@ def make_examples_pangenome_aware_dv_command(
 
   special_args = {}
   model_type = ModelType(_MODEL_TYPE.value)
-  if model_type == ModelType.WGS or model_type == ModelType.WES:
+  if model_type == ModelType.WGS:
     # Specific flags that are not default can be added here.
     special_args['keep_only_window_spanning_haplotypes'] = True
     special_args['keep_supplementary_alignments'] = True
     special_args['sort_by_haplotypes'] = True
-    # Already default for make_examples_pangenome_aware_dv. Set just in case.
+    special_args['min_mapping_quality'] = 0
+    special_args['keep_legacy_allele_counter_behavior'] = True
+    special_args['normalize_reads'] = True
     special_args['trim_reads_for_pileup'] = True
-  elif model_type == ModelType.PACBIO:
-    special_args['alt_aligned_pileup'] = 'diff_channels'
-    special_args['max_reads_per_partition'] = 5000  # Different; might be slow.
-    special_args['min_mapping_quality'] = 1
-    special_args['parse_sam_aux_fields'] = True
-    special_args['partition_size'] = 25000
-    special_args['phase_reads'] = True
-    special_args['pileup_image_width'] = 221  # Different. Will be slower.
-    special_args['realign_reads'] = False
-    special_args['sort_by_haplotypes'] = True
-    special_args['track_ref_reads'] = True
-    special_args['vsc_min_fraction_indels'] = 0.12
-    special_args['trim_reads_for_pileup'] = True
+  elif model_type == ModelType.WES:
     special_args['keep_only_window_spanning_haplotypes'] = True
     special_args['keep_supplementary_alignments'] = True
-    special_args['variant_types_to_blank'] = 'INDEL'
+    special_args['sort_by_haplotypes'] = True
+    special_args['trim_reads_for_pileup'] = True
   else:
     raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
 
@@ -646,7 +632,7 @@ def check_flags():
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
-          'https://github.com/google/deepvariant/blob/r1.6/docs/'
+          'https://github.com/google/deepvariant/blob/r1.8/docs/'
           'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
           'could-not-open'.format(_CUSTOMIZED_MODEL.value)
       )
