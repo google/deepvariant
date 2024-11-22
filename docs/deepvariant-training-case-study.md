@@ -21,8 +21,8 @@ We demonstrated that by training on 1 replicate of BGISEQ-500 whole genome data
 (everything except for chromosome 20-22), we can significantly improve the
 accuracy comparing to the WGS model as a baseline:
 
-*   Indel F1 `94.1615%` --> `98.1937%`
-*   SNP F1: `99.8785%` --> `99.9042%`
+*   Indel F1 `94.1957%` --> `98.1650%`
+*   SNP F1: `99.8793%` --> `99.9125%`
 
 This tutorial is meant as an example for training; all the other processing in
 this tutorial were done serially with no pipeline optimization.
@@ -62,11 +62,10 @@ YOUR_PROJECT=REPLACE_WITH_YOUR_PROJECT
 OUTPUT_GCS_BUCKET=REPLACE_WITH_YOUR_GCS_BUCKET
 
 BUCKET="gs://deepvariant"
-VERSION="1.7.0"
+VERSION="1.8.0"
 DOCKER_IMAGE="google/deepvariant:${VERSION}"
 
-MODEL_BUCKET="${BUCKET}/models/DeepVariant/${VERSION}/DeepVariant-inception_v3-${VERSION}+data-wgs_standard"
-GCS_PRETRAINED_WGS_MODEL="${MODEL_BUCKET}/model.ckpt"
+GCS_PRETRAINED_WGS_MODEL="${BUCKET}/models/DeepVariant/1.8.0/checkpoints/wgs/deepvariant.wgs.ckpt"
 
 OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET}/customized_training"
 TRAINING_DIR="${OUTPUT_BUCKET}/training_dir"
@@ -88,7 +87,7 @@ BAM_CHR21="${DATA_DIR}/BGISEQ_PE100_NA12878.sorted.chr21.bam"
 TRUTH_VCF="${DATA_DIR}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer_chrs_FIXED.vcf.gz"
 TRUTH_BED="${DATA_DIR}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel_chr.bed"
 
-N_SHARDS=16
+N_SHARDS=$(nproc)
 ```
 
 ## Download binaries and data
@@ -115,7 +114,7 @@ gsutil -m cp -r "${DATA_BUCKET}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Io
 ```bash
 sudo apt -y update
 sudo apt -y install parallel
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.7/scripts/install_nvidia_docker.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.8/scripts/install_nvidia_docker.sh
 bash -x install_nvidia_docker.sh
 ```
 
@@ -175,7 +174,7 @@ image.
 ) 2>&1 | tee "${LOG_DIR}/training_set.with_label.make_examples.log"
 ```
 
-This took `20m14s`.
+This took `21m40.442s`.
 
 Starting in v1.4.0, we added an extra channel in our WGS setting. The
 `--channel_list` sets the channels that our model will use. You can use
@@ -184,15 +183,11 @@ append additional channels to this list (e.g. `insert_size`). The make_examples
 step creates `*.example_info.json` files. For example, you can see it here:
 
 ```
-cat "${OUTPUT_DIR}/training_set.with_label.tfrecord-00000-of-00016.gz.example_info.json"
+cat "${OUTPUT_DIR}/training_set.with_label.tfrecord-00000-of-000${N_SHARDS}.gz.example_info.json"
 ```
 
 ```json
-{
-  "version": "1.7.0",
-  "shape": [100, 221, 7],
-  "channels": [1, 2, 3, 4, 5, 6, 19]
-}
+{"version": "1.8.0", "shape": [100, 221, 7], "channels": [1, 2, 3, 4, 5, 6, 19]}
 ```
 
 Depending on your data type, you might want to tweak the flags for the
@@ -203,7 +198,7 @@ We will want to shuffle this on Dataflow later, so we copy the data to GCS
 bucket first:
 
 ```
-gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-00016.gz* \
+gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
   ${OUTPUT_BUCKET}
 ```
 
@@ -232,12 +227,12 @@ https://github.com/google/deepvariant/issues/360#issuecomment-1019990366
 ) 2>&1 | tee "${LOG_DIR}/validation_set.with_label.make_examples.log"
 ```
 
-This took: 5m31.122s.
+This took: 5m11.833s.
 
 Copy to GCS bucket:
 
 ```bash
-gsutil -m cp ${OUTPUT_DIR}/validation_set.with_label.tfrecord-?????-of-00016.gz* \
+gsutil -m cp ${OUTPUT_DIR}/validation_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
   ${OUTPUT_BUCKET}
 ```
 
@@ -267,7 +262,7 @@ Beam can also use other runners, such as
 First, create a virtual environment to install beam on your machine.
 
 ```bash
-sudo apt install -y python3.8-venv
+sudo apt install -y python3.10-venv
 # Create a virtualenv
 python3 -m venv beam
 
@@ -282,7 +277,7 @@ Then, get the script that performs shuffling:
 
 ```bash
 mkdir -p ${SHUFFLE_SCRIPT_DIR}
-wget https://raw.githubusercontent.com/google/deepvariant/r1.7/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
+wget https://raw.githubusercontent.com/google/deepvariant/r1.8/tools/shuffle_tfrecords_beam.py -O ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py
 ```
 
 Next, we shuffle the data using DataflowRunner. Before that, please make sure
@@ -295,8 +290,8 @@ To access `gs://` path, make sure you run this in your virtual environment:
 sudo apt -y update && sudo apt -y install python3-pip
 pip3 install --upgrade pip
 pip3 install setuptools --upgrade
-pip3 install apache_beam[gcp]==2.50.0  # 2.51.0 didn't work in my run.
 pip3 install tensorflow  # For parsing tf.Example in shuffle_tfrecords_beam.py.
+pip3 install apache_beam[gcp]==2.50.0  # 2.51.0 didn't work in my run.
 ```
 
 Shuffle using Dataflow.
@@ -304,7 +299,7 @@ Shuffle using Dataflow.
 ```bash
 time python3 ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py \
   --project="${YOUR_PROJECT}" \
-  --input_pattern_list="${OUTPUT_BUCKET}"/training_set.with_label.tfrecord-?????-of-00016.gz \
+  --input_pattern_list="${OUTPUT_BUCKET}"/training_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz \
   --output_pattern_prefix="${OUTPUT_BUCKET}/training_set.with_label.shuffled" \
   --output_dataset_name="HG001" \
   --output_dataset_config_pbtxt="${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt" \
@@ -333,18 +328,19 @@ In the output, the `tfrecord_path` should be valid paths in gs://.
 
 ```
 # Generated by shuffle_tfrecords_beam.py
-# class0: 44516
-# class1: 173673
-# class2: 124569
 #
 # --input_pattern_list=OUTPUT_BUCKET/training_set.with_label.tfrecord-?????-of-00016.gz
 # --output_pattern_prefix=OUTPUT_BUCKET/training_set.with_label.shuffled
 #
 
 name: "HG001"
-tfrecord_path: "OUTPUT_GCS_BUCKET/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
+tfrecord_path: "OUTPUT_BUCKET/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
 num_examples: 342758
+# class2: 124569
+# class1: 173673
+# class0: 44516
 ```
+
 
 We can shuffle the validation set locally using
 [DirectRunner](https://beam.apache.org/documentation/runners/direct/). Adding
@@ -354,7 +350,7 @@ cores of the machine where the pipeline is running.
 ```bash
 time python3 ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py \
   --project="${YOUR_PROJECT}" \
-  --input_pattern_list="${OUTPUT_DIR}"/validation_set.with_label.tfrecord-?????-of-00016.gz \
+  --input_pattern_list="${OUTPUT_DIR}"/validation_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz \
   --output_pattern_prefix="${OUTPUT_DIR}/validation_set.with_label.shuffled" \
   --output_dataset_name="HG001" \
   --output_dataset_config_pbtxt="${OUTPUT_DIR}/validation_set.dataset_config.pbtxt" \
@@ -371,17 +367,17 @@ cat "${OUTPUT_DIR}/validation_set.dataset_config.pbtxt"
 
 ```
 # Generated by shuffle_tfrecords_beam.py
-# class0: 5591
 # class1: 31854
+# class0: 5591
 # class2: 21956
-#
-# --input_pattern_list=OUTPUT_DIR/validation_set.with_label.tfrecord-?????-of-00016.gz
-# --output_pattern_prefix=OUTPUT_DIR/validation_set.with_label.shuffled
-#
 
 name: "HG001"
 tfrecord_path: "OUTPUT_DIR/validation_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
 num_examples: 59401
+#
+# --input_pattern_list=OUTPUT_DIR/validation_set.with_label.tfrecord-?????-of-00016.gz
+# --output_pattern_prefix=OUTPUT_DIR/validation_set.with_label.shuffled
+#
 ```
 
 ### Fetch a config file
@@ -391,7 +387,7 @@ training parameters. Parameters within this training file can be overridden when
 we run `train` by passing `--config.<param>=<value>`.
 
 ```bash
-curl https://raw.githubusercontent.com/google/deepvariant/r1.7/deepvariant/dv_config.py > dv_config.py
+curl https://raw.githubusercontent.com/google/deepvariant/r1.8/deepvariant/dv_config.py > dv_config.py
 ```
 
 ### Start `train`
@@ -408,25 +404,27 @@ this dataset, and are not recommended as the best default either.
     --config=dv_config.py:base \
     --config.train_dataset_pbtxt="${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt" \
     --config.tune_dataset_pbtxt="${OUTPUT_DIR}/validation_set.dataset_config.pbtxt" \
-    --config.init_checkpoint=gs://deepvariant/models/DeepVariant/1.7.0/checkpoints/wgs/deepvariant.wgs.ckpt \
+    --config.init_checkpoint=gs://deepvariant/models/DeepVariant/1.8.0/checkpoints/wgs/deepvariant.wgs.ckpt \
     --config.num_epochs=10 \
     --config.learning_rate=0.0001 \
     --config.num_validation_examples=0 \
     --experiment_dir=${TRAINING_DIR} \
     --strategy=mirrored \
-    --config.batch_size=512 \
+    --config.batch_size=384 \
 ) > "${LOG_DIR}/train.log" 2>&1 &
 ```
 
-Once training starts, you should see a summary of your training dataset:
+Once training starts, you should see a summary of your datasets:
 
 ```
 Training Examples: 342758
-Batch Size: 512
+Tune Examples: 59401
+Batch Size: 384
 Epochs: 10
-Steps per epoch: 669
-Steps per tune: 116
-Num train steps: 6690
+Steps per epoch: 892
+Steps per tune: 154
+Num train steps: 8920
+Steps per iter: 128
 ```
 
 As training runs, the validation/tune dataset will be evaluated at the end of
@@ -442,20 +440,45 @@ We have tested training with 1 and 2 GPUs and observed the following runtimes:
 
 n GPUs | Time
 ------ | ----------
-1      | 89m39.451s
-2      | 54m8.163s
+1      | 94m7.506s
+2      | 56m15.863s
 
 Once training is complete, the following command can be used list checkpoints:
 
 ```bash
-gsutil ls ${TRAINING_DIR}/checkpoints/
+gsutil ls ${TRAINING_DIR}/checkpoints/ema/
 ```
 
 The best checkpoint can be retrieved using the following command:
 
 ```bash
-BEST_CHECKPOINT=$(gsutil cat ${TRAINING_DIR}/checkpoints/checkpoint | sed -n 's/model_checkpoint_path: "\(.*\)"/\1/p')
-BEST_CHECKPOINT=${TRAINING_DIR}/checkpoints/${BEST_CHECKPOINT}
+# Get the list of files from gsutil
+files=$(gsutil ls ${TRAINING_DIR}/checkpoints/ema)
+
+# Initialize variables to store the best filename and score
+BEST_CHECKPOINT=""
+best_score=0
+best_checkpoint_number=0
+
+# Iterate over the files
+for file in $files; do
+  # Extract the checkpoint number and score using regular expression
+  if [[ $file =~ checkpoint-([0-9]+)-([0-9.]+)- ]]; then
+    checkpoint=${BASH_REMATCH[1]}
+    score=${BASH_REMATCH[2]}
+
+    # Compare the score and checkpoint number with the current best
+    if (( $(echo "$score > $best_score" | bc -l) || \
+         ( $(echo "$score == $best_score" | bc -l) && ((checkpoint > best_checkpoint_number)) ) )); then
+      # Construct the desired filename format
+      BEST_CHECKPOINT="${TRAINING_DIR}/checkpoints/ema/checkpoint-${checkpoint}-${score}-1"
+      best_score=$score
+      best_checkpoint_number=$checkpoint
+    fi
+  fi
+done
+
+echo $BEST_CHECKPOINT
 ```
 
 ### (Optional) Use TensorBoard to visualize progress
@@ -500,7 +523,7 @@ The following one-step command can be used to call DeepVariant and run our newly
 trained model:
 
 ```bash
-sudo docker run --gpus all \
+sudo docker run --gpus 1 \
   -v /home/${USER}:/home/${USER} \
   "${DOCKER_IMAGE}-gpu" \
   run_deepvariant \
@@ -510,8 +533,14 @@ sudo docker run --gpus all \
   --reads "${BAM_CHR20}" \
   --regions "chr20" \
   --output_vcf "${OUTPUT_DIR}/test_set.vcf.gz" \
-  --num_shards=${N_SHARDS}
+  --num_shards=${N_SHARDS} \
+  --disable_small_model
 ```
+
+In v1.8.0, by default we use a small model to classify some
+candidates. In this example, we set `--disable_small_model` so
+that small model is disabled. This allows us to run all examples
+through the model we just trained.
 
 In v1.4.0, by using `--model_type WGS`, `run_deepvariant` will automatically add
 `insert_size` as an extra channel in the `make_examples` step. So we don't need
@@ -552,32 +581,29 @@ The output of `hap.py` is here:
 ```
 [I] Total VCF records:         3775119
 [I] Non-reference VCF records: 3775119
-[W] overlapping records at chr20:60402030 for sample 0
-[W] Variants that overlap on the reference allele: 1
 [I] Total VCF records:         132914
-[I] Non-reference VCF records: 96273
-2023-10-14 20:09:55,773 WARNING  Creating template for vcfeval. You can speed this up by supplying a SDF template that corre
-sponds to /home/pichuan/training-case-study/input/data/ucsc_hg19.fa
+[I] Non-reference VCF records: 96213
+2024-11-22 06:22:51,225 WARNING  Creating template for vcfeval. You can speed this up by supplying a SDF template that corresponds to /home/pichuan/training-case-study/input/data/ucsc_hg19.fa
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10023      9811       212        19366       155       9002    103     27       0.978849          0.985044        0.464835         0.981937                     NaN                     NaN                   1.547658                   2.096514
-INDEL   PASS        10023      9811       212        19366       155       9002    103     27       0.978849          0.985044        0.464835         0.981937                     NaN                     NaN                   1.547658                   2.096514
-  SNP    ALL        66237     66180        57        77926        70      11639     10      5       0.999139          0.998944        0.149360         0.999042                2.284397                2.199384                   1.700387                   1.781372
-  SNP   PASS        66237     66180        57        77926        70      11639     10      5       0.999139          0.998944        0.149360         0.999042                2.284397                2.199384                   1.700387                   1.781372
+INDEL    ALL        10023      9809       214        19365       159       8993    109     28       0.978649          0.984670        0.464395         0.981650                     NaN                     NaN                   1.547658                   2.116564
+INDEL   PASS        10023      9809       214        19365       159       8993    109     28       0.978649          0.984670        0.464395         0.981650                     NaN                     NaN                   1.547658                   2.116564
+  SNP    ALL        66237     66175        62        77906        54      11640     10      3       0.999064          0.999185        0.149411         0.999125                2.284397                2.197907                   1.700387                   1.784200
+  SNP   PASS        66237     66175        62        77906        54      11640     10      3       0.999064          0.999185        0.149411         0.999125                2.284397                2.197907                   1.700387                   1.784200
 ```
 
 To summarize, the accuracy is:
 
-Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score
------ | -------- | -------- | -------- | ------------- | ---------------- | ---------------
-INDEL | 9811     | 212      | 155      | 0.978849      | 0.985044         | 0.981937
-SNP   | 66180    | 57       | 70       | 0.999139      | 0.998944         | 0.999042
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 9809     | 214      | 159      | 0.978649      | 0.98467          | 0.98165         |
+| SNP   | 66175    | 62       | 54       | 0.999064      | 0.999185         | 0.999125        |
 
 The baseline we're comparing to is to directly use the WGS model to make the
 calls, using this command:
 
 ```bash
-sudo docker run --gpus all \
+sudo docker run --gpus 1 \
   -v /home/${USER}:/home/${USER} \
   ${DOCKER_IMAGE}-gpu \
   run_deepvariant \
@@ -586,15 +612,16 @@ sudo docker run --gpus all \
   --reads "${BAM_CHR20}" \
   --regions "chr20" \
   --output_vcf "${OUTPUT_DIR}/baseline.vcf.gz" \
-  --num_shards=${N_SHARDS}
+  --num_shards=${N_SHARDS} \
+  --disable_small_model
 ```
 
 Baseline:
 
-Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score
------ | -------- | -------- | -------- | ------------- | ---------------- | ---------------
-INDEL | 9620     | 403      | 823      | 0.959792      | 0.924112         | 0.941615
-SNP   | 66159    | 78       | 83       | 0.998822      | 0.998748         | 0.998785
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
+| INDEL | 9624     | 399      | 820      | 0.960192      | 0.924403         | 0.941957        |
+| SNP   | 66161    | 76       | 84       | 0.998853      | 0.998733         | 0.998793        |
 
 ### Additional things to try
 
