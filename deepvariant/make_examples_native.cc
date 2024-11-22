@@ -390,7 +390,7 @@ std::string ExamplesGenerator::EncodeExample(
     << variant.end();
   variant_range_encoded.assign(s.str());
 
-  // Ecode features of the example.
+  // Encode features of the example.
   tensorflow::Example example;
   enum EncodedVariantType variant_type = EncodedVariantType(variant);
   (*example.mutable_features()->mutable_feature())["locus"]

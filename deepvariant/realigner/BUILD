@@ -125,7 +125,6 @@ cc_library(
     deps = [
         "@com_google_absl//absl/strings:cord",
         "@libssw//:ssw_cpp",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
