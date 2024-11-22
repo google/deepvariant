@@ -49,7 +49,7 @@ from deepvariant import dv_utils
 from deepvariant import keras_modeling
 from official.modeling import optimization
 
-_CHECKPOINT_OPTIONS = tf.train.CheckpointOptions(enable_async=True)
+_CHECKPOINT_OPTIONS = tf.train.CheckpointOptions()
 
 _LEADER = flags.DEFINE_string(
     'leader',

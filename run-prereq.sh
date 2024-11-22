@@ -289,6 +289,15 @@ sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libssl-dev libcurl4-
 # for the debruijn graph
 sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libboost-graph-dev > /dev/null
 
+# Pin tf-models-official back to 2.11.6 to be closer to
+# ${DV_GCP_OPTIMIZED_TF_WHL_VERSION} (which is 2.11.0).
+# This is to avoid the issue:
+# ValueError: Addons>LAMB has already been registered to <class 'tensorflow_addons.optimizers.lamb.LAMB'>
+# However, it's important that the protobuf pinning happens after this!
+# TODO: Remove this later once the first dependency can be changed
+#                to ${DV_GCP_OPTIMIZED_TF_WHL_VERSION}.
+pip3 install "${PIP_ARGS[@]}"  "tf-models-official==2.11.6"
+
 # Just being safe, pin protobuf's version one more time.
 pip3 install "${PIP_ARGS[@]}" 'protobuf==3.13.0'
 

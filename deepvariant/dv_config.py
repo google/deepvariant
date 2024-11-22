@@ -360,8 +360,9 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Stop training when this many consecutive evaluations yield no improvement.
   config.early_stopping_patience = 250
 
-  # Weight decay of optimizer
+  # Optimizer params
   config.optimizer_weight_decay = 0.0
+  config.ema_momentum = 0.99
 
   # An 'iter' refers to a group of train/tune steps run in succession.
   config.steps_per_iter = 128
