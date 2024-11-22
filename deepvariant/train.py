@@ -332,7 +332,7 @@ def train(config: ml_collections.ConfigDict):
             y_pred=probabilities,
             y_true=labels,
         )
-        state.tune_metrics[-1].update_state(tune_loss)
+      state.tune_metrics[-1].update_state(tune_loss)
       return tune_loss
 
     for _ in tf.range(num_steps):
