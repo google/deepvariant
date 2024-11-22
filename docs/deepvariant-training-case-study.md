@@ -133,10 +133,8 @@ In this tutorial, we will split the genome up into the following datasets:
 | chrom | Name                  | Description                                  |
 | ----- | --------------------- | -------------------------------------------- |
 | chr1  | Training Set          | Examples used to train our model.            |
-| chr21 | Validation / Tune Set | Examples used to evaluate the performance of |
-:       :                       : our model during training.                   :
-| chr20 | Test Set              | Examples reserved for testing performance of |
-:       :                       : our trained model.                           :
+| chr21 | Validation / Tune Set | Examples used to evaluate the performance of our model during training |
+| chr20 | Test Set              | Examples reserved for testing performance of our trained model |
 
 Note that normally, the training dataset will be much larger (e.g. chr1-19),
 rather than just a single chromosome. We use just chr1 here to demonstrate how
