@@ -29,7 +29,8 @@ bed files from here:
 ## How it works
 
 The genotype re-adjustment is implemented in the `postprocess_variants` stage of
-DeepVariant. For any variant, that is in the`--haploid_contigs` regions and
+DeepVariant.
+For any variant, that is in the`--haploid_contigs` regions and
 **not** in the `--par_regions_bed` regions, the genotype likelihoods of
 heterozygous variants are set as 0 and the genotypes are normalized again after
 re-adjusting the likelihoods. After that the most-likely genotype is assigned to
@@ -52,3 +53,7 @@ likelihood associated with heterozygous genotype and heterozygous calling is
 excluded in haploid regions. The likelihood vector becomes: `L={L[(REF, REF), 0,
 L(ALT1, ALT1)]}`. Then we normalize the likelihood vector and assign the
 genotype based on the adjusted values from the vector.
+
+In DeepVariant r1.8, we added extra logic in the `make_examples` stage to adjust
+for reference blocks as well. See the discussion in
+https://github.com/google/deepvariant/issues/811.
