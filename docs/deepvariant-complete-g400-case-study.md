@@ -42,6 +42,8 @@ HTTPDIR=https://storage.googleapis.com/deepvariant/complete-case-study-testdata
 curl ${HTTPDIR}/complete-g400/weights-60-0.993753.ckpt.data-00000-of-00001 > input/weights-60-0.993753.ckpt.data-00000-of-00001
 
 curl ${HTTPDIR}/complete-g400/weights-60-0.993753.ckpt.index > input/weights-60-0.993753.ckpt.index
+
+curl ${HTTPDIR}/complete-g400/example_info.json > input/example_info.json
 ```
 
 ## Running DeepVariant with one command
@@ -52,7 +54,7 @@ On a CPU-only machine:
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.7.0"
+BIN_VERSION="1.8.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -103,15 +105,15 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        11256     11130       126        20925        31       9340     26      4       0.988806          0.997324        0.446356         0.993047                     NaN                     NaN                   1.561710                   2.049106
-INDEL   PASS        11256     11130       126        20925        31       9340     26      4       0.988806          0.997324        0.446356         0.993047                     NaN                     NaN                   1.561710                   2.049106
-  SNP    ALL        71333     70949       384        85736        50      14689     28      6       0.994617          0.999296        0.171328         0.996951                2.314904                2.102286                   1.715978                   1.753768
-  SNP   PASS        71333     70949       384        85736        50      14689     28      6       0.994617          0.999296        0.171328         0.996951                2.314904                2.102286                   1.715978                   1.753768
+INDEL    ALL        11256     11131       125        20893        32       9306     26      4       0.988895          0.997238        0.445412         0.993049                     NaN                     NaN                   1.561710                   2.036244
+INDEL   PASS        11256     11131       125        20893        32       9306     26      4       0.988895          0.997238        0.445412         0.993049                     NaN                     NaN                   1.561710                   2.036244
+  SNP    ALL        71333     70954       379        85828        50      14776     28      6       0.994687          0.999296        0.172158         0.996986                2.314904                2.095278                   1.715978                   1.741515
+  SNP   PASS        71333     70954       379        85828        50      14776     28      6       0.994687          0.999296        0.172158         0.996986                2.314904                2.095278                   1.715978                   1.741515
 ```
 
 To summarize:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11130    | 126      | 31       | 0.988806      | 0.997324         | 0.993047        |
-| SNP   | 70949    | 384      | 50       | 0.994617      | 0.999296         | 0.996951        |
+| INDEL | 11131    | 125      | 32       | 0.988895      | 0.997238         | 0.993049        |
+| SNP   | 70954    | 379      | 50       | 0.994687      | 0.999296         | 0.996986        |

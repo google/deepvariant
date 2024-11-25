@@ -252,7 +252,7 @@ on. This is NOT the fastest or cheapest configuration.
 
 ### Command for a CPU-only machine on Google Cloud Platform.
 
-We used a 64-core (vCPU) machine with 240GiB of memory and no GPU, on the Google
+We used a 96-core (vCPU) machine with 384GiB of memory and no GPU, on the Google
 Cloud Platform. Specifying the CPU platform also allows us to report the runtime
 more consistently.
 
@@ -261,7 +261,7 @@ gcloud compute instances create "${USER}-cpu"  \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --image-family "ubuntu-2204-lts" \
   --image-project "ubuntu-os-cloud" \
-  --machine-type "n1-standard-64" \
+  --machine-type "n2-standard-92" \
   --boot-disk-size "300" \
   --zone "us-west1-b" \
   --min-cpu-platform "Intel Skylake"
@@ -276,7 +276,7 @@ gcloud compute instances create "${USER}-gpu" \
   --accelerator=type=nvidia-tesla-p100,count=1 \
   --image-family "ubuntu-2204-lts" \
   --image-project "ubuntu-os-cloud" \
-  --machine-type "n1-standard-16" \
+  --machine-type "n2-standard-16" \
   --boot-disk-size "300" \
   --zone "us-west1-b" \
   --min-cpu-platform "Intel Skylake"
