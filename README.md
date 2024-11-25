@@ -104,6 +104,11 @@ If you're using GPUs, or want to use Singularity instead, see
 [Quick Start](docs/deepvariant-quick-start.md) for more details or see all the
 [setup options](#deepvariant_setup) available.
 
+If you are running on a machine with a GPU, an experimental mode is available
+that enables running the `make_examples` stage on the CPU while the
+ `call_variants` stage runs on the GPU simultaneously.
+For more details, refer to the [Fast Pipelione case study](docs/deepvariant-fast-pipeline-case-study.md).
+
 For more information, also see:
 
 *   [Full documentation list](docs/README.md)
