@@ -75,7 +75,7 @@ mkdir -p "${OUTPUT_DIR}/${INTERMEDIATE_DIRECTORY}"
 We will run DeepVariant from docker using the `run_deepvariant` script.
 
 ```bash
-BIN_VERSION="1.7.0"
+BIN_VERSION="1.8.0"
 
 sudo docker run \
   -v "${INPUT_DIR}":"${INPUT_DIR}" \
@@ -153,10 +153,10 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        11256     10306       950        20226       709       8823    343    276       0.915601          0.937823        0.436221         0.926579                     NaN                     NaN                   1.561710                   2.045850
-INDEL   PASS        11256     10306       950        20226       709       8823    343    276       0.915601          0.937823        0.436221         0.926579                     NaN                     NaN                   1.561710                   2.045850
-  SNP    ALL        71333     71274        59        96103        69      24718     36     23       0.999173          0.999033        0.257203         0.999103                2.314904                1.927434                   1.715978                   1.647902
-  SNP   PASS        71333     71274        59        96103        69      24718     36     23       0.999173          0.999033        0.257203         0.999103                2.314904                1.927434                   1.715978                   1.647902
+INDEL    ALL        11256     10372       884        21138       697       9801    364    214       0.921464          0.938520        0.463667         0.929914                     NaN                     NaN                   1.561710                   2.008049
+INDEL   PASS        11256     10372       884        21138       697       9801    364    214       0.921464          0.938520        0.463667         0.929914                     NaN                     NaN                   1.561710                   2.008049
+  SNP    ALL        71333     71304        29       110055        63      38637     19     22       0.999593          0.999118        0.351070         0.999356                2.314904                1.752724                   1.715978                   1.562169
+  SNP   PASS        71333     71304        29       110055        63      38637     19     22       0.999593          0.999118        0.351070         0.999356                2.314904                1.752724                   1.715978                   1.562169
 ```
 
 ## Acknowledgement
