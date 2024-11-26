@@ -32,7 +32,7 @@ documentation on how to build.
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.7.0"
+BIN_VERSION="1.8.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -174,17 +174,14 @@ HG002.g.vcf.gz
 HG002.g.vcf.gz.tbi
 HG002.output.vcf.gz
 HG002.output.vcf.gz.tbi
-HG002.output.visual_report.html
 HG003.g.vcf.gz
 HG003.g.vcf.gz.tbi
 HG003.output.vcf.gz
 HG003.output.vcf.gz.tbi
-HG003.output.visual_report.html
 HG004.g.vcf.gz
 HG004.g.vcf.gz.tbi
 HG004.output.vcf.gz
 HG004.output.vcf.gz.tbi
-HG004.output.visual_report.html
 intermediate_results_dir
 ```
 
@@ -341,7 +338,7 @@ INDEL   PASS            2         2         0            2         0          0 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r1.7/Dockerfile.deeptrio
+[Dockerfile]: https://github.com/google/deepvariant/blob/r1.8/Dockerfile.deeptrio
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
 [run_deeptrio.py]: ../scripts/run_deeptrio.py
