@@ -37,6 +37,9 @@
 
 #include <pybind11/stl.h>
 
+#include <memory>
+#include <utility>
+
 #include "deepvariant/realigner/ssw.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
