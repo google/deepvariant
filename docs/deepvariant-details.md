@@ -261,13 +261,14 @@ gcloud compute instances create "${USER}-cpu"  \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --image-family "ubuntu-2204-lts" \
   --image-project "ubuntu-os-cloud" \
-  --machine-type "n2-standard-92" \
+  --machine-type "n2-standard-96" \
   --boot-disk-size "300" \
-  --zone "us-west1-b" \
-  --min-cpu-platform "Intel Skylake"
+  --zone "us-west1-b"
 ```
 
 ### Command for a GPU machine on Google Cloud Platform
+
+We tested with P100 GPU, which is currently only available on N1 machines:
 
 ```shell
 gcloud compute instances create "${USER}-gpu" \
@@ -276,7 +277,7 @@ gcloud compute instances create "${USER}-gpu" \
   --accelerator=type=nvidia-tesla-p100,count=1 \
   --image-family "ubuntu-2204-lts" \
   --image-project "ubuntu-os-cloud" \
-  --machine-type "n2-standard-16" \
+  --machine-type "n1-standard-16" \
   --boot-disk-size "300" \
   --zone "us-west1-b" \
   --min-cpu-platform "Intel Skylake"
