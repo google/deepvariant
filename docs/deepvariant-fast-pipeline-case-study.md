@@ -181,13 +181,13 @@ time sudo docker run \
     2>&1  | tee /tmp/fast_pipeline.Docker_chr20.log
 ```
 
-*   `-v` allows to map local directory inide docker container.
+*   `-v` allows to map local directory inside docker container.
 *   `-e` we need to set `DV_BIN_PATH` environment variable to point to
     DeepVariant binaries directory inside the container.
 *   `--shm-size` sets the size of shared memory available to the container. It
     has to be larger than `--buffer_size` x `--num_shards`. In our case
     buffer_size is 10M and we run 14 shards, so 2gb would be large enough to
-    accommodate buffers and all sychronization objects for each shard.
+    accommodate buffers and all synchronization objects for each shard.
 
 #### `fast_pipeline` command line parameters:
 
