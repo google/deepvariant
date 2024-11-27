@@ -19,9 +19,14 @@ variant calls. At the highest level, a user needs to provide three inputs:
 The output of DeepVariant is a list of all variant calls in
 [VCF](https://samtools.github.io/hts-specs/VCFv4.3.pdf) format.
 
-DeepVariant is composed of three programs: `make_examples`, `call_variants`, and
-`postprocess_variants`. More details about each program are described in detail
-in the [Inputs and outputs](#inputs-and-outputs) section.
+DeepVariant can be run in a variety of ways. The simplest method is to use
+`run_deepvariant`, which will configure DeepVariant for a given model type
+(`--model_type`), and run all subprograms.
+
+However, under the hood, DeepVariant is composed of three programs:
+`make_examples`, `call_variants`, and `postprocess_variants`. More details about
+each program are described in detail in the
+[Inputs and outputs](#inputs-and-outputs) section.
 
 ## Inputs and outputs
 
@@ -46,13 +51,29 @@ the
 [Using TFRecords and tf.Example](https://www.tensorflow.org/tutorials/load_data/tfrecord)
 Colab.
 
-`make_examples` is a single-threaded program using 1-2 GB of RAM. Since the
-process of generating examples is embarrassingly parallel across the genome,
-`make_examples` supports sharding of its input and output via the `--task`
-argument with a sharded output specification. For example, if the output is
-specified as `--examples examples.tfrecord@10.gz` and `--task 0`, the input to
-the program will be 10% of the regions and the output will be written to
-`examples.tfrecord-00000-of-00010.gz`.
+`make_examples` is a single-threaded program. Since the process of generating
+examples is embarrassingly parallel across the genome, `make_examples` supports
+sharding of its input and output via the `--task` argument with a sharded output
+specification. For example, if the output is specified as `--examples
+examples.tfrecord@10.gz` and `--task 0`, the input to the program will be 10% of
+the regions and the output will be written to
+`examples.tfrecord-00000-of-00010.gz`. Memory usage per instance is detailed
+below. These values do not consider the small model, or the fast-pipeline modes
+of make examples, and should be considered as upper limits of memory usage.
+
+**Memory Usage**
+
+These values were calculated by looking at memory usage for 1/25th of chr20.
+
+| Model Type | version | mean_mem_mb | median_mem_mb | max_mem_mb |
+|------------|---------|-------------|---------------|------------|
+| PacBio     | 1.6.1   | 464.6       | 426.4         |      590.7 |
+| PacBio     | 1.8.0   | 487.0       | 457.1         |      630.3 |
+
+| Model Type     | version | mean_mem_mb | median_mem_mb | max_mem_mb |
+|----------------|---------|-------------|---------------|------------|
+| Illumina (WGS) | 1.6.1   | 404.7       | 403.9         | 418.3      |
+| Illumina (WGS) | 1.8.0   | 435.1       | 434.7         | 449.3      |
 
 #### Input assumptions
 
@@ -74,10 +95,11 @@ present in the BAM but not in the reference.
 The BAM file must be also sorted and indexed. It must exist on disk, so you
 cannot pipe it into DeepVariant. Duplicate marking may be performed, in our
 analyses there is almost no difference in accuracy except at lower (<20x)
-coverages. Finally, we recommend that you do not perform BQSR. Running BQSR has
-a small decrease on accuracy. It is not necessary to do any form of indel
-realignment, though there is not a difference in DeepVariant accuracy either
-way.
+coverages. Finally, we recommend that you do not perform
+[BQSR](https://gatk.broadinstitute.org/hc/en-us/articles/360035890531-Base-Quality-Score-Recalibration-BQSR).
+Running BQSR results in a small decrease in accuracy. It is not necessary to do
+any form of indel realignment, though there is not a difference in DeepVariant
+accuracy either way.
 
 Third, if you are providing `--regions` or other similar arguments these should
 refer to contigs present in the reference genome. These arguments accept
@@ -97,9 +119,9 @@ the one provided with the `--ref` argument.
 
 ### call_variants
 
-`call_variants` consumes TFRecord file(s) of tf.Examples protos created
-by `make_examples` and a deep learning model checkpoint and evaluates the model
-on each example in the input TFRecord. The output here is a TFRecord of
+`call_variants` consumes TFRecord file(s) of tf.Examples protos created by
+`make_examples` and a deep learning model checkpoint and evaluates the model on
+each example in the input TFRecord. The output here is a TFRecord of
 CallVariantsOutput protos. `call_variants` doesn't directly support sharding its
 outputs, but accepts a glob or shard-pattern for its inputs.
 
@@ -141,8 +163,9 @@ Key changes and improvements include:
 
 We have made a number of improvements to the methodology as well. The biggest
 change was to move away from RGB-encoded (3-channel) pileup images and instead
-represent the aligned read data using a multi-channel tensor data layout. We
-currently represent the data as a 6-channel raw tensor in which we encode:
+represent the aligned read data using a multi-channel tensor data layout.
+Channels represent sequencing features. All of our models currently have a set
+of 6 'base channels':
 
 *   The read base (A, C, G, T)
 *   The base's quality score
@@ -151,8 +174,13 @@ currently represent the data as a 6-channel raw tensor in which we encode:
 *   Does the read support the allele being evaluated?
 *   Does the base match the reference genome at this position?
 
-These are all readily derived from the information found in the BAM file
-encoding of each read.
+![base channels](images/base_channels.png)
+
+We can add additional channels to this base channel set to tailor the model
+input to a particular sequencing platform or technology to maximize accuracy.
+For example, for our Illumina models (`wgs`, `exome`) we add an additional
+`insert_size` channel. Because long-read data can be phased, we add a
+`haplotype` channel to our `pacbio` and `ont` models.
 
 Additional modeling changes were to move to the inception-v3 architecture and to
 train on many more independent sequencing replicates of the ground truth
@@ -228,8 +256,9 @@ machines.
 
 ## Starting from v1.2.0, we include `samtools` and `bcftools`.
 
-Based on user feedback ([GitHub issue #414](https://github.com/google/deepvariant/issues/414)),
-we added samtools and bcftools in our Docker image:
+Based on user feedback
+([GitHub issue #414](https://github.com/google/deepvariant/issues/414)), we
+added samtools and bcftools in our Docker image:
 
 ```bash
 docker run google/deepvariant:"${BIN_VERSION}" samtools
@@ -283,8 +312,8 @@ gcloud compute instances create "${USER}-gpu" \
   --min-cpu-platform "Intel Skylake"
 ```
 
-NOTE: Having an instance up and running could cost you. Remember to delete the
-instances you're not using. You can find the instances at:
+NOTE: Be sure to manage instances efficiently. Remember to delete the instances
+you're not using. You can find the instances at:
 https://console.cloud.google.com/compute/instances?project=YOUR_PROJECT
 
 [exome case study]: deepvariant-exome-case-study.md

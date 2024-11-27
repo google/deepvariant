@@ -33,11 +33,14 @@ DeepVariant supports germline variant-calling in diploid organisms.
     [T7 case study](docs/deepvariant-complete-t7-case-study.md);
     [G400 case study](docs/deepvariant-complete-g400-case-study.md)
 
+We have also adapted DeepVariant for somatic calling. See the
+[github.com/google/deepsomatic](DeepSomatic) repo for details.
+
 Please also note:
 
-*   For somatic data or any other samples where the genotypes go beyond two
-    copies of DNA, DeepVariant will not work out of the box because the only
-    genotypes supported are hom-alt, het, and hom-ref.
+*   DeepVariant currently supports variant calling on organisms where the
+    ploidy/copy-number is two. This is because the genotypes supported are
+    hom-alt, het, and hom-ref.
 *   The models included with DeepVariant are only trained on human data. For
     other organisms, see the
     [blog post on non-human variant-calling](https://google.github.io/deepvariant/posts/2018-12-05-improved-non-human-variant-calling-using-species-specific-deepvariant-models/)
