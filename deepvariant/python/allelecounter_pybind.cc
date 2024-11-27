@@ -29,6 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"

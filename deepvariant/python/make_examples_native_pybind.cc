@@ -40,6 +40,11 @@
 
 #include <pybind11/stl.h>
 
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include "deepvariant/make_examples_native.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"

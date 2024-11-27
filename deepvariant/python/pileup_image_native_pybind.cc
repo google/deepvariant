@@ -39,6 +39,11 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"

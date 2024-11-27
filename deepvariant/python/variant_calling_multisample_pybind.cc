@@ -37,6 +37,9 @@
 
 #include <pybind11/stl.h>
 
+#include <string>
+#include <unordered_map>
+
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/variant_calling_multisample.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
