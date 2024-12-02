@@ -86,8 +86,6 @@ docker run \
   --output_vcf=/output/YOUR_OUTPUT_VCF \
   --output_gvcf=/output/YOUR_OUTPUT_GVCF \
   --num_shards=$(nproc) \ **This will use all your cores to run make_examples. Feel free to change.**
-  --vcf_stats_report=true \ **Optional. Creates VCF statistics report in html file. Default is false.
-  --disable_small_model=true \ **Optional. Disables the small model from make_examples stage. Default is false.
   --logging_dir=/output/logs \ **Optional. This saves the log output for each stage separately.
   --haploid_contigs="chrX,chrY" \ **Optional. Heterozygous variants in these contigs will be re-genotyped as the most likely of reference or homozygous alternates. For a sample with karyotype XY, it should be set to "chrX,chrY" for GRCh38 and "X,Y" for GRCh37. For a sample with karyotype XX, this should not be used.
   --par_regions_bed="/input/GRCh3X_par.bed" \ **Optional. If --haploid_contigs is set, then this can be used to provide PAR regions to be excluded from genotype adjustment. Download links to this files are available in this page.

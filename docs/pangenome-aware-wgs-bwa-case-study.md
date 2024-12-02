@@ -68,31 +68,32 @@ DeepVariant pipeline consists of 3 steps: `make_examples`, `call_variants`, and
 ### Running on a CPU-only machine
 
 In this example, we used a
-[n2-standard-96](https://cloud.google.com/compute/docs/general-purpose-machines)
-machine.
+[n1-standard-64](https://cloud.google.com/compute/docs/general-purpose-machines#n1-standard)
+machine. Because reading in GBZ takes a lot of memory, we will run with
+`--num_shards 18` below.
 
 ```bash
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="pangenome_aware_deepvariant-1.8.0"
+BIN_VERSION="1.7.0"
+DOCKER=google/deepvariant:"${BIN_VERSION}"
 
-sudo docker pull google/deepvariant:"${BIN_VERSION}"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
   --shm-size 12gb \
-  google/deepvariant:"${BIN_VERSION}" \
+  ${DOCKER} \
   /opt/deepvariant/bin/run_pangenome_aware_deepvariant \
   --model_type WGS \
   --ref /reference/GRCh38_no_alt_analysis_set.fasta \
-  --reads /input//HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam  \
+  --reads /input/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.chr20.bam \
   --pangenome /input/hprc-v1.1-mc-grch38.gbz \
   --output_vcf /output/HG003.output.vcf.gz \
   --output_gvcf /output/HG003.output.g.vcf.gz \
-  --num_shards $(nproc) \
+  --num_shards 18 \
   --regions chr20 \
   --intermediate_results_dir /output/intermediate_results_dir
 ```
@@ -130,8 +131,7 @@ sudo docker run \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
-  jmcdani20/hap.py:v0.3.12 \
-  /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
   -f /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
@@ -144,11 +144,13 @@ sudo docker run \
 
 Output:
 
+TODO: Update to new results
+
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10584        44        20850        19       9790     14      5       0.995860          0.998282        0.469544          0.99707                     NaN                     NaN                   1.748961                   2.291024
-INDEL   PASS        10628     10584        44        20850        19       9790     14      5       0.995860          0.998282        0.469544          0.99707                     NaN                     NaN                   1.748961                   2.291024
-  SNP    ALL        70166     69932       234        86798        66      16764     45      3       0.996665          0.999058        0.193138          0.99786                2.296566                2.016604                   1.883951                   1.739749
-  SNP   PASS        70166     69932       234        86798        66      16764     45      3       0.996665          0.999058        0.193138          0.99786                2.296566                2.016604                   1.883951                   1.739749
+INDEL    ALL        10628     10581        47        21124        21      10071     16      5       0.995578          0.998100        0.476756         0.996837                     NaN                     NaN                   1.748961                   2.290880
+INDEL   PASS        10628     10581        47        21124        21      10071     16      5       0.995578          0.998100        0.476756         0.996837                     NaN                     NaN                   1.748961                   2.290880
+  SNP    ALL        70166     69910       256        92500        95      22457     38      3       0.996352          0.998644        0.242778         0.997496                2.296566                1.989145                   1.883951                   2.127093
+  SNP   PASS        70166     69910       256        92500        95      22457     38      3       0.996352          0.998644        0.242778         0.997496                2.296566                1.989145                   1.883951                   2.127093
 ```

@@ -1,4 +1,4 @@
-# DeepVariant Pangenome-aware WGS case study (mapped with VG)
+# DeepVariant Pangenome-aware WGS case study (mapped with VG Giraffe)
 
 To make it faster to run over this case study, we run only on chromosome 20.
 
@@ -73,31 +73,33 @@ DeepVariant pipeline consists of 3 steps: `make_examples`, `call_variants`, and
 ### Running on a CPU-only machine
 
 In this example, we used a
-[n2-standard-96](https://cloud.google.com/compute/docs/general-purpose-machines)
-machine.
+[n1-standard-64](https://cloud.google.com/compute/docs/general-purpose-machines#n1-standard)
+machine. Because reading in GBZ takes a lot of memory, we will run with
+`--num_shards 18` below.
 
 ```bash
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="pangenome_aware_deepvariant-1.8.0"
+BIN_VERSION="1.7.0"
+DOCKER=google/deepvariant:"${BIN_VERSION}"
 
-sudo docker pull google/deepvariant:"${BIN_VERSION}"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
   --shm-size 12gb \
-  google/deepvariant:"${BIN_VERSION}" \
+  ${DOCKER} \
   /opt/deepvariant/bin/run_pangenome_aware_deepvariant \
   --model_type WGS \
   --ref /reference/GRCh38_no_alt_analysis_set.fasta \
   --reads /input/HG003.novaseq.pcr-free.35x.vg-1.55.0.chr20.bam \
+  --make_examples_extra_args="min_mapping_quality=0,keep_legacy_allele_counter_behavior=true,normalize_reads=true" \
   --pangenome /input/hprc-v1.1-mc-grch38.gbz \
   --output_vcf /output/HG003.output.vcf.gz \
   --output_gvcf /output/HG003.output.g.vcf.gz \
-  --num_shards $(nproc) \
+  --num_shards 18 \
   --regions chr20 \
   --intermediate_results_dir /output/intermediate_results_dir
 ```
@@ -135,8 +137,7 @@ sudo docker run \
   -v "${PWD}/output":"/output" \
   -v "${PWD}/reference":"/reference" \
   -v "${PWD}/happy:/happy" \
-  jmcdani20/hap.py:v0.3.12 \
-  /opt/hap.py/bin/hap.py \
+  jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
   /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
   /output/HG003.output.vcf.gz \
   -f /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
@@ -149,11 +150,13 @@ sudo docker run \
 
 Output:
 
+TODO: Update to new results
+
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10594        34        21276        32      10189     21      8       0.996801          0.997114        0.478896         0.996957                     NaN                     NaN                   1.748961                   2.231995
-INDEL   PASS        10628     10594        34        21276        32      10189     21      8       0.996801          0.997114        0.478896         0.996957                     NaN                     NaN                   1.748961                   2.231995
-  SNP    ALL        70166     70090        76        90303        94      20078     21      5       0.998917          0.998661        0.222340         0.998789                2.296566                1.942569                   1.883951                   1.599631
-  SNP   PASS        70166     70090        76        90303        94      20078     21      5       0.998917          0.998661        0.222340         0.998789                2.296566                1.942569                   1.883951                   1.599631
+INDEL    ALL        10628     10585        43        21463        40      10383     26     12       0.995954          0.996390        0.483763         0.996172                     NaN                     NaN                   1.748961                   2.194253
+INDEL   PASS        10628     10585        43        21463        40      10383     26     12       0.995954          0.996390        0.483763         0.996172                     NaN                     NaN                   1.748961                   2.194253
+  SNP    ALL        70166     70072        94        92606        97      22398     22      6       0.998660          0.998618        0.241863         0.998639                2.296566                1.982488                   1.883951                   1.982758
+  SNP   PASS        70166     70072        94        92606        97      22398     22      6       0.998660          0.998618        0.241863         0.998639                2.296566                1.982488                   1.883951                   1.982758
 ```
