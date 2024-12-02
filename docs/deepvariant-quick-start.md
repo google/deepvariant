@@ -33,7 +33,7 @@ If you want to compile the DeepVariant binaries for yourself, we also have a
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.7.0"
+BIN_VERSION="1.8.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -124,6 +124,7 @@ sudo docker run \
   google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \
+  --vcf_stats_report=true \
   --ref=/input/ucsc.hg19.chr20.unittest.fasta \
   --reads=/input/NA12878_S1.chr20.10_10p1mb.bam \
   --regions "chr20:10,000,000-10,010,000" \
@@ -194,6 +195,7 @@ singularity run -B /usr/lib/locale/:/usr/lib/locale/ \
   docker://google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO,ONT_R104,HYBRID_PACBIO_ILLUMINA]**
+  --vcf_stats_report=true \ 
   --ref="${INPUT_DIR}"/ucsc.hg19.chr20.unittest.fasta \
   --reads="${INPUT_DIR}"/NA12878_S1.chr20.10_10p1mb.bam \
   --regions "chr20:10,000,000-10,010,000" \
@@ -265,16 +267,16 @@ You should see output similar to the following.
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL            4         4         0           13         0          9      0      0            1.0               1.0        0.692308              1.0                     NaN                     NaN                   0.333333                   1.000000
-INDEL   PASS            4         4         0           13         0          9      0      0            1.0               1.0        0.692308              1.0                     NaN                     NaN                   0.333333                   1.000000
-  SNP    ALL           44        44         0           60         0         16      0      0            1.0               1.0        0.266667              1.0                     1.2                1.307692                   0.333333                   0.363636
-  SNP   PASS           44        44         0           60         0         16      0      0            1.0               1.0        0.266667              1.0                     1.2                1.307692                   0.333333                   0.363636
+INDEL    ALL            4         4         0           13         0          9      0      0       1.000000               1.0        0.692308         1.000000                     NaN                     NaN                   0.333333                   1.000000
+INDEL   PASS            4         4         0           13         0          9      0      0       1.000000               1.0        0.692308         1.000000                     NaN                     NaN                   0.333333                   1.000000
+  SNP    ALL           44        43         1           59         0         16      0      0       0.977273               1.0        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.340909
+  SNP   PASS           44        43         1           59         0         16      0      0       0.977273               1.0        0.271186         0.988506                     1.2                    1.36                   0.333333                   0.340909
 ```
 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r1.7/Dockerfile
+[Dockerfile]: https://github.com/google/deepvariant/blob/r1.8/Dockerfile
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
 [VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
