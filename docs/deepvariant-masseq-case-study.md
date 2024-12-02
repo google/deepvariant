@@ -22,7 +22,7 @@ steps.
 Lets first create directories to organize files.
 
 ```bash
-mkdir -p data benchmark reference output happy
+mkdir -p input benchmark reference output happy
 ```
 
 ### Download the GRCh38 Reference
@@ -56,8 +56,8 @@ For this case study, we download the chr20 of a HG004 MAS-Seq BAM.
 ```bash
 HTTPDIR=https://storage.googleapis.com/deepvariant/masseq-case-study
 
-curl -L ${HTTPDIR}/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam > data/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam
-curl -L ${HTTPDIR}/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam.bai > data/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam.bai
+curl -L ${HTTPDIR}/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam > input/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam
+curl -L ${HTTPDIR}/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam.bai > input/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam.bai
 ```
 
 
@@ -69,49 +69,35 @@ include regions where the BAM file has 10x or more coverage.
 ```bash
 HTTPDIR=https://storage.googleapis.com/deepvariant/masseq-case-study
 
-curl -L ${HTTPDIR}/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.depth.10x.exons.bed > data/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.depth.10x.exons.bed
-```
-
-
-
-
-### Download the MAS-Seq model
-
-Finally, lets download the MAS-Seq model that we will use to call variants.
-
-```bash
-gsutil cp -R gs://deepvariant/models/DeepVariant/1.8.0/savedmodels/deepvariant.masseq.savedmodel .
+curl -L ${HTTPDIR}/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.depth.10x.exons.bed > input/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.depth.10x.exons.bed
 ```
 
 ### Running DeepVariant MAS-Seq on a CPU-only machine
 
 The command below will run the DeepVariant MAS-Seq model and produce an output
-VCF (`output/out.vcf.gz`).
+VCF.
 
 ```bash
-BIN_VERSION="head687331500"
+BIN_VERSION="1.8.0"
 
 sudo docker run \
-  -v "$(pwd):$(pwd)" \
-  -w $(pwd) \
+  -v "${PWD}/input":"/input" \
+  -v "${PWD}/output":"/output" \
+  -v "${PWD}/reference":"/reference" \
   google/deepvariant:"${BIN_VERSION}" \
   run_deepvariant \
-    --model_type=PACBIO \
-    --customized_model=deepvariant.masseq.savedmodel \
-    --ref=reference/GRCh38_no_alt_analysis_set.fasta \
-    --reads=data/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam \
-    --output_vcf=output/HG004.output.vcf.gz \
+    --model_type=MASSEQ \
+    --ref=/reference/GRCh38_no_alt_analysis_set.fasta \
+    --reads=/input/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.chr20.bam \
+    --output_vcf=/output/HG004.output.vcf.gz \
     --num_shards=$(nproc) \
     --regions=chr20 \
-    --make_examples_extra_args="phase_reads=true,sort_by_haplotypes=true,parse_sam_aux_fields=true,realign_reads=false,vsc_min_fraction_indels=0.12,alt_aligned_pileup=diff_channels,trim_reads_for_pileup=true,pileup_image_width=199,min_mapping_quality=1,track_ref_reads=true,partition_size=25000,max_reads_per_partition=0,max_reads_for_dynamic_bases_per_region=1500" \
-    --disable_small_model=true \
-    --intermediate_results_dir=output/intermediate_results_dir
+    --intermediate_results_dir=/output/intermediate_results_dir
 ```
 
 **Flag summary**
 
-*   `--model_type` - Sets the model and options, but we will override the model
-    with `--customized model`.
+*   `--model_type` - Sets the model and options for MAS-Seq data.
 *   `--customized_model` - Points to a model trained using MAS-Seq data.
 *   `--ref` - Specifies the reference sequence.
 *   `--reads` - Specifies the input bam file.
@@ -119,8 +105,6 @@ sudo docker run \
 *   `--num_shards` - Sets the number of shards to the number of available
     processors (`$(nproc)`). This is used to perform parallelization.
 *   `--regions` - Restricts to chr20 to make this case study faster.
-*   `--make_examples_extra_args=` - Passes additional arguments to
-    make_examples.
 *   `--intermediate_results_dir` - Outputs results to an intermediate directory.
     This is optional. If you don't need the intermediate files, no need to
     specify this flag.
@@ -132,18 +116,21 @@ For running on GPU machines, or using Singularity instead of Docker, see
 
 ```bash
 sudo docker run \
-  -v $(pwd):$(pwd) \
-  -w $(pwd) \
+  -v "${PWD}/benchmark":"/benchmark" \
+  -v "${PWD}/input":"/input" \
+  -v "${PWD}/output":"/output" \
+  -v "${PWD}/reference":"/reference" \
+  -v "${PWD}/happy:/happy" \
   jmcdani20/hap.py:v0.3.12 /opt/hap.py/bin/hap.py \
-    benchmark/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
-    output/HG004.output.vcf.gz \
-    -f benchmark/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
-    -r reference/GRCh38_no_alt_analysis_set.fasta \
-    -o happy/happy.output \
+    /benchmark/HG004_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
+    /output/HG004.output.vcf.gz \
+    -f /benchmark/HG004_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
+    -r /reference/GRCh38_no_alt_analysis_set.fasta \
+    -o /happy/happy.output \
     --engine=vcfeval \
     --pass-only \
     -l chr20 \
-    --target-regions=data/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.depth.10x.exons.bed \
+    --target-regions=/input/HG004.giab_na24143.hifi_reads.lima.0--0.lima.IsoSeqX_bc01_5p--IsoSeqX_3p.refined.grch38.mm2.splitN.fc.depth.10x.exons.bed \
     --threads=$(nproc)
 ```
 

@@ -60,6 +60,7 @@ class ModelType(enum.Enum):
   PACBIO = 'PACBIO'
   ONT_R104 = 'ONT_R104'
   HYBRID_PACBIO_ILLUMINA = 'HYBRID_PACBIO_ILLUMINA'
+  MASSEQ = 'MASSEQ'
 
 
 # Required flags.
@@ -277,6 +278,7 @@ MODEL_TYPE_MAP = {
     ModelType.PACBIO: '/opt/models/pacbio',
     ModelType.ONT_R104: '/opt/models/ont_r104',
     ModelType.HYBRID_PACBIO_ILLUMINA: '/opt/models/hybrid_pacbio_illumina',
+    ModelType.MASSEQ: '/opt/models/masseq',
 }
 
 
@@ -495,6 +497,20 @@ def make_examples_command(
     special_args['trim_reads_for_pileup'] = True
   elif model_type == ModelType.HYBRID_PACBIO_ILLUMINA:
     special_args['trim_reads_for_pileup'] = True
+  elif model_type == ModelType.MASSEQ:
+    special_args['alt_aligned_pileup'] = 'diff_channels'
+    special_args['max_reads_per_partition'] = 0
+    special_args['min_mapping_quality'] = 1
+    special_args['parse_sam_aux_fields'] = True
+    special_args['partition_size'] = 25000
+    special_args['phase_reads'] = True
+    special_args['pileup_image_width'] = 199
+    special_args['realign_reads'] = False
+    special_args['sort_by_haplotypes'] = True
+    special_args['track_ref_reads'] = True
+    special_args['vsc_min_fraction_indels'] = 0.12
+    special_args['trim_reads_for_pileup'] = True
+    special_args['max_reads_for_dynamic_bases_per_region'] = 1500
 
   _set_small_model_config(
       special_args, model_type, _CUSTOMIZED_SMALL_MODEL.value

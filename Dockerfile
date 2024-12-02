@@ -198,6 +198,15 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/sav
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.ont.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/ont_r104/*
 
+WORKDIR /opt/models/masseq
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.masseq.savedmodel/fingerprint.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.masseq.savedmodel/saved_model.pb .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.masseq.savedmodel/example_info.json .
+WORKDIR /opt/models/masseq/variables
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.masseq.savedmodel/variables/variables.data-00000-of-00001 .
+ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/savedmodels/deepvariant.masseq.savedmodel/variables/variables.index .
+RUN chmod -R +r /opt/models/masseq/*
+
 # Copy small models
 WORKDIR /opt/smallmodels/wgs
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.wgs.smallmodel/fingerprint.pb .
