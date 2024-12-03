@@ -45,7 +45,7 @@ TFRecordReader::TFRecordReader() {}
 std::unique_ptr<TFRecordReader> TFRecordReader::New(
     const std::string& filename, const std::string& compression_type) {
   std::unique_ptr<tensorflow::RandomAccessFile> file;
-  absl::Status s =
+  tensorflow::Status s =
       tensorflow::Env::Default()->NewRandomAccessFile(filename, &file);
   if (!s.ok()) {
     LOG(ERROR) << s;
@@ -74,7 +74,7 @@ bool TFRecordReader::GetNext() {
     return false;
   }
 
-  absl::Status s = reader_->ReadRecord(&offset_, &record_);
+  tensorflow::Status s = reader_->ReadRecord(&offset_, &record_);
 
   return s.ok();
 }

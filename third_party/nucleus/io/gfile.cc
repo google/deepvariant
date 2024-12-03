@@ -41,13 +41,13 @@ namespace nucleus {
 
 bool Exists(const std::string& filename) {
   // FileExists sets s to tensorflow::error::NOT_FOUND if it doesn't exist.
-  absl::Status s = tensorflow::Env::Default()->FileExists(filename);
+  tensorflow::Status s = tensorflow::Env::Default()->FileExists(filename);
   return s.ok();
 }
 
 std::vector<std::string> Glob(const std::string& pattern) {
   std::vector<std::string> results;
-  absl::Status s =
+  ::tensorflow::Status s =
       tensorflow::Env::Default()->GetMatchingPaths(pattern, &results);
   return results;
 }
@@ -56,7 +56,7 @@ ReadableFile::ReadableFile() {}
 
 std::unique_ptr<ReadableFile> ReadableFile::New(const std::string& filename) {
   std::unique_ptr<tensorflow::RandomAccessFile> file;
-  absl::Status status =
+  tensorflow::Status status =
       tensorflow::Env::Default()->NewRandomAccessFile(filename, &file);
   if (!status.ok()) {
     return nullptr;
@@ -91,7 +91,8 @@ WritableFile::WritableFile() {}
 std::unique_ptr<WritableFile> WritableFile::New(const std::string& filename) {
   std::unique_ptr<tensorflow::WritableFile> file;
 
-  absl::Status s = tensorflow::Env::Default()->NewWritableFile(filename, &file);
+  tensorflow::Status s =
+      tensorflow::Env::Default()->NewWritableFile(filename, &file);
 
   if (!s.ok()) {
     return nullptr;
@@ -104,7 +105,7 @@ std::unique_ptr<WritableFile> WritableFile::New(const std::string& filename) {
 }
 
 bool WritableFile::Write(const std::string& s) {
-  absl::Status status = file_->Append(s);
+  tensorflow::Status status = file_->Append(s);
   return status.ok();
 }
 
