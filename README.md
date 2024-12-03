@@ -16,9 +16,8 @@ DeepVariant supports germline variant-calling in diploid organisms.
 *   NGS (Illumina or Element) data for either a
     [whole genome](docs/deepvariant-case-study.md) or
     [whole exome](docs/deepvariant-exome-case-study.md).
-*   PacBio HiFi data, see the
+*   PacBio HiFi data
     [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
-*   PacBio [Iso-Seq/MAS-Seq case study](docs/deepvariant-masseq-case-study.md).
 *   Oxford Nanopore R10.4.1
     [Simplex case study](docs/deepvariant-ont-r104-simplex-case-study.md),
     [Duplex case study](docs/deepvariant-ont-r104-duplex-case-study.md).
@@ -27,7 +26,9 @@ DeepVariant supports germline variant-calling in diploid organisms.
     [G400 case study](docs/deepvariant-complete-g400-case-study.md).
 *   Pangenome-mapping-based case-study:
     [vg case study](docs/deepvariant-vg-case-study.md).
-*   Illumina [RNA-seq Case Study](docs/deepvariant-rnaseq-case-study.md).
+*   RNA data for
+    [PacBio Iso-Seq/MAS-Seq case study](docs/deepvariant-masseq-case-study.md)
+    and [Illumina RNA-seq Case Study](docs/deepvariant-rnaseq-case-study.md).
 *   Hybrid PacBio HiFi + Illumina WGS, see the
     [hybrid case study](docs/deepvariant-hybrid-case-study.md).
 
