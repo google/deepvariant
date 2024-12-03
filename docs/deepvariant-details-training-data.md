@@ -18,6 +18,7 @@ v1.3    | Same model as v1.2
 v1.4    | 12 HG001<br>6 HG002<sup>[(12)](#vfootnote12)</sup><br>6 HG004<sup>[(12)](#vfootnote12)</sup><br>3 HG005<br>3 HG006<br>3 HG007 | 517,209,566
 v1.5    | 13 HG001<br>14 HG002<br>8 HG004<br>9 HG005<br>4 HG006<br>4 HG007 | 815,200,320
 v1.6    | 21 HG001<br>17 HG002<br>8 HG004<br>9 HG005<br>4 HG006<br>4 HG007 | 929,199,066
+v1.8    | Same model as v1.6
 
 ### WES models
 
@@ -36,6 +37,7 @@ v1.3    | Same model as v1.2
 v1.4    | 41 HG001<br>9 HG002<br>9 HG004<br>12 HG005<br>9 HG006<br>9 HG007<sup>[(11)](#vfootnote11)</sup> | 21,212,424
 v1.5    | 40 HG001<br>9 HG002<br>9 HG004<br>12 HG005<br>9 HG006<br>9 HG007 | 21,027,625
 v1.6    | 57 HG001<br>9 HG002<br>9 HG004<br>12 HG005<br>9 HG006<br>9 HG007 | 21,027,614
+v1.8    | 58 HG001<br>9 HG002<br>9 HG004<br>11 HG005<br>9 HG006<br>9 HG007 | 25,598,763
 
 ### PACBIO models
 
@@ -51,12 +53,14 @@ v1.3    | 1 HG001<br>19 HG002<br>3 HG004<br>1 HG005<br>1 HG006<br>1 HG007 | 1,17
 v1.4    | 1 HG001<br>19 HG002<br>3 HG004<br>1 HG005<br>1 HG006<br>1 HG007 | 1,177,596,708
 v1.5    | 3 HG001<br>29 HG002<br>7 HG004<br>2 HG005<br>3 HG006<br>2 HG007 | 1,729,659,396
 v1.6    | 6 HG001<br>60 HG002<br>16 HG004<br>4 HG005<br>6 HG006<br>4 HG007 | 3,195,507,862
+v1.8    | 3 HG001<br>10 HG002<br>4 HG004<br>5 HG005<br>0 HG006<br>0 HG007 | 416,516,418
 
 ### ONT models
 
 version | Replicates                  | #examples
 ------- | --------------------------- | ------------------------------
-v1.6    | 3 HG001<br>1 HG004<br>1 HG005 | 534,302,654
+v1.6    | 3 HG002<br>1 HG004<br>1 HG005 | 534,302,654
+v1.8    | 7 HG002<br>1 HG004<br>1 HG005 | 1,591,950,794
 
 ### HYBRID models
 
@@ -69,6 +73,7 @@ v1.3    | Same model as v1.2                                       |
 v1.4    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 215,863,645
 v1.5    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 215,863,664
 v1.6    | 10 HG002<br> 1 HG004<br> 1 HG005<br> 1 HG006<br> 1 HG007 | 215,353,081
+v1.6    |  Same model as v1.6                                      |
 
 <a name="vfootnote1">(1)</a>: In v0.5, we experimented with adding whole exome
 sequencing data into training data. In v0.6, we took it out because it didn't
