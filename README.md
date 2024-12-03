@@ -11,27 +11,33 @@ a standard VCF or gVCF file.
 
 DeepVariant supports germline variant-calling in diploid organisms.
 
+**DeepVariant case-studies for germline variant calling:**
+
 *   NGS (Illumina or Element) data for either a
     [whole genome](docs/deepvariant-case-study.md) or
     [whole exome](docs/deepvariant-exome-case-study.md).
-*   [RNA-seq Case Study](docs/deepvariant-rnaseq-case-study.md) for Illumina
-    RNA-seq.
 *   PacBio HiFi data, see the
     [PacBio case study](docs/deepvariant-pacbio-model-case-study.md).
-*   [PacBio Iso-Seq/MAS-Seq Case Study](docs/deepvariant-masseq-case-study.md).
-*   Oxford Nanopore R10.4.1 Simplex or Duplex data, see the
-    [ONT R10.4.1 Simplex case study](docs/deepvariant-ont-r104-simplex-case-study.md)
-    and
-    [ONT R10.4.1 Duplex case study](docs/deepvariant-ont-r104-duplex-case-study.md).
+*   PacBio [Iso-Seq/MAS-Seq case study](docs/deepvariant-masseq-case-study.md).
+*   Oxford Nanopore R10.4.1
+    [Simplex case study](docs/deepvariant-ont-r104-simplex-case-study.md),
+    [Duplex case study](docs/deepvariant-ont-r104-duplex-case-study.md).
+*   Complete Genomics
+    [T7 case study](docs/deepvariant-complete-t7-case-study.md);
+    [G400 case study](docs/deepvariant-complete-g400-case-study.md).
+*   Pangenome-mapping-based case-study:
+    [vg case study](docs/deepvariant-vg-case-study.md).
+*   Illumina [RNA-seq Case Study](docs/deepvariant-rnaseq-case-study.md).
 *   Hybrid PacBio HiFi + Illumina WGS, see the
     [hybrid case study](docs/deepvariant-hybrid-case-study.md).
-*   Oxford Nanopore R9.4.1 data by using
-    [PEPPER-DeepVariant](https://github.com/kishwarshafin/pepper).
-*   To map using a pangenome to improve accuracy, use this
-    [vg case study](docs/deepvariant-vg-case-study.md).
-*   Complete Genomics data:
-    [T7 case study](docs/deepvariant-complete-t7-case-study.md);
-    [G400 case study](docs/deepvariant-complete-g400-case-study.md)
+
+**Pangenome-aware DeepVariant case-studies:**
+
+*   Pangenome-aware DeepVariant WGS (Illumina or Element):
+    [Mapped with BWA](docs/pangenome-aware-wgs-bwa-case-study.md),
+    [Mapped with VG](docs/pangenome-aware-wgs-vg-case-study.md).
+*   Pangenome-aware DeepVariant WES (Illumina or Element):
+    [Mapped with BWA](docs/pangenome-aware-wes-bwa-case-study.md).
 
 We have also adapted DeepVariant for somatic calling. See the
 [github.com/google/deepsomatic](DeepSomatic) repo for details.
@@ -169,7 +175,7 @@ doi: https://doi.org/10.1093/bioinformatics/btaa1081
     ~$0.89 to call an exome. With preemptible pricing, the cost is $2.84 for a
     30x whole genome and $0.21 for whole exome (not considering preemption).
 *   **Speed** - See [metrics](docs/metrics.md) for the runtime of all supported
-    datatypes on a 64-core CPU-only machine</sup>. Multiple options for
+    datatypes on a 96-core CPU-only machine</sup>. Multiple options for
     acceleration exist.
 *   **Usage options** - DeepVariant can be run via Docker or binaries, using
     both on-premise hardware or in the cloud, with support for hardware
