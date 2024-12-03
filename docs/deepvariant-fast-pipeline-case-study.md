@@ -23,7 +23,7 @@ Here we create Google Cloud compute instance. You may skip this step if you run
 the case study on a local computer with GPU.
 
 ```bash
-gcloud compute instances create "deepvariant-casestudy" \
+gcloud compute instances create "deepvariant-fast-pipeline" \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --maintenance-policy "TERMINATE" \
   --accelerator=type=nvidia-tesla-p4,count=1 \
@@ -31,8 +31,13 @@ gcloud compute instances create "deepvariant-casestudy" \
   --image-project "ubuntu-os-cloud" \
   --machine-type "n1-standard-16" \
   --boot-disk-size "100" \
-  --zone "us-central1-a" \
-  --min-cpu-platform "Intel Skylake"
+  --zone "us-central1-a"
+```
+
+You can then ssh into the machine by running:
+
+```bash
+gcloud compute ssh "deepvariant-fast-pipeline" --zone us-central1-a
 ```
 
 ## Install Nvidia drivers and Nvidia container toolkit (optional)
@@ -47,6 +52,7 @@ For this case study we used the
 that automates the CUDA and container tools kit installation.
 
 Please note that the script takes about 30 minutes to run.
+
 ```bash
 wget https://raw.githubusercontent.com/google/deepvariant/refs/heads/r1.8.0/scripts/install_nvidia_docker.sh
 chmod +x install_nvidia_docker.sh
@@ -58,7 +64,7 @@ chmod +x install_nvidia_docker.sh
 ### Get DeepVariant Docker image
 
 ```bash
-BIN_VERSION="1.8.0-rc0"
+BIN_VERSION="1.8.0"
 sudo docker pull google/deepvariant:"${BIN_VERSION}-gpu"
 ```
 
@@ -80,7 +86,7 @@ gcloud storage cp gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_n
 
 ```bash
 mkdir -p input
-gcloud storage cp gs://deepvariant/pacbio-case-study-testdata/HG003.pfda_challenge.grch38.phased.chr20.bam* input/
+gcloud storage cp gs://deepvariant/pacbio-case-study-testdata/HG003.SPRQ.pacbio.GRCh38.nov2024.chr20.bam* input/
 ```
 
 ## Run DeepVariant pipeline on chromosome 20 alignments
@@ -110,7 +116,7 @@ cat <<EOM >$FILE
 --examples=/tmp/examples.tfrecords@14.gz
 --gvcf=/tmp/examples.gvcf.tfrecord@14.gz
 --mode=calling
---reads=/input/HG003.pfda_challenge.grch38.phased.chr20.bam
+--reads=/input/HG003.SPRQ.pacbio.GRCh38.nov2024.chr20.bam
 --ref=/reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 --alt_aligned_pileup=diff_channels
 --max_reads_per_partition=600
@@ -156,7 +162,7 @@ cat <<EOM >$FILE
 --outfile=/output/variants.chr20.vcf
 --gvcf_outfile=/output/variants.gvcf.chr20.vcf
 --small_model_cvo_records=/tmp/examples_call_variant_outputs.tfrecords@14.gz
---cpus=0
+--cpus=14
 EOM
 ```
 
@@ -178,7 +184,7 @@ time sudo docker run \
     --shm_prefix dv \
     --num_shards 14 \
     --buffer_size 10485760 \
-    2>&1  | tee /tmp/fast_pipeline.Docker_chr20.log
+    2>&1  | tee /tmp/fast_pipeline.docker.log
 ```
 
 *   `-v` allows to map local directory inside docker container.
@@ -211,9 +217,9 @@ variants.gvcf.chr20.vcf
 With the same settings the pipeline takes approximately 10 minutes.
 
 ```
-real    10m35.875s
-user    0m0.009s
-sys     0m0.034s
+real    8m15.252s
+user    0m0.007s
+sys     0m0.035s
 ```
 
 ## Benchmark output
@@ -230,6 +236,8 @@ curl ${FTPDIR}/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi > benchmark/HG003_G
 
 ```
 HAPPY_VERSION=v0.3.12
+
+time sudo docker run \
   -v ${PWD}/output:/output \
   -v ${PWD}/benchmark:/benchmark \
   -v ${PWD}/reference:/reference \
@@ -246,9 +254,10 @@ HAPPY_VERSION=v0.3.12
 ```
 
 ```
+Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10560        68        22592        70      11520     39     30       0.993602          0.993678        0.509915         0.993640                     NaN                     NaN                   1.748961                   2.324711
-INDEL   PASS        10628     10560        68        22592        70      11520     39     30       0.993602          0.993678        0.509915         0.993640                     NaN                     NaN                   1.748961                   2.324711
-  SNP    ALL        70166     70142        24       104271        23      34047      7      5       0.999658          0.999672        0.326524         0.999665                2.296566                 1.74197                   1.883951                   1.849802
-  SNP   PASS        70166     70142        24       104271        23      34047      7      5       0.999658          0.999672        0.326524         0.999665                2.296566                 1.74197                   1.883951                   1.849802
+INDEL    ALL        10628     10543        85        22403        74      11375     40     29       0.992002          0.993290        0.507744         0.992646                     NaN                     NaN                   1.748961                   2.138647
+INDEL   PASS        10628     10543        85        22403        74      11375     40     29       0.992002          0.993290        0.507744         0.992646                     NaN                     NaN                   1.748961                   2.138647
+  SNP    ALL        70166     70101        65       105602        71      35342     12     12       0.999074          0.998989        0.334672         0.999032                2.296566                1.713281                   1.883951                   1.503192
+  SNP   PASS        70166     70101        65       105602        71      35342     12     12       0.999074          0.998989        0.334672         0.999032                2.296566                1.713281                   1.883951                   1.503192
 ```
