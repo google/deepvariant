@@ -45,7 +45,8 @@ TFRecordWriter::TFRecordWriter() {}
 std::unique_ptr<TFRecordWriter> TFRecordWriter::New(
     const std::string& filename, const std::string& compression_type) {
   std::unique_ptr<tensorflow::WritableFile> file;
-  absl::Status s = tensorflow::Env::Default()->NewWritableFile(filename, &file);
+  tensorflow::Status s =
+      tensorflow::Env::Default()->NewWritableFile(filename, &file);
   if (!s.ok()) {
     LOG(ERROR) << s;
     return nullptr;
@@ -68,7 +69,7 @@ bool TFRecordWriter::WriteRecord(const std::string& record) {
   if (writer_ == nullptr) {
     return false;
   }
-  absl::Status s = writer_->WriteRecord(record);
+  tensorflow::Status s = writer_->WriteRecord(record);
   return s.ok();
 }
 
@@ -76,13 +77,13 @@ bool TFRecordWriter::Flush() {
   if (writer_ == nullptr) {
     return false;
   }
-  absl::Status s = writer_->Flush();
+  tensorflow:: Status s = writer_->Flush();
   return s.ok();
 }
 
 bool TFRecordWriter::Close() {
   if (writer_ != nullptr) {
-    absl::Status s = writer_->Close();
+    tensorflow::Status s = writer_->Close();
     if (!s.ok()) {
       return false;
     }
@@ -90,7 +91,7 @@ bool TFRecordWriter::Close() {
   }
 
   if (file_ != nullptr) {
-    absl::Status s = file_->Close();
+    tensorflow:: Status s = file_->Close();
     if (!s.ok()) {
       return false;
     }
