@@ -41,7 +41,7 @@ DeepVariant supports germline variant-calling in diploid organisms.
     [Mapped with BWA](docs/pangenome-aware-wes-bwa-case-study.md).
 
 We have also adapted DeepVariant for somatic calling. See the
-[github.com/google/deepsomatic](DeepSomatic) repo for details.
+[DeepSomatic](https://github.com/google/deepsomatic) repo for details.
 
 Please also note:
 
@@ -113,13 +113,12 @@ To see all flags you can use, run: `docker run
 google/deepvariant:"${BIN_VERSION}"`
 
 If you're using GPUs, or want to use Singularity instead, see
-[Quick Start](docs/deepvariant-quick-start.md) for more details or see all the
-[setup options](#deepvariant_setup) available.
+[Quick Start](docs/deepvariant-quick-start.md) for more details.
 
 If you are running on a machine with a GPU, an experimental mode is available
 that enables running the `make_examples` stage on the CPU while the
  `call_variants` stage runs on the GPU simultaneously.
-For more details, refer to the [Fast Pipelione case study](docs/deepvariant-fast-pipeline-case-study.md).
+For more details, refer to the [Fast Pipeline case study](docs/deepvariant-fast-pipeline-case-study.md).
 
 For more information, also see:
 
@@ -205,7 +204,7 @@ post on
 ### Prerequisites
 
 *   Unix-like operating system (cannot run on Windows)
-*   Python 3.8
+*   Python 3.10
 
 ### Official Solutions
 
