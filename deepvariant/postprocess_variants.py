@@ -997,6 +997,15 @@ def is_in_regions(
     return False
 
 
+@functools.lru_cache
+def get_par_regions() -> ranges.RangeSet | None:
+  """Returns the cached par regions if specified, else None."""
+  if _PAR_REGIONS.value:
+    return ranges.RangeSet.from_bed(_PAR_REGIONS.value, enable_logging=False)
+  else:
+    return None
+
+
 def merge_predictions(
     call_variants_outputs: Sequence[deepvariant_pb2.CallVariantsOutput],
     qual_filter: float | None = None,
@@ -1009,12 +1018,7 @@ def merge_predictions(
   # Because of the logic above, this function expects all cases above to have
   # genotype_predictions that we can combine from.
 
-  # Removed par regions from parameter because RangeSet is not pickle-able.
-  par_regions = None
-  if _PAR_REGIONS.value:
-    par_regions = ranges.RangeSet.from_bed(
-        _PAR_REGIONS.value, enable_logging=False
-    )
+  par_regions = get_par_regions()
 
   if not call_variants_outputs:
     raise ValueError('Expected 1 or more call_variants_outputs.')
