@@ -1331,6 +1331,23 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "example_writer",
+    srcs = ["example_writer.cc"],
+    hdrs = ["example_writer.h"],
+    deps = [
+        "//file/base:path",
+        "//third_party/re2",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
 cc_test(
     name = "variant_reader_test",
     size = "medium",
@@ -1349,5 +1366,14 @@ cc_test(
         "@com_google_protobuf//:protobuf",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_test(
+    name = "example_writer_test",
+    srcs = ["example_writer_test.cc"],
+    deps = [
+        ":example_writer",
+        "@com_google_googletest//:gtest_main",
     ],
 )
