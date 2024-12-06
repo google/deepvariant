@@ -205,6 +205,58 @@ bool IsAllelesTheSame(const Allele& allele1, const Allele& allele2) {
           allele1.type() == allele2.type());
 }
 
+bool VariantCaller::AlleleFilter(
+                  const Allele& allele,
+                  const AlleleCount& target_sample_allele_count,
+                  const std::vector<AlleleCount>& all_samples_allele_counts,
+                  const std::vector<Allele>& non_target_sample_alleles) const {
+  const int target_samples_total_count =
+      TotalAlleleCounts(target_sample_allele_count);
+  const int all_samples_total_count =
+      TotalAlleleCounts(all_samples_allele_counts);
+  const std::vector<Allele> all_sample_alleles =
+      SumAlleleCounts(all_samples_allele_counts);
+
+  bool skip_high_af_allele_for_non_target = false;
+  // Having a double for-loop seems inefficient. Can be room for improvement.
+  for (const auto& non_target_sample_allele : non_target_sample_alleles) {
+    if (!IsAllelesTheSame(allele, non_target_sample_allele)) continue;
+    int non_target_total_count =
+        all_samples_total_count - target_samples_total_count;
+    float max_fraction_for_non_target_sample =
+        non_target_sample_allele.type() == AlleleType::SUBSTITUTION
+        ? options_.max_fraction_snps_for_non_target_sample()
+        : options_.max_fraction_indels_for_non_target_sample();
+    if (max_fraction_for_non_target_sample > 0 &&
+        (1.0 * non_target_sample_allele.count() / non_target_total_count) >
+        max_fraction_for_non_target_sample) {
+      skip_high_af_allele_for_non_target = true;
+      break;
+    }
+  }
+  if (skip_high_af_allele_for_non_target) return false;
+
+  AlleleRejectionAcceptance allele_acceptance =
+      IsGoodAltAlleleWithReason(allele, target_samples_total_count, false);
+  if (allele_acceptance == AlleleRejectionAcceptance::ACCEPTED) {
+    return true;
+  }
+  if (allele_acceptance == AlleleRejectionAcceptance::REJECTED_LOW_RATIO ||
+      allele_acceptance == AlleleRejectionAcceptance::REJECTED_LOW_SUPPORT) {
+    for (const auto& all_samples_allele : all_sample_alleles) {
+      if (IsAllelesTheSame(allele, all_samples_allele) &&
+          AlleleRejectionAcceptance::ACCEPTED ==
+              IsGoodAltAlleleWithReason(all_samples_allele,
+                                        all_samples_total_count,
+                              true)) {
+        return true;
+      }  // if (Found good allele in other samples)
+    }    // for (all alleles in all samples)
+  }      // if (allele rejected)
+  return false;
+}
+
+
 // Select the subset of GoodAltAlleles from the alleles of allele_count.
 //
 // Returns the vector of allele objects from allele_count that satisfy
@@ -238,52 +290,13 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
   const std::vector<Allele> non_target_sample_alleles =
       SumAlleleCounts(non_target_allele_counts);
 
-  const int target_samples_total_count =
-      TotalAlleleCounts(target_sample_allele_count);
-  const int all_samples_total_count =
-      TotalAlleleCounts(all_samples_allele_counts);
-
   std::vector<Allele> alt_alleles;
-  // First process target_sample_alleles
   for (const auto& allele : target_sample_alleles) {
-    bool skip_high_af_allele_for_non_target = false;
-    // Having a double for-loop seems inefficient. Can be room for improvement.
-    for (const auto& non_target_sample_allele : non_target_sample_alleles) {
-      if (!IsAllelesTheSame(allele, non_target_sample_allele)) continue;
-      int non_target_total_count =
-          all_samples_total_count - target_samples_total_count;
-      float max_fraction_for_non_target_sample =
-          non_target_sample_allele.type() == AlleleType::SUBSTITUTION
-          ? options_.max_fraction_snps_for_non_target_sample()
-          : options_.max_fraction_indels_for_non_target_sample();
-      if (max_fraction_for_non_target_sample > 0 &&
-          (1.0 * non_target_sample_allele.count() / non_target_total_count) >
-          max_fraction_for_non_target_sample) {
-        skip_high_af_allele_for_non_target = true;
-        break;
-      }
-    }
-    if (skip_high_af_allele_for_non_target) continue;
-
-    AlleleRejectionAcceptance allele_acceptance =
-        IsGoodAltAlleleWithReason(allele, target_samples_total_count, false);
-    if (allele_acceptance == AlleleRejectionAcceptance::ACCEPTED) {
+    if (AlleleFilter(
+            allele, target_sample_allele_count, all_samples_allele_counts,
+            non_target_sample_alleles)) {
       alt_alleles.push_back(allele);
-      continue;
     }
-    if (allele_acceptance == AlleleRejectionAcceptance::REJECTED_LOW_RATIO ||
-        allele_acceptance == AlleleRejectionAcceptance::REJECTED_LOW_SUPPORT) {
-      for (const auto& all_samples_allele : all_sample_alleles) {
-        if (IsAllelesTheSame(allele, all_samples_allele) &&
-            AlleleRejectionAcceptance::ACCEPTED ==
-                IsGoodAltAlleleWithReason(all_samples_allele,
-                                          all_samples_total_count,
-                                true)) {
-          alt_alleles.push_back(allele);
-          break;
-        }  // if (Found good allele in other samples)
-      }    // for (all alleles in all samples)
-    }      // if (allele rejected)
   }        // for (alleles in target samples)
 
   return alt_alleles;

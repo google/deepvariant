@@ -147,6 +147,15 @@ class VariantCaller {
   VariantCaller(const VariantCaller&) = delete;
   VariantCaller& operator=(const VariantCaller&) = delete;
 
+  // Implements the filtering logic for a single allele. Multiple thresholds are
+  // applied to determine if an allele is good enough to call. If the allele
+  // passes all the thresholds, the function returns true. Otherwise, it is
+  // rejected and the function returns false.
+  bool AlleleFilter(
+                    const Allele& allele,
+                    const AlleleCount& target_sample_allele_count,
+                    const std::vector<AlleleCount>& all_samples_allele_counts,
+                    const std::vector<Allele>& non_target_sample_alleles) const;
   // High-level API for calling variants in a region.
   //
   // Generate DeepVariantCall candidates for each position of the window.
@@ -157,7 +166,7 @@ class VariantCaller {
   // * If candidate could not be generated in the first step due to not enough
   //   read support then another attempt is made to generate candidate from all
   //   the reads of all the samples.
-  // Logic is implemented in SelectAltAlleles() function.
+  // Logic is implemented in AlleleFilter() function.
   std::vector<DeepVariantCall> CallsFromAlleleCounts(
       const std::unordered_map<std::string, AlleleCounter*>&
           allele_counts_wrapper,
