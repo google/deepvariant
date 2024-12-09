@@ -36,6 +36,7 @@
 #include "absl/base/optimization.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/strings/ascii.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
@@ -46,9 +47,10 @@
 
 namespace nucleus {
 
-ExampleFormat AutodetectFormat(absl::string_view path, ExampleFormat format) {
+ExampleFormat AutodetectFormat(absl::string_view path,
+                               ExampleFormat format) {
   if (format != ExampleFormat::kAuto) return format;
-  absl::string_view extension;
+  std::string extension;
   RE2::PartialMatch(absl::AsciiStrToLower(path),
                     R"(\.(bagz|tfrecord\.gz)$)",  // extension
                     &extension);
@@ -114,7 +116,8 @@ class ExampleWriter::TfRecordImpl : public ExampleWriter::Impl {
 };
 
 
-ExampleWriter::ExampleWriter(absl::string_view path, ExampleFormat format) {
+ExampleWriter::ExampleWriter(absl::string_view path,
+                             ExampleFormat format) {
   }
   status_ = impl_->status();
 }
