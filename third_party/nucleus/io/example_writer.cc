@@ -40,8 +40,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
-#include "third_party/bagz/bag_writer.h"
-#include "third_party/re2/re2.h"
+#include "re2/re2.h"
 #include "tensorflow/core/lib/io/record_writer.h"
 
 
