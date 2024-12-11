@@ -90,7 +90,7 @@ def create_parse_example_fn(
   elif mode in ['train', 'tune']:
     proto_features = _select_features(
         _PROTO_FEATURES,
-        ['image/encoded', 'label'],
+        ['image/encoded', 'label', 'variant_type'],
     )
   else:
     raise ValueError(
@@ -109,7 +109,9 @@ def create_parse_example_fn(
 
   def parse_example(
       example: tf.train.Example,
-  ) -> Union[Dict[str, tf.Tensor], Tuple[tf.Tensor, tf.Tensor, tf.Tensor]]:
+  ) -> Union[
+      Dict[str, tf.Tensor], Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]
+  ]:
     """Parses a serialized tf.Example, preprocesses the image, and one-hot encodes the label."""
 
     result = tf.io.parse_single_example(
@@ -140,10 +142,12 @@ def create_parse_example_fn(
     if 'label' in result:
       result['label'] = tf.cast(result['label'], dtype=tf.int8)
     if mode in ['train', 'tune']:
+      result['variant_type'] = tf.cast(result['variant_type'], dtype=tf.int8)
       return (
           result['image'],
           result['label'],
           result['sample_weight'],
+          result['variant_type'],
       )
     else:
       del result['image/encoded']

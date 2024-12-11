@@ -341,6 +341,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # class_weights can be specified as a comma-delimited string of weights
   # for each class: e.g. 1,1,10 or 1,1,1
   config.class_weights = ''
+  config.include_snp_indel_metrics = False
 
   # Training hyperparameters
   config.learning_rate = 0.001

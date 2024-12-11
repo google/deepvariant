@@ -115,7 +115,7 @@ class ClassWeightsTest(absltest.TestCase):
     config.batch_size = 128
     config.class_weights = '1,1,10'
     batch = next(get_golden_dataset(config=config, mode='train'))
-    _, _, sample_weights = batch
+    _, _, sample_weights, _ = batch
     # Test for sample weights greater than 1
     self.assertGreater(
         tf.reduce_sum(tf.cast(sample_weights > 1, tf.float32)), 0
@@ -170,7 +170,7 @@ class DataProviderTest(parameterized.TestCase):
 
     # Check that the batch size matches our config
     if mode in ['train', 'tune']:
-      images, labels, sample_weights = ds.get_next()
+      images, labels, sample_weights, _ = ds.get_next()
     else:
       examples = ds.get_next()
       images, labels, sample_weights = (

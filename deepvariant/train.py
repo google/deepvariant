@@ -47,6 +47,7 @@ from deepvariant import data_providers
 from deepvariant import dv_constants
 from deepvariant import dv_utils
 from deepvariant import keras_modeling
+from deepvariant.protos import deepvariant_pb2
 from official.modeling import optimization
 
 _CHECKPOINT_OPTIONS = tf.train.CheckpointOptions()
@@ -277,7 +278,7 @@ def train(config: ml_collections.ConfigDict):
   @tf.function
   def distributed_train_step(iterator, num_steps):
     def run_train_step(inputs):
-      model_input, labels, sample_weight = inputs
+      model_input, labels, sample_weight, variant_type = inputs
       model_input = dv_utils.preprocess_images(model_input)
       labels = tf.squeeze(tf.one_hot(labels, dv_constants.NUM_CLASSES))
       with tf.GradientTape() as tape:
@@ -294,10 +295,31 @@ def train(config: ml_collections.ConfigDict):
       train_loss = loss * strategy.num_replicas_in_sync
 
       for metric in state.train_metrics[:-1]:
+        if metric.name.endswith('snp'):
+          metric_sample_weights = tf.cast(
+              tf.equal(
+                  variant_type,
+                  deepvariant_pb2.SampleOptions.VARIANT_TYPE_SNP,
+              ),
+              tf.float32,
+          )
+        elif metric.name.endswith('indel'):
+          metric_sample_weights = tf.cast(
+              tf.equal(
+                  variant_type,
+                  deepvariant_pb2.SampleOptions.VARIANT_TYPE_INDEL,
+              ),
+              tf.float32,
+          )
+        else:
+          metric_sample_weights = None
         metric.update_state(
             y_pred=probabilities,
             y_true=labels,
+            sample_weight=metric_sample_weights,
         )
+
+      # Update state for overall loss metric
       state.train_metrics[-1].update_state(train_loss)
       return train_loss
 
@@ -309,7 +331,7 @@ def train(config: ml_collections.ConfigDict):
   def distributed_tune_step(iterator, num_steps):
     def run_tune_step(tune_inputs):
       """Single non-distributed tune step."""
-      model_input, labels, sample_weight = tune_inputs
+      model_input, labels, sample_weight, variant_type = tune_inputs
       model_input = dv_utils.preprocess_images(model_input)
       labels = tf.squeeze(tf.one_hot(labels, dv_constants.NUM_CLASSES))
       # The build_classification_head performs a softmax.
@@ -327,11 +349,32 @@ def train(config: ml_collections.ConfigDict):
       )
       tune_loss = loss * strategy.num_replicas_in_sync
 
-      for metric in state.tune_metrics[:-1]:
+      for metric in state.train_metrics[:-1]:
+        if metric.name.endswith('snp'):
+          metric_sample_weights = tf.cast(
+              tf.equal(
+                  variant_type,
+                  deepvariant_pb2.SampleOptions.VARIANT_TYPE_SNP,
+              ),
+              tf.float32,
+          )
+        elif metric.name.endswith('indel'):
+          metric_sample_weights = tf.cast(
+              tf.equal(
+                  variant_type,
+                  deepvariant_pb2.SampleOptions.VARIANT_TYPE_INDEL,
+              ),
+              tf.float32,
+          )
+        else:
+          metric_sample_weights = None
         metric.update_state(
             y_pred=probabilities,
             y_true=labels,
+            sample_weight=metric_sample_weights,
         )
+
+      # Update state for overall loss metric
       state.tune_metrics[-1].update_state(tune_loss)
       return tune_loss
 

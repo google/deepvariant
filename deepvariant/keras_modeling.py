@@ -35,9 +35,9 @@ from absl import logging
 import ml_collections
 import numpy as np
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 from deepvariant import dv_constants
+from deepvariant import metrics
 
 _DEFAULT_WEIGHT_DECAY = 0.00004
 _DEFAULT_BACKBONE_DROPOUT_RATE = 0.2
@@ -346,48 +346,6 @@ def print_model_summary(
   model.summary()
 
 
-class F1ScorePerClass(tfa.metrics.F1Score):
-  """Reports F1 Score for a target class."""
-
-  # TODO: Create custom metrics.py module.
-
-  def __init__(self, num_classes: int, target_class: int, name: str):
-    self.target_class = target_class
-    super().__init__(num_classes=num_classes, name=name)
-
-  def result(self) -> tf.Tensor:
-    return super().result()[self.target_class]
-
-
-def create_metrics():
-  return [
-      tf.keras.metrics.CategoricalAccuracy(),
-      tf.keras.metrics.CategoricalCrossentropy(),
-      tf.keras.metrics.TruePositives(),
-      tf.keras.metrics.TrueNegatives(),
-      tf.keras.metrics.FalsePositives(),
-      tf.keras.metrics.FalseNegatives(),
-      tf.keras.metrics.Precision(),
-      tf.keras.metrics.Precision(name='precision_homref', class_id=0),
-      tf.keras.metrics.Precision(name='precision_het', class_id=1),
-      tf.keras.metrics.Precision(name='precision_homalt', class_id=2),
-      tf.keras.metrics.Recall(),
-      tf.keras.metrics.Recall(name='recall_homref', class_id=0),
-      tf.keras.metrics.Recall(name='recall_het', class_id=1),
-      tf.keras.metrics.Recall(name='recall_homalt', class_id=2),
-      tfa.metrics.F1Score(
-          num_classes=3, average='weighted', name='f1_weighted'
-      ),
-      tfa.metrics.F1Score(num_classes=3, average='micro', name='f1_micro'),
-      tfa.metrics.F1Score(num_classes=3, average='macro', name='f1_macro'),
-      F1ScorePerClass(num_classes=3, target_class=0, name='f1_homref'),
-      F1ScorePerClass(num_classes=3, target_class=1, name='f1_het'),
-      F1ScorePerClass(num_classes=3, target_class=2, name='f1_homalt'),
-      # Leave mean loss as the last metric as it is updated differently.
-      tf.keras.metrics.Mean(name='loss'),
-  ]
-
-
 def create_state(
     config: ml_collections.ConfigDict,
     model_dir: str,
@@ -437,8 +395,12 @@ def create_state(
         optimizer=optimizer,
         global_step=global_step,
         early_stopping=early_stopping,
-        train_metrics=create_metrics(),
-        tune_metrics=create_metrics(),
+        train_metrics=metrics.create_metrics(
+            config,
+        ),
+        tune_metrics=metrics.create_metrics(
+            config,
+        ),
         best_checkpoint_value=best_checkpoint_value,
     )
     ckpt_manager = tf.train.CheckpointManager(

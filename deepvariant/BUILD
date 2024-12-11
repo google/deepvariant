@@ -874,6 +874,7 @@ py_library(
         ":dv_constants",
         ":dv_utils",
         ":dv_utils_using_clif",
+        ":metrics",
         "@absl_py//absl/logging",
     ],
 )
@@ -891,6 +892,12 @@ py_test(
         # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
+)
+
+py_library(
+    name = "metrics",
+    srcs = ["metrics.py"],
+    srcs_version = "PY3",
 )
 
 py_binary(
@@ -1240,6 +1247,7 @@ py_library(
         ":dv_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:sharded_file_utils",
+        "//third_party/nucleus/util:variant_utils",
         "@com_google_protobuf//:protobuf_python",
     ],
 )
