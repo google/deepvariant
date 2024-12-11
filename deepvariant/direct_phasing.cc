@@ -51,6 +51,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "boost/graph/graphviz.hpp"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -386,8 +387,8 @@ std::vector<int> DirectPhasing::AssignPhasesToReads(
 }
 
 void DirectPhasing::InitializeReadMaps(
-    const std::vector<
-        nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads) {
+    absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+        reads) {
   size_t index = 0;
   for (const auto& read : reads) {
     read_to_index_[ReadKey(*read.p_)] = index;

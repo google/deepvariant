@@ -49,6 +49,7 @@ friend class test_case_name##_##test_name##_Test
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
 #include "third_party/nucleus/core/statusor.h"
@@ -211,8 +212,9 @@ class DirectPhasing {
   void Clear();
 
   void InitializeReadMaps(
-      const std::vector<
-          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads);
 
   Vertex AddVertex(
       int64_t position, AlleleType allele_type, absl::string_view bases,
