@@ -41,8 +41,6 @@ import tensorflow as tf
 
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import sharded_file_utils
-# TODO: this dep still uses CLIF.
-from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
 from tensorflow.core.example import example_pb2
 
@@ -55,7 +53,7 @@ STRING_TO_INT_MAX_CONTENTS_LEN = 1020
 STRING_TO_INT_BUFFER_LENGTH = STRING_TO_INT_MAX_CONTENTS_LEN + 1
 
 
-def example_variant_type(example):
+def example_variant_type(example: example_pb2.Example) -> int:
   """Gets the locus field from example as a string."""
   return example.features.feature['variant_type'].int64_list.value[0]
 
@@ -195,16 +193,17 @@ def get_one_example_from_examples_path(source, proto=None):
     raise ValueError(
         'Cannot find matching files with the pattern "{}"'.format(source)
     )
-  for f in files:
-    try:
-      return next(
-          tfrecord.read_tfrecords(f, proto=proto, compression_type='GZIP')
-      )
-    except StopIteration:
-      # Getting a StopIteration from one next() means source_path is empty.
-      # Move on to the next one to try to get one example.
-      pass
-  return None
+  dataset = tf.data.TFRecordDataset(
+      files, compression_type='GZIP', num_parallel_reads=tf.data.AUTOTUNE
+  )
+  if not proto:
+    proto = example_pb2.Example
+  first_record = dataset.take(1)
+  # Iterate and get the raw record (bytes)
+  for raw_record in first_record:
+    output = proto()
+    output.ParseFromString(raw_record.numpy())
+    return output
 
 
 def get_shape_from_examples_path(source):
