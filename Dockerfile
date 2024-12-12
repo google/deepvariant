@@ -77,6 +77,7 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examp
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/runtime_by_region_vis.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/multisample_make_examples.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/labeler/labeled_examples_to_vcf.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/convert_to_saved_model.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/make_examples_somatic.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/train.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/fast_pipeline .
@@ -125,6 +126,10 @@ RUN \
     /opt/deepvariant/bin/labeled_examples_to_vcf && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
+    'python3 /opt/deepvariant/bin/convert_to_saved_model.zip "$@"' > \
+    /opt/deepvariant/bin/convert_to_saved_model && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
     'python3 -u /opt/deepvariant/bin/make_examples_somatic.zip "$@"' > \
     /opt/deepvariant/bin/make_examples_somatic && \
   printf "%s\n%s\n" \
@@ -149,6 +154,7 @@ RUN \
     /opt/deepvariant/bin/run_deepvariant \
     /opt/deepvariant/bin/run_deepsomatic \
     /opt/deepvariant/bin/labeled_examples_to_vcf \
+    /opt/deepvariant/bin/convert_to_saved_model \
     /opt/deepvariant/bin/make_examples_somatic \
     /opt/deepvariant/bin/train
 

@@ -703,6 +703,7 @@ def train(config: ml_collections.ConfigDict):
       return
 
     logging.info('Saving model using saved_model format.')
+    model.save(use_checkpoint_path, save_format='tf')
 
 
 def main(unused_argv):

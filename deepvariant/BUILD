@@ -613,7 +613,6 @@ py_binary(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl/flags",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
     ],
@@ -686,7 +685,6 @@ py_library(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl/flags",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
     ],
@@ -709,7 +707,6 @@ py_binary(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl/flags",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
     ],
@@ -750,7 +747,6 @@ py_binary(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl/flags",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
     ],
@@ -890,7 +886,6 @@ py_test(
         ":keras_modeling",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -911,7 +906,6 @@ py_binary(
     deps = [
         "call_variants_lib",
         ":dv_config",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -969,7 +963,6 @@ py_binary(
         "@absl_py//absl:app",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1190,7 +1183,6 @@ py_binary(
         ":postprocess_variants_py_lib",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1460,7 +1452,6 @@ py_binary(
     deps = [
         ":vcf_stats_report_lib",
         "@absl_py//absl/flags",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1519,7 +1510,6 @@ py_test(
         ":vcf_stats_vis",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1530,7 +1520,6 @@ py_binary(
     python_version = "PY3",
     deps = [
         ":show_examples_lib",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1604,7 +1593,6 @@ py_binary(
     python_version = "PY3",
     deps = [
         ":runtime_by_region_vis_lib",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
@@ -1651,7 +1639,6 @@ py_binary(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl/flags",
-        # TODO: Figure out why we need this dep.
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
     ],
@@ -1679,6 +1666,7 @@ py_library(
         "@absl_py//absl:app",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
     ],
 )
 
