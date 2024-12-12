@@ -29,6 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "third_party/nucleus/io/example_writer.h"
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -49,15 +50,18 @@ namespace nucleus {
 ExampleFormat AutodetectFormat(absl::string_view path,
                                ExampleFormat format) {
   if (format != ExampleFormat::kAuto) return format;
+  std::string path_str = absl::AsciiStrToLower(path);
   std::string extension;
-  RE2::PartialMatch(absl::AsciiStrToLower(path),
-                    R"(\.(bagz|tfrecord\.gz)$)",  // extension
+  // Replace shard strings and .gz extension.
+  RE2::GlobalReplace(&path_str, R"(\@[0-9]+|-\*?\d*-of-\*?\d*|\.gz)", "");
+  RE2::PartialMatch(path_str,
+                    R"(\.(bagz|tfrecord)$)",  // extension
                     &extension);
-  if (extension == "tfrecord.gz") {
+  if (extension == "tfrecord") {
     return ExampleFormat::kTfRecord;
   } else {
-    LOG(FATAL) << absl::StrFormat("Unsupported file extension: %s.\n",
-                                  extension);
+   LOG(FATAL) << absl::StrFormat("Unsupported file extension: %s.\n",
+                                 std::filesystem::path(path).filename());
   }
 }
 
@@ -71,6 +75,10 @@ class ExampleWriter::Impl {
 
  protected:
   void UpdateStatus(absl::Status status) { status_.Update(std::move(status)); }
+  void UpdateStatus(tsl::Status status) {
+  status_.Update(tsl::ToAbslStatus(status));
+  }
+
 
  private:
   absl::Status status_;
@@ -106,17 +114,33 @@ class ExampleWriter::TfRecordImpl : public ExampleWriter::Impl {
   bool Close() override {
     UpdateStatus(tf_->Close());
     UpdateStatus(tf_file_->Close());
+
     return status().ok();
   }
 
  private:
-  std::unique_ptr<tensorflow::WritableFile> tf_file_;
   std::unique_ptr<tensorflow::io::RecordWriter> tf_;
+  std::unique_ptr<tensorflow::WritableFile> tf_file_;
 };
 
 
 ExampleWriter::ExampleWriter(absl::string_view path,
                              ExampleFormat format) {
+  std::filesystem::path p = std::filesystem::path(path);
+  if (!std::filesystem::is_directory(p.parent_path())) {
+  status_ = std::filesystem::create_directories(p.parent_path()) ?
+     absl::OkStatus()
+     : absl::InternalError("Failed to create directories.");
+  }
+  switch (format = AutodetectFormat(path, format)) {
+    case ExampleFormat::kAuto:
+      LOG(INFO) << "Autodetect failure.";
+      status_ = absl::InternalError("Autodetect failure.");
+      return;
+    case ExampleFormat::kTfRecord:
+      LOG(INFO) << "Writing output using TfRecord";
+      impl_ = std::make_unique<TfRecordImpl>(path);
+      break;
   }
   status_ = impl_->status();
 }

@@ -1336,7 +1336,6 @@ cc_library(
     srcs = ["example_writer.cc"],
     hdrs = ["example_writer.h"],
     deps = [
-        "//file/base:path",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
