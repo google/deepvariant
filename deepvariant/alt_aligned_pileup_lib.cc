@@ -42,6 +42,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -269,7 +270,7 @@ Range MakeRange(const std::string& ref_name, int64_t start, int64_t end) {
 }  // namespace
 
 std::vector<Read> RealignReadsToHaplotype(
-    absl::string_view haplotype, const std::vector<Read>& reads,
+    absl::string_view haplotype, absl::Span<const Read> reads,
     absl::string_view contig, int64_t ref_start, int64_t ref_end,
     const nucleus::GenomeReference& ref_reader,
     const MakeExamplesOptions& options) {

@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
@@ -73,10 +74,10 @@ nucleus::genomics::v1::Range CalculateAlignmentRegion(
 // Returns a vector of new reads.
 std::vector<nucleus::genomics::v1::Read> RealignReadsToHaplotype(
     absl::string_view haplotype,
-    const std::vector<nucleus::genomics::v1::Read>& reads,
+    absl::Span<const nucleus::genomics::v1::Read> reads,
     absl::string_view contig,  // Chromosome name for the haplotype.
-    int64_t ref_start,   // Start position of the haplotype relative to the ref.
-    int64_t ref_end,     // End position of the haplotype relative to the ref.
+    int64_t ref_start,  // Start position of the haplotype relative to the ref.
+    int64_t ref_end,    // End position of the haplotype relative to the ref.
     const nucleus::GenomeReference& ref_reader,
     const MakeExamplesOptions& options);
 
