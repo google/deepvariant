@@ -37,7 +37,8 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "boost/interprocess/shared_memory_object.hpp" // NOLINT
+#include "absl/types/span.h"
+#include "boost/interprocess/shared_memory_object.hpp"  // NOLINT
 #include "boost/interprocess/sync/named_mutex.hpp" // NOLINT
 #include "boost/process.hpp" // NOLINT
 
@@ -58,7 +59,7 @@ class FastPipeline {
   std::vector<std::unique_ptr<boost::process::child>>
   SpawnPostprocessVariants();
   void WaitForProcesses(
-      const std::vector<std::unique_ptr<boost::process::child>>& processes);
+      absl::Span<const std::unique_ptr<boost::process::child>> processes);
   void ClearGlobalObjects();
 
  private:

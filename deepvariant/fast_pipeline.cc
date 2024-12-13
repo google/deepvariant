@@ -45,7 +45,8 @@
 #include "absl/flags/parse.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include "boost/asio.hpp" // NOLINT
+#include "absl/types/span.h"
+#include "boost/asio.hpp"  // NOLINT
 #include "boost/interprocess/allocators/allocator.hpp" // NOLINT
 #include "boost/interprocess/detail/os_file_functions.hpp" // NOLINT
 #include "boost/interprocess/managed_shared_memory.hpp" // NOLINT
@@ -217,7 +218,7 @@ FastPipeline::SpawnPostprocessVariants() {
 }
 
 void FastPipeline::WaitForProcesses(
-    const std::vector<std::unique_ptr<boost::process::child>>& processes) {
+    absl::Span<const std::unique_ptr<boost::process::child>> processes) {
   for (auto& process : processes) {
     process->wait();
   }
