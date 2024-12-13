@@ -137,7 +137,7 @@ def train(config: ml_collections.ConfigDict):
   )
   if not tf.io.gfile.exists(example_info_json_path):
     example_info_json_path = (
-        train_dataset_config.tfrecord_path + '.example_info.json'
+        train_dataset_config.tfrecord_path.split(',')[0] + '.example_info.json'
     )
   if not tf.io.gfile.exists(example_info_json_path):
     raise FileNotFoundError(
