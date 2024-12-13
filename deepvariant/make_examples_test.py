@@ -1229,7 +1229,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
-    FLAGS.examples = ''
+    FLAGS.examples = 'out.tfrecord'
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
@@ -1244,7 +1244,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
-    FLAGS.examples = ''
+    FLAGS.examples = 'out.tfrecord'
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
@@ -1260,7 +1260,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
-    FLAGS.examples = ''
+    FLAGS.examples = 'out.tfrecord'
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
@@ -1275,7 +1275,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
-    FLAGS.examples = ''
+    FLAGS.examples = 'out.tfrecord'
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
 
@@ -1289,7 +1289,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
-    FLAGS.examples = ''
+    FLAGS.examples = 'out.tfrecord'
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertEqual(
@@ -1303,7 +1303,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
-    FLAGS.examples = ''
+    FLAGS.examples = 'out.tfrecord'
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
 
     FLAGS.training_random_emit_ref_sites = 0.3
@@ -1322,7 +1322,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
     FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
     FLAGS.mode = 'training'
-    FLAGS.examples = ''
+    FLAGS.examples = 'out.tfrecord'
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
 
     options = make_examples.default_options(add_flags=True)
@@ -1392,7 +1392,7 @@ class DefaultOptionsTest(parameterized.TestCase):
     FLAGS.gvcf = ''
     FLAGS.reads = ''
     FLAGS.ref = ''
-    FLAGS.examples = ''
+    FLAGS.examples = 'out.tfrecord'
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     FLAGS.add_supporting_other_alt_color = True
     options = make_examples.default_options(add_flags=True)
