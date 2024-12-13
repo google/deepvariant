@@ -64,6 +64,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -362,7 +363,7 @@ int Channels::GetChannelIndex(DeepVariantChannelEnum channel_enum) {
 }
 
 int Channels::getMaxEnumValue(
-    const std::vector<DeepVariantChannelEnum>& channel_enums) {
+    absl::Span<const DeepVariantChannelEnum> channel_enums) {
   // Get the max channel enum value we need to support, used to size vectors
   // returns -1 if channel_enums is empty
   int maxEnumValue = -1;

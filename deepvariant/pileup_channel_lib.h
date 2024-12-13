@@ -41,6 +41,7 @@
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -116,7 +117,7 @@ const float MaxFragmentLength = 1000;
 
 class Channels {
  public:  // public only for tests
-  int getMaxEnumValue(const std::vector<DeepVariantChannelEnum>& channel_enums);
+  int getMaxEnumValue(absl::Span<const DeepVariantChannelEnum> channel_enums);
 
   constexpr bool isBaseLevelChannel(DeepVariantChannelEnum channelEnum);
 
