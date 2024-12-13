@@ -178,7 +178,7 @@ int TotalAlleleCounts(const AlleleCount& allele_count,
 // for ref supporting reads. If track_ref_reads flag is set then ref supporting
 // reads are tracked as well but only for positions marked as potential
 // candidates.
-int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
+int TotalAlleleCounts(absl::Span<const AlleleCount> allele_counts,
                       bool include_low_quality) {
   int total_allele_count = 0;
   for (const AlleleCount& allele_count : allele_counts) {

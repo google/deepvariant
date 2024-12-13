@@ -85,7 +85,7 @@ int TotalAlleleCounts(const AlleleCount& allele_count,
 // Gets the total count of observed alleles in allele_count from all DeepTrio
 // samples, which is the sum of the observed non-reference alleles in
 // read_alleles + the total number of reference supporting reads.
-int TotalAlleleCounts(const std::vector<AlleleCount>& allele_counts,
+int TotalAlleleCounts(absl::Span<const AlleleCount> allele_counts,
                       bool include_low_quality = false);
 
 // Binary search for allele index by position.
