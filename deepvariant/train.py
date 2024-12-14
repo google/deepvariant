@@ -349,7 +349,7 @@ def train(config: ml_collections.ConfigDict):
       )
       tune_loss = loss * strategy.num_replicas_in_sync
 
-      for metric in state.train_metrics[:-1]:
+      for metric in state.tune_metrics[:-1]:
         if metric.name.endswith('snp'):
           metric_sample_weights = tf.cast(
               tf.equal(
