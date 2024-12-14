@@ -354,7 +354,7 @@ std::string EncodeVariant(const Variant& variant, const VariantLabel* label) {
 std::string ExamplesGenerator::EncodeExample(
     absl::Span<const std::unique_ptr<ImageRow>> image,
     absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_image,
-    const Variant& variant, const std::vector<std::string>& alt_combination,
+    const Variant& variant, absl::Span<const std::string> alt_combination,
     std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
     const std::unique_ptr<VariantLabel>& label) const {
   // if AltAlignedPileup::kRows is set then number of
@@ -584,10 +584,10 @@ void ExamplesGenerator::CreateAltAlignedImages(
 // images are stacked into one.
 void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     const DeepVariantCall& candidate, const Sample& sample,
-    const std::vector<int>& sample_order,
-    const std::vector<InMemoryReader>& readers,
+    absl::Span<const int> sample_order,
+    absl::Span<const InMemoryReader> readers,
     std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
-    const std::vector<float>& mean_coverage_per_sample,
+    absl::Span<const float> mean_coverage_per_sample,
     const std::unique_ptr<VariantLabel>& label) {
   const auto& variant = candidate.variant();
   const auto encoded_variant_type = EncodedVariantType(variant);
@@ -703,8 +703,8 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
 // reads_per_sample contain reads for each sample. In a multisample mode reads
 // are stacked according to the reads_per_sample order.
 std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
-    const std::vector<nucleus::ConstProtoPtr<DeepVariantCall>>& candidates,
-    const std::vector<std::vector<nucleus::ConstProtoPtr<Read>>>&
+    absl::Span<const nucleus::ConstProtoPtr<DeepVariantCall>> candidates,
+    absl::Span<const std::vector<nucleus::ConstProtoPtr<Read>>>
         reads_per_sample,
     const std::vector<int>& sample_order, const std::string& role,
     // const std::vector<VariantLabel>& labels,

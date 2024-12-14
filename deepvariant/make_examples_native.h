@@ -160,9 +160,9 @@ class ExamplesGenerator {
   // Encodes candidates into TensorFlow examples containing pileup images
   // and writes them to TFRecord.
   std::unordered_map<std::string, int> WriteExamplesInRegion(
-      const std::vector<nucleus::ConstProtoPtr<DeepVariantCall>>& candidates,
-      const std::vector<
-          std::vector<nucleus::ConstProtoPtr<nucleus::genomics::v1::Read>>>&
+      absl::Span<const nucleus::ConstProtoPtr<DeepVariantCall>> candidates,
+      absl::Span<const std::vector<
+          nucleus::ConstProtoPtr<nucleus::genomics::v1::Read>>>
           reads_per_sample,
       const std::vector<int>& sample_order,
       // std::string has to be used here instead of absl::string view due to the
@@ -204,7 +204,7 @@ class ExamplesGenerator {
       absl::Span<const std::unique_ptr<ImageRow>> image,
       absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_image,
       const nucleus::genomics::v1::Variant& variant,
-      const std::vector<std::string>& alt_combination,
+      absl::Span<const std::string> alt_combination,
       std::unordered_map<std::string, int>& stats,
       std::vector<int>& image_shape,
       const std::unique_ptr<VariantLabel>& label) const;
@@ -213,11 +213,11 @@ class ExamplesGenerator {
   // written to TFRecord.
   void CreateAndWriteExamplesForCandidate(
       const DeepVariantCall& candidate, const Sample& sample,
-      const std::vector<int>& sample_order,
-      const std::vector<InMemoryReader>& readers,
+      absl::Span<const int> sample_order,
+      absl::Span<const InMemoryReader> readers,
       std::unordered_map<std::string, int>& stats,
       std::vector<int>& image_shape,
-      const std::vector<float>& mean_coverage_per_sample,
+      absl::Span<const float> mean_coverage_per_sample,
       const std::unique_ptr<VariantLabel>& label);
 
   void CreateAltAlignedImages(
