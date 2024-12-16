@@ -135,110 +135,99 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
   @parameterized.named_parameters(
       dict(
           testcase_name="contig_feature",
-          feature=make_small_model_examples.IdentifyingFeature.CONTIG.value,
+          feature=make_small_model_examples.IdentifyingFeature.CONTIG,
           expected_value="chr9",
       ),
       dict(
           testcase_name="start_feature",
-          feature=make_small_model_examples.IdentifyingFeature.START.value,
-          expected_value=5000,
+          feature=make_small_model_examples.IdentifyingFeature.START,
+          expected_value="5000",
       ),
       dict(
           testcase_name="end_feature",
-          feature=make_small_model_examples.IdentifyingFeature.END.value,
-          expected_value=5001,
+          feature=make_small_model_examples.IdentifyingFeature.END,
+          expected_value="5001",
       ),
       dict(
           testcase_name="ref_feature",
-          feature=make_small_model_examples.IdentifyingFeature.REF.value,
+          feature=make_small_model_examples.IdentifyingFeature.REF,
           expected_value="A",
       ),
       dict(
           testcase_name="alt_1_feature",
-          feature=make_small_model_examples.IdentifyingFeature.ALT_1.value,
+          feature=make_small_model_examples.IdentifyingFeature.ALT_1,
           expected_value="C",
       ),
+  )
+  def test_feature_encoder_encode_identifying_feature(
+      self, feature, expected_value
+  ):
+    self.assertEqual(
+        make_small_model_examples.FeatureEncoder(
+            FAKE_VARIANT_CALL_HET, FAKE_VARIANT_CALL_HET_LABEL
+        ).encode_identifying_feature(
+            feature,
+        ),
+        expected_value,
+    )
+
+  @parameterized.named_parameters(
       dict(
           testcase_name="num_reads_supports_ref_feature",
-          feature=make_small_model_examples.BaseFeature.NUM_READS_SUPPORTS_REF.value,
+          feature=make_small_model_examples.BaseFeature.NUM_READS_SUPPORTS_REF,
           expected_value=3,
       ),
       dict(
           testcase_name="num_reads_supports_alt_1_feature",
-          feature=make_small_model_examples.BaseFeature.NUM_READS_SUPPORTS_ALT_1.value,
+          feature=make_small_model_examples.BaseFeature.NUM_READS_SUPPORTS_ALT_1,
           expected_value=3,
       ),
       dict(
           testcase_name="total_depth_feature",
-          feature=make_small_model_examples.BaseFeature.TOTAL_DEPTH.value,
+          feature=make_small_model_examples.BaseFeature.TOTAL_DEPTH,
           expected_value=6,
       ),
       dict(
           testcase_name="variant_allele_frequency_1_feature",
-          feature=make_small_model_examples.BaseFeature.VARIANT_ALLELE_FREQUENCY_1.value,
+          feature=make_small_model_examples.BaseFeature.VARIANT_ALLELE_FREQUENCY_1,
           expected_value=50,
       ),
       dict(
           testcase_name="ref_mapping_quality_feature",
-          feature=make_small_model_examples.BaseFeature.REF_MAPPING_QUALITY.value,
+          feature=make_small_model_examples.BaseFeature.REF_MAPPING_QUALITY,
           expected_value=40,
       ),
       dict(
           testcase_name="alt_1_mapping_quality_feature",
-          feature=make_small_model_examples.BaseFeature.ALT_1_MAPPING_QUALITY.value,
+          feature=make_small_model_examples.BaseFeature.ALT_1_MAPPING_QUALITY,
           expected_value=50,
       ),
       dict(
           testcase_name="ref_base_quality_feature",
-          feature=make_small_model_examples.BaseFeature.REF_BASE_QUALITY.value,
+          feature=make_small_model_examples.BaseFeature.REF_BASE_QUALITY,
           expected_value=30,
       ),
       dict(
           testcase_name="alt_1_base_quality_feature",
-          feature=make_small_model_examples.BaseFeature.ALT_1_BASE_QUALITY.value,
+          feature=make_small_model_examples.BaseFeature.ALT_1_BASE_QUALITY,
           expected_value=50,
       ),
       dict(
-          testcase_name="is_snp_feature",
-          feature=make_small_model_examples.VariantFeature.IS_SNP.value,
-          expected_value=1,
-      ),
-      dict(
-          testcase_name="is_insertion",
-          feature=make_small_model_examples.VariantFeature.IS_INSERTION.value,
-          expected_value=0,
-      ),
-      dict(
-          testcase_name="is_deletion_feature",
-          feature=make_small_model_examples.VariantFeature.IS_DELETION.value,
-          expected_value=0,
-      ),
-      dict(
-          testcase_name="insertion_length_feature",
-          feature=make_small_model_examples.VariantFeature.INSERTION_LENGTH.value,
-          expected_value=0,
-      ),
-      dict(
-          testcase_name="deletion_length_feature",
-          feature=make_small_model_examples.VariantFeature.DELETION_LENGTH.value,
-          expected_value=0,
-      ),
-      dict(
           testcase_name="ref_reverse_strand_ratio_feature",
-          feature=make_small_model_examples.BaseFeature.REF_REVERSE_STRAND_RATIO.value,
+          feature=make_small_model_examples.BaseFeature.REF_REVERSE_STRAND_RATIO,
           expected_value=66,
       ),
       dict(
           testcase_name="alt_1_reverse_strand_ratio_feature",
-          feature=make_small_model_examples.BaseFeature.ALT_1_REVERSE_STRAND_RATIO.value,
+          feature=make_small_model_examples.BaseFeature.ALT_1_REVERSE_STRAND_RATIO,
           expected_value=0,
       ),
   )
-  def test_feature_encoder_encode_feature(self, feature, expected_value):
+  def test_feature_encoder_encode_base_feature(self, feature, expected_value):
     self.assertEqual(
         make_small_model_examples.FeatureEncoder(
             FAKE_VARIANT_CALL_HET, FAKE_VARIANT_CALL_HET_LABEL
-        ).encode_feature(
+        ).encode_base_feature(
             feature,
         ),
         expected_value,
@@ -248,75 +237,107 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     self.assertEqual(
         make_small_model_examples.FeatureEncoder(
             FAKE_VARIANT_CALL_HET
-        ).one_hot_encode_label(FAKE_VARIANT_CALL_HET_LABEL),
+        ).encode_label(FAKE_VARIANT_CALL_HET_LABEL),
         [0, 1, 0],
     )
 
   @parameterized.named_parameters(
       dict(
+          testcase_name="is_snp_feature",
+          feature=make_small_model_examples.VariantFeature.IS_SNP,
+          candidate=FAKE_VARIANT_CALL_HET,
+          expected_value=1,
+      ),
+      dict(
+          testcase_name="is_insertion",
+          feature=make_small_model_examples.VariantFeature.IS_INSERTION,
+          candidate=FAKE_VARIANT_CALL_HET,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="is_deletion_feature",
+          feature=make_small_model_examples.VariantFeature.IS_DELETION,
+          candidate=FAKE_VARIANT_CALL_HET,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="insertion_length_feature",
+          feature=make_small_model_examples.VariantFeature.INSERTION_LENGTH,
+          candidate=FAKE_VARIANT_CALL_HET,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="deletion_length_feature",
+          feature=make_small_model_examples.VariantFeature.DELETION_LENGTH,
+          candidate=FAKE_VARIANT_CALL_HET,
+          expected_value=0,
+      ),
+      dict(
           testcase_name="is_snp_feature_insertion",
-          feature=make_small_model_examples.VariantFeature.IS_SNP.value,
+          feature=make_small_model_examples.VariantFeature.IS_SNP,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=0,
       ),
       dict(
           testcase_name="is_snp_feature_deletion",
-          feature=make_small_model_examples.VariantFeature.IS_SNP.value,
+          feature=make_small_model_examples.VariantFeature.IS_SNP,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=0,
       ),
       dict(
           testcase_name="is_insertion_feature_insertion",
-          feature=make_small_model_examples.VariantFeature.IS_INSERTION.value,
+          feature=make_small_model_examples.VariantFeature.IS_INSERTION,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=1,
       ),
       dict(
           testcase_name="is_insertion_feature_deletion",
-          feature=make_small_model_examples.VariantFeature.IS_INSERTION.value,
+          feature=make_small_model_examples.VariantFeature.IS_INSERTION,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=0,
       ),
       dict(
           testcase_name="is_deletion_feature_insertion",
-          feature=make_small_model_examples.VariantFeature.IS_DELETION.value,
+          feature=make_small_model_examples.VariantFeature.IS_DELETION,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=0,
       ),
       dict(
           testcase_name="is_deletion_feature_deletion",
-          feature=make_small_model_examples.VariantFeature.IS_DELETION.value,
+          feature=make_small_model_examples.VariantFeature.IS_DELETION,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=1,
       ),
       dict(
           testcase_name="insertion_length_feature_insertion",
-          feature=make_small_model_examples.VariantFeature.INSERTION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.INSERTION_LENGTH,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=2,
       ),
       dict(
           testcase_name="insertion_length_feature_deletion",
-          feature=make_small_model_examples.VariantFeature.INSERTION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.INSERTION_LENGTH,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=0,
       ),
       dict(
           testcase_name="deletion_length_feature_insertion",
-          feature=make_small_model_examples.VariantFeature.DELETION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.DELETION_LENGTH,
           candidate=FAKE_VARIANT_INSERTION,
           expected_value=0,
       ),
       dict(
           testcase_name="deletion_length_feature_deletion",
-          feature=make_small_model_examples.VariantFeature.DELETION_LENGTH.value,
+          feature=make_small_model_examples.VariantFeature.DELETION_LENGTH,
           candidate=FAKE_VARIANT_DELETION,
           expected_value=3,
       ),
   )
   def test_encode_variant_feature(self, feature, candidate, expected_value):
     self.assertEqual(
-        make_small_model_examples.FeatureEncoder(candidate).encode_feature(
+        make_small_model_examples.FeatureEncoder(
+            candidate
+        ).encode_variant_feature(
             feature,
         ),
         expected_value,
@@ -326,17 +347,35 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
       dict(
           testcase_name="vaf_context_window_size_3",
           vaf_context_window_size=3,
-          expected_value=[50, 87, 30],
+          expected_value={
+              "variant_allele_frequency_at_minus_1": 50,
+              "variant_allele_frequency_at_plus_0": 87,
+              "variant_allele_frequency_at_plus_1": 30,
+          },
       ),
       dict(
           testcase_name="vaf_context_window_size_5",
           vaf_context_window_size=5,
-          expected_value=[0, 50, 87, 30, 40],
+          expected_value={
+              "variant_allele_frequency_at_minus_2": 0,
+              "variant_allele_frequency_at_minus_1": 50,
+              "variant_allele_frequency_at_plus_0": 87,
+              "variant_allele_frequency_at_plus_1": 30,
+              "variant_allele_frequency_at_plus_2": 40,
+          },
       ),
       dict(
           testcase_name="vaf_context_window_size_7",
           vaf_context_window_size=7,
-          expected_value=[0, 0, 50, 87, 30, 40, 0],
+          expected_value={
+              "variant_allele_frequency_at_minus_3": 0,
+              "variant_allele_frequency_at_minus_2": 0,
+              "variant_allele_frequency_at_minus_1": 50,
+              "variant_allele_frequency_at_plus_0": 87,
+              "variant_allele_frequency_at_plus_1": 30,
+              "variant_allele_frequency_at_plus_2": 40,
+              "variant_allele_frequency_at_plus_3": 0,
+          },
       ),
   )
   def test_feature_encoder_encode_variant_allele_frequency_at_position(
@@ -575,40 +614,28 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     self.assertEqual(kept, [FAKE_VARIANT_CALL_HET])
     self.assertEqual(
         examples[0],
-        tf.train.Example(
-            features=tf.train.Features(
-                feature={
-                    make_small_model_examples.FEATURES_ENCODED: (
-                        tf.train.Feature(
-                            int64_list=tf.train.Int64List(
-                                value=[
-                                    3,
-                                    3,
-                                    6,
-                                    50,
-                                    40,
-                                    50,
-                                    30,
-                                    50,
-                                    66,
-                                    0,
-                                    1,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    50,
-                                    87,
-                                    30,
-                                    40,
-                                ]
-                            )
-                        )
-                    ),
-                }
-            )
-        ),
+        [
+            3,
+            3,
+            6,
+            50,
+            40,
+            50,
+            30,
+            50,
+            66,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            50,
+            87,
+            30,
+            40,
+        ],
     )
 
   def test_encode_inference_examples_expand_by_haplotype(self):
@@ -628,72 +655,59 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     self.assertEqual(kept, [FAKE_VARIANT_CALL_HET])
     self.assertEqual(
         examples[0],
-        tf.train.Example(
-            features=tf.train.Features(
-                feature={
-                    make_small_model_examples.FEATURES_ENCODED: (
-                        tf.train.Feature(
-                            int64_list=tf.train.Int64List(
-                                value=[
-                                    3,
-                                    3,
-                                    6,
-                                    50,
-                                    40,
-                                    50,
-                                    30,
-                                    50,
-                                    66,
-                                    0,
-                                    1,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    50,
-                                    87,
-                                    30,
-                                    40,
-                                    1,
-                                    0,
-                                    1,
-                                    0,
-                                    40,
-                                    0,
-                                    25,
-                                    0,
-                                    100,
-                                    0,
-                                    1,
-                                    2,
-                                    3,
-                                    66,
-                                    60,
-                                    45,
-                                    30,
-                                    55,
-                                    0,
-                                    0,
-                                    1,
-                                    1,
-                                    2,
-                                    50,
-                                    20,
-                                    60,
-                                    35,
-                                    40,
-                                    100,
-                                    0,
-                                ],
-                            )
-                        )
-                    ),
-                }
-            )
-        ),
+        [
+            3,
+            3,
+            6,
+            50,
+            40,
+            50,
+            30,
+            50,
+            66,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            50,
+            87,
+            30,
+            40,
+            1,
+            0,
+            1,
+            0,
+            40,
+            0,
+            25,
+            0,
+            100,
+            0,
+            1,
+            2,
+            3,
+            66,
+            60,
+            45,
+            30,
+            55,
+            0,
+            0,
+            1,
+            1,
+            2,
+            50,
+            20,
+            60,
+            35,
+            40,
+            100,
+            0,
+        ],
     )
-
 
 if __name__ == "__main__":
   absltest.main()

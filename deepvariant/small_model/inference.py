@@ -89,17 +89,6 @@ class SmallModelVariantCaller:
         batch_size,
     )
 
-  def _cast_to_np_array(
-      self, examples: Sequence[tf.train.Example]
-  ) -> np.ndarray:
-    """Casts the given examples to a numpy array."""
-    return np.array([
-        example.features.feature[
-            make_small_model_examples.FEATURES_ENCODED
-        ].int64_list.value
-        for example in examples
-    ])
-
   def _accept_call_result(self, candidate, genotype_probabilities) -> bool:
     """Determine if the given probability is above the GQ threshold."""
     threshold = (
@@ -142,13 +131,13 @@ class SmallModelVariantCaller:
   def call_variants(
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
-      examples: Sequence[tf.train.Example],
+      examples: Sequence[Sequence[int]],
   ) -> Tuple[
       List[deepvariant_pb2.CallVariantsOutput],
       List[deepvariant_pb2.DeepVariantCall],
   ]:
     """Calls variants on the given examples."""
-    probabilities = self.classify(self._cast_to_np_array(examples))
+    probabilities = self.classify(np.array(examples))
     call_variant_outputs = []
     filtered_candidates = []
     for candidate, genotype_probabilities in zip(candidates, probabilities):

@@ -35,6 +35,7 @@ import tensorflow as tf
 
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
+from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import variant_utils
 
 # Example encoding keys
@@ -106,6 +107,24 @@ ENCODING_BY_GENOTYPE = {
     (1, 0): GenotypeEncoding.HET.value,
     (1, 1): GenotypeEncoding.HOM_ALT.value,
 }
+FAKE_CANDIDATE = deepvariant_pb2.DeepVariantCall(
+    variant=variants_pb2.Variant(alternate_bases=[''])
+)
+
+
+def _mean_for_attribute(
+    read_infos: Sequence[deepvariant_pb2.DeepVariantCall.ReadSupport],
+    attribute_name: str,
+    multiplier: int = 1,
+) -> int:
+  """Calculates the mean of an attribute for a list of reads."""
+  if not read_infos:
+    return 0
+  return (
+      multiplier
+      * sum(getattr(r, attribute_name) for r in read_infos)
+      // len(read_infos)
+  )
 
 
 def _filter_by_haplotype(
@@ -166,13 +185,13 @@ class FeatureEncoder:
     """Returns the contig of the candidate."""
     return self.candidate.variant.reference_name
 
-  def _get_start(self) -> int:
+  def _get_start(self) -> str:
     """Returns the start position of the candidate."""
-    return self.candidate.variant.start
+    return str(self.candidate.variant.start)
 
-  def _get_end(self) -> int:
+  def _get_end(self) -> str:
     """Returns the end position of the candidate."""
-    return self.candidate.variant.end
+    return str(self.candidate.variant.end)
 
   def _get_ref(self) -> str:
     """Returns the reference base of the candidate."""
@@ -203,58 +222,30 @@ class FeatureEncoder:
 
   def _get_ref_mapping_quality(self) -> int:
     """Returns the mapping quality of the candidate."""
-    if not self.ref_read_infos:
-      return 0
-    return (
-        sum(r.mapping_quality for r in self.ref_read_infos)
-        // self.ref_read_infos_count
-    )
+    return _mean_for_attribute(self.ref_read_infos, 'mapping_quality')
 
   def _get_alt_1_mapping_quality(self) -> int:
     """Returns the mapping quality of the candidate."""
-    if not self.alt_1_read_infos:
-      return 0
-    return (
-        sum(r.mapping_quality for r in self.alt_1_read_infos)
-        // self.alt_1_read_infos_count
-    )
+    return _mean_for_attribute(self.alt_1_read_infos, 'mapping_quality')
 
   def _get_ref_base_quality(self) -> int:
     """Returns the mapping quality of the candidate."""
-    if not self.ref_read_infos:
-      return 0
-    return (
-        sum(r.average_base_quality for r in self.ref_read_infos)
-        // self.ref_read_infos_count
-    )
+    return _mean_for_attribute(self.ref_read_infos, 'average_base_quality')
 
   def _get_alt_1_base_quality(self) -> int:
     """Returns the mapping quality of the candidate."""
-    if not self.alt_1_read_infos:
-      return 0
-    return (
-        sum(r.average_base_quality for r in self.alt_1_read_infos)
-        // self.alt_1_read_infos_count
-    )
+    return _mean_for_attribute(self.alt_1_read_infos, 'average_base_quality')
 
   def _get_ref_reverse_strand_ratio(self) -> int:
     """Returns the reverse strand ratio of the candidate."""
-    if not self.ref_read_infos:
-      return 0
-    return (
-        100
-        * sum(r.is_reverse_strand for r in self.ref_read_infos)
-        // self.ref_read_infos_count
+    return _mean_for_attribute(
+        self.ref_read_infos, 'is_reverse_strand', multiplier=100
     )
 
   def _get_alt_1_reverse_strand_ratio(self) -> int:
     """Returns the reverse strand ratio of the candidate."""
-    if not self.alt_1_read_infos:
-      return 0
-    return (
-        100
-        * sum(r.is_reverse_strand for r in self.alt_1_read_infos)
-        // self.alt_1_read_infos_count
+    return _mean_for_attribute(
+        self.alt_1_read_infos, 'is_reverse_strand', multiplier=100
     )
 
   def _get_is_snp(self) -> int:
@@ -293,86 +284,130 @@ class FeatureEncoder:
     )
     return max(0, deletion_length)
 
-  def encode_feature(
+  def encode_base_feature(
       self,
-      feature: str,
-  ) -> tf.train.Feature:
-    """Encodes the given feature from a candidate or label.
+      feature: BaseFeature,
+  ) -> int:
+    """Encodes the given base feature for the candidate.
 
     Args:
       feature: specifies which feature to extract
 
     Returns:
-      The extracted value for that feature for the candidate.
+      The extracted value for that base feature for the candidate.
     """
-    # Identifying features
-    if feature == IdentifyingFeature.CONTIG.value:
-      return self._get_contig()
-    elif feature == IdentifyingFeature.START.value:
-      return self._get_start()
-    elif feature == IdentifyingFeature.END.value:
-      return self._get_end()
-    elif feature == IdentifyingFeature.REF.value:
-      return self._get_ref()
-    elif feature == IdentifyingFeature.ALT_1.value:
-      return self._get_alt_1()
-    # Base features
-    elif feature == BaseFeature.NUM_READS_SUPPORTS_REF.value:
+    if feature == BaseFeature.NUM_READS_SUPPORTS_REF:
       return self._get_num_reads_supports_ref()
-    elif feature == BaseFeature.NUM_READS_SUPPORTS_ALT_1.value:
+    elif feature == BaseFeature.NUM_READS_SUPPORTS_ALT_1:
       return self._get_num_reads_supports_alt_1()
-    elif feature == BaseFeature.TOTAL_DEPTH.value:
+    elif feature == BaseFeature.TOTAL_DEPTH:
       return self._get_total_depth()
-    elif feature == BaseFeature.VARIANT_ALLELE_FREQUENCY_1.value:
+    elif feature == BaseFeature.VARIANT_ALLELE_FREQUENCY_1:
       return self._get_variant_allele_frequency_1()
-    elif feature == BaseFeature.REF_MAPPING_QUALITY.value:
+    elif feature == BaseFeature.REF_MAPPING_QUALITY:
       return self._get_ref_mapping_quality()
-    elif feature == BaseFeature.ALT_1_MAPPING_QUALITY.value:
+    elif feature == BaseFeature.ALT_1_MAPPING_QUALITY:
       return self._get_alt_1_mapping_quality()
-    elif feature == BaseFeature.REF_BASE_QUALITY.value:
+    elif feature == BaseFeature.REF_BASE_QUALITY:
       return self._get_ref_base_quality()
-    elif feature == BaseFeature.ALT_1_BASE_QUALITY.value:
+    elif feature == BaseFeature.ALT_1_BASE_QUALITY:
       return self._get_alt_1_base_quality()
-    elif feature == BaseFeature.REF_REVERSE_STRAND_RATIO.value:
+    elif feature == BaseFeature.REF_REVERSE_STRAND_RATIO:
       return self._get_ref_reverse_strand_ratio()
-    elif feature == BaseFeature.ALT_1_REVERSE_STRAND_RATIO.value:
+    elif feature == BaseFeature.ALT_1_REVERSE_STRAND_RATIO:
       return self._get_alt_1_reverse_strand_ratio()
-    # Variant features
-    elif feature == VariantFeature.IS_SNP.value:
+    else:
+      raise ValueError(f'{feature.value} does not map to a callable.')
+
+  def encode_variant_feature(
+      self,
+      feature: VariantFeature,
+  ) -> int:
+    """Encodes the given variant feature for the candidate.
+
+    Args:
+      feature: specifies which feature to extract
+
+    Returns:
+      The extracted value for that variant feature for the candidate.
+    """
+    if feature == VariantFeature.IS_SNP:
       return self._get_is_snp()
-    elif feature == VariantFeature.IS_INSERTION.value:
+    elif feature == VariantFeature.IS_INSERTION:
       return self._get_is_insertion()
-    elif feature == VariantFeature.IS_DELETION.value:
+    elif feature == VariantFeature.IS_DELETION:
       return self._get_is_deletion()
-    elif feature == VariantFeature.INSERTION_LENGTH.value:
+    elif feature == VariantFeature.INSERTION_LENGTH:
       return self._get_insertion_length()
-    elif feature == VariantFeature.DELETION_LENGTH.value:
+    elif feature == VariantFeature.DELETION_LENGTH:
       return self._get_deletion_length()
     else:
-      raise ValueError(f'{feature} does not map to a callable.')
+      raise ValueError(f'{feature.value} does not map to a callable.')
+
+  def encode_identifying_feature(
+      self,
+      feature: IdentifyingFeature,
+  ) -> str:
+    """Encodes the given identifying feature for the candidate.
+
+    Args:
+      feature: specifies which feature to extract
+
+    Returns:
+      The extracted value for that identifying feature for the candidate.
+    """
+    if feature == IdentifyingFeature.CONTIG:
+      return self._get_contig()
+    elif feature == IdentifyingFeature.START:
+      return self._get_start()
+    elif feature == IdentifyingFeature.END:
+      return self._get_end()
+    elif feature == IdentifyingFeature.REF:
+      return self._get_ref()
+    elif feature == IdentifyingFeature.ALT_1:
+      return self._get_alt_1()
+    else:
+      raise ValueError(f'{feature.value} does not map to a callable.')
 
   def encode_variant_allele_frequency_at_position(
       self,
       vaf_context_window_size: int,
-  ) -> Sequence[int]:
-    """Returns the VAF for the candidate at the given position."""
+  ) -> dict[str, int]:
+    """Returns the VAF for the candidate at the given position.
+
+    Args:
+      vaf_context_window_size: the context window size to use for the VAF.
+
+    Returns:
+      A dictionary mapping context VAF feature names to values.
+    """
     if not vaf_context_window_size:
-      return []
-    allele_frequencies_at_positions = []
+      return {}
+    allele_frequencies_at_positions = {}
     for offset in _get_context_allele_frequency_offsets(
         vaf_context_window_size
     ):
       position = self.candidate.variant.start + offset
-      allele_frequencies_at_positions.append(
+      direction = 'minus' if offset < 0 else 'plus'
+      feature_name = f'variant_allele_frequency_at_{direction}_{abs(offset)}'
+      allele_frequencies_at_positions[feature_name] = (
           self.candidate.allele_frequency_at_position.get(position, 0)
       )
+
     return allele_frequencies_at_positions
 
-  def one_hot_encode_label(
+  def encode_label(
       self,
       label: variant_labeler.VariantLabel,
   ) -> Sequence[int]:
-    """Returns a one-hot encoded genotype."""
+    """Returns a one-hot encoded genotype.
+
+    Args:
+      label: the label to encode into a genotype.
+
+    Returns:
+      A one-hot encoded genotype.
+    """
     value = [0 for _ in GenotypeEncoding]
     value[ENCODING_BY_GENOTYPE[label.genotype]] = 1
     return value
@@ -387,30 +422,31 @@ class SmallModelExampleFactory:
       accept_snps: bool = True,
       accept_indels: bool = True,
       expand_by_haplotype: bool = False,
+      model_features: Sequence[str] | None = None,
   ):
     self.accept_snps = accept_snps
     self.accept_indels = accept_indels
     self.expand_by_haplotype = expand_by_haplotype
     self.vaf_context_window_size = vaf_context_window_size
+    self.model_features = self._get_and_validate_model_features(model_features)
 
-  @property
-  def model_features(self):
+  def _get_and_validate_model_features(
+      self, model_features: Sequence[str] | None
+  ) -> Sequence[str]:
     """Returns the model features for the small model."""
-    feature_names = []
-    feature_names.extend([f.value for f in BaseFeature])
-    feature_names.extend([f.value for f in VariantFeature])
-    feature_names.extend([
-        f"variant_allele_frequency_at_{'minus' if offset < 0 else 'plus'}_{abs(offset)}"
-        for offset in _get_context_allele_frequency_offsets(
-            self.vaf_context_window_size
+    all_features = list(
+        self._encode_candidate_feature_dict(FAKE_CANDIDATE).keys()
+    )
+    if model_features:
+      if not set(model_features).issubset(all_features):
+        unrecognized_features = set(model_features).difference(all_features)
+        raise ValueError(
+            'The specified small model features are invalid:'
+            f' {",".join(unrecognized_features)}'
         )
-    ])
-    if self.expand_by_haplotype:
-      for hp_tag in Haplotype:
-        feature_names.extend(
-            [f'{f.value}_hp_{hp_tag.value}' for f in BaseFeature]
-        )
-    return feature_names
+      return model_features
+    else:
+      return all_features
 
   def _pass_candidate_to_small_model(
       self,
@@ -424,21 +460,23 @@ class SmallModelExampleFactory:
     else:
       return self.accept_indels
 
-  def _encode_candidate_model_features(
+  def _encode_candidate_feature_dict(
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
-      read_phases,
-  ) -> List[int]:
-    """Encodes the model features for a candidate."""
+      read_phases: dict[str, int] | None = None,
+  ) -> dict[str, int]:
+    """Encodes all model features for a given candidate into a key-value dict."""
     feature_encoder = FeatureEncoder(candidate)
-    candidate_example = [
-        feature_encoder.encode_feature(feature.value) for feature in BaseFeature
-    ]
-    candidate_example.extend([
-        feature_encoder.encode_feature(feature.value)
+    candidate_example = {}
+    candidate_example.update({
+        feature.value: feature_encoder.encode_base_feature(feature)
+        for feature in BaseFeature
+    })
+    candidate_example.update({
+        feature.value: feature_encoder.encode_variant_feature(feature)
         for feature in VariantFeature
-    ])
-    candidate_example.extend(
+    })
+    candidate_example.update(
         feature_encoder.encode_variant_allele_frequency_at_position(
             self.vaf_context_window_size
         )
@@ -448,55 +486,65 @@ class SmallModelExampleFactory:
         haplotype_feature_encoder = FeatureEncoder(
             candidate, haplotype.value, read_phases
         )
-        candidate_example.extend([
-            haplotype_feature_encoder.encode_feature(feature.value)
-            for feature in BaseFeature
-        ])
+        for feature in BaseFeature:
+          candidate_example.update({
+              f'{feature.value}_hp_{haplotype.value}': (
+                  haplotype_feature_encoder.encode_base_feature(feature)
+              )
+          })
     return candidate_example
 
-  def _encode_candidate_example(
-      self, candidate, label, read_phases, is_training
-  ) -> tf.train.Example:
-    """Encodes a candidate example.
+  def _encode_model_features(self, candidate, read_phases) -> Sequence[int]:
+    """Encodes a candidate example into the selected model features.
 
     Args:
       candidate: The candidate to be encoded.
-      label: The label of the candidate.
       read_phases: A dictionary mapping read names to haplotype tags.
-      is_training: Whether the example is for training or inference.
 
     Returns:
-      A list of encoded features.
+      A feature vector.
     """
-    features = {
-        FEATURES_ENCODED: tf.train.Feature(
-            int64_list=tf.train.Int64List(
-                value=self._encode_candidate_model_features(
-                    candidate, read_phases
-                )
-            )
-        ),
-    }
-    if is_training:
-      feature_encoder = FeatureEncoder(candidate)
-      features.update({
-          IDS_ENCODED: tf.train.Feature(
-              bytes_list=tf.train.BytesList(
-                  value=[
-                      str(
-                          feature_encoder.encode_feature(feature.value)
-                      ).encode()
-                      for feature in IdentifyingFeature
-                  ]
-              )
-          ),
-          LABEL_ENCODED: tf.train.Feature(
-              int64_list=tf.train.Int64List(
-                  value=feature_encoder.one_hot_encode_label(label)
-              )
-          ),
-      })
-    return tf.train.Example(features=tf.train.Features(feature=features))
+    encoded_candidate = self._encode_candidate_feature_dict(
+        candidate, read_phases
+    )
+    return [encoded_candidate[feature] for feature in self.model_features]
+
+  def _encode_candidate_example(
+      self,
+      candidate: deepvariant_pb2.DeepVariantCall,
+      label: variant_labeler.VariantLabel | None,
+      read_phases: Dict[str, int],
+  ) -> tf.train.Example:
+    """Encodes a candidate example."""
+    feature_encoder = FeatureEncoder(candidate)
+    return tf.train.Example(
+        features=tf.train.Features(
+            feature={
+                FEATURES_ENCODED: tf.train.Feature(
+                    int64_list=tf.train.Int64List(
+                        value=self._encode_model_features(
+                            candidate, read_phases
+                        )
+                    )
+                ),
+                IDS_ENCODED: tf.train.Feature(
+                    bytes_list=tf.train.BytesList(
+                        value=[
+                            feature_encoder.encode_identifying_feature(
+                                feature
+                            ).encode()
+                            for feature in IdentifyingFeature
+                        ]
+                    )
+                ),
+                LABEL_ENCODED: tf.train.Feature(
+                    int64_list=tf.train.Int64List(
+                        value=feature_encoder.encode_label(label)
+                    )
+                ),
+            }
+        )
+    )
 
   def encode_training_examples(
       self,
@@ -520,7 +568,7 @@ class SmallModelExampleFactory:
       if not self._pass_candidate_to_small_model(candidate):
         continue
       candidate_example = self._encode_candidate_example(
-          candidate, label, read_phases, is_training=True
+          candidate, label, read_phases
       )
       candidate_examples.append(candidate_example)
     return candidate_examples
@@ -532,7 +580,7 @@ class SmallModelExampleFactory:
   ) -> Tuple[
       List[deepvariant_pb2.DeepVariantCall],
       List[deepvariant_pb2.DeepVariantCall],
-      List[tf.train.Example],
+      List[Sequence[int]],
   ]:
     """Generates examples from the given candidates for inference.
 
@@ -554,8 +602,6 @@ class SmallModelExampleFactory:
         skipped_candidates.append(candidate)
         continue
       kept_candidates.append(candidate)
-      candidate_example = self._encode_candidate_example(
-          candidate, None, read_phases, is_training=False
-      )
+      candidate_example = self._encode_model_features(candidate, read_phases)
       examples.append(candidate_example)
     return skipped_candidates, kept_candidates, examples
