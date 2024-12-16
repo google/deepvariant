@@ -32,16 +32,23 @@
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstring>
+#include <sstream>
 #include <string>
+#include <vector>
 
 #include <gmock/gmock-generated-matchers.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
+#include "third_party/nucleus/platform/types.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/message.h"
@@ -329,8 +336,9 @@ bool ProtoCompare(const internal::ProtoComparison& comp,
 // Describes the types of the expected and the actual protocol buffer.
 string DescribeTypes(const google::protobuf::Message& expected,
                      const google::protobuf::Message& actual) {
-  return "whose type should be " + expected.GetDescriptor()->full_name() +
-      " but actually is " + actual.GetDescriptor()->full_name();
+  return absl::StrCat("whose type should be ",
+                      expected.GetDescriptor()->full_name(),
+                      " but actually is ", actual.GetDescriptor()->full_name());
 }
 
 // Prints the protocol buffer pointed to by proto.

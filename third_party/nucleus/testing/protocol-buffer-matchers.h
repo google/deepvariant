@@ -715,7 +715,7 @@ class WhenDeserializedMatcher
   }
 
   virtual string ExpectedTypeName() const {
-    return expected_proto_->GetDescriptor()->full_name();
+    return std::string(expected_proto_->GetDescriptor()->full_name());
   }
 
   virtual string TypeArgName() const { return "protobuf"; }
