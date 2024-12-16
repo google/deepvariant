@@ -60,6 +60,29 @@ class F1ScorePerClass(tfa_metrics.F1Score):
     return super().result()[self.target_class]
 
 
+class LearningRateMetric(tf.keras.metrics.Metric):
+  """Reports the learning rate of the optimizer."""
+
+  def __init__(
+      self,
+      optimizer: tf.keras.optimizers.Optimizer,
+      name="learning_rate",
+      **kwargs,
+  ):
+    super().__init__(name=name, **kwargs)
+    self.learning_rate = self.add_weight(name="lr", initializer="zeros")
+    self.optimizer = optimizer
+
+  def update_state(self, y_true, y_pred, sample_weight=None):
+    self.learning_rate.assign(self.optimizer.learning_rate)
+
+  def result(self):
+    return self.learning_rate
+
+  def reset_state(self):
+    self.learning_rate.assign(0.0)
+
+
 def keras_model_metrics() -> list[tf.keras.metrics.Metric]:
   """Returns a list of Keras model metrics."""
   return [
@@ -88,8 +111,26 @@ def keras_model_metrics() -> list[tf.keras.metrics.Metric]:
   ]
 
 
-def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
+def get_learning_rate(
+    config: ml_collections.ConfigDict,
+) -> tf.keras.optimizers.schedules.ExponentialDecay:
+  """Returns an exponential decay learning rate for the model."""
+  model_params = config.model_params
+  steps_per_epoch = config.num_train_samples // config.batch_size
+  decay_steps = int(
+      steps_per_epoch * model_params.learning_rate_num_epochs_per_decay
+  )
+  return tf.keras.optimizers.schedules.ExponentialDecay(
+      initial_learning_rate=model_params.learning_rate,
+      decay_steps=decay_steps,
+      decay_rate=model_params.learning_rate_decay_rate,
+      staircase=True,
+  )
+
+
+def keras_mlp_model(config: ml_collections.ConfigDict) -> tf.keras.Model:
   """Creates a Keras MLP model."""
+  model_params = config.model_params
   model = tf.keras.Sequential()
   input_shape = len(
       make_small_model_examples.SmallModelExampleFactory(
@@ -115,15 +156,16 @@ def keras_mlp_model(model_params: ml_collections.ConfigDict) -> tf.keras.Model:
   output_shape = len(make_small_model_examples.GenotypeEncoding)
   model.add(tf.keras.layers.Dense(output_shape, activation="softmax"))
 
+  optimizer = tf.keras.optimizers.Adam(
+      learning_rate=get_learning_rate(config),
+      weight_decay=model_params.weight_decay,
+  )
   model.summary()
   model.compile(
-      optimizer=tf.keras.optimizers.Adam(
-          learning_rate=model_params.learning_rate,
-          weight_decay=model_params.weight_decay,
-      ),
+      optimizer=optimizer,
       steps_per_execution=model_params.steps_per_execution,
       loss="categorical_crossentropy",
-      metrics=keras_model_metrics(),
+      metrics=keras_model_metrics() + [LearningRateMetric(optimizer=optimizer)],
   )
   return model
 

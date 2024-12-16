@@ -77,7 +77,9 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   model_params.activation = "relu"
   model_params.hidden_layer_sizes = (750, 750)
   model_params.optimizer = "adam"
-  model_params.learning_rate = 1e-04
+  model_params.learning_rate = 1e-02
+  model_params.learning_rate_num_epochs_per_decay = 1
+  model_params.learning_rate_decay_rate = 0.999
   model_params.weight_decay = 0.0000001
   model_params.steps_per_execution = 128
   model_params.features = ()
