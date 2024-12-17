@@ -31,6 +31,7 @@
 import collections
 import itertools
 import json
+import math
 import os
 import random
 import time
@@ -687,6 +688,7 @@ def regions_to_process(
     task_id: Optional[int] = None,
     num_shards: Optional[int] = None,
     candidates: Optional[List[int]] = None,
+    round_robin_sampling: bool = True,
 ) -> Iterable[range_pb2.Range]:
   """Determines the regions to process and partitions them into pieces.
 
@@ -722,6 +724,9 @@ def regions_to_process(
       subset of regions we want to process.
     candidates: numpy array of int32 containing candidate positions. If
       candidate is provided then partition_by_candidates logic is used.
+    round_robin_sampling: If true, sample regions are sampled among tasks in a
+      round-robin fashion. This can help balance high-density regions among
+      tasks, but results in candidates being output out of order.
 
   Returns:
     An iterable of nucleus.genomics.v1.Range objects.
@@ -751,12 +756,19 @@ def regions_to_process(
 
   # Depending on candidates parameter we choose the partitioning method.
   if candidates is not None:
-    partitioned = partition_by_candidates(regions, candidates, 200)
+    partitioned = list(partition_by_candidates(regions, candidates, 200))
   else:
-    partitioned = regions.partition(partition_size)
+    # Get number of partitions
+    partitioned = list(regions.partition(partition_size))
 
   if num_shards:
-    return (r for i, r in enumerate(partitioned) if i % num_shards == task_id)
+    if round_robin_sampling:
+      return (r for i, r in enumerate(partitioned) if i % num_shards == task_id)
+    else:
+      regions_per_shard = math.ceil(len(partitioned) / num_shards)
+      return partitioned[
+          task_id * regions_per_shard : (task_id + 1) * regions_per_shard
+      ]
   else:
     return partitioned
 
@@ -2866,6 +2878,7 @@ def processing_regions_from_options(
       task_id=options.task_id,
       num_shards=options.num_shards,
       candidates=candidate_positions,
+      round_robin_sampling='tfrecord' in options.examples_filename.lower(),
   )
 
   region_list = list(regions)

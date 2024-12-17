@@ -1219,8 +1219,7 @@ class RegionProcessorTest(parameterized.TestCase):
   #   FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
   #   FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
   #   FLAGS.ref = testdata.CHR20_FASTA
-  #   FLAGS.examples = os.path.join(self.create_tempdir(),
-  #     'examples.tfrecord.gz')
+  #   FLAGS.examples = self.create_tempfile('examples.tfrecord.gz').full_path
   #   FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
   #   FLAGS.output_sitelist = True
   #   options = make_examples.default_options(add_flags=True)
@@ -1283,6 +1282,7 @@ class RegionProcessorTest(parameterized.TestCase):
       )
     else:
       self.assertEmpty(aux_fields_log_messages)
+
 
 if __name__ == '__main__':
   absltest.main()

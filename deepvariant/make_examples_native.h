@@ -44,9 +44,9 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/span.h"
+
 #include "third_party/nucleus/io/reference.h"
-#include "third_party/nucleus/io/tfrecord_writer.h"
+#include "third_party/nucleus/io/example_writer.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "google/protobuf/map.h"
@@ -68,7 +68,8 @@ struct Sample {
   explicit Sample(const SampleOptions& options) : sample_options(options){};
 
   SampleOptions sample_options;
-  std::unique_ptr<nucleus::TFRecordWriter> writer;
+  std::unique_ptr<nucleus::ExampleWriter> writer;
+
   bool needs_alt_alignment;
   absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank;
   absl::flat_hash_set<EncodedVariantType> encoded_variant_types_to_blank;

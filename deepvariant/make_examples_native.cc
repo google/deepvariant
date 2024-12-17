@@ -52,8 +52,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "third_party/nucleus/io/example_writer.h"
 #include "third_party/nucleus/io/reference.h"
-#include "third_party/nucleus/io/tfrecord_writer.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "third_party/nucleus/util/utils.h"
@@ -71,7 +71,7 @@ using Read = nucleus::genomics::v1::Read;
 
 constexpr int kDefaultMinimumReadOverlap = 15;
 
-// ExamplesGenerator is inialized once per each make_examples instance.
+// ExamplesGenerator is initialized once per each make_examples instance.
 ExamplesGenerator::ExamplesGenerator(
     const MakeExamplesOptions& options,
     const std::unordered_map<std::string, std::string>& example_filenames,
@@ -144,8 +144,8 @@ ExamplesGenerator::ExamplesGenerator(
     stream_examples_ = std::make_unique<StreamExamples>(options_,
                                                         alt_aligned_pileup_);
   } else {
-    // Initialize TFRecord writers for each sample.
-    // TFRecord writers are not used if examples are streamed.
+    // Initialize Example writers for each sample.
+    // Example writers are not used if examples are streamed.
     for (auto& [role, sample] : samples_) {
       if (sample.sample_options.skip_output_generation()) {
         continue;
@@ -155,11 +155,10 @@ ExamplesGenerator::ExamplesGenerator(
         LOG(INFO) << "Example filename not found for role: " << role;
         continue;
       }
-      // TFRecrd examples are always compressed as it is also in
-      // call_variants.
-      sample.writer = nucleus::TFRecordWriter::New(it->second, "GZIP");
-      if (sample.writer == nullptr) {
-        LOG(FATAL) << "Failed to create TFRecord writer for " << it->second;
+      sample.writer =
+          std::make_unique<nucleus::ExampleWriter>(it->second);
+      if (!sample.writer->status().ok()) {
+        LOG(FATAL) << "Failed to create Example writer for " << it->second;
       }
     }
   }
@@ -691,9 +690,10 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
           EncodeVariant(variant, nullptr));
       UpdateStats(encoded_variant_type, nullptr, 0, stats);
     } else {
-      sample.writer->WriteRecord(EncodeExample(ref_images, alt_images, variant,
+      sample.writer->Add(EncodeExample(ref_images, alt_images, variant,
                                                alt_combination, stats,
-                                               image_shape, label));
+                                               image_shape, label),
+                         variant.reference_name());
     }
   }
 }
