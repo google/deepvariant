@@ -2487,11 +2487,18 @@ class RegionProcessor:
           )
           sample.reads = sample.in_memory_sam_reader.query(region)
 
-          sample.allele_counter = (
-              self._make_allele_counter_for_read_overlap_region(
-                  region, full_range, candidate_positions
-              )
-          )
+          if padded_region is not None:
+            sample.allele_counter = (
+                self._make_allele_counter_for_read_overlap_region(
+                    padded_region, full_range, candidate_positions
+                )
+            )
+          else:
+            sample.allele_counter = (
+                self._make_allele_counter_for_read_overlap_region(
+                    region, full_range, candidate_positions
+                )
+            )
         else:
           if padded_region is not None:
             sample.allele_counter = self._make_allele_counter_for_region(

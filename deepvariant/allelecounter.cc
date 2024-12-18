@@ -265,6 +265,9 @@ void AlleleCounter::Init() {
     candidate_position -= interval_.start();
   }
   auto full_interval_offset = interval_.start() - reads_interval_.start();
+  // If interval_ starts before reads_interval_ start then we don't need to
+  // offset reference bases.
+  full_interval_offset = std::max(full_interval_offset, 0L);
   for (int i = 0; i < len; ++i) {
     AlleleCount allele_count;
     const int64_t pos = interval_.start() + i;
@@ -296,10 +299,18 @@ AlleleCounter::AlleleCounter(const GenomeReference* const ref,
                              const AlleleCounterOptions& options)
     : ref_(ref),
       interval_(range),
-      reads_interval_(full_range),
+      reads_interval_(nucleus::MakeRange(
+              range.reference_name(),
+              std::min(range.start(), full_range.start()),
+              std::max(range.end(), full_range.end()))),
       candidate_positions_(candidate_positions),
       options_(options),
-      ref_bases_(ref_->GetBases(full_range).ValueOrDie()) {
+      ref_bases_(ref_->GetBases(
+          nucleus::MakeRange(
+              range.reference_name(),
+              std::min(range.start(), full_range.start()),
+              std::max(range.end(), full_range.end()))
+              ).ValueOrDie()) {
   Init();
 }
 
