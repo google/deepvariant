@@ -55,9 +55,9 @@ ExampleFormat AutodetectFormat(absl::string_view path,
   // Replace shard strings and .gz extension.
   RE2::GlobalReplace(&path_str, R"(\@[0-9]+|-\*?\d*-of-\*?\d*|\.gz)", "");
   RE2::PartialMatch(path_str,
-                    R"(\.(bagz|tfrecord)$)",  // extension
+                    R"(\.(bagz|tfrecords?)$)",  // extension
                     &extension);
-  if (extension == "tfrecord") {
+  if (extension == "tfrecord" || extension == "tfrecords") {
     return ExampleFormat::kTfRecord;
   } else {
    LOG(FATAL) << absl::StrFormat("Unsupported file extension: %s.\n",

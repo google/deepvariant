@@ -34,6 +34,7 @@ import json
 import math
 import os
 import random
+import re
 import time
 from typing import Any, DefaultDict, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
 
@@ -1098,6 +1099,16 @@ class OutputsWriter:
       )
 
     if options.examples_filename:
+      clean_basename = re.sub(
+          r'(\@[0-9]+|-\*?\d*-of-\*?\d*|\.gz)',
+          '',
+          os.path.basename(options.examples_filename.lower()),
+      )
+      if not re.fullmatch(r'.*(bagz|tfrecords?)$', clean_basename):
+        raise ValueError(
+            'Unsupported file extension: %s.\n'
+            % os.path.basename(options.examples_filename)
+        )
       self.examples_filename = self._add_suffix(
           options.examples_filename, suffix
       )

@@ -218,6 +218,22 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     self.assertCountEqual(expected, list(confident_regions))
 
   @flagsaver.flagsaver
+  def test_invalid_examples_filename_extension(self):
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.mode = 'training'
+    FLAGS.examples = 'out.invalid_extension'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+
+    options = make_examples.default_options(add_flags=True)
+    with self.assertRaisesRegex(
+        ValueError, 'Unsupported file extension: out.invalid_extension'
+    ):
+      make_examples_core.OutputsWriter(options)
+
+  @flagsaver.flagsaver
   def test_gvcf_output_enabled_is_false_without_gvcf_flag(self):
     FLAGS.mode = 'training'
     FLAGS.gvcf = ''
