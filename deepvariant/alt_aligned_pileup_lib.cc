@@ -291,10 +291,13 @@ std::vector<Read> RealignReadsToHaplotype(
                ref_end + kRefAlignMargin);
 
   std::string ref_prefix =
+      ref_start_ext < ref_start ?
       ref_reader.GetBases(MakeRange(std::string(contig),
-                                    ref_start_ext, ref_start)).ValueOrDie();
-  std::string ref_suffix = ref_reader.GetBases(
-      MakeRange(std::string(contig), ref_end, ref_end_ext)).ValueOrDie();
+                                  ref_start_ext, ref_start)).ValueOrDie() : "";
+  std::string ref_suffix =
+      ref_end < ref_end_ext ?
+      ref_reader.GetBases(MakeRange(std::string(contig),
+                                    ref_end, ref_end_ext)).ValueOrDie() : "";
   realigner.set_reference(absl::StrCat(ref_prefix, haplotype, ref_suffix));
   realigner.set_ref_start(contig, ref_start_ext);
   realigner.set_ref_prefix_len(ref_start - ref_start_ext);

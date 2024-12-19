@@ -339,7 +339,25 @@ INSTANTIATE_TEST_SUITE_P(
                  MakeRead(20, "ACGTACGTAAAAAAGTGTGATC", {"8M", "3D", "14M"},
                           "read_2"),
              },
-         }})));
+         },
+         {
+             // Haplotype goes to the end of the contig.
+             /*haplotype=*/"ACGTACGTGGGAAAAAAGTGTGATCCCCCCCCCCCC",
+             {
+                 MakeRead(10, "ACGTACGTGGGAAAAAAGTGTGATC", {"8M", "3I", "14M"},
+                          "read_1"),
+                 MakeRead(10, "ACGTACGTAAAAAAGTGTGATC", {"22M"}, "read_2"),
+             },
+             "chr1",
+             10,
+             43,
+             {
+                 MakeRead(10, "ACGTACGTGGGAAAAAAGTGTGATC", {"25M"}, "read_1"),
+                 MakeRead(10, "ACGTACGTAAAAAAGTGTGATC", {"8M", "3D", "14M"},
+                          "read_2"),
+             },
+         },
+         })));
 
 // CalculateAlignmentRegion testing.
 struct CalculateAlignmentRegionTestData {
