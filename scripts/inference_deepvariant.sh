@@ -342,8 +342,6 @@ elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   if [[ "${MAIN_BINARY_NAME}" = "run_pangenome_aware_deepvariant" ]]; then
     echo "Use VG BAM for pangenome-aware DeepVariant."
     BAM="${BAM:=gs://deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-1.55.0.bam}"
-    echo "Add VG default make_examples args for pangenome-aware DeepVariant."
-    MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS:+,$MAKE_EXAMPLES_ARGS}"
   else
     BAM="${BAM:=${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
   fi
