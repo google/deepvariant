@@ -42,6 +42,7 @@ from clu import periodic_actions
 import ml_collections
 from ml_collections.config_flags import config_flags
 import tensorflow as tf
+from tensorflow.keras import mixed_precision
 
 from deepvariant import data_providers
 from deepvariant import dv_constants
@@ -100,6 +101,11 @@ def train(config: ml_collections.ConfigDict):
     tf.data.experimental.enable_debug_mode()
 
   experiment_dir = _EXPERIMENT_DIR.value
+
+  # Enable mixed precision if requested
+  if config.use_mixed_precision and _STRATEGY.value == 'tpu':
+    policy = 'mixed_bfloat16'
+    mixed_precision.set_global_policy(policy)
 
   model_dir = f'{experiment_dir}/checkpoints'
   logging.info(

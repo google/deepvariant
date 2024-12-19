@@ -921,6 +921,7 @@ py_binary(
         ":dv_constants",
         ":dv_utils",
         ":keras_modeling",
+        "//deepvariant/protos:deepvariant_py_pb2",
         "@absl_py//absl:app",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",

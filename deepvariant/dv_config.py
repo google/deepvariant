@@ -85,6 +85,8 @@ def get_wgs_config(config: ml_collections.ConfigDict):
   config.label_smoothing = 0.01
   config.backbone_dropout_rate = 0.2
 
+  config.use_mixed_precision = True
+
 
 def get_exome_config(config: ml_collections.ConfigDict):
   """Config parameters for exome training."""
@@ -117,6 +119,8 @@ def get_exome_config(config: ml_collections.ConfigDict):
   config.label_smoothing = 0.01
   config.backbone_dropout_rate = 0.2
 
+  config.use_mixed_precision = True
+
 
 def get_pacbio_config(config: ml_collections.ConfigDict):
   """Training parameters."""
@@ -146,6 +150,8 @@ def get_pacbio_config(config: ml_collections.ConfigDict):
   # Exponential Moving Average
   config.use_ema = True
   config.ema_momentum = 0.991463134331829
+
+  config.use_mixed_precision = True
 
 
 def get_ont_config(config: ml_collections.ConfigDict):
@@ -183,6 +189,8 @@ def get_hybrid_config(config: ml_collections.ConfigDict):
   # Exponential Moving Average
   config.use_ema = True
   config.ema_momentum = 0.991463134331829
+
+  config.use_mixed_precision = True
 
 
 # ====================================#
@@ -258,6 +266,8 @@ def get_deepsomatic_pacbio_tumor_normal_config(
   # Exponential Moving Average
   config.use_ema = True
   config.ema_momentum = 0.991463134331829
+
+  config.use_mixed_precision = True
 
 
 def get_deepsomatic_ont_tumor_normal_config(config: ml_collections.ConfigDict):
@@ -336,6 +346,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.optimizer = 'rmsprop'
 
   config.use_ema = True
+  config.use_mixed_precision = True
 
   config.denovo_enabled = False
   # class_weights can be specified as a comma-delimited string of weights
