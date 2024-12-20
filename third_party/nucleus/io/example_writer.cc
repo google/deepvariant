@@ -75,10 +75,6 @@ class ExampleWriter::Impl {
 
  protected:
   void UpdateStatus(absl::Status status) { status_.Update(std::move(status)); }
-  void UpdateStatus(tsl::Status status) {
-  status_.Update(tsl::ToAbslStatus(status));
-  }
-
 
  private:
   absl::Status status_;
@@ -140,6 +136,8 @@ ExampleWriter::ExampleWriter(absl::string_view path,
     case ExampleFormat::kTfRecord:
       LOG(INFO) << "Writing output using TfRecord";
       impl_ = std::make_unique<TfRecordImpl>(path);
+      break;
+    case ExampleFormat::kBagz:
       break;
   }
   status_ = impl_->status();

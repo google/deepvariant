@@ -144,29 +144,6 @@ sed -i -e 's|v2.10.0.tar.gz|a7b91e33269ab6f3f90167291af2c4179fc878f5.zip|g' ../t
 sed -i -e 's|eacf582fa8f696227988d08cfc46121770823839fe9e301a20fbce67e7cd70ec|09d2ab67e91457c966eb335b361bdc4d27ece2d4dea681d22e5d8307e0e0c023|g' ../tensorflow/tensorflow/workspace2.bzl
 sed -i -e 's|pybind11-2.10.0|pybind11-a7b91e33269ab6f3f90167291af2c4179fc878f5|g' ../tensorflow/tensorflow/workspace2.bzl
 
-# Inspired by part of https://raw.githubusercontent.com/tensorflow/tensorflow/r2.11/third_party/protobuf/protobuf.patch.
-# This is necessary for Python 3.10.
-cat > third_party/protobuf.patch <<- EOM
-diff --git a/python/google/protobuf/pyext/message.cc b/python/google/protobuf/pyext/message.cc
-index 3530a9b37..c31fa8fcc 100644
---- a/python/google/protobuf/pyext/message.cc
-+++ b/python/google/protobuf/pyext/message.cc
-@@ -2991,8 +2991,12 @@ bool InitProto2MessageModule(PyObject *m) {
-         reinterpret_cast<PyObject*>(
-             &RepeatedCompositeContainer_Type));
- 
--    // Register them as collections.Sequence
-+    // Register them as MutableSequence.
-+#if PY_MAJOR_VERSION >= 3
-+    ScopedPyObjectPtr collections(PyImport_ImportModule("collections.abc"));
-+#else
-     ScopedPyObjectPtr collections(PyImport_ImportModule("collections"));
-+#endif
-     if (collections == NULL) {
-       return false;
-     }
-EOM
-
 # TODO: Test removing this version pinning.
 note_build_stage "Set pyparsing to 2.2.2 for CLIF."
 export PATH="$HOME/.local/bin":$PATH

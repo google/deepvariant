@@ -117,14 +117,23 @@ http_archive(
     name = "com_google_protobuf",
     build_file = "//:third_party/protobuf.BUILD",
     patch_args = ["-p1"],
-    patches = ["//:third_party/protobuf.patch"],
-    sha256 = "cfcba2df10feec52a84208693937c17a4b5df7775e1635c1e3baffc487b24c9b",
-    # This protobuf release is based on protobuf 3.9.2.
-    strip_prefix = "protobuf-3.9.2",
-    urls = [
-        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/v3.9.2.zip",
-        "https://github.com/protocolbuffers/protobuf/archive/v3.9.2.zip",
-    ],
+    sha256 = "5babb8571f1cceafe0c18e13ddb3be556e87e12ceea3463d6b0d0064e6cc1ac3",
+    strip_prefix = "protobuf-21.9",
+    url = "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v21.9.zip",
+)
+
+http_archive(
+    name = "upb",
+    sha256 = "c77158955326f9e9a0cf8481c118b8ad5c34df99e5db3af27f3d1662d8bedef7",
+    strip_prefix = "upb-20b542a767139732548f7b8cf28c4c928cdcb07b",
+    url = "https://github.com/protocolbuffers/upb/archive/20b542a767139732548f7b8cf28c4c928cdcb07b.zip",
+)
+
+http_archive(
+    name = "rules_python",
+    sha256 = "9fcf91dbcc31fde6d1edb15f117246d912c33c36f44cf681976bd886538deba6",
+    strip_prefix = "rules_python-0.8.0",
+    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.8.0.tar.gz",
 )
 
 http_archive(

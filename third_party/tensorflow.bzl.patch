@@ -1,6 +1,20 @@
---- a/tensorflow/tensorflow.bzl
-+++ b/tensorflow/tensorflow.bzl
-@@ -2877,6 +2877,28 @@
+--- ../tensorflow/tensorflow/tensorflow.bzl.orig	2024-12-18 06:57:21.962949628 +0000
++++ ../tensorflow/tensorflow/tensorflow.bzl	2024-12-18 06:55:42.651140412 +0000
+@@ -2935,7 +2935,7 @@
+         deps = [],
+         **kwargs):
+     # Mark common dependencies as required for build_cleaner.
+-    tags = tags + ["req_dep=" + clean_dep("//third_party/pybind11"), "req_dep=@local_config_python//:python_headers"]
++    tags = tags + ["req_dep=" + clean_dep("@pybind11"), "req_dep=@local_config_python//:python_headers"]
+ 
+     native.cc_library(
+         name = name,
+@@ -2945,10 +2945,32 @@
+             "-parse_headers",
+         ],
+         tags = tags,
+-        deps = deps + [clean_dep("//third_party/pybind11"), "@local_config_python//:python_headers"],
++        deps = deps + [clean_dep("@pybind11"), "@local_config_python//:python_headers"],
          **kwargs
      )
  
@@ -29,7 +43,7 @@
  # buildozer: disable=function-docstring-args
  def pybind_extension_opensource(
          name,
-@@ -3012,46 +3034,46 @@
+@@ -3083,46 +3105,46 @@
          if link_in_framework:
              srcs += tf_binary_additional_srcs()
  
@@ -116,7 +130,7 @@
  
          # For Windows, emulate the above filegroup with the shared object.
          native.alias(
-@@ -3073,11 +3095,21 @@
+@@ -3144,11 +3166,21 @@
          testonly = testonly,
      )
  
@@ -133,7 +147,7 @@
      native.py_library(
          name = name,
          data = select({
-             "@org_tensorflow//tensorflow:windows": [pyd_file],
+             clean_dep("//tensorflow:windows"): [pyd_file],
 -            "//conditions:default": [so_file],
 +            "//conditions:default": [pyext_so],
          }) + pytype_srcs,

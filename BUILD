@@ -95,6 +95,7 @@ cc_library(
         "//third_party/nucleus/util/python:math_cclib",
         "//third_party/nucleus/util/python:utils_cclib",
     ],
+    alwayslink = 1,
 )
 
 # Until https://github.com/bazelbuild/bazel/issues/4815 is fixed,

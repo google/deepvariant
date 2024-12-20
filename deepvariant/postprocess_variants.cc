@@ -125,7 +125,7 @@ std::uint64_t ProcessSingleSiteCallTfRecords(
         output_writer.WriteRecord(single_site_call.SerializeAsString());
     QCHECK(writer_status.ok())
         << "Failed to write serialized proto to output_writer. "
-        << "Status = " << writer_status.error_message();
+        << "Status = " << writer_status.message();
   }
   TF_CHECK_OK(output_writer.Flush()) << "Failed to flush the output writer.";
   return single_site_calls.size();

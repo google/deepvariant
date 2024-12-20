@@ -34,7 +34,7 @@
 #ifndef THIRD_PARTY_NUCLEUS_TESTING_TEST_UTILS_H_
 #define THIRD_PARTY_NUCLEUS_TESTING_TEST_UTILS_H_
 
-#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 

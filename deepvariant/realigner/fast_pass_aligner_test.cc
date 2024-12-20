@@ -41,7 +41,7 @@
 
 #include "deepvariant/protos/realigner.pb.h"
 #include "deepvariant/realigner/ssw.h"
-#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 

@@ -7,8 +7,6 @@ package(
 
 licenses(["notice"])
 
-exports_files(["message_module.cc"])
-
 cc_library(
     name = "status",
     srcs = ["status.cc"],

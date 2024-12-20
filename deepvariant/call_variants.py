@@ -973,4 +973,5 @@ if __name__ == '__main__':
       'checkpoint',
   ])
   logging.use_python_logging()
+  multiprocessing.set_start_method('spawn', force=True)
   app.run(main)

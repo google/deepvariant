@@ -44,7 +44,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 

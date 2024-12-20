@@ -123,10 +123,8 @@ pip3 install "${PIP_ARGS[@]}" 'clu==0.0.9'
 # files need to be consistent with what TensorFlow needs, which is currently
 # still 3.9.2.
 # Ideally we want to make these protobuf versions all match, eventually.
-pip3 install "${PIP_ARGS[@]}" 'protobuf==3.13.0'
+pip3 install "${PIP_ARGS[@]}" 'protobuf==4.21.9'
 pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
-
-pip3 install "${PIP_ARGS[@]}" "numpy==${DV_TF_NUMPY_VERSION}"
 
 # Reason:
 # ========== [Wed Dec 11 19:57:32 UTC 2019] Stage 'Install python3 packages' starting
@@ -185,7 +183,7 @@ else
     # Use the official TF release pip package.
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow ${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION} wheel"
-      pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow-gpu==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
+      pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     else
       echo "Installing CPU TensorFlow ${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION} wheel"
       pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
@@ -289,16 +287,7 @@ sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libssl-dev libcurl4-
 # for the debruijn graph
 sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libboost-graph-dev > /dev/null
 
-# Pin tf-models-official back to 2.11.6 to be closer to
-# ${DV_GCP_OPTIMIZED_TF_WHL_VERSION} (which is 2.11.0).
-# This is to avoid the issue:
-# ValueError: Addons>LAMB has already been registered to <class 'tensorflow_addons.optimizers.lamb.LAMB'>
-# However, it's important that the protobuf pinning happens after this!
-# TODO: Remove this later once the first dependency can be changed
-#                to ${DV_GCP_OPTIMIZED_TF_WHL_VERSION}.
-pip3 install "${PIP_ARGS[@]}"  "tf-models-official==2.11.6"
-
-# Just being safe, pin protobuf's version one more time.
-pip3 install "${PIP_ARGS[@]}" 'protobuf==3.13.0'
+# Just being safe, downgrade load-bearing dependencies at the end if needed.
+pip3 install "${PIP_ARGS[@]}" 'protobuf==4.21.9'
 
 note_build_stage "run-prereq.sh complete"

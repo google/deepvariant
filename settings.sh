@@ -69,12 +69,12 @@ export DV_TF_NIGHTLY_BUILD="${DV_TF_NIGHTLY_BUILD:-0}"
 if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
   export DV_CPP_TENSORFLOW_TAG="master"
 else
-  export DV_CPP_TENSORFLOW_TAG="v2.11.0"
+  export DV_CPP_TENSORFLOW_TAG="v2.13.1"
 fi
 # These WHL_VERSIONs determine the Python version of TensorFlow we use.
-export DV_GCP_OPTIMIZED_TF_WHL_VERSION="2.11.0"
-export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="2.11.0"
-export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="2.11.0"
+export DV_GCP_OPTIMIZED_TF_WHL_VERSION="2.13.1"
+export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="2.13.1"
+export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="2.13.1"
 
 # Set this to 1 to use DeepVariant with GPUs. Set it to an already existing
 # value in the environment (allowing command line control of the build),
@@ -86,7 +86,6 @@ export DV_GPU_BUILD="${DV_GPU_BUILD:-0}"
 export GCP_OPTIMIZED_TF_WHL_FILENAME="tensorflow-${DV_GCP_OPTIMIZED_TF_WHL_VERSION}.deepvariant_gcp-cp27-none-linux_x86_64.whl"
 export GCP_OPTIMIZED_TF_WHL_PATH="${DV_PACKAGE_BUCKET_PATH}/tensorflow"
 export GCP_OPTIMIZED_TF_WHL_CURL_PATH="${DV_PACKAGE_CURL_PATH}/tensorflow"
-export DV_TF_NUMPY_VERSION="1.21.2"  # Python 3.10 requires >= 1.21.2
 
 # Set this to 1 to make our prereq scripts install the CUDA libraries.
 # If you already have CUDA installed, such as on a properly provisioned
