@@ -350,9 +350,8 @@ std::vector<PhasedVariant> DirectPhasing::GetPhasedVariants() const {
 }
 
 std::vector<int> DirectPhasing::AssignPhasesToReads(
-    const std::vector<
-        nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads)
-    const {
+    absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+        reads) const {
   // Assign phase reads
   // 1. For each read find all allele the read overlaps.
   // 2. Assign the phase to the read based on the majority phase of all
@@ -617,9 +616,9 @@ void DirectPhasing::Clear() {
 // allele. Candidate is heterozygous if there is a ref allele, or there are
 // multiple distintive alt alleles.
 void DirectPhasing::Build(
-    const std::vector<DeepVariantCall>& candidates,
-    const std::vector<
-        nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads) {
+    absl::Span<const DeepVariantCall> candidates,
+    absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+        reads) {
   Clear();
   InitializeReadMaps(reads);
 

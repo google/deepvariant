@@ -200,9 +200,10 @@ class DirectPhasing {
 
   // Build graph from candidates.
   void Build(
-      const std::vector<DeepVariantCall>& candidates,
-      const std::vector<
-          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
+      absl::Span<const DeepVariantCall> candidates,
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads);
 
   // Add nodes to the graph for each allele of the candidate. Fill auxiliary
   // data structures.
@@ -267,9 +268,9 @@ class DirectPhasing {
   // therefore phases are returned in a separate vector instead of modifying
   // input <reads>.
   std::vector<int> AssignPhasesToReads(
-      const std::vector<
-          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads)
-      const;
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads) const;
 
   bool CompareVertexPairByBases(const Vertex& v1_1, const Vertex& v1_2,
     const Vertex& v2_1, const Vertex& v2_2) const;
