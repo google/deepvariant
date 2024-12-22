@@ -366,7 +366,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounter(
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
-    const std::vector<AlleleCount>& allele_counts) const {
+    absl::Span<const AlleleCount> allele_counts) const {
   std::vector<DeepVariantCall> variants;
   for (const AlleleCount& allele_count : allele_counts) {
     std::optional<DeepVariantCall> call = CallVariant(allele_count);
@@ -434,7 +434,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
 }
 
 std::vector<int> VariantCaller::CallPositionsFromVcf(
-    const std::vector<AlleleCount>& allele_counts, const Range& range,
+    absl::Span<const AlleleCount> allele_counts, const Range& range,
     nucleus::VcfReader* vcf_reader_ptr) const {
   std::vector<Variant> variants_in_region;
   std::vector<int> positions;
@@ -505,8 +505,7 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(
 }
 
 std::optional<DeepVariantCall> VariantCaller::ComputeVariant(
-    const Variant& variant,
-    const std::vector<AlleleCount>& allele_counts) const {
+    const Variant& variant, absl::Span<const AlleleCount> allele_counts) const {
   DeepVariantCall call;
   *call.mutable_variant() = variant;
   Variant* m_variant = call.mutable_variant();

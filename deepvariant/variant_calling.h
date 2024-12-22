@@ -151,7 +151,7 @@ class VariantCaller {
   std::vector<DeepVariantCall> CallsFromAlleleCounter(
       const AlleleCounter& allele_counter) const;
   std::vector<DeepVariantCall> CallsFromAlleleCounts(
-      const std::vector<AlleleCount>& allele_counts) const;
+      absl::Span<const AlleleCount> allele_counts) const;
 
   // High-level API for calling variants in a region given an input VCF.
   //
@@ -174,7 +174,7 @@ class VariantCaller {
       nucleus::VcfReader* vcf_reader_ptr) const;
 
   std::vector<int> CallPositionsFromVcf(
-      const std::vector<AlleleCount>& allele_counts,
+      absl::Span<const AlleleCount> allele_counts,
       const nucleus::genomics::v1::Range& range,
       nucleus::VcfReader* vcf_reader_ptr) const;
 
@@ -203,7 +203,7 @@ class VariantCaller {
   // of DeepVariantCall is already known from the vcf.
   std::optional<DeepVariantCall> ComputeVariant(
       const nucleus::genomics::v1::Variant& variant,
-      const std::vector<AlleleCount>& allele_counts) const;
+      absl::Span<const AlleleCount> allele_counts) const;
 
   // Adds supporting reads to the DeepVariantCall.
   void AddSupportingReads(
