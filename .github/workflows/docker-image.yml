@@ -12,7 +12,21 @@ jobs:
 
     runs-on: ubuntu-latest
 
+
+
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+        
+    # 登录到 Docker Hub
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.Golden-proteogenomics }}
+        password: ${{ secrets.dckr_pat_zrXrUvGLL5LwvgzvJ0ucsfqBHG8 }}
+
+      
+    # 推送 Docker 镜像到 Docker Hub
+    - name: Push Docker image
+      run: docker push ${{ secrets.Golden-proteogenomics }}/deepvariant:latest
