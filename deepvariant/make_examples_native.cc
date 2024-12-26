@@ -693,7 +693,8 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       sample.writer->Add(EncodeExample(ref_images, alt_images, variant,
                                                alt_combination, stats,
                                                image_shape, label),
-                         variant.reference_name());
+                         variant.reference_name(),
+                         variant.start());
     }
   }
 }

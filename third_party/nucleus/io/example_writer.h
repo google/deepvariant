@@ -31,6 +31,7 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_READER_H_
 #define THIRD_PARTY_NUCLEUS_IO_READER_H_
 
+#include <cstdint>
 #include <memory>
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
@@ -52,7 +53,9 @@ class ExampleWriter {
   explicit ExampleWriter(absl::string_view path,
                          ExampleFormat format = ExampleFormat::kAuto);
   ~ExampleWriter();
-  bool Add(absl::string_view value, absl::string_view key = {});
+  bool Add(absl::string_view value,
+           absl::string_view chrom = {},
+           int64_t pos = 0);
   bool Close();
   absl::Status status() { return status_; }
 

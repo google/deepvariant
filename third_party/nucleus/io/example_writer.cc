@@ -30,6 +30,7 @@
  */
 #include "third_party/nucleus/io/example_writer.h"
 #include <filesystem>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -38,6 +39,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
@@ -69,7 +71,9 @@ ExampleFormat AutodetectFormat(absl::string_view path,
 class ExampleWriter::Impl {
  public:
   virtual ~Impl() = default;
-  virtual bool Add(absl::string_view value, absl::string_view key) = 0;
+  virtual bool Add(absl::string_view value,
+                   absl::string_view chrom,
+                   int64_t pos) = 0;
   virtual bool Close() = 0;
   absl::Status status() { return status_; }
 
@@ -102,7 +106,10 @@ class ExampleWriter::TfRecordImpl : public ExampleWriter::Impl {
 
   }
 
-  bool Add(absl::string_view value, absl::string_view key) override {
+  bool Add(absl::string_view value,
+           absl::string_view chrom,
+           int64_t pos) override {
+    // chrom and pos are unused.
     UpdateStatus(tf_->WriteRecord(value));
     return status().ok();
   }
@@ -145,9 +152,11 @@ ExampleWriter::ExampleWriter(absl::string_view path,
 
 ExampleWriter::~ExampleWriter() { Close(); }
 
-bool ExampleWriter::Add(absl::string_view value, absl::string_view key) {
+bool ExampleWriter::Add(absl::string_view value,
+                        absl::string_view chrom,
+                        int64_t pos) {
   if (ABSL_PREDICT_FALSE(impl_ == nullptr)) return false;
-  if (ABSL_PREDICT_FALSE(!impl_->Add(value, key))) {
+  if (ABSL_PREDICT_FALSE(!impl_->Add(value, chrom, pos))) {
     status_.Update(impl_->status());
     return false;
   }
