@@ -33,31 +33,8 @@ This module is used by the training and inference libraries.
 import os
 import ml_collections
 import tensorflow as tf
-import tensorflow_addons.metrics as tfa_metrics
+from deepvariant import metrics
 from deepvariant.small_model import make_small_model_examples
-
-
-@tf.keras.utils.register_keras_serializable(package="small_model")
-class F1ScorePerClass(tfa_metrics.F1Score):
-  """Reports F1 Score for a target class.
-
-  # TODO: move custom metrics.py module. This module can be shared
-  by both deepvariant/keras_modeling.py and small_model/train_utils.py
-  """
-
-  def __init__(
-      self,
-      num_classes: int = 0,
-      target_class: int = 0,
-      name: str = "",
-      *args,
-      **kwargs,
-  ):
-    self.target_class = target_class
-    super().__init__(num_classes=num_classes, name=name)
-
-  def result(self) -> tf.Tensor:
-    return super().result()[self.target_class]
 
 
 class LearningRateMetric(tf.keras.metrics.Metric):
@@ -100,14 +77,12 @@ def keras_model_metrics() -> list[tf.keras.metrics.Metric]:
       tf.keras.metrics.Recall(name="recall_homref", class_id=0),
       tf.keras.metrics.Recall(name="recall_het", class_id=1),
       tf.keras.metrics.Recall(name="recall_homalt", class_id=2),
-      tfa_metrics.F1Score(
-          num_classes=3, average="weighted", name="f1_weighted"
-      ),
-      tfa_metrics.F1Score(num_classes=3, average="micro", name="f1_micro"),
-      tfa_metrics.F1Score(num_classes=3, average="macro", name="f1_macro"),
-      F1ScorePerClass(num_classes=3, target_class=0, name="f1_homref"),
-      F1ScorePerClass(num_classes=3, target_class=1, name="f1_het"),
-      F1ScorePerClass(num_classes=3, target_class=2, name="f1_homalt"),
+      tf.keras.metrics.F1Score(average="weighted", name="f1_weighted"),
+      tf.keras.metrics.F1Score(num_classes=3, average="micro", name="f1_micro"),
+      tf.keras.metrics.F1Score(num_classes=3, average="macro", name="f1_macro"),
+      metrics.F1ScorePerClass(target_class=0, name="f1_homref"),
+      metrics.F1ScorePerClass(target_class=1, name="f1_het"),
+      metrics.F1ScorePerClass(target_class=2, name="f1_homalt"),
   ]
 
 

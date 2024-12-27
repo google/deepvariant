@@ -38,6 +38,7 @@ py_library(
     srcs_version = "PY3",
     deps = [
         ":make_small_model_examples",
+        "//deepvariant:metrics",
     ],
 )
 

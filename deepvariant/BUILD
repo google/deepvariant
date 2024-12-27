@@ -947,26 +947,6 @@ py_binary(
 #     ],
 # )
 
-py_binary(
-    name = "train_inceptionv3",
-    srcs = [
-        "train_inceptionv3.py",
-    ],
-    main = "train_inceptionv3.py",
-    deps = [
-        ":average_model_checkpoint_patched",
-        ":data_providers",
-        ":dv_constants",
-        ":dv_utils",
-        ":keras_modeling",
-        "//third_party/nucleus/io:sharded_file_utils",
-        "@absl_py//absl:app",
-        "@absl_py//absl/flags",
-        "@absl_py//absl/logging",
-        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
-    ],
-)
-
 py_library(
     name = "call_variants_lib",
     srcs = ["call_variants.py"],
@@ -1558,11 +1538,6 @@ py_test(
         "@absl_py//absl/testing:flagsaver",
         "@absl_py//absl/testing:parameterized",
     ],
-)
-
-py_library(
-    name = "average_model_checkpoint_patched",
-    srcs = ["average_model_checkpoint_patched.py"],
 )
 
 py_library(
