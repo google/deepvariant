@@ -34,7 +34,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -283,7 +282,7 @@ void SetIgnoredFieldPathsOrDie(const google::protobuf::Descriptor& root_descript
                                const std::vector<string>& field_paths,
                                google::protobuf::util::MessageDifferencer* differencer) {
   for (const string& field_path : field_paths) {
-    differencer->AddIgnoreCriteria(std::make_unique<IgnoreFieldPathCriteria>(
+    differencer->AddIgnoreCriteria(new IgnoreFieldPathCriteria(
         ParseFieldPathOrDie(field_path, root_descriptor)));
   }
 }
