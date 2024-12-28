@@ -121,7 +121,7 @@ std::uint64_t ProcessSingleSiteCallTfRecords(
                                                           &output_file));
   tensorflow::io::RecordWriter output_writer(output_file.get());
   for (const auto& single_site_call : single_site_calls) {
-    tensorflow::Status writer_status =
+    absl::Status writer_status =
         output_writer.WriteRecord(single_site_call.SerializeAsString());
     QCHECK(writer_status.ok())
         << "Failed to write serialized proto to output_writer. "

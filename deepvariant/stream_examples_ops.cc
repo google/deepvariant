@@ -44,7 +44,7 @@ REGISTER_OP("StreamExamplesInit")
     .Attr("shared_name: string = ''")
     .SetShapeFn([](tensorflow::shape_inference::InferenceContext* c) {
       c->set_output(0, c->Scalar());
-      return tensorflow::Status();
+      return absl::Status();
     });
 
 REGISTER_OP("StreamExamplesNext")
@@ -57,7 +57,7 @@ REGISTER_OP("StreamExamplesNext")
       c->set_output(0, c->MakeShape({c->UnknownDim()}));
       c->set_output(1, c->MakeShape({c->UnknownDim()}));
       c->set_output(2, c->MakeShape({c->UnknownDim()}));
-      return tensorflow::Status();
+      return absl::Status();
     });
 
 }  // namespace deepvariant

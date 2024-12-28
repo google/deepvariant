@@ -88,8 +88,8 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
  public:
   explicit StreamExamplesResource(tensorflow::Env* env) : env_(env) {}
 
-  virtual tensorflow::Status Init(const tensorflow::string& shm_prefix,
-                                  int num_shards) {
+  virtual absl::Status Init(const tensorflow::string& shm_prefix,
+                            int num_shards) {
     tensorflow::mutex_lock l(mu_);
     shm_buffer_.resize(num_shards);
     shm_.resize(num_shards);
@@ -123,7 +123,7 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
               GetShardFinishedMutexName(shm_prefix, shard).data());
     }
 
-    return tensorflow::Status();
+    return absl::Status();
   }
 
   NO_SANITIZE
@@ -138,9 +138,9 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
   }
 
   NO_SANITIZE
-  tensorflow::Status Next(
+  absl::Status Next(
       const int64_t index,
-      std::function<tensorflow::Status(
+      std::function<absl::Status(
           const tensorflow::TensorShape& shape, tensorflow::Tensor** image,
           tensorflow::Tensor** variant, tensorflow::Tensor** alt_allele_idx)>
           allocate_func) {
@@ -236,7 +236,7 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
           alt_allele_idx_records[i];
       image_tensor->flat<tensorflow::tstring>()(i) = image_records[i];
     }
-    return tensorflow::Status();
+    return absl::Status();
   }
 
   tensorflow::string DebugString() const override {
@@ -282,10 +282,10 @@ class StreamExamplesInitOp
 
     OP_REQUIRES_OK(context, get_resource()->Init(shm_dir, num_shards));
   }
-  tensorflow::Status CreateResource(StreamExamplesResource** resource)
+  absl::Status CreateResource(StreamExamplesResource** resource)
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
     *resource = new StreamExamplesResource(env_);
-    return tensorflow::Status();
+    return absl::Status();
   }
 
  private:
@@ -317,12 +317,12 @@ class StreamExamplesNextOp : public tensorflow::OpKernel {
             index,
             [&](const tensorflow::TensorShape& shape,
                 tensorflow::Tensor** image, tensorflow::Tensor** variant,
-                tensorflow::Tensor** alt_allele_idx) -> tensorflow::Status {
+                tensorflow::Tensor** alt_allele_idx) -> absl::Status {
               TF_RETURN_IF_ERROR(context->allocate_output(0, shape, image));
               TF_RETURN_IF_ERROR(context->allocate_output(1, shape, variant));
               TF_RETURN_IF_ERROR(
                   context->allocate_output(2, shape, alt_allele_idx));
-              return tensorflow::Status();
+              return absl::Status();
             }));
   }
 
