@@ -145,9 +145,11 @@ def keras_mlp_model(config: ml_collections.ConfigDict) -> tf.keras.Model:
   return model
 
 
-def load_keras_model(checkpoint_path: str) -> tf.keras.Model:
+def load_keras_model(
+    checkpoint_path: str, compile_model: bool = True
+) -> tf.keras.Model:
   """Loads a Keras model from the given checkpoint path."""
-  return tf.keras.models.load_model(checkpoint_path)
+  return tf.keras.models.load_model(checkpoint_path, compile=compile_model)
 
 
 class LegacyFormatModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):

@@ -83,7 +83,7 @@ class SmallModelVariantCaller:
   ) -> "SmallModelVariantCaller":
     """Init class with a path to a pickled model."""
     return cls(
-        keras_config.load_keras_model(model_path),
+        keras_config.load_keras_model(model_path, compile_model=False),
         snp_gq_threshold,
         indel_gq_threshold,
         batch_size,
