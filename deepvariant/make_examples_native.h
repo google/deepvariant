@@ -44,9 +44,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
-
-#include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/io/example_writer.h"
+#include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "google/protobuf/map.h"
