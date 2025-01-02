@@ -65,6 +65,10 @@ find "${TESTDATA_DIR}" -maxdepth 1 -type f -delete
 # Inputs
 REF=${TESTDATA_DIR}/input/ucsc.hg19.chr20.unittest.fasta.gz
 READS=${TESTDATA_DIR}/input/NA12878_S1.chr20.10_10p1mb.bam
+# Created using:
+# samtools view -h -b ~/data/pacbio/aligned.sorted.hg002.m84034_240730_194815_s1.hifi_reads.ccs.bam "chr20:9000000-9100000" > ~/data/aligned.sorted.hg002.m84034_240730_194815_s1.hifi_reads.ccs.chr20_100kbp_at_9mb.bam
+# samtools index ~/data/aligned.sorted.hg002.m84034_240730_194815_s1.hifi_reads.ccs.chr20_100kbp_at_9mb.bam
+READS_PACBIO=${TESTDATA_DIR}/input/aligned.sorted.hg002.m84034_240730_194815_s1.hifi_reads.ccs.chr20_100kbp_at_9mb.bam
 # CRAM_READS=${TESTDATA_DIR}/NA12878_S1.chr20.10_10p1mb.cram
 # Here is how I prepared the CRAM file:
 # samtools view -Ch -T /brain-genomics/biotf/pfda/ucsc_hg19.fa ${READS} > ${CRAM_READS}
@@ -89,6 +93,7 @@ GOLDEN_TRAINING_EXAMPLES=${TESTDATA_DIR}/golden.training_examples.tfrecord.gz
 GOLDEN_TRAINING_EXAMPLES_VCF=${TESTDATA_DIR}/golden.training_examples.vcf
 GOLDEN_CALLING_CANDIDATES=${TESTDATA_DIR}/golden.calling_candidates.tfrecord.gz
 GOLDEN_CALLING_EXAMPLES=${TESTDATA_DIR}/golden.calling_examples.tfrecord.gz
+GOLDEN_CALLING_EXAMPLES_PACBIO=${TESTDATA_DIR}/golden.calling_examples_pacbio.tfrecord.gz
 GOLDEN_CALLING_EMPTY_EXAMPLES=${TESTDATA_DIR}/golden.calling_examples_empty.tfrecord.gz
 CALLING_EXAMPLES_TEMP=${TESTDATA_DIR}/tmp.examples.tfrecord.gz
 GOLDEN_CANDIDATE_POSITIONS="${TESTDATA_DIR}"/golden.candidate_positions
@@ -170,6 +175,26 @@ time ./bazel-bin/deepvariant/make_examples \
   --channel_list='read_base,base_quality,mapping_quality,strand,read_supports_variant,base_differs_from_ref,insert_size' \
   --gvcf "${GOLDEN_POSTPROCESS_GVCF_INPUT}" \
   --deterministic_serialization
+
+time ./bazel-bin/deepvariant/make_examples \
+  --mode calling \
+  --ref "${REF}" \
+  --reads "${READS_PACBIO}" \
+  --regions chr20:9000000-9100000 \
+  --examples "${GOLDEN_CALLING_EXAMPLES_PACBIO}" \
+  --nosplit_skip_reads \
+  --alt_aligned_pileup "diff_channels" \
+  --max_reads_per_partition "600" \
+  --min_mapping_quality "1" \
+  --parse_sam_aux_fields \
+  --partition_size "25000" \
+  --phase_reads \
+  --pileup_image_width 147 \
+  --sort_by_haplotypes \
+  --track_ref_reads \
+  --trim_reads_for_pileup \
+  --vsc_min_fraction_indels "0.12" \
+  --channel_list="BASE_CHANNELS,haplotype"
 
 # Generate make_examples output for candidate_sweep mode
 time ./bazel-bin/deepvariant/make_examples \
