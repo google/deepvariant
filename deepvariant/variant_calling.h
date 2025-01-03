@@ -224,7 +224,7 @@ class VariantCaller {
   }
 
   std::vector<Allele> SelectAltAlleles(const AlleleCount& allele_count) const;
-  bool IsGoodAltAllele(const Allele& allele, const int total_count) const;
+  bool IsGoodAltAllele(const Allele& allele, int total_count) const;
   bool KeepReferenceSite() const;
 
   const VariantCallerOptions options_;

@@ -245,8 +245,7 @@ class VariantCaller {
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
       absl::string_view target_sample) const;
   AlleleRejectionAcceptance IsGoodAltAlleleWithReason(
-      const Allele& allele, const int total_count,
-      const bool apply_trio_coefficient) const;
+      const Allele& allele, int total_count, bool apply_trio_coefficient) const;
   bool KeepReferenceSite() const;
 
   // This function duplicates functionality of CallVariant() to determine if

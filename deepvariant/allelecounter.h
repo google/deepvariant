@@ -412,27 +412,23 @@ class AlleleCounter {
   // INDEL may become non-normalized so the process is repeated up to 10 times.
   // If INDEL is shifted all the way to the beginning of the read then this
   // INDEL is removed and read alignment position has to be shifted.
-  bool NormalizeCigar(const absl::string_view read_seq, int interval_offset,
+  bool NormalizeCigar(absl::string_view read_seq, int interval_offset,
                       std::vector<nucleus::genomics::v1::CigarUnit>& cigar,
                       int& read_shift) const;
 
   // Helper function used in NormalizeCigar function. Returns true if deletion
   // operation can be shifted left preserving the alignment.
   bool CanDelBeShifted(
-      const absl::string_view read_seq,
+      absl::string_view read_seq,
       std::vector<nucleus::genomics::v1::CigarUnit>::const_iterator cigar_elt,
-      int read_offset,
-      int interval_offset,
-      int op_len) const;
+      int read_offset, int interval_offset, int op_len) const;
 
   // Helper function used in NormalizeCigar function. Returns true if insertion
   // operation can be shifted left preserving the alignment.
   bool CanInsBeShifted(
-      const absl::string_view read_seq,
+      absl::string_view read_seq,
       std::vector<nucleus::genomics::v1::CigarUnit>::const_iterator cigar_elt,
-      int read_offset,
-      int interval_offset,
-      int op_len) const;
+      int read_offset, int interval_offset, int op_len) const;
 
   // Our GenomeReference, which we use to get information about the reference
   // bases in our interval.
