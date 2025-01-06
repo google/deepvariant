@@ -92,6 +92,13 @@ struct OrderAllele {
 };
 using AlleleMap = std::map<Allele, std::string, OrderAllele>;
 
+// Helper struct to store allele and position.
+struct AlleleAtPosition {
+  std::string alt_bases;
+  AlleleType type;
+  int position;
+};
+
 // A very simple but highly sensitive variant caller.
 //
 // This class implements a very simple variant caller using the data
@@ -243,7 +250,19 @@ class VariantCaller {
 
   std::vector<Allele> SelectAltAlleles(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-      absl::string_view target_sample) const;
+      const std::vector<AlleleCount>& allele_counts_context,
+      absl::string_view target_sample,
+      bool process_mnp_with_alt_deletion) const;
+
+  // Generate complex variants if there are multiple alleles and one of them is
+  // a deletion and other alleles are not deletions. In all other cases return
+  // SelectAltAlleles(). If complex alleles are generated then allele counts are
+  // modified to reflect the new alleles.
+  std::vector<Allele> SelectAltAllelesWithComplexVariant(
+      const std::vector<Allele>& alt_alleles,
+      const AlleleCount& target_sample_allele_count,
+      const std::vector<AlleleCount>& allele_counts_context) const;
+
   AlleleRejectionAcceptance IsGoodAltAlleleWithReason(
       const Allele& allele, int total_count, bool apply_trio_coefficient) const;
   bool KeepReferenceSite() const;

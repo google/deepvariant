@@ -37,7 +37,6 @@
 #include <cstdint>
 #include <iterator>
 #include <map>
-#include <numeric>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -56,7 +55,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "third_party/nucleus/io/vcf_reader.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
@@ -256,27 +254,103 @@ bool VariantCaller::AlleleFilter(
   return false;
 }
 
+std::vector<Allele> VariantCaller::SelectAltAllelesWithComplexVariant(
+    const std::vector<Allele>& alt_alleles,
+    const AlleleCount& target_sample_allele_count,
+    const std::vector<AlleleCount>& allele_counts_context) const {
+  // Scan alt_alleles for deletion and create complex variant candidate if there
+  // are other alleles overlapped with this deletion.
+  std::vector<Allele>::const_iterator allele_with_del = std::find_if(
+      alt_alleles.cbegin(), alt_alleles.cend(),
+      [](const Allele& allele) {
+        return allele.type() == AlleleType::DELETION; });
+  if (allele_with_del == alt_alleles.cend()) {
+    return alt_alleles;
+  }
+
+  // Since there may be multiple deletions of different lengths we need to
+  // set del_len to the largest one. This is done in CalcRefBases().
+  std::string del_allele_ref_bases =
+      CalcRefBases(target_sample_allele_count.ref_base(), alt_alleles);
+  // If there are multiple deletions we take the largest one.
+  int del_len = del_allele_ref_bases.size();
+  int del_start = target_sample_allele_count.position().position();
+  int del_end = target_sample_allele_count.position().position() + del_len;
+  absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
+      read_to_alt_alleles;
+  int found_alt_allele_overlapped_by_deletion = 0;
+  bool overlapping_del_found = false;
+  // Iterating over all positions starting at the del_start.
+  for (const auto& allele_count : allele_counts_context) {
+    int allele_pos = allele_count.position().position();
+    if (allele_pos < del_start) {
+      continue;
+    }
+    if (allele_pos >= del_end) {
+      break;
+    }
+    for (const auto& [read_id, read_allele] :
+          allele_count.read_alleles()) {
+      // Skip alleles for the deletion itself.
+      if (allele_pos == del_start &&
+          read_allele.type() == AlleleType::DELETION &&
+          read_allele.bases().size() == del_len) {
+        continue;
+      }
+      // We cannot create complex variant if there are other deletions
+      // overlapping our deletion.
+      if (read_allele.type() == AlleleType::DELETION) {
+        found_alt_allele_overlapped_by_deletion = 0;
+        overlapping_del_found = true;
+        break;
+      }
+      // We are only interested in cases where there is alt allele that
+      // starts after the deletion;s start and ends before the deletion
+      // end.
+      if (allele_pos > del_start &&
+          read_allele.type() != AlleleType::REFERENCE) {
+        found_alt_allele_overlapped_by_deletion++;
+      }
+      read_to_alt_alleles[read_id].push_back(
+          {.alt_bases = read_allele.bases(),
+            .type = read_allele.type(),
+            .position = allele_pos});
+    }  // for (read_id, read_allele)
+  }  // for (allele_counts_context)
+  if (found_alt_allele_overlapped_by_deletion < 1 || overlapping_del_found) {
+    read_to_alt_alleles.clear();
+  }
+  // TODO: This function is not fully implemented yet.
+  // Following parts will be added later:
+  // GenerateComplexVariantAlleles(read_to_alt_alleles)
+  // UpdateAlleleCounts()
+  LOG(FATAL) << "Not implemented yet";
+  return alt_alleles;
+}
 
 // Select the subset of GoodAltAlleles from the alleles of allele_count.
 //
 // Returns the vector of allele objects from allele_count that satisfy
 // IsGoodAltAllele().
 std::vector<Allele> VariantCaller::SelectAltAlleles(
-    const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    absl::string_view target_sample) const {
+    const absl::node_hash_map<std::string, AlleleCount>&
+        allele_counts_by_sample,
+    const std::vector<AlleleCount>& allele_counts_context,
+    absl::string_view target_sample,
+    bool process_complex_variant_with_alt_deletion) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
   const AlleleCount& target_sample_allele_count =
-      allele_counts.at(target_sample);
+      allele_counts_by_sample.at(target_sample);
   std::vector<AlleleCount> all_samples_allele_counts;
-  all_samples_allele_counts.reserve(allele_counts.size());
+  all_samples_allele_counts.reserve(allele_counts_by_sample.size());
   // "Non-target" samples are referring to all the samples that are providing
   // supportive information. Usually the main truth labels are not from this
   // sample, or usually it means that the calls coming from these non-target
   // samples are not the main focus of our problem.
   std::vector<AlleleCount> non_target_allele_counts;
-  non_target_allele_counts.reserve(allele_counts.size());
-  for (const auto& allele_counts_entry : allele_counts) {
+  non_target_allele_counts.reserve(allele_counts_by_sample.size());
+  for (const auto& allele_counts_entry : allele_counts_by_sample) {
     all_samples_allele_counts.push_back(allele_counts_entry.second);
     if (allele_counts_entry.first != target_sample) {
       non_target_allele_counts.push_back(allele_counts_entry.second);
@@ -297,9 +371,14 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
             non_target_sample_alleles)) {
       alt_alleles.push_back(allele);
     }
-  }        // for (alleles in target samples)
+  }  // for (alleles in target samples)
 
-  return alt_alleles;
+  if (!process_complex_variant_with_alt_deletion)
+    return alt_alleles;
+  else
+    return SelectAltAllelesWithComplexVariant(alt_alleles,
+                                              target_sample_allele_count,
+                                              allele_counts_context);
 }
 
 // Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
@@ -542,8 +621,8 @@ std::optional<int> VariantCaller::CallVariantPosition(
     return std::nullopt;
   }
 
-  const std::vector<Allele> alt_alleles =
-      SelectAltAlleles(allele_counts, target_sample);
+  const std::vector<Allele> alt_alleles = SelectAltAlleles(
+      allele_counts, *target_sample_allele_counts, target_sample, false);
   if (alt_alleles.empty() && !KeepReferenceSite()) {
     return std::nullopt;
   }
@@ -566,8 +645,8 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
     return std::nullopt;
   }
 
-  const std::vector<Allele> alt_alleles =
-      SelectAltAlleles(allele_counts, target_sample);
+  const std::vector<Allele> alt_alleles = SelectAltAlleles(
+      allele_counts, *target_sample_allele_counts, target_sample, false);
   if (alt_alleles.empty() && !KeepReferenceSite()) {
     return std::nullopt;
   }
