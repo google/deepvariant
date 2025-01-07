@@ -42,6 +42,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
@@ -50,6 +51,8 @@
 #include "htslib/hts.h"
 #include "htslib/hts_endian.h"
 #include "htslib/sam.h"
+#include "third_party/nucleus/core/status.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/io/sam_utils.h"
 #include "third_party/nucleus/platform/types.h"
@@ -58,15 +61,12 @@
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/utils.h"
-#include "third_party/nucleus/core/status.h"
-#include "third_party/nucleus/core/statusor.h"
 #include "google/protobuf/repeated_field.h"
 
 namespace nucleus {
 
 using absl::string_view;
 using nucleus::genomics::v1::CigarUnit;
-using nucleus::genomics::v1::CigarUnit_Operation;
 using nucleus::genomics::v1::Position;
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Read;
@@ -380,7 +380,6 @@ static inline bool StartsWith(const string& query, const char prefix[],
         if (end - s < 4)
           return ::nucleus::DataLoss("data too short for tag " + tag);
         const int n_elements = le_to_u32(s);
-        if (n_elements == 0) return ::nucleus::DataLoss("n_elements is zero");
         // We need to skip 4 bytes for n_elements int that occurs before the
         // array.
         s += 4;
@@ -403,7 +402,9 @@ static inline bool StartsWith(const string& query, const char prefix[],
             }
             s += element_size;
           }
-          if (include_tag) SetInfoField(tag, all_values, read_message);
+          if (include_tag && n_elements > 0) {
+            SetInfoField(tag, all_values, read_message);
+          }
         } else if (sub_type == 's') {
           std::vector<int16_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -534,7 +535,7 @@ static inline bool StartsWith(const string& query, const char prefix[],
 
   // Set the pairing information, which has a bit of complex logic to it. The
   // read number and number_reads per fragment depends on whether the read is
-  // paired and, if so, whether its the first or second read.
+  // paired and, if so, whether it's the first or second read.
   bool paired = c->flag & BAM_FPAIRED;
   read_message->set_read_number(c->flag & BAM_FREAD1 || !paired ? 0 : 1);
   read_message->set_number_reads(paired ? 2 : 1);
@@ -626,7 +627,7 @@ class SamIterableBase : public SamIterable {
   // Advance to the next record.
   StatusOr<bool> Next(nucleus::genomics::v1::Read* out) override;
 
-  // Base class constructor. Intializes common attrubutes.
+  // Base class constructor. Initializes common attrubutes.
   SamIterableBase(const SamReader* reader, htsFile* fp, bam_hdr_t* header);
   ~SamIterableBase() override;
 

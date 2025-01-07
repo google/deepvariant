@@ -655,6 +655,7 @@ cc_library(
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:samplers",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf_lite",
         "@htslib",
