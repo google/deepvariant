@@ -373,6 +373,70 @@ class PostprocessVariantsTest(parameterized.TestCase):
     )
 
   @flagsaver.flagsaver
+  def test_sequential_processing_with_num_partitions_0(self):
+    FLAGS.infile = testdata.GOLDEN_POSTPROCESS_INPUT
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.outfile = create_outfile('calls_no_partitions.vcf.gz')
+    FLAGS.nonvariant_site_tfrecord_path = testdata.GOLDEN_POSTPROCESS_GVCF_INPUT
+    FLAGS.gvcf_outfile = create_outfile('gvcf_calls_no_partitions.vcf.gz')
+    FLAGS.small_model_cvo_records = None
+    FLAGS.cpus = 0
+    FLAGS.num_partitions = 0
+    postprocess_variants.main(['postprocess_variants.py'])
+
+    self.assertEqual(
+        _read_contents(FLAGS.outfile, decompress=True),
+        _read_contents(testdata.GOLDEN_POSTPROCESS_OUTPUT),
+    )
+    self.assertEqual(
+        _read_contents(FLAGS.gvcf_outfile, decompress=True),
+        _read_contents(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT),
+    )
+
+  @flagsaver.flagsaver
+  def test_sequential_processing_with_num_partitions_10(self):
+    FLAGS.infile = testdata.GOLDEN_POSTPROCESS_INPUT
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.outfile = create_outfile('calls_10_partitions.vcf.gz')
+    FLAGS.nonvariant_site_tfrecord_path = testdata.GOLDEN_POSTPROCESS_GVCF_INPUT
+    FLAGS.gvcf_outfile = create_outfile('gvcf_calls_10_partitions.vcf.gz')
+    FLAGS.small_model_cvo_records = None
+    FLAGS.cpus = 1
+    FLAGS.num_partitions = 10
+    FLAGS.regions = 'chr20:10,000,000-10,010,000'
+    postprocess_variants.main(['postprocess_variants.py'])
+
+    self.assertEqual(
+        _read_contents(FLAGS.outfile, decompress=True),
+        _read_contents(testdata.GOLDEN_POSTPROCESS_OUTPUT),
+    )
+    self.assertEqual(
+        _read_contents(FLAGS.gvcf_outfile, decompress=True),
+        _read_contents(testdata.GOLDEN_POSTPROCESS_GVCF_OUTPUT),
+    )
+
+  @flagsaver.flagsaver
+  def test_sequential_processing_with_invalid_num_partitions(self):
+    FLAGS.infile = testdata.GOLDEN_POSTPROCESS_INPUT
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.outfile = create_outfile('calls.vcf.gz')
+    FLAGS.nonvariant_site_tfrecord_path = testdata.GOLDEN_POSTPROCESS_GVCF_INPUT
+    FLAGS.gvcf_outfile = create_outfile('gvcf_calls.vcf.gz')
+    FLAGS.small_model_cvo_records = None
+    FLAGS.cpus = 1
+    FLAGS.num_partitions = 0
+    with (
+        mock.patch.object(logging, 'error') as mock_logging,
+        mock.patch.object(sys, 'exit') as mock_exit,
+    ):
+      postprocess_variants.main(['postprocess_variants.py'])
+    mock_logging.assert_called_once_with(
+        'When using sequential processing (--cpus=1), --num_partitions'
+        ' must be greater than 1.'
+    )
+    mock_exit.assert_called_once_with(errno.ENOENT)
+
+  @flagsaver.flagsaver
   def test_group_variants(self):
     FLAGS.infile = testdata.GOLDEN_VCF_CANDIDATE_IMPORTER_POSTPROCESS_INPUT
     FLAGS.ref = testdata.CHR20_FASTA

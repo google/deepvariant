@@ -193,9 +193,17 @@ _HAPLOID_CONTIGS = flags.DEFINE_string(
 _CPUS = flags.DEFINE_integer(
     'cpus',
     multiprocessing.cpu_count(),
-    'Number of worker processes to use. Use 0 to disable parallel processing. '
-    'Minimum of 2 CPUs required for parallel processing.',
+    'Number of worker processes to use. Set --cpus=0 to disable parallel'
+    ' processing.',
     short_name='j',
+    required=False,
+)
+_NUM_PARTITIONS = flags.DEFINE_integer(
+    'num_partitions',
+    0,
+    'Number of partitions to use for parallel or sequential processing. Use'
+    ' --cpus=0 and --num_partitions > 1 for sequential processing. Set'
+    ' --num_partitions > --cpus to trade runtime for lower memory usage.',
     required=False,
 )
 _PAR_REGIONS = flags.DEFINE_string(
@@ -1607,6 +1615,14 @@ def main(argv=()):
           ),
           errors.CommandLineError,
       )
+    if _CPUS.value == 1 and _NUM_PARTITIONS.value < 1:
+      errors.log_and_raise(
+          (
+              'When using sequential processing (--cpus=1), --num_partitions'
+              ' must be greater than 1.'
+          ),
+          errors.CommandLineError,
+      )
 
     proto_utils.uses_fast_cpp_protos_or_die()
     logging_level.set_from_flag()
@@ -1657,7 +1673,7 @@ def main(argv=()):
       )
 
     is_empty = get_first_cvo_record(all_cvo_paths) is None
-    if _CPUS.value > 1:
+    if _CPUS.value > 1 or _NUM_PARTITIONS.value > 1:
       calling_regions = calling_regions_utils.build_calling_regions(
           contigs=contigs,
           regions_to_include=calling_regions_utils.parse_regions_flag(
@@ -1666,8 +1682,11 @@ def main(argv=()):
           regions_to_exclude=[],
           ref_n_regions=[],
       )
+      num_partitions = _NUM_PARTITIONS.value
+      if not num_partitions:
+        num_partitions = _CPUS.value
       partitions = calling_regions_utils.partition_calling_regions(
-          calling_regions, num_partitions=_CPUS.value
+          calling_regions, num_partitions=num_partitions
       )
       temp_vcf_files = [
           tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
@@ -1676,34 +1695,49 @@ def main(argv=()):
           tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
       ]
 
-      async_results = []
-      with multiprocessing.Pool(_CPUS.value) as pool:
-        for task_id in range(_CPUS.value):
-          async_results.append(
-              pool.apply_async(
-                  run_postprocess_variants_on_region,
-                  (
-                      temp_vcf_files[task_id].name,
-                      temp_gvcf_files[task_id].name,
-                      partitions[task_id],
-                      contigs,
-                      all_cvo_paths,
-                      header,
-                      is_empty,
-                      sample_name,
-                  ),
-              )
+      if _CPUS.value > 1:
+        # Run postprocess_variants on each partition in parallel.
+        async_results = []
+        with multiprocessing.Pool(_CPUS.value) as pool:
+          for task_id in range(num_partitions):
+            async_results.append(
+                pool.apply_async(
+                    run_postprocess_variants_on_region,
+                    (
+                        temp_vcf_files[task_id].name,
+                        temp_gvcf_files[task_id].name,
+                        partitions[task_id],
+                        contigs,
+                        all_cvo_paths,
+                        header,
+                        is_empty,
+                        sample_name,
+                    ),
+                )
+            )
+          pool.close()
+          pool.join()
+      else:
+        # Run postprocess_variants on each partition sequentially.
+        for task_id in range(num_partitions):
+          run_postprocess_variants_on_region(
+              temp_vcf_files[task_id].name,
+              temp_gvcf_files[task_id].name,
+              partitions[task_id],
+              contigs,
+              all_cvo_paths,
+              header,
+              is_empty,
+              sample_name,
           )
-        for r in async_results:
-          r.wait()
 
-        _concat_vcf(_OUTFILE.value, temp_vcf_files)
-        if _NONVARIANT_SITE_TFRECORD_PATH.value:
-          _concat_vcf(_GVCF_OUTFILE.value, temp_gvcf_files)
-        for temp_vcf_file in temp_vcf_files:
-          temp_vcf_file.close()
-        for temp_gvcf_file in temp_gvcf_files:
-          temp_gvcf_file.close()
+      _concat_vcf(_OUTFILE.value, temp_vcf_files)
+      if _NONVARIANT_SITE_TFRECORD_PATH.value:
+        _concat_vcf(_GVCF_OUTFILE.value, temp_gvcf_files)
+      for temp_vcf_file in temp_vcf_files:
+        temp_vcf_file.close()
+      for temp_gvcf_file in temp_gvcf_files:
+        temp_gvcf_file.close()
     else:
       run_postprocess_variants_on_region(
           _OUTFILE.value,
