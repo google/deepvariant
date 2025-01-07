@@ -88,6 +88,7 @@ class GbzReader : public Reader {
 
   nucleus::StatusOr<std::shared_ptr<SamIterable>> Iterate() const;
 
+  static std::string GetReverseComplement(const std::string& sequence);
 
  private:
   // The filename of the GBZ file.
@@ -142,7 +143,6 @@ class GbzReader : public Reader {
   template <typename CharAllocatorType>
   static std::string GetBases(const gbwt::vector_type& path,
                               const gbwtgraph::GBZ<CharAllocatorType>& gbz);
-  static std::string GetReverseComplement(const std::string& sequence);
   static nucleus::genomics::v1::Read MakeRead(
       const std::string& chr, const int start, const std::string& bases,
       const std::vector<std::string>& cigar_elements,
