@@ -165,6 +165,8 @@ TEST(VariantCallingSomaticTest, TestCallVariantWithMaxFractionForNormal) {
   absl::node_hash_map<std::string, AlleleCount> allele_counts = {};
   allele_counts["tumor"] = MakeTestAlleleCount(20, 19, "tumor", "A", "T", 10);
   allele_counts["normal"] = MakeTestAlleleCount(10, 7, "normal", "A", "T", 10);
+  std::vector<AlleleCount> allele_counts_context = {
+    MakeTestAlleleCount(20, 19, "tumor", "A", "T", 10)};
 
   VariantCallerOptions options = BasicOptions();
   options.set_min_fraction_snps(0.1);
@@ -174,7 +176,7 @@ TEST(VariantCallingSomaticTest, TestCallVariantWithMaxFractionForNormal) {
   options.set_min_fraction_multiplier(std::numeric_limits<float>::infinity());
   const VariantCaller caller(options);
   const std::optional<DeepVariantCall> optional_variant =
-      caller.CallVariant(allele_counts, "tumor");
+      caller.CallVariant(allele_counts, "tumor", &allele_counts_context);
   EXPECT_TRUE(static_cast<bool>(optional_variant));
   Variant variant = WithCounts(MakeExpectedVariant("A", {"T"}, 10), {1, 19});
   EXPECT_THAT(optional_variant->variant(), EqualsProto(variant));
@@ -186,7 +188,7 @@ TEST(VariantCallingSomaticTest, TestCallVariantWithMaxFractionForNormal) {
   options.set_max_fraction_snps_for_non_target_sample(0.7+EPSILON);
   const VariantCaller caller2(options);
   const std::optional<DeepVariantCall> optional_variant2 =
-      caller2.CallVariant(allele_counts, "tumor");
+      caller2.CallVariant(allele_counts, "tumor", &allele_counts_context);
   EXPECT_TRUE(static_cast<bool>(optional_variant2));
   EXPECT_THAT(optional_variant2->variant(), EqualsProto(variant));
 
@@ -195,7 +197,7 @@ TEST(VariantCallingSomaticTest, TestCallVariantWithMaxFractionForNormal) {
   options.set_max_fraction_snps_for_non_target_sample(0.7-EPSILON);
   const VariantCaller caller3(options);
   const std::optional<DeepVariantCall> optional_variant3 =
-      caller3.CallVariant(allele_counts, "tumor");
+      caller3.CallVariant(allele_counts, "tumor", &allele_counts_context);
   EXPECT_FALSE(static_cast<bool>(optional_variant3));
 }
 

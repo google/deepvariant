@@ -215,8 +215,10 @@ class VariantCallingTest : public ::testing::Test {
     AlleleCount allele_count = ConstructAlleleCount(ref, alleles, "sample_id");
     absl::node_hash_map<std::string, AlleleCount> allele_count_per_sample;
     allele_count_per_sample["sample_id"] = allele_count;
+    std::vector<AlleleCount> allele_counts_context = {allele_count};
     const std::optional<DeepVariantCall> optional_variant =
-        caller.CallVariant(allele_count_per_sample, "sample_id");
+        caller.CallVariant(allele_count_per_sample, "sample_id",
+                           &allele_counts_context);
     CheckVariant(optional_variant, expect_variant, expected_variant);
     return optional_variant;
   }

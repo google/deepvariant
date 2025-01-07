@@ -210,7 +210,7 @@ class VariantCaller {
   std::optional<DeepVariantCall> CallVariant(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
       const std::string& target_sample,
-      const std::vector<AlleleCount>* target_sample_allele_counts = nullptr,
+      const std::vector<AlleleCount>* target_sample_allele_counts,
       std::vector<AlleleCount>::const_iterator*
           target_sample_allele_count_iterator = nullptr) const;
 
@@ -273,7 +273,7 @@ class VariantCaller {
   std::optional<int> CallVariantPosition(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
       const std::string& target_sample,
-      const std::vector<AlleleCount>* target_sample_allele_counts = nullptr,
+      const std::vector<AlleleCount>* target_sample_allele_counts,
       std::vector<AlleleCount>::const_iterator*
           target_sample_allele_count_iterator = nullptr) const;
 
