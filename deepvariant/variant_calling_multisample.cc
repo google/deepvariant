@@ -56,7 +56,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"
 
 namespace learning {
@@ -254,6 +253,82 @@ bool VariantCaller::AlleleFilter(
   return false;
 }
 
+namespace {
+  // Helper function to generate a map from read id to a vector of alt alleles
+  // that are supported by each read.
+  absl::flat_hash_map<
+      std::string, std::vector<AlleleAtPosition>> CreateComplexAllelesSupport(
+        const std::vector<AlleleCount>& allele_counts_context,
+        absl::string_view del_allele_ref_bases,
+        int del_start,
+        int del_end,
+        int del_len
+      ) {
+    absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
+        read_to_alt_alleles;
+    int found_alt_allele_overlapped_by_deletion = 0;
+    bool overlapping_del_found = false;
+    // Iterating over all positions starting at the del_start.
+    for (const auto& allele_count : allele_counts_context) {
+      int allele_pos = allele_count.position().position();
+      if (allele_pos < del_start) {
+        continue;
+      }
+      if (allele_pos >= del_end) {
+        break;
+      }
+      for (const auto& [read_id, read_allele] :
+            allele_count.read_alleles()) {
+        // Skip alleles for the deletion itself.
+        if (allele_pos == del_start &&
+            read_allele.type() == AlleleType::DELETION &&
+            read_allele.bases().size() == del_len) {
+          continue;
+        }
+        // We cannot create complex variant if there are other deletions
+        // overlapping our deletion.
+        if (read_allele.type() == AlleleType::DELETION) {
+          found_alt_allele_overlapped_by_deletion = 0;
+          overlapping_del_found = true;
+          break;
+        }
+        // We are only interested in cases where there is alt allele that
+        // starts after the deletion start and ends before the deletion
+        // end.
+        if (allele_pos > del_start &&
+            read_allele.type() != AlleleType::REFERENCE) {
+          found_alt_allele_overlapped_by_deletion++;
+        }
+        read_to_alt_alleles[read_id].push_back(
+            {.alt_bases = read_allele.bases(),
+              .type = read_allele.type(),
+              .position = allele_pos});
+      }  // for (read_id, read_allele)
+    }  // for (allele_counts_context)
+    if (found_alt_allele_overlapped_by_deletion < 1 || overlapping_del_found) {
+      read_to_alt_alleles.clear();
+    }
+    return read_to_alt_alleles;
+  }
+}  // namespace
+
+// Implementation of complex variant representation.
+//
+// This function is called when we have a deletion allele in the target sample.
+// We need to check if there are other alleles that overlap with this deletion.
+// If there are, we need to create a complex variant allele that is a
+// concatenation of all the overlapping alleles.
+//
+// For example, if we have a deletion at position 10 and SNP 1 at position 10,
+// and SNP 2 at position 12. And SNP 1 and SNP 2 are supported by the same set
+// of reads.
+//   Position 10 Allele 1: ATCG -> A (Deletion)
+//   Position 10 Allele 2: A -> T    (SNP 1)
+//   Position 12 Allele 3: C -> A    (SNP 2)
+//
+// This function will create a complex variant:
+//   Position 10 Allele 1: ATCG -> A       (Deletion)
+//   Position 10 Allele 2: ATCG -> TTAG    (SNP 1, 2)
 std::vector<Allele> VariantCaller::SelectAltAllelesWithComplexVariant(
     const std::vector<Allele>& alt_alleles,
     const AlleleCount& target_sample_allele_count,
@@ -277,49 +352,10 @@ std::vector<Allele> VariantCaller::SelectAltAllelesWithComplexVariant(
   int del_start = target_sample_allele_count.position().position();
   int del_end = target_sample_allele_count.position().position() + del_len;
   absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
-      read_to_alt_alleles;
-  int found_alt_allele_overlapped_by_deletion = 0;
-  bool overlapping_del_found = false;
-  // Iterating over all positions starting at the del_start.
-  for (const auto& allele_count : allele_counts_context) {
-    int allele_pos = allele_count.position().position();
-    if (allele_pos < del_start) {
-      continue;
-    }
-    if (allele_pos >= del_end) {
-      break;
-    }
-    for (const auto& [read_id, read_allele] :
-          allele_count.read_alleles()) {
-      // Skip alleles for the deletion itself.
-      if (allele_pos == del_start &&
-          read_allele.type() == AlleleType::DELETION &&
-          read_allele.bases().size() == del_len) {
-        continue;
-      }
-      // We cannot create complex variant if there are other deletions
-      // overlapping our deletion.
-      if (read_allele.type() == AlleleType::DELETION) {
-        found_alt_allele_overlapped_by_deletion = 0;
-        overlapping_del_found = true;
-        break;
-      }
-      // We are only interested in cases where there is alt allele that
-      // starts after the deletion;s start and ends before the deletion
-      // end.
-      if (allele_pos > del_start &&
-          read_allele.type() != AlleleType::REFERENCE) {
-        found_alt_allele_overlapped_by_deletion++;
-      }
-      read_to_alt_alleles[read_id].push_back(
-          {.alt_bases = read_allele.bases(),
-            .type = read_allele.type(),
-            .position = allele_pos});
-    }  // for (read_id, read_allele)
-  }  // for (allele_counts_context)
-  if (found_alt_allele_overlapped_by_deletion < 1 || overlapping_del_found) {
-    read_to_alt_alleles.clear();
-  }
+      read_to_alt_alleles = CreateComplexAllelesSupport(
+          allele_counts_context, del_allele_ref_bases, del_start,
+          del_end, del_len);
+
   // TODO: This function is not fully implemented yet.
   // Following parts will be added later:
   // GenerateComplexVariantAlleles(read_to_alt_alleles)
