@@ -166,9 +166,10 @@ class DirectPhasing {
   // the order. Python wrapper will be used to add phases to read protos in
   // order to avoid copying gigabytes of memory.
   nucleus::StatusOr<std::vector<int>> PhaseReads(
-      const std::vector<DeepVariantCall>& candidates,
-      const std::vector<
-          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads);
+      absl::Span<const DeepVariantCall> candidates,
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads);
 
   // PhaseReads wrapper for Python clif interface.
   // TODO In other similar wrappers ConstProtoPtr is unwrapped in the

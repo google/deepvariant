@@ -71,9 +71,9 @@ std::string ReadKey(const nucleus::genomics::v1::Read& read) {
 }
 
 nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
-    const std::vector<DeepVariantCall>& candidates,
-    const std::vector<
-        nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads) {
+    absl::Span<const DeepVariantCall> candidates,
+    absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+        reads) {
   // Build graph from candidates.
   Build(candidates, reads);
   // Iterate positions in order. Calculate the score for each combination of
