@@ -250,7 +250,7 @@ class VariantCallingTest : public ::testing::Test {
   // callee.
   std::optional<DeepVariantCall> CheckCallFromComputeVariant(
       const VariantCaller& caller, const Variant& proposed_variant,
-      const std::vector<AlleleCount>& allele_counts,
+      absl::Span<const AlleleCount> allele_counts,
       const ExpectedVariant expect_variant, const Variant& expected_variant) {
     const std::optional<DeepVariantCall> optional_variant =
         caller.ComputeVariant(proposed_variant, allele_counts);
