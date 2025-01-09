@@ -408,7 +408,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     )
     FLAGS.regions = [ranges.to_literal(region)]
     golden_file = _sharded(testdata.GOLDEN_ONT_MAKE_EXAMPLES_OUTPUT, num_shards)
-    FLAGS.denovo_regions = None
+    FLAGS.denovo_regions = ''
     if denovo_test:
       # If denovo test is enabled, then set the parameters for denovo testing.
       golden_file = _sharded(

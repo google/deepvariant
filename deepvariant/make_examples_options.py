@@ -31,6 +31,7 @@
 import os.path
 import re
 import textwrap
+from typing import List
 
 from absl import flags
 from absl import logging
@@ -47,8 +48,6 @@ from tensorflow.python.platform import gfile
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import errors
-
-FLAGS = flags.FLAGS
 
 # Sentinel command line flag value indicating no downsampling should occur.
 NO_DOWNSAMPLING = 0.0
@@ -70,7 +69,7 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
 
-flags.DEFINE_string(
+_REF = flags.DEFINE_string(
     'ref',
     None,
     (
@@ -79,7 +78,7 @@ flags.DEFINE_string(
         ' reference used to align the BAM file provided to --reads.'
     ),
 )
-flags.DEFINE_bool(
+_USE_REF_FOR_CRAM = flags.DEFINE_bool(
     'use_ref_for_cram',
     True,
     (
@@ -89,24 +88,24 @@ flags.DEFINE_bool(
         ' specify --nouse_ref_for_cram.'
     ),
 )
-flags.DEFINE_string(
+_EXAMPLES = flags.DEFINE_string(
     'examples',
     None,
     'Required. Path to write tf.Example protos in TFRecord format.',
 )
-flags.DEFINE_string(
+_CHECKPOINT = flags.DEFINE_string(
     'checkpoint',
     None,
     'Path to the TensorFlow model checkpoint.',
 )
-flags.DEFINE_string(
+_CANDIDATES = flags.DEFINE_string(
     'candidates',
     '',
     'Candidate DeepVariantCalls in tfrecord format. For DEBUGGING.',
 )
-flags.DEFINE_string(
+_MODE = flags.DEFINE_string(
     'mode',
-    None,
+    '',
     (
         'Mode to run. Must be one of calling, training or candidate_sweep.'
         ' calling - examples are prepared for inference only.'
@@ -118,7 +117,7 @@ flags.DEFINE_string(
         '         with the mode set to calling.'
     ),
 )
-flags.DEFINE_string(
+_REGIONS = flags.DEFINE_string(
     'regions',
     '',
     (
@@ -127,7 +126,7 @@ flags.DEFINE_string(
         ' files.'
     ),
 )
-flags.DEFINE_string(
+_EXCLUDE_REGIONS = flags.DEFINE_string(
     'exclude_regions',
     '',
     (
@@ -138,7 +137,7 @@ flags.DEFINE_string(
         ' everything on chromosome 20 excluding base 100'
     ),
 )
-flags.DEFINE_string(
+_VARIANT_CALLER = flags.DEFINE_string(
     'variant_caller',
     'very_sensitive_caller',
     (
@@ -146,7 +145,7 @@ flags.DEFINE_string(
         ' enum values in the MakeExamplesOptions proto.'
     ),
 )
-flags.DEFINE_string(
+_GVCF = flags.DEFINE_string(
     'gvcf',
     '',
     (
@@ -154,7 +153,7 @@ flags.DEFINE_string(
         ' Variant proto format.'
     ),
 )
-flags.DEFINE_integer(
+_GVCF_GQ_BINSIZE = flags.DEFINE_integer(
     'gvcf_gq_binsize',
     5,
     (
@@ -163,15 +162,15 @@ flags.DEFINE_integer(
         ' Must be a positive integer.'
     ),
 )
-flags.DEFINE_float(
+_P_ERROR = flags.DEFINE_float(
     'p_error', 0.001, 'Basecalling error for reference confidence model.'
 )
-flags.DEFINE_bool(
+_INCLUDE_MED_DP = flags.DEFINE_bool(
     'include_med_dp',
     False,
     'If true, include MED_DP in the output gVCF records.',
 )
-flags.DEFINE_string(
+_CONFIDENT_REGIONS = flags.DEFINE_string(
     'confident_regions',
     '',
     (
@@ -180,7 +179,7 @@ flags.DEFINE_string(
         ' must match those of the reference genome.'
     ),
 )
-flags.DEFINE_string(
+_TRUTH_VARIANTS = flags.DEFINE_string(
     'truth_variants',
     '',
     (
@@ -188,8 +187,8 @@ flags.DEFINE_string(
         ' labels which we use to label our examples.'
     ),
 )
-flags.DEFINE_integer('task', 0, 'Task ID of this task')
-flags.DEFINE_integer(
+_TASK = flags.DEFINE_integer('task', 0, 'Task ID of this task')
+_PARTITION_SIZE = flags.DEFINE_integer(
     'partition_size',
     1000,
     (
@@ -197,7 +196,7 @@ flags.DEFINE_integer(
         ' splittingit into multiple smaller subregions.'
     ),
 )
-flags.DEFINE_integer(
+_MAX_READS_PER_PARTITION = flags.DEFINE_integer(
     'max_reads_per_partition',
     1500,
     (
@@ -214,12 +213,12 @@ _MAX_READS_FOR_DYNAMIC_BASES_PER_REGION = flags.DEFINE_integer(
         'This is particularly important for very long reads.'
     ),
 )
-flags.DEFINE_string(
+_MULTI_ALLELIC_MODE = flags.DEFINE_string(
     'multi_allelic_mode',
     '',
     'How to handle multi-allelic candidate variants. For DEBUGGING',
 )
-flags.DEFINE_bool(
+_REALIGN_READS = flags.DEFINE_bool(
     'realign_reads',
     True,
     (
@@ -235,7 +234,7 @@ _TRIM_READS_FOR_PILUP = flags.DEFINE_bool(
         'Reads longer than 500 bp are not trimmed.'
     ),
 )
-flags.DEFINE_bool(
+_WRITE_RUN_INFO = flags.DEFINE_bool(
     'write_run_info',
     False,
     (
@@ -243,7 +242,7 @@ flags.DEFINE_bool(
         ' text_format.'
     ),
 )
-flags.DEFINE_enum(
+_ALT_ALIGNED_PILEUP = flags.DEFINE_enum(
     'alt_aligned_pileup',
     'none',
     ['none', 'base_channels', 'diff_channels', 'rows'],
@@ -253,7 +252,7 @@ flags.DEFINE_enum(
         ' "none".Options: "none", "base_channels","diff_channels", "rows"'
     ),
 )
-flags.DEFINE_enum(
+_TYPES_TO_ALT_ALIGN = flags.DEFINE_enum(
     'types_to_alt_align',
     'indels',
     ['indels', 'all'],
@@ -265,7 +264,7 @@ flags.DEFINE_enum(
         ' models.'
     ),
 )
-flags.DEFINE_integer(
+_HTS_BLOCK_SIZE = flags.DEFINE_integer(
     'hts_block_size',
     _DEFAULT_HTS_BLOCK_SIZE,
     (
@@ -274,7 +273,7 @@ flags.DEFINE_integer(
         ' files. Currently only applies to SAM/BAM reading.'
     ),
 )
-flags.DEFINE_integer(
+_MIN_BASE_QUALITY = flags.DEFINE_integer(
     'min_base_quality',
     10,
     (
@@ -284,7 +283,7 @@ flags.DEFINE_integer(
         ' greater than min_base_quality.'
     ),
 )
-flags.DEFINE_integer(
+_MIN_MAPPING_QUALITY = flags.DEFINE_integer(
     'min_mapping_quality',
     5,
     (
@@ -292,7 +291,7 @@ flags.DEFINE_integer(
         'have a MAPQ >= i. Note this only applies to aligned reads.'
     ),
 )
-flags.DEFINE_integer(
+_VSC_MIN_COUNT_SNPS = flags.DEFINE_integer(
     'vsc_min_count_snps',
     2,
     (
@@ -300,7 +299,7 @@ flags.DEFINE_integer(
         'AlleleCount will be advanced as candidates.'
     ),
 )
-flags.DEFINE_integer(
+_VSC_MIN_COUNT_INDELS = flags.DEFINE_integer(
     'vsc_min_count_indels',
     2,
     (
@@ -308,7 +307,7 @@ flags.DEFINE_integer(
         'our AlleleCount will be advanced as candidates.'
     ),
 )
-flags.DEFINE_float(
+_VSC_MIN_FRACTION_SNPS = flags.DEFINE_float(
     'vsc_min_fraction_snps',
     0.12,
     (
@@ -317,7 +316,7 @@ flags.DEFINE_float(
         'candidates.'
     ),
 )
-flags.DEFINE_float(
+_VSC_MIN_FRACTION_INDELS = flags.DEFINE_float(
     'vsc_min_fraction_indels',
     0.06,
     (
@@ -367,17 +366,17 @@ _DOWNSAMPLE_CLASSES = flags.DEFINE_list(
     ),
 )
 
-flags.DEFINE_float(
+_TRAINING_RANDOM_EMIT_REF_SITES = flags.DEFINE_float(
     'training_random_emit_ref_sites',
     NO_RANDOM_REF,
     'If > 0, emit extra random reference examples with this probability.',
 )
-flags.DEFINE_integer(
+_PILEUP_IMAGE_WIDTH = flags.DEFINE_integer(
     'pileup_image_width',
     0,
     'Width for the pileup image. If 0, uses the default width',
 )
-flags.DEFINE_string(
+_LABELER_ALGORITHM = flags.DEFINE_string(
     'labeler_algorithm',
     'haplotype_labeler',
     (
@@ -385,7 +384,7 @@ flags.DEFINE_string(
         ' the LabelerAlgorithm enum values in the MakeExamplesOptions proto.'
     ),
 )
-flags.DEFINE_string(
+_CUSTOMIZED_CLASSES_LABELER_CLASSES_LIST = flags.DEFINE_string(
     'customized_classes_labeler_classes_list',
     '',
     (
@@ -394,7 +393,7 @@ flags.DEFINE_string(
         ' customized_classes_labeler.'
     ),
 )
-flags.DEFINE_string(
+_CUSTOMIZED_CLASSES_LABELER_INFO_FIELD_NAME = flags.DEFINE_string(
     'customized_classes_labeler_info_field_name',
     '',
     (
@@ -403,7 +402,7 @@ flags.DEFINE_string(
         ' customized_classes_labeler.'
     ),
 )
-flags.DEFINE_integer(
+_LOGGING_EVERY_N_CANDIDATES = flags.DEFINE_integer(
     'logging_every_n_candidates',
     2000,
     (
@@ -411,18 +410,20 @@ flags.DEFINE_integer(
         ' frequent the logging information emits.'
     ),
 )
-flags.DEFINE_bool('keep_duplicates', False, 'If True, keep duplicate reads.')
-flags.DEFINE_bool(
+_KEEP_DUPLICATES = flags.DEFINE_bool(
+    'keep_duplicates', False, 'If True, keep duplicate reads.'
+)
+_KEEP_SUPPLEMENTARY_ALIGNMENTS = flags.DEFINE_bool(
     'keep_supplementary_alignments',
     False,
     'If True, keep reads marked as supplementary alignments.',
 )
-flags.DEFINE_bool(
+_KEEP_SECONDARY_ALIGNMENTS = flags.DEFINE_bool(
     'keep_secondary_alignments',
     False,
     'If True, keep reads marked as secondary alignments.',
 )
-flags.DEFINE_bool(
+_PARSE_SAM_AUX_FIELDS = flags.DEFINE_bool(
     'parse_sam_aux_fields',
     None,
     (
@@ -443,12 +444,12 @@ _AUX_FIELDS_TO_KEEP = flags.DEFINE_string(
         'fields will be kept.'
     ),
 )
-flags.DEFINE_bool(
+_USE_ORIGINAL_QUALITY_SCORES = flags.DEFINE_bool(
     'use_original_quality_scores',
     False,
     'If True, base quality scores are read from OQ tag.',
 )
-flags.DEFINE_string(
+_SELECT_VARIANT_TYPES = flags.DEFINE_string(
     'select_variant_types',
     None,
     (
@@ -461,7 +462,7 @@ flags.DEFINE_string(
         ' and indels'
     ),
 )
-flags.DEFINE_string(
+_SEQUENCING_TYPE = flags.DEFINE_string(
     'sequencing_type',
     None,
     (
@@ -471,7 +472,7 @@ flags.DEFINE_string(
         ' is not currently being used.'
     ),
 )
-flags.DEFINE_bool(
+_SORT_BY_HAPLOTYPES = flags.DEFINE_bool(
     'sort_by_haplotypes',
     False,
     (
@@ -479,7 +480,7 @@ flags.DEFINE_bool(
         'parse_sam_aux_fields has to be set for this to work.'
     ),
 )
-flags.DEFINE_bool(
+_REVERSE_HAPLOTYPES = flags.DEFINE_bool(
     'reverse_haplotypes',
     False,
     (
@@ -487,7 +488,7 @@ flags.DEFINE_bool(
         ' order, parse_sam_aux_fields has to be set for this to work.'
     ),
 )
-flags.DEFINE_integer(
+_HP_TAG_FOR_ASSEMBLY_POLISHING = flags.DEFINE_integer(
     'hp_tag_for_assembly_polishing',
     0,
     (
@@ -495,20 +496,20 @@ flags.DEFINE_integer(
         'sort_by_haplotypes has to be set to True for this to work.'
     ),
 )
-flags.DEFINE_bool(
+_ADD_HP_CHANNEL = flags.DEFINE_bool(
     'add_hp_channel',
     False,
     '(DEPRECATED) Use `channel_list` to add this channel. \n\n'
     'If true, add another channel to represent HP tags per read.',
 )
 
-flags.DEFINE_string(
+_CHANNELS = flags.DEFINE_string(
     'channels',
     None,
     '(DEPRECATED) Use `channel_list` flag instead',
 )
 
-flags.DEFINE_string(
+_CHANNEL_LIST = flags.DEFINE_string(
     'channel_list',
     None,
     'Comma or space-delimited list of channels to create examples for. '
@@ -520,7 +521,7 @@ flags.DEFINE_string(
         textwrap.indent('\n'.join(dv_constants.USER_SET_CHANNELS), '- '),
     ),
 )
-flags.DEFINE_bool(
+_ADD_SUPPORTING_OTHER_ALT_COLOR = flags.DEFINE_bool(
     'add_supporting_other_alt_color',
     False,
     (
@@ -528,7 +529,7 @@ flags.DEFINE_bool(
         'pileup image are colored differently for multiallelics.'
     ),
 )
-flags.DEFINE_string(
+_POPULATION_VCFS = flags.DEFINE_string(
     'population_vcfs',
     None,
     (
@@ -538,7 +539,7 @@ flags.DEFINE_string(
         ' wildcard pattern.'
     ),
 )
-flags.DEFINE_bool(
+_USE_ALLELE_FREQUENCY = flags.DEFINE_bool(
     'use_allele_frequency',
     False,
     (
@@ -562,7 +563,7 @@ _SAMPLE_MEAN_COVERAGE_ON_CALLING_REGIONS = flags.DEFINE_bool(
     ' rather than on the whole genome. This is useful in the case of WES where'
     ' the regions that have reads are 2 percent of the genome.',
 )
-flags.DEFINE_string(
+_RUNTIME_BY_REGION = flags.DEFINE_string(
     'runtime_by_region',
     None,
     (
@@ -571,7 +572,7 @@ flags.DEFINE_string(
         ' same number of shards as the examples.'
     ),
 )
-flags.DEFINE_bool(
+_TRACK_REF_READS = flags.DEFINE_bool(
     'track_ref_reads',
     False,
     (
@@ -580,12 +581,12 @@ flags.DEFINE_bool(
         'supporting ref.'
     ),
 )
-flags.DEFINE_bool(
+_NORMALIZE_READS = flags.DEFINE_bool(
     'normalize_reads',
     False,
     'If True, allele counter left align INDELs for each read.',
 )
-flags.DEFINE_bool(
+_KEEP_LEGACY_ALLELE_COUNTER_BEHAVIOR = flags.DEFINE_bool(
     'keep_legacy_allele_counter_behavior',
     False,
     (
@@ -595,12 +596,12 @@ flags.DEFINE_bool(
         'We do not recommend setting this flag to True.'
     ),
 )
-flags.DEFINE_bool(
+_PHASE_READS = flags.DEFINE_bool(
     'phase_reads',
     False,
     'Calculate phases and add HP tag to all reads on a fly.',
 )
-flags.DEFINE_integer(
+_PHASE_MAX_CANDIDATES = flags.DEFINE_integer(
     'phase_max_candidates',
     5000,
     (
@@ -759,19 +760,19 @@ _PAR_REGIONS = flags.DEFINE_string(
 
 
 def shared_flags_to_options(
-    add_flags,
-    flags_obj,
-    samples_in_order,
-    sample_role_to_train,
-    main_sample_index,
+    add_flags: bool,
+    flags_obj: flags.FlagValues,
+    samples_in_order: List[deepvariant_pb2.SampleOptions],
+    sample_role_to_train: str,
+    main_sample_index: int,
 ) -> deepvariant_pb2.MakeExamplesOptions:
   """Creates options from flags that are shared, along with given samples."""
   read_reqs = reads_pb2.ReadRequirements(
-      keep_duplicates=flags_obj.keep_duplicates,
-      keep_supplementary_alignments=flags_obj.keep_supplementary_alignments,
-      keep_secondary_alignments=flags_obj.keep_secondary_alignments,
-      min_base_quality=flags_obj.min_base_quality,
-      min_mapping_quality=flags_obj.min_mapping_quality,
+      keep_duplicates=_KEEP_DUPLICATES.value,
+      keep_supplementary_alignments=_KEEP_SUPPLEMENTARY_ALIGNMENTS.value,
+      keep_secondary_alignments=_KEEP_SECONDARY_ALIGNMENTS.value,
+      min_base_quality=_MIN_BASE_QUALITY.value,
+      min_mapping_quality=_MIN_MAPPING_QUALITY.value,
       min_base_quality_mode=reads_pb2.ReadRequirements.ENFORCED_BY_CLIENT,
   )
 
@@ -780,18 +781,18 @@ def shared_flags_to_options(
   pic_options = pileup_image.default_options(read_requirements=read_reqs)
 
   allele_counter_options = deepvariant_pb2.AlleleCounterOptions(
-      partition_size=flags_obj.partition_size,
+      partition_size=_PARTITION_SIZE.value,
       read_requirements=read_reqs,
-      track_ref_reads=flags_obj.track_ref_reads,
-      normalize_reads=flags_obj.normalize_reads,
-      keep_legacy_behavior=flags_obj.keep_legacy_allele_counter_behavior,
+      track_ref_reads=_TRACK_REF_READS.value,
+      normalize_reads=_NORMALIZE_READS.value,
+      keep_legacy_behavior=_KEEP_LEGACY_ALLELE_COUNTER_BEHAVIOR.value,
   )
 
   options = deepvariant_pb2.MakeExamplesOptions(
       exclude_contigs=exclude_contigs.EXCLUDED_HUMAN_CONTIGS,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=609314161,
-      # # Not specified by default: calling_regions = 3;
+      calling_regions=None,  # This will be overridden later.
       read_requirements=read_reqs,
       allele_counter_options=allele_counter_options,
       pic_options=pic_options,
@@ -817,36 +818,36 @@ def shared_flags_to_options(
 
   if add_flags:
     options.mode = make_examples_core.parse_proto_enum_flag(
-        deepvariant_pb2.MakeExamplesOptions.Mode, flags_obj.mode.upper()
+        deepvariant_pb2.MakeExamplesOptions.Mode, _MODE.value.upper()
     )
 
     options.labeler_algorithm = make_examples_core.parse_proto_enum_flag(
         deepvariant_pb2.MakeExamplesOptions.LabelerAlgorithm,
-        flags_obj.labeler_algorithm.upper(),
+        _LABELER_ALGORITHM.value.upper(),
     )
 
     options.variant_caller = make_examples_core.parse_proto_enum_flag(
         deepvariant_pb2.MakeExamplesOptions.VariantCaller,
-        flags_obj.variant_caller.upper(),
+        _VARIANT_CALLER.value.upper(),
     )
 
-    if flags_obj.ref:
-      options.reference_filename = flags_obj.ref
-    if flags_obj.confident_regions:
-      options.confident_regions_filename = flags_obj.confident_regions
-    if flags_obj.denovo_regions:
+    if _REF.value:
+      options.reference_filename = _REF.value
+    if _CONFIDENT_REGIONS.value:
+      options.confident_regions_filename = _CONFIDENT_REGIONS.value
+    if _DENOVO_REGIONS.value:
       options.denovo_regions_filename = _DENOVO_REGIONS.value
-    if flags_obj.truth_variants:
-      options.truth_variants_filename = flags_obj.truth_variants
-    if flags_obj.sequencing_type:
+    if _TRUTH_VARIANTS.value:
+      options.truth_variants_filename = _TRUTH_VARIANTS.value
+    if _SEQUENCING_TYPE.value:
       options.pic_options.sequencing_type = (
           make_examples_core.parse_proto_enum_flag(
               deepvariant_pb2.PileupImageOptions.SequencingType,
-              flags_obj.sequencing_type,
+              _SEQUENCING_TYPE.value,
           )
       )
 
-    if flags_obj.channels:
+    if _CHANNELS.value:
       errors.log_and_raise(
           '--channels is no longer supported. Use the'
           ' `--channel_list` flag instead. A good default value to use is'
@@ -867,18 +868,18 @@ def shared_flags_to_options(
       # File name may vary if checkpoint is set with cktp path.
       # If checkpoint is a directory containing saved_model.pb then it is a
       # saved model.
-      if gfile.Exists(f'{flags_obj.checkpoint}/saved_model.pb'):
-        model_example_info_json = f'{flags_obj.checkpoint}/example_info.json'
+      if gfile.Exists(f'{_CHECKPOINT.value}/saved_model.pb'):
+        model_example_info_json = f'{_CHECKPOINT.value}/example_info.json'
       else:
         # checkpoint is a ckpt path. We need to strip the last part of the path
         # to get the directory. Inside, we need to find the file which ends
         # with example_info.json.
-        model_dir = os.path.dirname(flags_obj.checkpoint)
+        model_dir = os.path.dirname(_CHECKPOINT.value)
         # We expect the json file to be in the same directory as the checkpoint.
         model_example_info_json = f'{model_dir}/example_info.json'
       if not gfile.Exists(model_example_info_json):
         raise ValueError(
-            f'example_info.json not found in {flags_obj.checkpoint}. Please'
+            f'example_info.json not found in {_CHECKPOINT.value}. Please'
             ' check the checkpoint path.'
         )
       _, channels_enum = dv_utils.get_shape_and_channels_from_json(
@@ -896,13 +897,13 @@ def shared_flags_to_options(
               errors.CommandLineError,
           )
         channel_set.append(dv_constants.CHANNEL_ENUM_TO_STRING[c_enum])
-    elif flags_obj.channel_list:
-      if 'BASE_CHANNELS' in flags_obj.channel_list:
-        channel_list = flags_obj.channel_list.replace(
+    elif _CHANNEL_LIST.value:
+      if 'BASE_CHANNELS' in _CHANNEL_LIST.value:
+        channel_list = _CHANNEL_LIST.value.replace(
             'BASE_CHANNELS', ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
         )
       else:
-        channel_list = flags_obj.channel_list
+        channel_list = _CHANNEL_LIST.value
       for channel in re.split('[, ]+', channel_list):
         if channel and channel not in dv_constants.CHANNELS:
           errors.log_and_raise(
@@ -914,10 +915,10 @@ def shared_flags_to_options(
       # Alt aligned channels can only be added programmatically if
       # --alt_aligned_pileup is set to diff_channels or base_channels.
       # These channels must always be the last in channel_set.
-      if flags_obj.alt_aligned_pileup == 'diff_channels':
+      if _ALT_ALIGNED_PILEUP.value == 'diff_channels':
         channel_set.append('diff_channels_alternate_allele_1')
         channel_set.append('diff_channels_alternate_allele_2')
-      if flags_obj.alt_aligned_pileup == 'base_channels':
+      if _ALT_ALIGNED_PILEUP.value == 'base_channels':
         channel_set.append('base_channels_alternate_allele_1')
         channel_set.append('base_channels_alternate_allele_2')
 
@@ -931,7 +932,7 @@ def shared_flags_to_options(
     options.pic_options.channels[:] = channel_set
     options.pic_options.num_channels += len(channel_set)
 
-    if flags_obj.multi_allelic_mode:
+    if _MULTI_ALLELIC_MODE.value:
       multi_allelic_enum = {
           'include_het_alt_images': (
               deepvariant_pb2.PileupImageOptions.ADD_HET_ALT_IMAGES
@@ -939,30 +940,30 @@ def shared_flags_to_options(
           'exclude_het_alt_images': (
               deepvariant_pb2.PileupImageOptions.NO_HET_ALT_IMAGES
           ),
-      }[flags_obj.multi_allelic_mode]
+      }[_MULTI_ALLELIC_MODE.value]
       options.pic_options.multi_allelic_mode = multi_allelic_enum
 
-    if flags_obj.pileup_image_width:
-      options.pic_options.width = flags_obj.pileup_image_width
+    if _PILEUP_IMAGE_WIDTH.value:
+      options.pic_options.width = _PILEUP_IMAGE_WIDTH.value
 
     # DirectPhasing related flags.
-    if flags_obj.phase_reads:
-      options.phase_reads = flags_obj.phase_reads
+    if _PHASE_READS.value:
+      options.phase_reads = _PHASE_READS.value
     phase_region_padding = dv_constants.PHASE_READS_REGION_PADDING_PCT
     if phase_region_padding:
       options.phase_reads_region_padding_pct = phase_region_padding
-    if flags_obj.phase_max_candidates:
-      options.phase_max_candidates = flags_obj.phase_max_candidates
+    if _PHASE_MAX_CANDIDATES.value:
+      options.phase_max_candidates = _PHASE_MAX_CANDIDATES.value
 
-    options.pic_options.alt_aligned_pileup = flags_obj.alt_aligned_pileup
-    options.pic_options.types_to_alt_align = flags_obj.types_to_alt_align
+    options.pic_options.alt_aligned_pileup = _ALT_ALIGNED_PILEUP.value
+    options.pic_options.types_to_alt_align = _TYPES_TO_ALT_ALIGN.value
 
 
-    if flags_obj.add_supporting_other_alt_color:
+    if _ADD_SUPPORTING_OTHER_ALT_COLOR.value:
       options.pic_options.other_allele_supporting_read_alpha = 0.3
 
-    if flags_obj.select_variant_types:
-      options.select_variant_types[:] = flags_obj.select_variant_types.split()
+    if _SELECT_VARIANT_TYPES.value:
+      options.select_variant_types[:] = _SELECT_VARIANT_TYPES.value.split()
       for svt in options.select_variant_types:
         if svt not in make_examples_core.VARIANT_TYPE_SELECTORS:
           errors.log_and_raise(
@@ -981,18 +982,18 @@ def shared_flags_to_options(
         runtime_by_region,
         read_phases_output,
     ) = sharded_file_utils.resolve_filespecs(
-        flags_obj.task,
-        flags_obj.examples or '',
-        flags_obj.candidates or '',
-        flags_obj.gvcf or '',
-        flags_obj.runtime_by_region or '',
-        flags_obj.output_local_read_phasing or '',
+        _TASK.value,
+        _EXAMPLES.value or '',
+        _CANDIDATES.value or '',
+        _GVCF.value or '',
+        _RUNTIME_BY_REGION.value or '',
+        _OUTPUT_LOCAL_READ_PHASING.value or '',
     )
     options.examples_filename = examples
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
-    options.include_med_dp = flags_obj.include_med_dp
-    options.task_id = flags_obj.task
+    options.include_med_dp = _INCLUDE_MED_DP.value
+    options.task_id = _TASK.value
     options.num_shards = num_shards
     options.runtime_by_region = runtime_by_region
     options.read_phases_output = read_phases_output
@@ -1005,23 +1006,23 @@ def shared_flags_to_options(
       options.aux_fields_to_keep[:] = _AUX_FIELDS_TO_KEEP.value.split(',')
     else:
       options.aux_fields_to_keep = None
-    options.use_original_quality_scores = flags_obj.use_original_quality_scores
+    options.use_original_quality_scores = _USE_ORIGINAL_QUALITY_SCORES.value
 
-    if flags_obj.add_hp_channel:
+    if _ADD_HP_CHANNEL.value:
       errors.log_and_raise(
           '--add_hp_channel is no longer supported. Add `haplotype` to the'
           ' `--channel_list` flag instead.',
           errors.CommandLineError,
       )
 
-    if flags_obj.hp_tag_for_assembly_polishing < 0:
+    if _HP_TAG_FOR_ASSEMBLY_POLISHING.value < 0:
       errors.log_and_raise(
           '--hp_tag_for_assembly_polishing has to be set to a positive int.',
           errors.CommandLineError,
       )
     if (
-        flags_obj.hp_tag_for_assembly_polishing > 0
-        and not flags_obj.sort_by_haplotypes
+        _HP_TAG_FOR_ASSEMBLY_POLISHING.value > 0
+        and not _SORT_BY_HAPLOTYPES.value
     ):
       errors.log_and_raise(
           (
@@ -1031,44 +1032,44 @@ def shared_flags_to_options(
           errors.CommandLineError,
       )
 
-    options.pic_options.sort_by_haplotypes = flags_obj.sort_by_haplotypes
-    options.pic_options.reverse_haplotypes = flags_obj.reverse_haplotypes
+    options.pic_options.sort_by_haplotypes = _SORT_BY_HAPLOTYPES.value
+    options.pic_options.reverse_haplotypes = _REVERSE_HAPLOTYPES.value
     options.pic_options.hp_tag_for_assembly_polishing = (
-        flags_obj.hp_tag_for_assembly_polishing
+        _HP_TAG_FOR_ASSEMBLY_POLISHING.value
     )
 
-    if flags_obj.write_run_info:
+    if _WRITE_RUN_INFO.value:
       options.run_info_filename = examples + _RUN_INFO_FILE_EXTENSION
 
     options.calling_regions.extend(
-        calling_regions_utils.parse_regions_flag(flags_obj.regions)
+        calling_regions_utils.parse_regions_flag(_REGIONS.value)
     )
     options.exclude_calling_regions.extend(
-        calling_regions_utils.parse_regions_flag(flags_obj.exclude_regions)
+        calling_regions_utils.parse_regions_flag(_EXCLUDE_REGIONS.value)
     )
 
-    options.realigner_enabled = flags_obj.realign_reads
+    options.realigner_enabled = _REALIGN_READS.value
     options.trim_reads_for_pileup = _TRIM_READS_FOR_PILUP.value
     options.joint_realignment = _ENABLE_JOINT_REALIGNMENT.value
     options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
     if (
         options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING
-        and flags_obj.training_random_emit_ref_sites != NO_RANDOM_REF
+        and _TRAINING_RANDOM_EMIT_REF_SITES.value != NO_RANDOM_REF
     ):
       options.sample_options[
           main_sample_index
       ].variant_caller_options.fraction_reference_sites_to_emit = (
-          flags_obj.training_random_emit_ref_sites
+          _TRAINING_RANDOM_EMIT_REF_SITES.value
       )
 
-    if flags_obj.use_allele_frequency:
+    if _USE_ALLELE_FREQUENCY.value:
       errors.log_and_raise(
           '--use_allele_frequency is no longer supported. Add'
           ' `allele_frequency` to the `--channel_list` flag instead.',
           errors.CommandLineError,
       )
-    if 'allele_frequency' in channel_set and not flags_obj.population_vcfs:
+    if 'allele_frequency' in channel_set and not _POPULATION_VCFS.value:
       errors.log_and_raise(
           (
               'If the allele_frequency channel is set then population_vcfs '
@@ -1076,21 +1077,21 @@ def shared_flags_to_options(
           ),
           errors.CommandLineError,
       )
-    if flags_obj.population_vcfs:
-      for path in re.split(',| ', flags_obj.population_vcfs):
+    if _POPULATION_VCFS.value:
+      for path in re.split(',| ', _POPULATION_VCFS.value):
         options.population_vcf_filenames.extend(gfile.Glob(path))
-    options.max_reads_per_partition = flags_obj.max_reads_per_partition
+    options.max_reads_per_partition = _MAX_READS_PER_PARTITION.value
     options.max_reads_for_dynamic_bases_per_region = (
         _MAX_READS_FOR_DYNAMIC_BASES_PER_REGION.value
     )
-    options.use_ref_for_cram = flags_obj.use_ref_for_cram
-    options.hts_block_size = flags_obj.hts_block_size
-    options.logging_every_n_candidates = flags_obj.logging_every_n_candidates
+    options.use_ref_for_cram = _USE_REF_FOR_CRAM.value
+    options.hts_block_size = _HTS_BLOCK_SIZE.value
+    options.logging_every_n_candidates = _LOGGING_EVERY_N_CANDIDATES.value
     options.customized_classes_labeler_classes_list = (
-        flags_obj.customized_classes_labeler_classes_list
+        _CUSTOMIZED_CLASSES_LABELER_CLASSES_LIST.value
     )
     options.customized_classes_labeler_info_field_name = (
-        flags_obj.customized_classes_labeler_info_field_name
+        _CUSTOMIZED_CLASSES_LABELER_INFO_FIELD_NAME.value
     )
     options.stream_examples = _STREAM_EXAMPLES.value
     options.shm_prefix = _SHM_PREFIX.value
