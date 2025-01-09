@@ -49,6 +49,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/vcf_reader.h"
@@ -225,7 +226,7 @@ string CalcRefBases(const string& ref_bases,
 //   "ATTT" [INS] => "ATTT" + "CGT" => "ATTTCGT", putting back deleted bases
 //   "ACGT" [DEL] => "A" + "" (from >= "ACGT".length()) => "A"
 //
-string MakeAltAllele(const string& prefix, const string& variant_ref,
+string MakeAltAllele(absl::string_view prefix, absl::string_view variant_ref,
                      const uint32_t from) {
   const auto postfix =
       from >= variant_ref.length() ? "" : variant_ref.substr(from);
