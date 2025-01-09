@@ -826,6 +826,27 @@ def phased_genotypes_to_haplotypes(variants_and_genotypes, start, ref):
   return genotypes_to_haplotypes, end
 
 
+def _get_longest_common_suffix_length(allele_a, allele_b):
+  """Returns the length of the longest common suffix between two alleles.
+
+  This helps to reduce deletions like GAA -> GA that has common suffix bases.
+
+  Args:
+    allele_a: str. The first allele.
+    allele_b: str. The second allele.
+  """
+  if not allele_a or not allele_b:
+    return 0
+  i = len(allele_a)
+  j = len(allele_b)
+  longest_common_suffix_length = 0
+  while i > 0 and j > 0 and allele_a[i - 1] == allele_b[j - 1]:
+    i -= 1
+    j -= 1
+    longest_common_suffix_length += 1
+  return longest_common_suffix_length
+
+
 def build_haplotype(variants, allele_indices, ref, ref_start, ref_end):
   """Builds the haplotype string from variants and its phased gneotypes.
 
@@ -893,7 +914,13 @@ def build_haplotype(variants, allele_indices, ref, ref_start, ref_end):
         return None
     else:
       ref_prefix = ref.bases(position, variant.start)
+      reference_allele = variant.reference_bases
       allele = _allele_from_index(variant, allele_index)
+      # This is to check if we can reduce the variant that has common suffix
+      # like GAA -> GA.
+      longest_common_suffix_length = _get_longest_common_suffix_length(
+          reference_allele, allele
+      )
       if allele_index == 0:
         # Update our position variable to be the next reference base we want to
         # use when further constructing our haplotype string. If we are using
@@ -911,8 +938,24 @@ def build_haplotype(variants, allele_indices, ref, ref_start, ref_end):
         # deletion bases inappropriately to our haplotype.
         allele = allele[0]
         position = variant.start + 1
-      else:
+      elif (
+          len(reference_allele) == 1
+          or len(allele) == 1
+          or len(reference_allele) <= len(allele)
+          or longest_common_suffix_length == 0
+      ):
+        # This is a simple case where the alleles are synonmyms in length, or
+        # an insertion. So, we can just use the variant.end position.
+        # In other case, if longest_common_suffix_length is 0, it means we can't
+        # reduce the variant, so we have to use the entire alt_allele.
         position = variant.end
+      else:
+        # This is where we handle deletions like [GAA -> G, GA] which has common
+        # bases. If we are dealing with GAA ->GA then we don't need to move the
+        # position to the end of the alt_allele, as there could be a SNP at the
+        # third position which is not in the variant list.
+        allele = allele[:-longest_common_suffix_length]
+        position = variant.end - longest_common_suffix_length
       parts.append(ref_prefix + allele)
 
   # We have some bases left to add between the position of our last variant

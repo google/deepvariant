@@ -1624,6 +1624,163 @@ class LabelExamplesTest(parameterized.TestCase):
             expected_genotypes=haplotype_labeler._variant_genotypes(candidates),
         )
 
+  @parameterized.parameters(
+      dict(
+          ref=haplotype_labeler.ReferenceRegion(
+              'GGAAAAAAAAAAAAAAAAGGTATAA', 60
+          ),
+          candidates=[
+              _test_variant(start=61, alleles=['GAA', 'G', 'GA']),
+              _test_variant(start=62, alleles=['A', 'G']),
+              _test_variant(start=63, alleles=['A', 'G']),
+          ],
+          truths=[
+              _test_variant(start=61, alleles=['GA', 'G'], gt=[1, 1]),
+              _test_variant(start=63, alleles=['A', 'G'], gt=[0, 1]),
+          ],
+          expected_genotypes=[[2, 2], [0, 0], [0, 1]],
+      ),
+      dict(
+          # This is the second case where the first variant is already included
+          # in the candidate we pick up in position 61. However, in this case
+          # the genotypes have to be the same for truth.
+          ref=haplotype_labeler.ReferenceRegion(
+              'GGAAAAAAAAAAAAAAAAGGTATAA', 60
+          ),
+          candidates=[
+              _test_variant(start=61, alleles=['GAA', 'G', 'GG']),
+              _test_variant(start=62, alleles=['A', 'G']),
+          ],
+          truths=[
+              _test_variant(start=61, alleles=['GA', 'G'], gt=[1, 1]),
+              _test_variant(start=63, alleles=['A', 'G'], gt=[1, 1]),
+          ],
+          expected_genotypes=[[2, 2], [0, 0]],
+      ),
+      dict(
+          # Deletion and insertion at the same position.
+          ref=haplotype_labeler.ReferenceRegion(
+              'GGAAAAAAAAAAAAAAAAGGTATAA', 60
+          ),
+          candidates=[
+              _test_variant(start=61, alleles=['GAA', 'G', 'GAAA']),
+          ],
+          truths=[
+              _test_variant(start=61, alleles=['GAA', 'G', 'GAAA'], gt=[1, 2]),
+          ],
+          expected_genotypes=[[1, 2]],
+      ),
+      dict(
+          # Deletion and insertion candidateat the same position
+          # but truth has insetion only.
+          ref=haplotype_labeler.ReferenceRegion(
+              'GGAAAAAAAAAAAAAAAAGGTATAA', 60
+          ),
+          candidates=[
+              _test_variant(start=61, alleles=['GAA', 'G', 'GAAA']),
+          ],
+          truths=[
+              _test_variant(start=61, alleles=['G', 'GA'], gt=[1, 1]),
+          ],
+          expected_genotypes=[[2, 2]],
+      ),
+      dict(
+          # Deletion and insertion candidateat the same position
+          # but truth has deletion only.
+          ref=haplotype_labeler.ReferenceRegion(
+              'GGAAAAAAAAAAAAAAAAGGTATAA', 60
+          ),
+          candidates=[
+              _test_variant(start=61, alleles=['GAA', 'G', 'GAAA']),
+          ],
+          truths=[
+              _test_variant(start=61, alleles=['GAA', 'G'], gt=[0, 1]),
+          ],
+          expected_genotypes=[[0, 1]],
+      ),
+      dict(
+          # Insertion a few bases after a deletion
+          ref=haplotype_labeler.ReferenceRegion(
+              'GGAAAAAAAAAAAAAAAAGGTATAA', 60
+          ),
+          candidates=[
+              _test_variant(start=61, alleles=['GAAA', 'G']),
+              _test_variant(start=62, alleles=['A', 'AG']),
+          ],
+          truths=[
+              _test_variant(
+                  start=61, alleles=['GAAA', 'G', 'GAGAA'], gt=[1, 2]
+              ),
+          ],
+          expected_genotypes=[[0, 1], [0, 1]],
+      ),
+      dict(
+          # Insertion a few bases after a deletion but not in truth.
+          ref=haplotype_labeler.ReferenceRegion(
+              'GGAAAAAAAAAAAAAAAAGGTATAA', 60
+          ),
+          candidates=[
+              _test_variant(start=61, alleles=['GAAA', 'G']),
+              _test_variant(start=62, alleles=['A', 'AG']),
+          ],
+          truths=[
+              _test_variant(start=61, alleles=['GAAA', 'G'], gt=[1, 1]),
+          ],
+          expected_genotypes=[[1, 1], [0, 0]],
+      ),
+      dict(
+          # Insertion a few bases after a deletion but deletion is not in truth.
+          ref=haplotype_labeler.ReferenceRegion(
+              'GGAAAAAAAAAAAAAAAAGGTATAA', 60
+          ),
+          candidates=[
+              _test_variant(start=61, alleles=['GAAA', 'G']),
+              _test_variant(start=62, alleles=['A', 'AG']),
+          ],
+          truths=[
+              _test_variant(start=62, alleles=['A', 'AG'], gt=[1, 1]),
+          ],
+          expected_genotypes=[[0, 0], [1, 1]],
+      ),
+  )
+  def test_overlapping_deletions_followd_by_snp(
+      self, ref, candidates, truths, expected_genotypes
+  ):
+    """Test for internal#comment2, here the candidate deletions overlap.
+
+    In the first case the truth is:
+    61: GA->G (1, 1)
+    63: A->G (0, 1)
+
+    The candidate is:
+    61: GAA->G,GA
+    62: A->G
+    63: A->G
+
+    The expected genotype is:
+    61: GAA->G,GA => 2/2 (This is equivalent to GA -> G)
+    62: A->G => 0/0
+    63: A->G => 0/1
+
+    The first candidate is a deletion with proto ending at position 64, so the
+    third variant at 63 is always skipped and when the combination (2, 2) is
+    used for the first candidate, 63 is skipped.
+
+    The second case is MNP representing the first candidate.
+
+    Args:
+      ref: The reference region.
+      candidates: The candidate variants.
+      truths: The truth variants.
+      expected_genotypes: The expected genotypes.
+    """
+    self.assertGetsCorrectLabels(
+        candidates=candidates,
+        true_variants=truths,
+        ref=ref,
+        expected_genotypes=expected_genotypes,
+    )
+
   def test_false_negatives(self):
     ref = haplotype_labeler.ReferenceRegion('xACGTAy', 10)
     v1 = _test_variant(11, ['A', 'T'], [0, 1])
