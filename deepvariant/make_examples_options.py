@@ -433,9 +433,9 @@ flags.DEFINE_bool(
         ' value will be used.'
     ),
 )
-flags.DEFINE_string(
+_AUX_FIELDS_TO_KEEP = flags.DEFINE_string(
     'aux_fields_to_keep',
-    'HP,OQ',
+    'HP,OQ,MM,ML',
     (
         'Comma-delimited list of auxiliary BAM fields to keep. '
         'This flag is used only when --parse_sam_aux_fields is '
@@ -1001,8 +1001,8 @@ def shared_flags_to_options(
         flags_obj=flags_obj,
         provided_channels=channel_set,
     )
-    if flags_obj.aux_fields_to_keep:
-      options.aux_fields_to_keep[:] = flags_obj.aux_fields_to_keep.split(',')
+    if _AUX_FIELDS_TO_KEEP.value:
+      options.aux_fields_to_keep[:] = _AUX_FIELDS_TO_KEEP.value.split(',')
     else:
       options.aux_fields_to_keep = None
     options.use_original_quality_scores = flags_obj.use_original_quality_scores

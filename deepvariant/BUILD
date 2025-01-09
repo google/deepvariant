@@ -1047,6 +1047,7 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -1071,6 +1072,7 @@ cc_library(
         "//deepvariant/channels:read_supports_variant_channel",
         "//deepvariant/channels:strand_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/io:gbz_reader",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
@@ -1081,6 +1083,8 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 

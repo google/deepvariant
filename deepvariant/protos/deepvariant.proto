@@ -1148,7 +1148,7 @@ message MakeExamplesRunInfo {
   MakeExamplesStats stats = 4;
 }
 
-// Next ID: 23.
+// Next ID: 24.
 enum DeepVariantChannelEnum {
   // Default should be unspecified.
   CH_UNSPECIFIED = 0;
@@ -1189,4 +1189,5 @@ enum DeepVariantChannelEnum {
   CH_BLANK = 18;
   CH_INSERT_SIZE = 19;
   CH_MEAN_COVERAGE = 22;
+  CH_BASE_METHYLATION = 23;
 }
