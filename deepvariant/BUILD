@@ -209,9 +209,7 @@ cc_library(
     deps = [
         ":allelecounter",
         "//deepvariant/protos:deepvariant_cc_pb2",
-        "//third_party/nucleus/io:vcf_reader",
         "//third_party/nucleus/protos:variants_cc_pb2",
-        "//third_party/nucleus/util:cpp_math",
         "//third_party/nucleus/util:cpp_utils",
         "//third_party/nucleus/util:samplers",
         "@com_google_absl//absl/container:btree",
@@ -235,6 +233,7 @@ cc_test(
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",

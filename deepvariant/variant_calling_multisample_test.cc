@@ -42,6 +42,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
@@ -202,6 +203,116 @@ TEST(VariantCallingTest,
   DeepVariantCall call = optional_variant.value();
   EXPECT_THAT(call.allele_frequency_at_position().size(), window_size);
 }
+
+struct CreateComplexAllelesSupportTestData {
+  absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
+          read_to_alt_alleles;
+  int del_start;
+  int del_len;
+  std::string del_allele_ref_bases;
+  absl::flat_hash_map<std::string, std::vector<std::string>>
+      expected_complex_alleles_support;
+};
+
+class CreateComplexAllelesSupportTest
+    : public testing::TestWithParam<CreateComplexAllelesSupportTestData> {};
+
+TEST_P(CreateComplexAllelesSupportTest, CreateComplexAllelesSupportTestCases) {
+  VariantCallerOptions options = BasicOptions();
+  const VariantCaller caller(options);
+  const CreateComplexAllelesSupportTestData& param = GetParam();
+  auto complex_alleles_support = CreateComplexAllelesSupport(
+      param.read_to_alt_alleles, param.del_start, param.del_len,
+      param.del_allele_ref_bases);
+  for (const auto& [complex_allele, reads] : complex_alleles_support) {
+    auto it = param.expected_complex_alleles_support.find(complex_allele);
+    ASSERT_NE(it, param.expected_complex_alleles_support.end());
+    EXPECT_THAT(reads, testing::UnorderedElementsAreArray(it->second));
+  }
+  EXPECT_EQ(complex_alleles_support.size(),
+            param.expected_complex_alleles_support.size());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    CreateComplexAllelesSupportTests, CreateComplexAllelesSupportTest,
+    testing::ValuesIn(std::vector<CreateComplexAllelesSupportTestData>({
+      {
+        .read_to_alt_alleles = {
+          {"read1", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"C", AlleleType::SUBSTITUTION, 13}}},
+          {"read2", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"C", AlleleType::SUBSTITUTION, 13}}},
+          {"read3", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"T", AlleleType::REFERENCE, 13}}}
+        },
+        .del_start = 8,
+        .del_len = 6,
+        .del_allele_ref_bases = "CCGAATG",
+        .expected_complex_alleles_support = {{"CCAAACG", {"read1", "read2"}},
+                                             {"CCAAATG", {"read3"}}}
+      },
+      {
+        .read_to_alt_alleles = {
+          {"read1", {{"GATT", AlleleType::INSERTION, 10},
+                     {"C", AlleleType::SUBSTITUTION, 13}}},
+          {"read2", {{"GATT", AlleleType::INSERTION, 10},
+                     {"C", AlleleType::SUBSTITUTION, 13}}},
+          {"read3", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"T", AlleleType::REFERENCE, 13}}}
+        },
+        .del_start = 8,
+        .del_len = 6,
+        .del_allele_ref_bases = "CCGAATG",
+        .expected_complex_alleles_support = {{"CCGATTAACG", {"read1", "read2"}},
+                                             {"CCAAATG", {"read3"}}}
+      },
+      {
+         // allele each.
+        .read_to_alt_alleles = {
+          {"read1", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"C", AlleleType::SUBSTITUTION, 13}}},
+          {"read2", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"A", AlleleType::SUBSTITUTION, 13}}},
+          {"read3", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"T", AlleleType::REFERENCE, 13}}}
+        },
+        .del_start = 8,
+        .del_len = 6,
+        .del_allele_ref_bases = "CCGAATG",
+        .expected_complex_alleles_support = {{"CCAAACG", {"read1"}},
+                                             {"CCAAAAG", {"read2"}},
+                                             {"CCAAATG", {"read3"}}}
+      },
+      {
+        .read_to_alt_alleles = {
+          {"read1", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"C", AlleleType::SUBSTITUTION, 15}}},
+          {"read2", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"A", AlleleType::SUBSTITUTION, 13}}},
+          {"read3", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"T", AlleleType::REFERENCE, 13}}}
+        },
+        .del_start = 8,
+        .del_len = 6,
+        .del_allele_ref_bases = "CCGAATG",
+        .expected_complex_alleles_support = {}
+      },
+      {
+        .read_to_alt_alleles = {
+          {"read1", {{"A", AlleleType::SUBSTITUTION, 8},
+                     {"C", AlleleType::SUBSTITUTION, 13}}},
+          {"read2", {{"A", AlleleType::SUBSTITUTION, 8},
+                     {"C", AlleleType::SUBSTITUTION, 13}}},
+          {"read3", {{"A", AlleleType::SUBSTITUTION, 10},
+                     {"T", AlleleType::REFERENCE, 13}}}
+        },
+        .del_start = 8,
+        .del_len = 6,
+        .del_allele_ref_bases = "CCGAATG",
+        .expected_complex_alleles_support = {{"ACGAACG", {"read1", "read2"}},
+                                             {"CCAAATG", {"read3"}}}
+      }
+    })));
 
 }  // namespace multi_sample
 }  // namespace deepvariant

@@ -43,6 +43,7 @@
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -98,6 +99,15 @@ struct AlleleAtPosition {
   AlleleType type;
   int position;
 };
+
+// Helper function to generate a map of complex alleles to supporting reads.
+// This function is used by SelectAltAllelesWithComplexVariant and it is
+// defined in the header so that it can be tested.
+absl::flat_hash_map<std::string, std::vector<std::string>>
+CreateComplexAllelesSupport(
+    const absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>&
+        read_to_alt_alleles,
+    int del_start, int del_len, absl::string_view del_allele_ref_bases);
 
 // A very simple but highly sensitive variant caller.
 //

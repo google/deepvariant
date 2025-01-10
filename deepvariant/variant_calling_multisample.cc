@@ -312,13 +312,77 @@ namespace {
   }
 }  // namespace
 
+
+// Helper function to generate a map of complex alleles to supporting reads.
+// This function creates complex alleles by concatenating alt alleles that are
+// supported by the same read. Results are returned as a map from complex
+// allele to a vector of supporting reads. It is expected that all alt alleles
+// are not deletions.
+// Args:
+//   read_to_alt_alleles: map from read id to a vector of alt alleles that are
+//     supported by the read.
+//   del_start: start position of the deletion.
+//   del_len: length of the deletion.
+//   del_allele_ref_bases: reference bases of the deletion.
+absl::flat_hash_map<std::string, std::vector<std::string>>
+CreateComplexAllelesSupport(
+    const absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>&
+        read_to_alt_alleles,
+    int del_start, int del_len, absl::string_view del_allele_ref_bases) {
+  absl::flat_hash_map<std::string, std::vector<std::string>>
+      complex_allele_to_reads;
+  // Iterating over all potential complex alleles supported by a read.
+  for (const auto& [read_id, alt_alleles] : read_to_alt_alleles) {
+    int start_pos = 0;
+    std::string complex_allele;
+    // Iterate over alt alleles for this read.
+    for (const auto& allele : alt_alleles) {
+      if (allele.type == AlleleType::UNSPECIFIED) {
+        continue;
+      }
+      // Deletion alleles should not be passed to this function.
+      CHECK_NE(allele.type, AlleleType::DELETION);
+      const int relative_alt_allele_pos = allele.position - del_start;
+      // Add leading ref bases.
+      if (relative_alt_allele_pos > start_pos &&
+          relative_alt_allele_pos <= del_len) {
+        absl::StrAppend(&complex_allele,
+                        del_allele_ref_bases.substr(
+                            start_pos, relative_alt_allele_pos - start_pos));
+        start_pos += relative_alt_allele_pos - start_pos;
+      }
+      // Add allele bases.
+      absl::StrAppend(&complex_allele, allele.alt_bases);
+      // Update the start_pos.
+      if (allele.type != AlleleType::INSERTION) {
+        start_pos = relative_alt_allele_pos + allele.alt_bases.size();
+      } else {
+        start_pos += 1;
+      }
+    }
+    // Add trailing ref bases.
+    if (!complex_allele.empty() && start_pos <= del_len) {
+      absl::StrAppend(&complex_allele,
+                      del_allele_ref_bases.substr(start_pos));
+      complex_allele_to_reads[complex_allele].push_back(read_id);
+    } else {
+      // For now we drop sites where at least one of the complex alleles
+      // couldn't be generated. In this case normal alleles will be used.
+      return {};
+    }
+  }
+  return complex_allele_to_reads;
+}
+
 // Implementation of complex variant representation.
 //
 // This function is called when we have a deletion allele in the target sample.
 // We need to check if there are other alleles that overlap with this deletion.
 // If there are, we need to create a complex variant allele that is a
-// concatenation of all the overlapping alleles.
-//
+// concatenation of all the overlapping alleles. In this case complex allele is
+// an allele that is created by concatenating all simple alleles that are
+// overlapped by the deletion. Complex allele is a combination of SNP, REF,
+// and INS.
 // For example, if we have a deletion at position 10 and SNP 1 at position 10,
 // and SNP 2 at position 12. And SNP 1 and SNP 2 are supported by the same set
 // of reads.
@@ -355,10 +419,11 @@ std::vector<Allele> VariantCaller::SelectAltAllelesWithComplexVariant(
       read_to_alt_alleles = CreateComplexAllelesSupport(
           allele_counts_context, del_allele_ref_bases, del_start,
           del_end, del_len);
-
+  absl::flat_hash_map<std::string, std::vector<std::string>>
+      complex_allele_to_reads = CreateComplexAllelesSupport(
+          read_to_alt_alleles, del_start, del_len, del_allele_ref_bases);
   // TODO: This function is not fully implemented yet.
   // Following parts will be added later:
-  // GenerateComplexVariantAlleles(read_to_alt_alleles)
   // UpdateAlleleCounts()
   LOG(FATAL) << "Not implemented yet";
   return alt_alleles;
