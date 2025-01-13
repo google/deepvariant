@@ -66,7 +66,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "third_party/nucleus/io/gbz_reader.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
@@ -88,6 +87,36 @@ namespace deepvariant {
 template <class T>
 std::vector<T> AsVector(const google::protobuf::RepeatedPtrField<T>& container) {
   return vector<T>(container.begin(), container.end());
+}
+
+std::string GetReverseComplement(const std::string& sequence) {
+  std::string complement;
+  // Iterate through each character in the sequence
+  for (char nucleotide : sequence) {
+    // Convert the character to its complement
+    switch (nucleotide) {
+      case 'A':
+        complement += 'T';
+        break;
+      case 'T':
+        complement += 'A';
+        break;
+      case 'C':
+        complement += 'G';
+        break;
+      case 'G':
+        complement += 'C';
+        break;
+      default:
+        // If the character is not a valid nucleotide, add it unchanged
+        complement += nucleotide;
+        break;
+    }
+  }
+  // Reverse the complement string
+  std::reverse(complement.begin(), complement.end());
+
+  return complement;
 }
 
 constexpr LazyRE2 kBaseModificationRegexp = {R"(([ACGTUN])([-+])([a-z]+|[0-9]+)([.?]?))"};
@@ -143,7 +172,7 @@ std::vector<std::uint8_t> Parse5mCAuxTag(const Read& read) {
 
   std::string seq;
   if (read.alignment().position().reverse_strand()) {
-    seq = nucleus::GbzReader::GetReverseComplement(read.aligned_sequence());
+    seq = GetReverseComplement(read.aligned_sequence());
   } else {
     seq = read.aligned_sequence();
   }
