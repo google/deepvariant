@@ -1662,6 +1662,7 @@ class RegionProcessor:
       n_stats: Dict[str, int],
       runtimes: Dict[str, float],
       role: str,
+      denovo_regions: Optional[ranges.RangeSet],
   ) -> Optional[List[int]]:
     """Generates and writes out the examples in a region.
 
@@ -1672,6 +1673,7 @@ class RegionProcessor:
       n_stats: A dictionary that is used to accumulate counts for reporting.
       runtimes: A dictionary that recorded runtime information for reporting.
       role: The role that we make examples for.
+      denovo_regions: The regions that contain denovo variants.
 
     Returns:
       example_shape: a list of 3 integers, representing the example shape in the
@@ -1683,8 +1685,6 @@ class RegionProcessor:
     # pileup image, and, if in training mode, the truth variants and labels
     # needed for training.
     if in_training_mode(self.options):
-      # Get all denovo regions
-      denovo_regions = read_denovo_regions(self.options.denovo_regions_filename)
       # Initialize labels and types to be updated in the for loop below.
       reads_per_sample = []
       pileup_height = 0
@@ -3036,6 +3036,8 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   }
   example_shape = None
   region_n = 0
+  # Get all denovo regions
+  denovo_regions = read_denovo_regions(options.denovo_regions_filename)
   for region in regions:
     region_n += 1
 
@@ -3099,6 +3101,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
           n_stats,
           runtimes,
           role,
+          denovo_regions,
       )
       if example_shape is None and region_example_shape is not None:
         example_shape = region_example_shape

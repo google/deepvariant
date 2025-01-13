@@ -3530,6 +3530,7 @@ options {
       skip_uncalled_genotypes: true
       phase_reads_region_padding_pct: 20
       small_model_vaf_context_window_size: 11
+      haploid_contigs: ""
     }
     pileup_height: 100
     order: 0
@@ -3566,15 +3567,14 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 32
-  cpu_frequency_mhz: 2449.9980000000014
-  total_memory_mb: 120736
-  wall_time_seconds: 1.1024963855743408
-  cpu_user_time_seconds: 9.656006
-  cpu_system_time_seconds: 6.691356
-  memory_peak_rss_mb: 553
-  read_bytes: 229376
-  write_bytes: 274432
+  physical_core_count: 6
+  cpu_frequency_mhz: 3272.7865
+  total_memory_mb: 63895
+  wall_time_seconds: 0.9395861625671387
+  cpu_user_time_seconds: 9.010562
+  cpu_system_time_seconds: 4.272841
+  memory_peak_rss_mb: 566
+  write_bytes: 278528
 }
 stats {
   num_examples: 49
