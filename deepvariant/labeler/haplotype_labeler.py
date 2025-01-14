@@ -941,7 +941,7 @@ def build_haplotype(variants, allele_indices, ref, ref_start, ref_end):
       elif (
           len(reference_allele) == 1
           or len(allele) == 1
-          or len(reference_allele) <= len(allele)
+          or len(reference_allele) < len(allele)
           or longest_common_suffix_length == 0
       ):
         # This is a simple case where the alleles are synonmyms in length, or

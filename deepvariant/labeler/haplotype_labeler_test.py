@@ -1742,6 +1742,22 @@ class LabelExamplesTest(parameterized.TestCase):
           ],
           expected_genotypes=[[0, 0], [1, 1]],
       ),
+      dict(
+          # SNP a few bases after a deletion.
+          ref=haplotype_labeler.ReferenceRegion(
+              'GGAAAAAAAAAAAAAAAAGGTATAA', 60
+          ),
+          candidates=[
+              _test_variant(start=61, alleles=['GAAAAAA', 'G', 'TAAAAAA']),
+              _test_variant(start=62, alleles=['A', 'C']),
+          ],
+          truths=[
+              _test_variant(
+                  start=61, alleles=['GAAAAAA', 'G', 'TCAAAAA'], gt=[2, 1]
+              ),
+          ],
+          expected_genotypes=[[1, 2], [0, 1]],
+      ),
   )
   def test_overlapping_deletions_followd_by_snp(
       self, ref, candidates, truths, expected_genotypes
