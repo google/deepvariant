@@ -158,10 +158,15 @@ def train(config: ml_collections.ConfigDict):
   )
 
   steps_per_epoch = train_dataset_config.num_examples // config.batch_size
+  num_validation_examples = min(
+      config.num_validation_examples, tune_dataset_config.num_examples
+  )
   steps_per_tune = (
-      config.num_validation_examples // config.batch_size
+      num_validation_examples // config.batch_size
       or tune_dataset_config.num_examples // config.batch_size
   )
+  if steps_per_tune == 0:
+    steps_per_tune = 1
 
   if config.limit:
     steps_per_epoch = config.limit
