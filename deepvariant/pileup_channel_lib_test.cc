@@ -767,6 +767,47 @@ TEST(Parse5mCAuxTagTest, MultipleModifications) {
   EXPECT_EQ(methylated_sites, expected);
 }
 
+TEST(Parse5mCAuxTagTest, ThreeModifications) {
+  PileupImageOptions options{};
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "ACACACACACTCTCTCTCTC",
+                                {"20M"},
+                                "read_name");
+  const std::string mm = "A-a.,0,0,0,0,0;C+m?,1,1,1,1,1;T-a.,0,0,0,0,0";
+  const std::vector<int> ml = {1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  std::vector<std::uint8_t> methylated_sites = Parse5mCAuxTag(read);
+  std::vector<std::uint8_t> expected{0, 0, 0, 2,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 2};
+  EXPECT_EQ(methylated_sites, expected);
+}
+
+TEST(Parse5mCAuxTagTest, VariableMMDelta) {
+  PileupImageOptions options{};
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "CACAACAAACAAAAC",
+                                {"15M"},
+                                "read_name");
+  const std::string mm = "A-a.,0,0,0,0,0;C+m?,0,3";
+  const std::vector<int> ml = {0, 0, 0, 0, 0, 1, 2};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  std::vector<std::uint8_t> methylated_sites = Parse5mCAuxTag(read);
+  std::vector<std::uint8_t> expected{1, 0, 0,
+                                     0, 0, 0,
+                                     0, 0, 0,
+                                     0, 0, 0,
+                                     0, 0, 2};
+  EXPECT_EQ(methylated_sites, expected);
+}
+
+
 TEST(Parse5mCAuxTagTest, ReverseStrandModifications) {
   PileupImageOptions options{};
   Read read = nucleus::MakeRead("chr1",

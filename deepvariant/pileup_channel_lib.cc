@@ -186,7 +186,7 @@ std::vector<std::uint8_t> Parse5mCAuxTag(const Read& read) {
 
   // Wheras MM tag separates base modifications with a semicolon, the ML tag
   // concatenates the probabilities for each modification.
-  int ml_idx = 0;
+  int base_mod_idx = 0;
   int ml_offset = 0;
   for (const auto &mm_base_mod : mm_base_mods) {
     std::vector<std::string> mm_base_mod_split =
@@ -216,22 +216,22 @@ std::vector<std::uint8_t> Parse5mCAuxTag(const Read& read) {
     );
 
     int cth_count = 0;
-    int mm_delta = std::stoi(mm_base_mod_split[ml_idx]);
+    int mm_delta = std::stoi(mm_base_mod_split[base_mod_idx]);
     for (int pos = 0; pos <= seq.size(); pos++) {
       switch (seq[pos]) {
         case 'C':
           if (cth_count == mm_delta) {
-            result[pos] = ml_values[ml_idx + ml_offset].int_value();
+            result[pos] = ml_values[base_mod_idx + ml_offset].int_value();
             cth_count = 0;
-            ml_idx++;
-            if (ml_idx + ml_offset >= ml_values.size()) {
+            base_mod_idx++;
+            if (base_mod_idx >= mm_base_mod_split.size()) {
               // If we've reached the end of the mm_split, we're done.
               if (read.alignment().position().reverse_strand()) {
                 std::reverse(result.begin(), result.end());
               }
               return result;
             }
-            mm_delta = std::stoi(mm_base_mod_split[ml_idx]);
+            mm_delta = std::stoi(mm_base_mod_split[base_mod_idx]);
           } else {
             cth_count += 1;
           }
@@ -240,11 +240,8 @@ std::vector<std::uint8_t> Parse5mCAuxTag(const Read& read) {
           break;
       }
     }
-
-    if (read.alignment().position().reverse_strand()) {
-      std::reverse(result.begin(), result.end());
-    }
-    return result;
+    // We should never reach here.
+    LOG(WARNING) << "MM/ML AUX tags appear to be malformed.";
   }
   return result;
 }
