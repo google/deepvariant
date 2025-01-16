@@ -60,6 +60,7 @@ class SmallModelVariantCaller:
   determine if we can accept to write it as CVO directly or if it should be
   passed to the regular DeepVariant model as a pileup image.
   """
+  MAX_CONFIDENCE = 1 - 1e-7
 
   def __init__(
       self,
@@ -97,7 +98,9 @@ class SmallModelVariantCaller:
         else self.indel_gq_threshold
     )
     return (
-        genomics_math.ptrue_to_bounded_phred(max(genotype_probabilities))
+        genomics_math.ptrue_to_bounded_phred(
+            max(genotype_probabilities), max_prob=self.MAX_CONFIDENCE
+        )
         >= threshold
     )
 
