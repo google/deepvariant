@@ -1758,6 +1758,27 @@ class LabelExamplesTest(parameterized.TestCase):
           ],
           expected_genotypes=[[1, 2], [0, 1]],
       ),
+      dict(
+          # This case is from HG002 chr1:229236679-229236718.
+          # Deletion overlaps an insetion and there's a SNP right after it.
+          ref=haplotype_labeler.ReferenceRegion(
+              'CTCAAAACAAAAAAAAAAAAAGGTTAAAA', 97
+          ),
+          candidates=[
+              _test_variant(start=98, alleles=['TCAAAA', 'T']),
+              _test_variant(
+                  start=99, alleles=['CAAAACA', 'C', 'CAAAAAACA', 'CAAAAACA']
+              ),
+              _test_variant(start=100, alleles=['AAAAC', 'A', 'AAAAA']),
+          ],
+          truths=[
+              _test_variant(
+                  start=98, alleles=['TCAAAA', 'T', 'TCAAAAA'], gt=[2, 1]
+              ),
+              _test_variant(start=104, alleles=['C', 'A'], gt=[0, 1]),
+          ],
+          expected_genotypes=[[0, 1], [0, 3], [0, 2]],
+      ),
   )
   def test_overlapping_deletions_followd_by_snp(
       self, ref, candidates, truths, expected_genotypes
