@@ -331,6 +331,8 @@ CreateComplexAllelesSupport(
     int del_start, int del_len, absl::string_view del_allele_ref_bases) {
   absl::flat_hash_map<std::string, std::vector<std::string>>
       complex_allele_to_reads;
+  // The set is used to checl the uniqueness of complex alleles.
+  absl::flat_hash_set<std::string> complex_alleles_strings;
   // Iterating over all potential complex alleles supported by a read.
   for (const auto& [read_id, alt_alleles] : read_to_alt_alleles) {
     int start_pos = 0;
@@ -360,11 +362,14 @@ CreateComplexAllelesSupport(
         start_pos += 1;
       }
     }
-    // Add trailing ref bases.
-    if (!complex_allele.empty() && start_pos <= del_len) {
+    // Record the complex allele if it is not empty and it is not a duplicate.
+    if (!complex_allele.empty() && start_pos <= del_len
+        && !complex_alleles_strings.contains(complex_allele)) {
+      // Add trailing ref bases.
       absl::StrAppend(&complex_allele,
                       del_allele_ref_bases.substr(start_pos));
       complex_allele_to_reads[complex_allele].push_back(read_id);
+      complex_alleles_strings.insert(complex_allele);
     } else {
       // For now we drop sites where at least one of the complex alleles
       // couldn't be generated. In this case normal alleles will be used.
@@ -372,6 +377,61 @@ CreateComplexAllelesSupport(
     }
   }
   return complex_allele_to_reads;
+}
+
+
+void ReassignReadSupportForComplexAlleles(
+    const absl::node_hash_map<std::string, AlleleCount>& original_allele_counts,
+    absl::string_view target_sample,
+    const absl::flat_hash_map<std::string, std::vector<std::string>>&
+      complex_allele_to_reads,
+    absl::string_view del_allele_ref_bases,
+    absl::node_hash_map<std::string, AlleleCount>& allele_counts_mod) {
+  bool alt_allels_were_modified = false;
+  AlleleCount target_sample_allele_count_mod;
+  const AlleleCount& target_sample_allele_count =
+      original_allele_counts.at(target_sample);
+  target_sample_allele_count_mod = target_sample_allele_count;
+  int total_ref_count = 0;
+  for (const auto& [complex_allele, reads] : complex_allele_to_reads) {
+    alt_allels_were_modified = true;
+    for (const auto& read_id : reads) {
+      // TODO: With this check we loose supporting reads that start
+      // after the deletion's starting position. This implementation doesn't
+      // handle such cases. In the future we may want to add the functionality
+      // that would allow to have two reads to support a complex allele.
+      // Complex allele: ACGTCTATG
+      //                 |||||||||
+      // Read1:      ACTGACGT|||||
+      // Read2:              CTATGATC
+      // It is not a problem for long reads since it would be a rare case when
+      // reads break in the middle of the complex allele. But, for short reads
+      // it is a problem.
+      if (!target_sample_allele_count_mod.read_alleles().contains(read_id))  {
+        continue;
+      }
+      auto& read_allele =
+          target_sample_allele_count_mod.mutable_read_alleles()->at(read_id);
+      if (complex_allele == del_allele_ref_bases) {
+        read_allele.set_type(AlleleType::REFERENCE);
+        total_ref_count++;
+      } else {
+        read_allele.set_type(AlleleType::SUBSTITUTION);
+      }
+      read_allele.set_bases(complex_allele);
+    }
+  }
+  target_sample_allele_count_mod.set_ref_supporting_read_count(total_ref_count);
+  // Update allele counts for all samples. Currently we only update the target
+  // sample.
+  allele_counts_mod.clear();
+  for (const auto& [sample, allele_count] : original_allele_counts) {
+    if (sample == target_sample) {
+      allele_counts_mod.insert({sample, target_sample_allele_count_mod});
+    } else {
+      allele_counts_mod.insert({sample, allele_count});
+    }
+  }
 }
 
 // Implementation of complex variant representation.
@@ -394,8 +454,10 @@ CreateComplexAllelesSupport(
 //   Position 10 Allele 1: ATCG -> A       (Deletion)
 //   Position 10 Allele 2: ATCG -> TTAG    (SNP 1, 2)
 std::vector<Allele> VariantCaller::SelectAltAllelesWithComplexVariant(
+    const absl::node_hash_map<std::string, AlleleCount>&
+        allele_counts_by_sample,
+    absl::string_view target_sample,
     const std::vector<Allele>& alt_alleles,
-    const AlleleCount& target_sample_allele_count,
     const std::vector<AlleleCount>& allele_counts_context) const {
   // Scan alt_alleles for deletion and create complex variant candidate if there
   // are other alleles overlapped with this deletion.
@@ -407,6 +469,8 @@ std::vector<Allele> VariantCaller::SelectAltAllelesWithComplexVariant(
     return alt_alleles;
   }
 
+  const AlleleCount& target_sample_allele_count =
+      allele_counts_by_sample.at(target_sample);
   // Since there may be multiple deletions of different lengths we need to
   // set del_len to the largest one. This is done in CalcRefBases().
   std::string del_allele_ref_bases =
@@ -415,18 +479,30 @@ std::vector<Allele> VariantCaller::SelectAltAllelesWithComplexVariant(
   int del_len = del_allele_ref_bases.size();
   int del_start = target_sample_allele_count.position().position();
   int del_end = target_sample_allele_count.position().position() + del_len;
+
   absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
       read_to_alt_alleles = CreateComplexAllelesSupport(
           allele_counts_context, del_allele_ref_bases, del_start,
           del_end, del_len);
+
   absl::flat_hash_map<std::string, std::vector<std::string>>
       complex_allele_to_reads = CreateComplexAllelesSupport(
           read_to_alt_alleles, del_start, del_len, del_allele_ref_bases);
-  // TODO: This function is not fully implemented yet.
-  // Following parts will be added later:
-  // UpdateAlleleCounts()
-  LOG(FATAL) << "Not implemented yet";
-  return alt_alleles;
+  absl::node_hash_map<std::string, AlleleCount> allele_counts_mod;
+
+  ReassignReadSupportForComplexAlleles(
+      allele_counts_by_sample,
+      target_sample,
+      complex_allele_to_reads,
+      del_allele_ref_bases,
+      allele_counts_mod);
+
+  // Call SelectAltAlleles one more time with the modified allele counts.
+  return SelectAltAlleles(
+      allele_counts_mod,
+      allele_counts_context,
+      target_sample,
+      false);
 }
 
 // Select the subset of GoodAltAlleles from the alleles of allele_count.
@@ -477,9 +553,11 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
   if (!process_complex_variant_with_alt_deletion)
     return alt_alleles;
   else
-    return SelectAltAllelesWithComplexVariant(alt_alleles,
-                                              target_sample_allele_count,
-                                              allele_counts_context);
+    return SelectAltAllelesWithComplexVariant(
+        allele_counts_by_sample,
+        target_sample,
+        alt_alleles,
+        allele_counts_context);
 }
 
 // Adds a single VariantCall with sample_name, genotypes, and gq (bound to the

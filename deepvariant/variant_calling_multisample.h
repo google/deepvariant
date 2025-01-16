@@ -269,8 +269,10 @@ class VariantCaller {
   // SelectAltAlleles(). If complex alleles are generated then allele counts are
   // modified to reflect the new alleles.
   std::vector<Allele> SelectAltAllelesWithComplexVariant(
+      const absl::node_hash_map<std::string, AlleleCount>&
+          allele_counts_by_sample,
+      absl::string_view target_sample,
       const std::vector<Allele>& alt_alleles,
-      const AlleleCount& target_sample_allele_count,
       const std::vector<AlleleCount>& allele_counts_context) const;
 
   AlleleRejectionAcceptance IsGoodAltAlleleWithReason(
