@@ -228,12 +228,12 @@ class WrapVcfWriterTest(parameterized.TestCase):
     self.assertIsNone(self.writer.write(self.variant))
 
   def test_write_raises_with_unknown_contig(self):
-    with self.assertRaisesRegexp(ValueError, _UNKNOWN_CONTIG_ERROR):
+    with self.assertRaisesRegex(ValueError, _UNKNOWN_CONTIG_ERROR):
       self.variant.reference_name = 'BadChrom'
       self.writer.write(self.variant)
 
   def test_write_raises_with_unknown_filter(self):
-    with self.assertRaisesRegexp(ValueError, _FILTER_NOT_FOUND_ERROR):
+    with self.assertRaisesRegex(ValueError, _FILTER_NOT_FOUND_ERROR):
       self.variant.filter[:] = ['BadFilter']
       self.writer.write(self.variant)
 
@@ -247,7 +247,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
       (['Fido', 'Spot', 'Extra'], _WRONG_NUMBER_OF_SAMPLES),
   )
   def test_write_raises_with_unknown_sample(self, sample_names, message):
-    with self.assertRaisesRegexp(ValueError, message):
+    with self.assertRaisesRegex(ValueError, message):
       del self.variant.calls[:]
       for sample_name in sample_names:
         self.variant.calls.add(genotype=[0, 0], call_set_name=sample_name)
@@ -259,7 +259,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
       self.assertIsNone(self.writer.write(self.variant))
 
     # self.writer should be closed, so writing again will fail.
-    with self.assertRaisesRegexp(ValueError, _WRITE_TO_CLOSED_ERROR):
+    with self.assertRaisesRegex(ValueError, _WRITE_TO_CLOSED_ERROR):
       self.writer.write(self.variant)
 
   def test_double_context_manager(self):
@@ -267,7 +267,7 @@ class WrapVcfWriterTest(parameterized.TestCase):
       # Writing within the context manager succeeds.
       self.assertIsNone(self.writer.write(self.variant))
 
-    with self.assertRaisesRegexp(ValueError, _DOUBLE_CLOSE_ERROR):
+    with self.assertRaisesRegex(ValueError, _DOUBLE_CLOSE_ERROR):
       # Entering the closed writer should be fine.
       with self.writer:
         pass  # We want to raise an error on exit, so nothing to do in context.

@@ -81,7 +81,7 @@ class SequenceUtilsTests(parameterized.TestCase):
   )
   def test_bad_reverse_complement(self, seq, complement_dict=None):
     """Tests error is raised when complement_dict does not cover given seq."""
-    with self.assertRaisesRegexp(sequence_utils.Error, 'Unknown base in'):
+    with self.assertRaisesRegex(sequence_utils.Error, 'Unknown base in'):
       sequence_utils.reverse_complement(seq, complement_dict)
 
   @parameterized.parameters(

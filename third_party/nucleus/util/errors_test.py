@@ -52,7 +52,7 @@ class ErrorsTest(parameterized.TestCase):
   )
   def test_log_and_raise(self, msg, cls):
     with mock.patch.object(logging, 'error') as mock_logging:
-      with self.assertRaisesRegexp(cls, msg):
+      with self.assertRaisesRegex(cls, msg):
         errors.log_and_raise(msg, cls)
       mock_logging.assert_called_once_with(msg)
 
@@ -61,7 +61,7 @@ class ErrorsTest(parameterized.TestCase):
       (IOError, 'IOError exception'),
   )
   def test_clean_commandline_error_exit_raise_non_allowed(self, exc_type, msg):
-    with self.assertRaisesRegexp(exc_type, msg):
+    with self.assertRaisesRegex(exc_type, msg):
       with errors.clean_commandline_error_exit():
         raise exc_type(msg)
 

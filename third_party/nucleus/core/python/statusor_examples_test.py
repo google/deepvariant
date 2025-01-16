@@ -44,7 +44,7 @@ class StatusorClifWrapTest(absltest.TestCase):
 
   def test_make_int_fail(self):
     # TODO: OpError exception not propagated.
-    with self.assertRaisesRegexp(ValueError, 'MakeIntFail'):
+    with self.assertRaisesRegex(ValueError, 'MakeIntFail'):
       statusor_examples.MakeIntFail()
 
   def test_make_str_ok(self):
@@ -56,7 +56,7 @@ class StatusorClifWrapTest(absltest.TestCase):
 
   def test_make_str_fail(self):
     # TODO: OpError exception not propagated.
-    with self.assertRaisesRegexp(ValueError, 'MakeStrFail'):
+    with self.assertRaisesRegex(ValueError, 'MakeStrFail'):
       statusor_examples.MakeStrFail()
 
   @absltest.skipIf(USING_PYBIND, 'Disabled for now.')
@@ -66,7 +66,7 @@ class StatusorClifWrapTest(absltest.TestCase):
   @absltest.skipIf(USING_PYBIND, 'Disabled for now.')
   def test_make_int_unique_ptr_fail(self):
     # TODO: OpError exception not propagated.
-    with self.assertRaisesRegexp(ValueError, 'MakeIntUniquePtrFail'):
+    with self.assertRaisesRegex(ValueError, 'MakeIntUniquePtrFail'):
       statusor_examples.MakeIntUniquePtrFail()
 
   @absltest.skipIf(USING_PYBIND, 'Disabled for now.')
@@ -76,7 +76,7 @@ class StatusorClifWrapTest(absltest.TestCase):
   @absltest.skipIf(USING_PYBIND, 'Disabled for now.')
   def test_make_int_vector_fail(self):
     # TODO: OpError exception not propagated.
-    with self.assertRaisesRegexp(ValueError, 'MakeIntVectorFail'):
+    with self.assertRaisesRegex(ValueError, 'MakeIntVectorFail'):
       statusor_examples.MakeIntVectorFail()
 
   def test_returning_status_ok_returns_none(self):
@@ -84,7 +84,7 @@ class StatusorClifWrapTest(absltest.TestCase):
 
   def test_returning_status_fail_raises(self):
     # TODO: OpError exception not propagated.
-    with self.assertRaisesRegexp(ValueError, 'FuncReturningStatusFail'):
+    with self.assertRaisesRegex(ValueError, 'FuncReturningStatusFail'):
       statusor_examples.FuncReturningStatusFail()
 
   def test_string_owner(self):

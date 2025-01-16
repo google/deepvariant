@@ -260,7 +260,7 @@ class RangesTests(parameterized.TestCase):
 
   @parameterized.parameters(['x', 'chr1', 'chr1:', 'chr1:10-', 'chr1:-1-10'])
   def test_parse_literal_bad(self, bad_literal):
-    with self.assertRaisesRegexp(ValueError, bad_literal):
+    with self.assertRaisesRegex(ValueError, bad_literal):
       ranges.parse_literal(bad_literal)
 
   @parameterized.parameters('test.bed', 'test.bed.gz')
@@ -429,9 +429,9 @@ class RangesTests(parameterized.TestCase):
 
   def test_partitions_bad_interval_size_raises(self):
     # list() is necessary to force the generator to execute.
-    with self.assertRaisesRegexp(ValueError, 'max_size'):
+    with self.assertRaisesRegex(ValueError, 'max_size'):
       list(ranges.RangeSet([ranges.make_range('chrM', 0, 100)]).partition(-10))
-    with self.assertRaisesRegexp(ValueError, 'max_size'):
+    with self.assertRaisesRegex(ValueError, 'max_size'):
       list(ranges.RangeSet([ranges.make_range('chrM', 0, 100)]).partition(0))
 
   @parameterized.parameters(
@@ -727,7 +727,7 @@ class RangesTests(parameterized.TestCase):
           regexp='regions must be all on the same contig'),
   )
   def test_span_raises_on_bad_input(self, regions, regexp):
-    with self.assertRaisesRegexp(ValueError, regexp):
+    with self.assertRaisesRegex(ValueError, regexp):
       ranges.span(regions)
 
   @parameterized.parameters(
@@ -762,7 +762,7 @@ class RangesTests(parameterized.TestCase):
     self.assertEqual(expected, ranges.expand(region, n_bp, contig_map))
 
   def test_expand_raises_on_negative_n_bp(self):
-    with self.assertRaisesRegexp(ValueError, 'n_bp must be >= 0 but got -10'):
+    with self.assertRaisesRegex(ValueError, 'n_bp must be >= 0 but got -10'):
       ranges.expand(ranges.make_range('1', 10, 20), -10)
 
   def test_expand_raises_with_missing_contig_in_map(self):

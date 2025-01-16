@@ -84,7 +84,7 @@ class VariantUtilsTests(parameterized.TestCase):
         variants_pb2.VariantCall(call_set_name=str(x)) for x in range(num_calls)
     ]
     variant = variants_pb2.Variant(calls=calls)
-    with self.assertRaisesRegexp(ValueError,
+    with self.assertRaisesRegex(ValueError,
                                  'Expected exactly one VariantCall'):
       variant_utils.only_call(variant)
 
@@ -742,7 +742,7 @@ class VariantUtilsTests(parameterized.TestCase):
 
   def test_unsupported_genotype_likelihood(self):
     variantcall = variants_pb2.VariantCall(genotype_likelihood=[-1, -2, -3])
-    with self.assertRaisesRegexp(NotImplementedError,
+    with self.assertRaisesRegex(NotImplementedError,
                                  'only supports haploid and diploid'):
       variant_utils.genotype_likelihood(variantcall, [0, 1, 1])
 
@@ -771,7 +771,7 @@ class VariantUtilsTests(parameterized.TestCase):
   )
   def test_unsupported_allele_indices_for_genotype_likelihood_index(
       self, ploidy):
-    with self.assertRaisesRegexp(NotImplementedError,
+    with self.assertRaisesRegex(NotImplementedError,
                                  'only supported for haploid and diploid'):
       variant_utils.allele_indices_for_genotype_likelihood_index(0, ploidy)
 

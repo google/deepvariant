@@ -59,7 +59,7 @@ class FastqReaderTest(parameterized.TestCase):
 
   def test_from_file_raises_with_missing_fastq(self):
     # TODO: OpError exception not propagated.
-    with self.assertRaisesRegexp(ValueError, 'Could not open missing.fastq'):
+    with self.assertRaisesRegex(ValueError, 'Could not open missing.fastq'):
       fastq_reader.FastqReader.from_file('missing.fastq', self.options)
 
   def test_ops_on_closed_reader_raise(self):
@@ -67,7 +67,7 @@ class FastqReaderTest(parameterized.TestCase):
     with reader:
       pass
     # At this point the reader is closed.
-    with self.assertRaisesRegexp(ValueError, 'Cannot Iterate a closed'):
+    with self.assertRaisesRegex(ValueError, 'Cannot Iterate a closed'):
       reader.iterate()
 
   @parameterized.parameters('malformed.fastq', 'malformed2.fastq')

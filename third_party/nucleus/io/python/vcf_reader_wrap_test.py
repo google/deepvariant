@@ -207,16 +207,16 @@ class WrapVcfReaderTests(absltest.TestCase):
 
   def test_from_file_raises_with_missing_source(self):
     # TODO: OpError exception not propagated.
-    with self.assertRaisesRegexp(ValueError, 'Could not open missing.vcf'):
+    with self.assertRaisesRegex(ValueError, 'Could not open missing.vcf'):
       vcf_reader.VcfReader.from_file('missing.vcf', self.options)
 
   def test_ops_on_closed_reader_raise(self):
     with self.samples_reader:
       pass
     # At this point the reader is closed.
-    with self.assertRaisesRegexp(ValueError, 'Cannot Iterate a closed'):
+    with self.assertRaisesRegex(ValueError, 'Cannot Iterate a closed'):
       self.samples_reader.iterate()
-    with self.assertRaisesRegexp(ValueError, 'Cannot Query a closed'):
+    with self.assertRaisesRegex(ValueError, 'Cannot Query a closed'):
       self.samples_reader.query(
           ranges.parse_literal('chr1:10,000,000-10,000,100'))
 
@@ -224,17 +224,17 @@ class WrapVcfReaderTests(absltest.TestCase):
     window = ranges.parse_literal('chr1:10,000,000-10,000,100')
     unindexed_file = test_utils.genomics_core_testdata('test_samples.vcf')
     with vcf_reader.VcfReader.from_file(unindexed_file, self.options) as reader:
-      with self.assertRaisesRegexp(ValueError, 'Cannot query without an index'):
+      with self.assertRaisesRegex(ValueError, 'Cannot query without an index'):
         reader.query(window)
 
   def test_query_raises_with_bad_range(self):
-    with self.assertRaisesRegexp(ValueError, 'Unknown reference_name'):
+    with self.assertRaisesRegex(ValueError, 'Unknown reference_name'):
       self.samples_reader.query(ranges.parse_literal('XXX:1-10'))
-    with self.assertRaisesRegexp(ValueError, 'Malformed region'):
+    with self.assertRaisesRegex(ValueError, 'Malformed region'):
       self.samples_reader.query(ranges.parse_literal('chr1:0-5'))
-    with self.assertRaisesRegexp(ValueError, 'Malformed region'):
+    with self.assertRaisesRegex(ValueError, 'Malformed region'):
       self.samples_reader.query(ranges.parse_literal('chr1:6-5'))
-    with self.assertRaisesRegexp(ValueError, 'Malformed region'):
+    with self.assertRaisesRegex(ValueError, 'Malformed region'):
       self.samples_reader.query(ranges.parse_literal('chr1:10-5'))
 
   def test_context_manager(self):

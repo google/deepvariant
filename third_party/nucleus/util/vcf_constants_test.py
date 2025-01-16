@@ -72,7 +72,7 @@ class VcfConstantsTest(parameterized.TestCase):
       'GQ',
   )
   def test_invalid_get_reserved_filter(self, field_id):
-    with self.assertRaisesRegexp(ValueError, 'No reserved field with id'):
+    with self.assertRaisesRegex(ValueError, 'No reserved field with id'):
       vcf_constants.reserved_filter_field(field_id)
 
   @parameterized.parameters(
@@ -96,7 +96,7 @@ class VcfConstantsTest(parameterized.TestCase):
       'FT',
   )
   def test_invalid_get_reserved_info(self, field_id):
-    with self.assertRaisesRegexp(ValueError, 'No reserved field with id'):
+    with self.assertRaisesRegex(ValueError, 'No reserved field with id'):
       vcf_constants.reserved_info_field(field_id)
 
   @parameterized.parameters(
@@ -122,7 +122,7 @@ class VcfConstantsTest(parameterized.TestCase):
       'H2',
   )
   def test_invalid_get_reserved_format(self, field_id):
-    with self.assertRaisesRegexp(ValueError, 'No reserved field with id'):
+    with self.assertRaisesRegex(ValueError, 'No reserved field with id'):
       vcf_constants.reserved_format_field(field_id)
 
   @parameterized.parameters(
@@ -196,7 +196,7 @@ class VcfConstantsTest(parameterized.TestCase):
       dict(field='HQ'),
   )
   def test_invalid_reserved_info_field_set_fn(self, field):
-    with self.assertRaisesRegexp(ValueError, 'Unknown reserved INFO field:'):
+    with self.assertRaisesRegex(ValueError, 'Unknown reserved INFO field:'):
       vcf_constants.reserved_info_field_set_fn(field)
 
   def test_reserved_info_field_get_fn(self):
@@ -213,7 +213,7 @@ class VcfConstantsTest(parameterized.TestCase):
       dict(field='HQ'),
   )
   def test_invalid_reserved_info_field_get_fn(self, field):
-    with self.assertRaisesRegexp(ValueError,
+    with self.assertRaisesRegex(ValueError,
                                  'Unknown reserved INFO field to get:'):
       vcf_constants.reserved_info_field_get_fn(field)
 
@@ -232,7 +232,7 @@ class VcfConstantsTest(parameterized.TestCase):
       dict(field='H2'),
   )
   def test_invalid_reserved_format_field_set_fn(self, field):
-    with self.assertRaisesRegexp(ValueError, 'Unknown reserved FORMAT field:'):
+    with self.assertRaisesRegex(ValueError, 'Unknown reserved FORMAT field:'):
       vcf_constants.reserved_format_field_set_fn(field)
 
   def test_reserved_format_field_get_fn(self):
@@ -249,7 +249,7 @@ class VcfConstantsTest(parameterized.TestCase):
       dict(field='H2'),
   )
   def test_invalid_reserved_format_field_get_fn(self, field):
-    with self.assertRaisesRegexp(ValueError,
+    with self.assertRaisesRegex(ValueError,
                                  'Unknown reserved FORMAT field to get:'):
       vcf_constants.reserved_format_field_get_fn(field)
 

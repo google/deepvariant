@@ -81,7 +81,7 @@ class WrapGffWriterTest(parameterized.TestCase):
       self.assertIsNone(self.writer.write(self.record))
 
     # self.writer should be closed, so writing again will fail.
-    with self.assertRaisesRegexp(ValueError, _WRITE_TO_CLOSED_ERROR):
+    with self.assertRaisesRegex(ValueError, _WRITE_TO_CLOSED_ERROR):
       self.writer.write(self.record)
 
   def test_double_close(self):
@@ -89,7 +89,7 @@ class WrapGffWriterTest(parameterized.TestCase):
       # Writing within the context manager succeeds.
       self.assertIsNone(self.writer.write(self.record))
 
-    with self.assertRaisesRegexp(ValueError, _DOUBLE_CLOSE_ERROR):
+    with self.assertRaisesRegex(ValueError, _DOUBLE_CLOSE_ERROR):
       # Entering the closed writer should be fine.
       with self.writer:
         pass  # We want to raise an error on exit, so nothing to do in context.

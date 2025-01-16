@@ -87,7 +87,7 @@ class ConvertGenomicsFileTest(parameterized.TestCase):
     # input, trigger an error message.
     if any(
         native_output_path.endswith(ext) for ext in FORMATS_REQUIRING_HEADER):
-      with self.assertRaisesRegexp(
+      with self.assertRaisesRegex(
           converter.ConversionError,
           "Input file does not have a header, which is needed to construct "
           "output file"):

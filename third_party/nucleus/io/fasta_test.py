@@ -229,7 +229,7 @@ class InMemoryFastaReaderTests(parameterized.TestCase):
         reader.query(region)
 
   def test_bad_create_args(self):
-    with self.assertRaisesRegexp(ValueError, 'multiple ones were found on 1'):
+    with self.assertRaisesRegex(ValueError, 'multiple ones were found on 1'):
       fasta.InMemoryFastaReader([
           ('1', 10, 'AC'),
           ('1', 20, 'AC'),

@@ -140,7 +140,7 @@ class VcfReaderTests(absltest.TestCase):
       pass
 
     r2 = self.samples_reader.query(range1)
-    with self.assertRaisesRegexp(ValueError, 'No underlying iterable. This '):
+    with self.assertRaisesRegex(ValueError, 'No underlying iterable. This '):
       next(r2)
 
   def test_c_reader(self):

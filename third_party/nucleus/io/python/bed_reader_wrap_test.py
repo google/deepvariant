@@ -102,7 +102,7 @@ class BedReaderTest(parameterized.TestCase):
 
   def test_from_file_raises_with_missing_bed(self):
     # TODO: OpError exception not propagated.
-    with self.assertRaisesRegexp(ValueError, 'Could not open missing.bed'):
+    with self.assertRaisesRegex(ValueError, 'Could not open missing.bed'):
       bed_reader.BedReader.from_file('missing.bed', self.options)
 
   def test_ops_on_closed_reader_raise(self):
@@ -110,7 +110,7 @@ class BedReaderTest(parameterized.TestCase):
     with reader:
       pass
     # At this point the reader is closed.
-    with self.assertRaisesRegexp(ValueError, 'Cannot Iterate a closed'):
+    with self.assertRaisesRegex(ValueError, 'Cannot Iterate a closed'):
       reader.iterate()
 
   @parameterized.parameters('malformed.bed', 'malformed2.bed')

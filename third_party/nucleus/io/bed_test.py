@@ -75,7 +75,7 @@ class BedReaderTests(parameterized.TestCase):
   @parameterized.parameters(1, 2, 7, 10, 11, 13)
   def test_invalid_num_fields(self, invalid_num_fields):
     bed_path = test_utils.genomics_core_testdata('test_regions.bed')
-    with self.assertRaisesRegexp(ValueError, 'Invalid requested number of fie'):
+    with self.assertRaisesRegex(ValueError, 'Invalid requested number of fie'):
       _ = bed.BedReader(bed_path, num_fields=invalid_num_fields)
 
 
