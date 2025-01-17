@@ -968,6 +968,24 @@ void FastPassAligner::CalculateReadToRefAlignment(
       }
     }  // while
   }  // while
+
+  // If cur_read_to_hap_op is still not exhausted then we can record the left
+  // over only ig it is a soft clip. In all other case we cannot realign the
+  // read.
+  if  (cur_read_to_hap_op.length > 0 && cur_read_to_hap_op.operation ==
+       nucleus::genomics::v1::CigarUnit::CLIP_SOFT) {
+    while (cur_read_to_hap_op.length > 0) {
+      MergeOneBaseOperations(cur_read_to_hap_op, cur_hap_to_ref_op,
+                             read_len, read_to_ref_cigar_ops);
+      cur_read_to_hap_op.length--;
+    }
+  }
+
+  // Read cannot be fully aligned to the haplotype. The tail of the read goes
+  // beyond the end of the haplotype. In this we cannot realign the read.
+  if (!read_to_haplotype_cigar_ops.empty() || cur_read_to_hap_op.length > 0) {
+    read_to_ref_cigar_ops->clear();
+  }
 }
 
 }  // namespace deepvariant
