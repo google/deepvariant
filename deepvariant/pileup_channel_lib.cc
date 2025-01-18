@@ -248,7 +248,7 @@ std::vector<std::uint8_t> Parse5mCAuxTag(const Read& read) {
 
 bool Channels::CalculateChannels(
     std::vector<std::vector<unsigned char>>& data,
-    const std::vector<DeepVariantChannelEnum>& channel_enums, const Read& read,
+    absl::Span<const DeepVariantChannelEnum> channel_enums, const Read& read,
     absl::string_view ref_bases, const DeepVariantCall& dv_call,
     const std::vector<std::string>& alt_alleles, int image_start_pos,
     const absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank) {
@@ -293,7 +293,7 @@ bool Channels::CalculateChannels(
   // have a low quality base at the call position (in which case we
   // should return null) from EncodeRead.
   std::function<bool(int, int, const CigarUnit::Operation&)>
-      action_per_cigar_unit = [&, ref_bases](
+      action_per_cigar_unit = [&, channel_enums, ref_bases](
                                   int ref_i, int read_i,
                                   const CigarUnit::Operation& cigar_op) {
         char read_base = 0;
@@ -492,7 +492,7 @@ bool Channels::CalculateBaseLevelData(
 
 void Channels::CalculateRefRows(
     std::vector<std::vector<unsigned char>>& ref_data,
-    const std::vector<DeepVariantChannelEnum>& channel_enums,
+    absl::Span<const DeepVariantChannelEnum> channel_enums,
     const std::string& ref_bases) {
   CHECK_EQ(ref_data.size(), channel_enums.size())
       << "size of provided ref_data vector does not match number of channels "

@@ -160,7 +160,7 @@ class Channels {
 
   bool CalculateChannels(
       std::vector<std::vector<unsigned char>>& data,
-      const std::vector<DeepVariantChannelEnum>& channel_enums,
+      absl::Span<const DeepVariantChannelEnum> channel_enums,
       const nucleus::genomics::v1::Read& read, absl::string_view ref_bases,
       const DeepVariantCall& dv_call,
       const std::vector<std::string>& alt_alleles, int image_start_pos,
@@ -184,10 +184,9 @@ class Channels {
 
   std::uint8_t GetChannelData(const std::string& channel, int col);
 
-  void CalculateRefRows(
-      std::vector<std::vector<unsigned char>>& ref_data,
-      const std::vector<DeepVariantChannelEnum>& channel_enums,
-      const std::string& ref_bases);
+  void CalculateRefRows(std::vector<std::vector<unsigned char>>& ref_data,
+                        absl::Span<const DeepVariantChannelEnum> channel_enums,
+                        const std::string& ref_bases);
   std::uint8_t GetRefRows(DeepVariantChannelEnum channel_enum, int col);
 
   int GetChannelIndex(DeepVariantChannelEnum channel_enum);
