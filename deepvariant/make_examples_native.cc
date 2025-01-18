@@ -504,8 +504,7 @@ std::string ExamplesGenerator::GetReferenceBases(const Range& region) const {
 void ExamplesGenerator::CreateAltAlignedImages(
     const DeepVariantCall& candidate,
     const std::vector<std::string>& alt_combination,
-    const std::vector<Read>& trimmed_reads, int sample_order,
-    const Range& region,
+    absl::Span<const Read> trimmed_reads, int sample_order, const Range& region,
     std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images,
     const float mean_coverage, std::vector<int64_t>* original_start_positions) {
   const auto& variant = candidate.variant();
@@ -707,9 +706,9 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
     absl::Span<const nucleus::ConstProtoPtr<DeepVariantCall>> candidates,
     absl::Span<const std::vector<nucleus::ConstProtoPtr<Read>>>
         reads_per_sample,
-    const std::vector<int>& sample_order, const std::string& role,
+    absl::Span<const int> sample_order, const std::string& role,
     // const std::vector<VariantLabel>& labels,
-    const std::vector<float>& mean_coverage_per_sample,
+    absl::Span<const float> mean_coverage_per_sample,
     std::vector<int>* image_shape) {
   CHECK(labels_.empty() || candidates.size() == labels_.size());
   auto sample_it = samples_.find(role);

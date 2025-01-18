@@ -44,6 +44,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/io/example_writer.h"
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -164,12 +165,12 @@ class ExamplesGenerator {
       absl::Span<const std::vector<
           nucleus::ConstProtoPtr<nucleus::genomics::v1::Read>>>
           reads_per_sample,
-      const std::vector<int>& sample_order,
+      absl::Span<const int> sample_order,
       // std::string has to be used here instead of absl::string view due to the
       // PyClif restrictions.
       const std::string& role,
       // const std::vector<VariantLabel>& labels,
-      const std::vector<float>& mean_coverage_per_sample,
+      absl::Span<const float> mean_coverage_per_sample,
       std::vector<int>* image_shape);
 
   void AppendLabel(std::unique_ptr<VariantLabel> label) {
@@ -223,7 +224,7 @@ class ExamplesGenerator {
   void CreateAltAlignedImages(
       const DeepVariantCall& candidate,
       const std::vector<std::string>& alt_combination,
-      const std::vector<nucleus::genomics::v1::Read>& trimmed_reads,
+      absl::Span<const nucleus::genomics::v1::Read> trimmed_reads,
       int sample_order, const nucleus::genomics::v1::Range& region,
       std::vector<std::vector<std::unique_ptr<ImageRow>>>& alt_images,
       float mean_coverage,
