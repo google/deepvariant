@@ -29,6 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "third_party/nucleus/io/example_writer.h"
+#include <filesystem>
 #include <string>
 
 #include "tensorflow/core/platform/test.h"
@@ -45,8 +46,17 @@ TEST(ExampleWriterTest, TFUpperCase) {
   auto output_record = std::string("test_output");
   ExampleWriter writer = ExampleWriter("/tmp/out.TFRECORD.GZ");
   EXPECT_TRUE(writer.Add(output_record));
-
 }
+
+
+TEST(ExampleWriterTest, NoParentDir) {
+  // Tests for when no directory needs to be created.
+  auto output_record = std::string("test_output");
+  std::filesystem::current_path("/tmp");
+  ExampleWriter writer = ExampleWriter("out.TFRECORD.GZ");
+  EXPECT_TRUE(writer.Add(output_record));
+}
+
 
 TEST(ExampleWriterTest, TFWriterTest) {
   auto output_record = std::string("test_output");

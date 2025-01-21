@@ -130,7 +130,8 @@ class ExampleWriter::TfRecordImpl : public ExampleWriter::Impl {
 ExampleWriter::ExampleWriter(absl::string_view path,
                              ExampleFormat format) {
   std::filesystem::path p = std::filesystem::path(path);
-  if (!std::filesystem::is_directory(p.parent_path())) {
+  if (!std::filesystem::is_directory(p.parent_path())
+      && p.parent_path() != "") {
   status_ = std::filesystem::create_directories(p.parent_path()) ?
      absl::OkStatus()
      : absl::InternalError("Failed to create directories.");
