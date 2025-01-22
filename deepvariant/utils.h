@@ -33,6 +33,8 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_UTILS_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_UTILS_H_
 
+#include <string>
+
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/variants.pb.h"

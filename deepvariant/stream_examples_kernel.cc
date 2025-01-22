@@ -42,7 +42,6 @@
 #include "deepvariant/fast_pipeline_utils.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/log.h"
-#include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "boost/interprocess/managed_shared_memory.hpp"  // NOLINT
 #include "boost/interprocess/shared_memory_object.hpp"  // NOLINT

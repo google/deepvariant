@@ -32,6 +32,8 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_TESTING_UTILS_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_TESTING_UTILS_H_
 
+#include <cstdint>
+
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #endif  // LEARNING_GENOMICS_DEEPVARIANT_TESTING_UTILS_H_

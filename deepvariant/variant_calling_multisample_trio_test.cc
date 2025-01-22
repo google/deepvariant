@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -48,7 +48,10 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"

@@ -36,7 +36,6 @@
 #include <functional>
 #include <map>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <string>
 #include <vector>
@@ -53,6 +52,7 @@
 #include "absl/types/span.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/vcf_reader.h"
+#include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/math.h"
 #include "third_party/nucleus/util/utils.h"

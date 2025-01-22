@@ -29,6 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "absl/status/status.h"
 #include "tensorflow/core/framework/op.h"  // copybara: quotes ""
 #include "tensorflow/core/framework/shape_inference.h"  // copybara: quotes ""
 

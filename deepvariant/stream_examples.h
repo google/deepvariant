@@ -38,6 +38,7 @@
 
 #include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "boost/interprocess/managed_shared_memory.hpp"  // NOLINT
 #include "boost/interprocess/shared_memory_object.hpp"  // NOLINT

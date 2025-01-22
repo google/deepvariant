@@ -37,9 +37,9 @@
 
 #include "deepvariant/fast_pipeline_utils.h"
 #include "deepvariant/pileup_image_native.h"
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"

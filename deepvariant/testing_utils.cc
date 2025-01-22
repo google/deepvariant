@@ -42,6 +42,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"

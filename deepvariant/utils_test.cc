@@ -31,6 +31,7 @@
 
 #include "deepvariant/utils.h"
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>

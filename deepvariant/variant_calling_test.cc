@@ -31,6 +31,8 @@
 
 #include "deepvariant/variant_calling.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -45,6 +47,8 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -53,7 +57,6 @@
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
-#include "google/protobuf/repeated_field.h"
 #include "google/protobuf/text_format.h"
 
 namespace learning {
