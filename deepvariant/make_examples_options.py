@@ -232,6 +232,7 @@ _TRIM_READS_FOR_PILUP = flags.DEFINE_bool(
     (
         'If True, trim reads that are used to build a pileup image. '
         'Reads longer than 500 bp are not trimmed.'
+        'This flag will be set to True if --alt_aligned_pileup is not none.'
     ),
 )
 _WRITE_RUN_INFO = flags.DEFINE_bool(
@@ -1050,6 +1051,13 @@ def shared_flags_to_options(
 
     options.realigner_enabled = _REALIGN_READS.value
     options.trim_reads_for_pileup = _TRIM_READS_FOR_PILUP.value
+    if _ALT_ALIGNED_PILEUP.value and not options.trim_reads_for_pileup:
+      logging.warning(
+          'Automatically setting --trim_reads_for_pileup to True '
+          'because --alt_aligned_pileup is set.'
+      )
+      options.trim_reads_for_pileup = True
+
     options.joint_realignment = _ENABLE_JOINT_REALIGNMENT.value
     options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
