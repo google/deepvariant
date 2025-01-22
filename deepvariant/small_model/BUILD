@@ -9,7 +9,6 @@ package(
 py_library(
     name = "make_small_model_examples",
     srcs = ["make_small_model_examples.py"],
-    srcs_version = "PY3",
     deps = [
         "//deepvariant/labeler:variant_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
@@ -20,7 +19,6 @@ py_library(
 py_test(
     name = "make_small_model_examples_test",
     srcs = ["make_small_model_examples_test.py"],
-    python_version = "PY3",
     deps = [
         ":make_small_model_examples",
         "//deepvariant/labeler:variant_labeler",
@@ -35,7 +33,6 @@ py_test(
 py_library(
     name = "keras_config",
     srcs = ["keras_config.py"],
-    srcs_version = "PY3",
     deps = [
         ":make_small_model_examples",
         "//deepvariant:metrics",
@@ -45,7 +42,6 @@ py_library(
 py_library(
     name = "inference",
     srcs = ["inference.py"],
-    srcs_version = "PY3",
     deps = [
         ":keras_config",
         ":make_small_model_examples",
@@ -59,7 +55,6 @@ py_library(
 py_test(
     name = "inference_test",
     srcs = ["inference_test.py"],
-    python_version = "PY3",
     deps = [
         ":inference",
         ":make_small_model_examples",

@@ -14,15 +14,11 @@ py_test(
     name = "env_smoke_test",
     size = "small",
     srcs = ["env_smoke_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
 )
 
 py_test(
     name = "protobuf_implementation_test",
     size = "small",
     srcs = ["protobuf_implementation_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = ["@com_google_protobuf//:protobuf_python"],
 )

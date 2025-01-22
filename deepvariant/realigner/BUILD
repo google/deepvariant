@@ -29,7 +29,6 @@ py_test(
     size = "small",
     srcs = ["realigner_test.py"],
     data = ["//deepvariant:testdata"],
-    python_version = "PY3",
     deps = [
         ":realigner",
         ":utils",
@@ -78,7 +77,6 @@ py_test(
     name = "window_selector_test",
     size = "small",
     srcs = ["window_selector_test.py"],
-    python_version = "PY3",
     deps = [
         ":window_selector",
         "//deepvariant:py_testdata",

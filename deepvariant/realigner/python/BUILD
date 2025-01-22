@@ -62,8 +62,6 @@ py_test(
     size = "small",
     srcs = ["debruijn_graph_wrap_test.py"],
     data = ["//deepvariant:testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":debruijn_graph",
         "//deepvariant:py_testdata",
@@ -107,7 +105,6 @@ py_test(
     name = "ssw_wrap_test",
     size = "small",
     srcs = ["ssw_wrap_test.py"],
-    python_version = "PY3",
     deps = [
         ":ssw",
         "//third_party/nucleus/io:clif_postproc",
@@ -119,7 +116,6 @@ py_test(
     name = "ssw_misc_test",
     size = "small",
     srcs = ["ssw_misc_test.py"],
-    python_version = "PY3",
     deps = [
         ":ssw",
         "//third_party/nucleus/io:clif_postproc",
