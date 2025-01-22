@@ -280,8 +280,6 @@ bool Channels::CalculateChannels(
     }
   }
 
-  // Get methylation values
-  std::vector<std::uint8_t> mm_values = Parse5mCAuxTag(read);
   /*--------------------------------------
   Calculate base-level channels
   ---------------------------------------*/
@@ -336,6 +334,8 @@ bool Channels::CalculateChannels(
                 data[index][col] = MatchesRefColor(matches_ref, options_);
               } else if (channel_enum ==
                          DeepVariantChannelEnum::CH_BASE_METHYLATION) {
+                // Get methylation values
+                std::vector<std::uint8_t> mm_values = Parse5mCAuxTag(read);
                 if (!mm_values.empty()) {
                   data[index][col] = ScaleColor(mm_values[read_i], 255);
                 }
