@@ -89,7 +89,7 @@ std::vector<T> AsVector(const google::protobuf::RepeatedPtrField<T>& container) 
   return vector<T>(container.begin(), container.end());
 }
 
-std::string GetReverseComplement(const std::string& sequence) {
+std::string GetReverseComplement(absl::string_view sequence) {
   std::string complement;
   // Iterate through each character in the sequence
   for (char nucleotide : sequence) {
