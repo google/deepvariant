@@ -31,6 +31,9 @@
 
 #include "deepvariant/realigner/ssw.h"
 
+#include <cstdint>
+#include <string>
+
 #include "src/ssw_cpp.h"
 
 namespace learning {

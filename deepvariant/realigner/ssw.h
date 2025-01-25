@@ -32,6 +32,9 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_REALIGNER_SSW_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_REALIGNER_SSW_H_
 
+#include <cstdint>
+#include <string>
+
 #include "src/ssw_cpp.h"
 
 namespace learning {
