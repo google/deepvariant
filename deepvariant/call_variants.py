@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Calling variants with a trained DeepVariant TF2/Keras model."""
 
+import itertools
 import multiprocessing
 import os
 import time
@@ -547,8 +548,8 @@ def post_processing(
   n_batches = 0
   while True:
     try:
-      # If no records found in 3 minutes, then break.
-      item = output_queue.get(timeout=180)
+      # If no records found in 5 minutes, then break.
+      item = output_queue.get(timeout=300)
       if item is None:
         break
       (
@@ -560,14 +561,12 @@ def post_processing(
           layer_outputs,
           optional_pileup_curation_list,
       ) = item
-      if optional_label_list is not None:
-        optional_label_list = optional_label_list.numpy()
       for i, probabilities in enumerate(predictions):
         pred = {
             'probabilities': probabilities,
-            'variant': variants[i].numpy(),
-            'image_encoded': image_encodes[i].numpy(),
-            'alt_allele_indices': alt_allele_indices_list[i].numpy(),
+            'variant': variants[i],
+            'image_encoded': image_encodes[i],
+            'alt_allele_indices': alt_allele_indices_list[i],
             'layer_outputs_encoded': {
                 layer_name: output[i].tobytes()
                 for layer_name, output in layer_outputs.items()
@@ -586,6 +585,11 @@ def post_processing(
     except TimeoutError as error:
       logging.warning('Writer timeout occurred %s.', str(error))
       break
+  logging.info(
+      'Wrote %d examples over %d batches. Closing writer.',
+      n_examples,
+      n_batches,
+  )
   writer.close()
 
 
@@ -767,14 +771,18 @@ def call_variants(
     )
     paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
 
-  output_queue = multiprocessing.Queue()
+  writer_queues = []
+  for _ in range(total_writer_process):
+    writer_queues.append(multiprocessing.Queue())
+  writer_queues_iterator = itertools.cycle(writer_queues)
+
   all_processes = []
   for process_id in range(0, total_writer_process):
     post_processing_process = multiprocessing.get_context().Process(
         target=post_processing,
         args=(
             paths[process_id],
-            output_queue,
+            writer_queues[process_id],
             include_debug_info,
             debugging_true_label_mode,
         ),
@@ -896,19 +904,21 @@ def call_variants(
         n_batches,
         (100 * duration) / n_examples,
     )
-    output_queue.put((
+    if optional_label_list is not None:
+      optional_label_list = optional_label_list.numpy()
+    next(writer_queues_iterator).put((
         predictions,
-        image_encodes,
-        variants,
-        alt_allele_indices_list,
+        image_encodes.numpy(),
+        variants.numpy(),
+        alt_allele_indices_list.numpy(),
         optional_label_list,
         layer_outputs,
         pileup_curation_in_batch,
     ))
 
-  # Put none values in the queue so the running processes can terminate.
-  for _ in range(0, total_writer_process):
-    output_queue.put(None)
+  # Put none values in each queue so the running processes can terminate.
+  for queue in writer_queues:
+    queue.put(None)
   for post_processing_process in all_processes:
     post_processing_process.join()
 
@@ -973,5 +983,4 @@ if __name__ == '__main__':
       'checkpoint',
   ])
   logging.use_python_logging()
-  multiprocessing.set_start_method('spawn', force=True)
   app.run(main)
