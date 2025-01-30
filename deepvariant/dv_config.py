@@ -354,6 +354,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.class_weights = ''
   config.include_snp_indel_metrics = False
 
+  config.ablation_channels = ''
+
   # Training hyperparameters
   config.learning_rate = 0.001
   config.learning_rate_num_epochs_per_decay = 2.0

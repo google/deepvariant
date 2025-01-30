@@ -335,7 +335,7 @@ def get_tf_record_writer(output_filename: str) -> tf.io.TFRecordWriter:
   return tf.io.TFRecordWriter(output_filename, options=tf_options)
 
 
-def preprocess_images(images):
+def preprocess_images(images, channel_indices=None):
   """Applies preprocessing operations for Inception images.
 
   Because this will run in model_fn, on the accelerator, we use operations
@@ -343,14 +343,22 @@ def preprocess_images(images):
 
   Args:
     images: A Tensor of with uint8 values.
+    channel_indices: If defined, gathers only the listed channel indices. This
+      is used to perform channel ablation.
 
   Returns:
     A tensor of images the same shape, containing floating point values, with
     all points rescaled between -1 and 1 and possibly resized.
   """
+  if channel_indices is None:
+    channel_indices = []
   images = tf.cast(images, dtype=tf.float32)
   images = tf.subtract(images, 128.0)
   images = tf.math.divide(images, 128.0)
+
+  # Ablate channels
+  if channel_indices:
+    images = tf.gather(images, channel_indices, axis=3)
   return images
 
 

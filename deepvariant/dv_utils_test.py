@@ -216,6 +216,13 @@ class DVUtilsTest(parameterized.TestCase):
     # Check if the output is as expected.
     np.testing.assert_array_equal(output, expected_output)
 
+  def test_channel_ablation(self):
+    test_input = np.ones([1, 1, 1, 7], dtype=np.uint8)
+    self.assertEqual(
+        dv_utils.preprocess_images(test_input, [1, 2, 3]).shape,
+        [1, 1, 1, 3],
+    )
+
 
 if __name__ == '__main__':
   tf.config.run_functions_eagerly(True)

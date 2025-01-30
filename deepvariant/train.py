@@ -29,6 +29,8 @@
 r"""Train a DeepVariant Keras Model.
 """
 
+import copy
+import json
 import math
 import os
 import re
@@ -133,10 +135,6 @@ def train(config: ml_collections.ConfigDict):
       config.tune_dataset_pbtxt
   )
 
-  input_shape = dv_utils.get_shape_from_examples_path(
-      train_dataset_config.tfrecord_path
-  )
-
   # Copy example_info.json to checkpoint path.
   example_info_json_path = os.path.join(
       os.path.dirname(train_dataset_config.tfrecord_path), 'example_info.json'
@@ -151,11 +149,35 @@ def train(config: ml_collections.ConfigDict):
         f' {os.path.dirname(train_dataset_config.tfrecord_path)}'
     )
   tf.io.gfile.makedirs(os.path.join(experiment_dir, 'checkpoints'))
-  tf.io.gfile.copy(
-      example_info_json_path,
-      os.path.join(experiment_dir, 'checkpoints', 'example_info.json'),
-      overwrite=True,
-  )
+
+  # Load in example_info.json, add ablation channels, and output.
+  example_info_json = json.load(tf.io.gfile.GFile(example_info_json_path, 'r'))
+  input_shape = copy.copy(example_info_json['shape'])
+  channel_indices = []
+  if config.ablation_channels:
+    ablation_channel_set = set()
+    for channel in config.ablation_channels.split(','):
+      if channel in dv_constants.STRING_TO_CHANNEL_ENUM:
+        ablation_channel_set.add(dv_constants.STRING_TO_CHANNEL_ENUM[channel])
+      else:
+        raise ValueError(f'Unknown channel: {channel}')
+      example_info_json['ablation_channels'] = list(ablation_channel_set)
+    ablation_indices = [
+        example_info_json['channels'].index(ablation_ch)
+        for ablation_ch in ablation_channel_set
+    ]
+    for idx, _ in enumerate(example_info_json['channels']):
+      if idx not in ablation_indices:
+        channel_indices.append(idx)
+
+    input_shape[2] = input_shape[2] - len(ablation_indices)
+    logging.info('Input shape after channel ablation: %s', str(input_shape))
+    logging.info('example_info_json: %s', str(example_info_json))
+
+  with tf.io.gfile.GFile(
+      os.path.join(experiment_dir, 'checkpoints', 'example_info.json'), 'w'
+  ) as fout:
+    fout.write(json.dumps(example_info_json))
 
   steps_per_epoch = train_dataset_config.num_examples // config.batch_size
   num_validation_examples = min(
@@ -290,7 +312,10 @@ def train(config: ml_collections.ConfigDict):
   def distributed_train_step(iterator, num_steps):
     def run_train_step(inputs):
       model_input, labels, sample_weight, variant_type = inputs
-      model_input = dv_utils.preprocess_images(model_input)
+      model_input = dv_utils.preprocess_images(
+          model_input,
+          channel_indices,
+      )
       labels = tf.squeeze(tf.one_hot(labels, dv_constants.NUM_CLASSES))
       with tf.GradientTape() as tape:
         probabilities = model(model_input, training=True)
@@ -332,7 +357,6 @@ def train(config: ml_collections.ConfigDict):
 
       # Update state for overall loss metric
       state.train_metrics[-1].update_state(train_loss)
-      return train_loss
 
     for _ in tf.range(num_steps):
       strategy.run(run_train_step, args=(next(iterator),))
@@ -343,7 +367,10 @@ def train(config: ml_collections.ConfigDict):
     def run_tune_step(tune_inputs):
       """Single non-distributed tune step."""
       model_input, labels, sample_weight, variant_type = tune_inputs
-      model_input = dv_utils.preprocess_images(model_input)
+      model_input = dv_utils.preprocess_images(
+          model_input,
+          channel_indices,
+      )
       labels = tf.squeeze(tf.one_hot(labels, dv_constants.NUM_CLASSES))
       # The build_classification_head performs a softmax.
       if config.use_ema:
@@ -387,7 +414,6 @@ def train(config: ml_collections.ConfigDict):
 
       # Update state for overall loss metric
       state.tune_metrics[-1].update_state(tune_loss)
-      return tune_loss
 
     for _ in tf.range(num_steps):
       strategy.run(run_tune_step, args=(next(iterator),))

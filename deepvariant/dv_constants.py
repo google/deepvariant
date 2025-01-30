@@ -154,6 +154,11 @@ CHANNEL_ENUM_TO_STRING = {
     deepvariant_pb2.CH_BASE_METHYLATION: 'base_methylation',
 }
 
+# Create a reverse mapping
+STRING_TO_CHANNEL_ENUM = {
+    value: key for key, value in CHANNEL_ENUM_TO_STRING.items()
+}
+
 # Used only when phasing is on (phase_reads=true). It allows to set the
 # region padding as a percantage over the region length. candidates are
 # calculated over an extended region. Output examples are not affected by
