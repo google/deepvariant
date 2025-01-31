@@ -29,6 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cstdint>
+
 #include "absl/strings/string_view.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
