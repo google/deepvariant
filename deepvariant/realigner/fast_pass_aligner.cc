@@ -32,13 +32,11 @@
 #include "deepvariant/realigner/fast_pass_aligner.h"
 
 #include <algorithm>
-#include <fstream>
-#include <iostream>
+#include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <list>
 #include <memory>
-#include <set>
-#include <sstream>
 #include <string>
 #include <vector>
 

@@ -32,6 +32,7 @@
 #include "deepvariant/realigner/debruijn_graph.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <iterator>
 #include <map>
 #include <memory>
