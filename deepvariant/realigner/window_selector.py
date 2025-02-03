@@ -230,5 +230,9 @@ def select_windows(config, ref_reader, reads, region):
   if not reads:
     return []
 
+  # If we are realigning all regions, we don't need to use window selector.
+  if config.realign_all:
+    return [region]
+
   candidates = _candidates_from_reads(config, ref_reader, reads, region)
   return _candidates_to_windows(config, candidates, region.reference_name)

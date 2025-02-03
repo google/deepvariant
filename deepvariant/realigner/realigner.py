@@ -112,6 +112,12 @@ _WS_MAX_WINDOW_SIZE = flags.DEFINE_integer(
         ' regions are skipped for realignment.'
     ),
 )
+_REALIGN_ALL = flags.DEFINE_bool(
+    'realign_all',
+    False,
+    'If True, realign all regions. With this options window selector is not'
+    'used.',
+)
 _WS_REGION_EXPANSION_IN_BP = flags.DEFINE_integer(
     'ws_region_expansion_in_bp',
     20,
@@ -341,6 +347,7 @@ def window_selector_config(flags_obj):
       region_expansion_in_bp=flags_obj.ws_region_expansion_in_bp,
       window_selector_model=window_selector_model,
       keep_legacy_behavior=keep_legacy_behavior,
+      realign_all=flags_obj.realign_all,
   )
 
   return ws_config
@@ -381,6 +388,7 @@ def realigner_config(flags_obj):
       realignment_similarity_threshold=flags_obj.realignment_similarity_threshold,
       kmer_size=flags_obj.kmer_size,
       force_alignment=False,
+      realign_all=flags_obj.realign_all,
   )
 
   diagnostics = realigner_pb2.Diagnostics(

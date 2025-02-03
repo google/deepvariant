@@ -91,7 +91,7 @@ message WindowSelectorModel {
 }
 
 // Config parameters for "window selector (ws)" phase.
-// Next ID: 10.
+// Next ID: 11.
 message WindowSelectorOptions {
   // Minimum number of supporting reads to call a reference position for
   // local assembly.
@@ -135,6 +135,10 @@ message WindowSelectorOptions {
   // If True, the behavior in this commit is reverted:
   // https://github.com/google/deepvariant/commit/fbde0674639a28cb9e8004c7a01bbe25240c7d46
   bool keep_legacy_behavior = 9;
+
+  // If True, realign all regions. With this options window selector is not
+  // used.
+  bool realign_all = 10;
 }
 
 // Config parameters for "de-Bruijn graph (dbg)" phase.
@@ -212,6 +216,10 @@ message AlignerOptions {
   // used for alt-aligned pileups where reads are aligned to a new "reference",
   // making the original read alignments invalid.
   bool force_alignment = 12;
+
+  // If True, realign all regions. With this options window selector is not
+  // used.
+  bool realign_all = 13;
 }
 
 // Config parameters for "alignment (aln)" phase.
