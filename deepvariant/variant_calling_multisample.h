@@ -34,7 +34,9 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
 
+#include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -99,6 +101,32 @@ struct AlleleAtPosition {
   AlleleType type;
   int position;
 };
+
+// Input options for SelectAltAlleles() function.
+struct SelectAltAllelesInputOptions {
+  const absl::node_hash_map<std::string, AlleleCount>&
+      allele_counts_by_sample;
+  bool create_complex_alleles;
+  int prev_deletion_end;  // This is the end position of the previous deletion.
+  // It is used to skip complex variant creation for alleles that are
+  // overlapped by the previous deletion.
+};
+
+// Output options for SelectAltAlleles() function.
+struct SelectAltAllelesResult {
+  std::vector<Allele> alt_alleles;
+  absl::node_hash_map<std::string, AlleleCount> allele_counts_mod;
+  bool complex_variant_created;
+  std::string ref_bases;
+};
+
+// Input options for SelectAltAllelesWithComplexVariant() function.
+struct SelectAltAllelesWithComplexVariantInputOptions {
+  const absl::node_hash_map<std::string,
+                            AlleleCount>& allele_counts_by_sample;
+  const std::vector<Allele>& alt_alleles;
+};
+
 
 // Helper function to generate a map of complex alleles to supporting reads.
 // This function is used by SelectAltAllelesWithComplexVariant and it is
@@ -187,26 +215,25 @@ class VariantCaller {
   std::vector<DeepVariantCall> CallsFromAlleleCounts(
       const std::unordered_map<std::string, AlleleCounter*>&
           allele_counts_wrapper,
-      const std::string& target_sample) const;
+      const std::string& target_sample);
 
   // High-level API for calculating potential variant position in a region.
   // This function is almost identical to CallsFromAlleleCounts except it
   // only calculates candidate positions.
   std::vector<int> CallPositionsFromAlleleCounts(
       const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-      const std::string& target_sample) const;
+      const std::string& target_sample);
 
   // Iterates allele_counts for all samples and calls specified function F for
   // each candidate. Currently there are 2 use case: generate candidates,
   // generate candidate positions.
   template <class T>
   std::vector<T> AlleleCountsGenerator(
-      const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-      const std::string& target_sample,
       std::optional<T> (VariantCaller::*F)(
           const absl::node_hash_map<std::string, AlleleCount>&,
-          const std::string&, const std::vector<AlleleCount>*,
-          std::vector<AlleleCount>::const_iterator*) const) const;
+          std::vector<AlleleCount>::const_iterator*,
+          int& skip_next_count,
+          int& prev_deletion_end) const) const;
   // Primary interface function for calling variants.
   //
   // Looks at the alleles in the provided AlleleCount proto and returns
@@ -218,11 +245,12 @@ class VariantCaller {
   // appropriate end. The genotypes of the VariantCall will be set to -1 and -1
   // (diploid no-call).
   std::optional<DeepVariantCall> CallVariant(
-      const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-      const std::string& target_sample,
-      const std::vector<AlleleCount>* target_sample_allele_counts,
+      const absl::node_hash_map<std::string, AlleleCount>&
+          allele_counts_per_sample,
       std::vector<AlleleCount>::const_iterator*
-          target_sample_allele_count_iterator = nullptr) const;
+          target_sample_allele_count_iterator,
+    int& skip_next_count,
+    int& prev_deletion_end) const;
 
   // Adds supporting reads to the DeepVariantCall.
   void AddSupportingReads(
@@ -233,10 +261,31 @@ class VariantCaller {
   // Adds allele counts in window around the position of the DeepVariantCall.
   void AddAdjacentAlleleFractionsAtPosition(
       int window_size,
-      const std::vector<AlleleCount>& target_sample_allele_counts,
       std::vector<AlleleCount>::const_iterator
           target_sample_allele_count_iterator,
       DeepVariantCall* call) const;
+
+  void Clear() {
+    for (auto& [sample, allele_counter] : allele_counters_per_sample_) {
+      if (allele_counter != nullptr) {
+        delete allele_counter;
+      }
+    }
+  }
+
+  // Helper function to create a VariantCaller for testing.
+  static std::unique_ptr<VariantCaller> MakeTestVariantCallerFromAlleleCounts(
+          VariantCallerOptions options,
+          const std::vector<AlleleCount>& allele_counts,
+          const std::string& sample_name) {
+      auto caller =
+          std::make_unique<VariantCaller>(options);
+      caller->target_sample_ = sample_name;
+      AlleleCounter* allele_counter =
+          AlleleCounter::InitFromAlleleCounts(allele_counts);
+      caller->allele_counters_per_sample_[sample_name] = allele_counter;
+      return caller;
+  }
 
  private:
   enum AlleleRejectionAcceptance {
@@ -258,22 +307,19 @@ class VariantCaller {
                : options_.min_fraction_indels();
   }
 
-  std::vector<Allele> SelectAltAlleles(
-      const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-      const std::vector<AlleleCount>& allele_counts_context,
-      absl::string_view target_sample,
-      bool process_mnp_with_alt_deletion) const;
+  SelectAltAllelesResult SelectAltAlleles(
+      const SelectAltAllelesInputOptions& options
+  ) const;
 
   // Generate complex variants if there are multiple alleles and one of them is
   // a deletion and other alleles are not deletions. In all other cases return
   // SelectAltAlleles(). If complex alleles are generated then allele counts are
   // modified to reflect the new alleles.
-  std::vector<Allele> SelectAltAllelesWithComplexVariant(
-      const absl::node_hash_map<std::string, AlleleCount>&
-          allele_counts_by_sample,
-      absl::string_view target_sample,
-      const std::vector<Allele>& alt_alleles,
-      const std::vector<AlleleCount>& allele_counts_context) const;
+  // It is expected that allele_counters_per_sample_ map contains the
+  // target_sample_ key. The function will fail if it is not the case.
+  SelectAltAllelesResult SelectAltAllelesWithComplexVariant(
+      const SelectAltAllelesWithComplexVariantInputOptions& options
+  ) const;
 
   AlleleRejectionAcceptance IsGoodAltAlleleWithReason(
       const Allele& allele, int total_count, bool apply_trio_coefficient) const;
@@ -284,15 +330,32 @@ class VariantCaller {
   // function returns a position of the candidate.
   std::optional<int> CallVariantPosition(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-      const std::string& target_sample,
-      const std::vector<AlleleCount>* target_sample_allele_counts,
       std::vector<AlleleCount>::const_iterator*
-          target_sample_allele_count_iterator = nullptr) const;
+          target_sample_allele_count_iterator,
+      int& skip_next_count,
+      int& prev_deletion_end) const;
 
   const VariantCallerOptions options_;
 
   // Fraction of non-variant sites to emit as DeepVariantCalls.
   mutable nucleus::FractionalSampler sampler_;
+
+  // AllelCounters hold a large internal vector, so we want to avoid copying
+  // them.
+  std::unordered_map<std::string, AlleleCounter*> allele_counters_per_sample_;
+  // Name of the target sample for multi-allelic variant calling.
+  std::string target_sample_;
+
+  FRIEND_TEST(VariantCallingTest, TestMultiAlleleWithDeletion);
+  FRIEND_TEST(ComplexVariantTest, ComplexVariantTestCases);
+  FRIEND_TEST(VariantCallingTest,
+     TestCallVariantAddAdjacentAlleleFractionsAtPositionSize5);
+  FRIEND_TEST(VariantCallingTest,
+     TestCallVariantAddAdjacentAlleleFractionsAtPositionSize3);
+  FRIEND_TEST(VariantCallingTest,
+              TestCallVariantAddAdjacentAlleleFractionsAtPositionSize0);
+  FRIEND_TEST(VariantCallingTest, TestRefSitesFraction);
+  friend class VariantCallingTest;
 };
 
 // Helper function

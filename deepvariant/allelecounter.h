@@ -340,6 +340,11 @@ class AlleleCounter {
   // to Add*() will fail.
   const std::vector<AlleleCount>& Counts() const { return counts_; }
 
+  // This method is used by unit tests only.
+  void SetCounts(const std::vector<AlleleCount>& counts) {
+    counts_ = counts;
+  }
+
   // Similar to Counts() function but returns a lighter-weight summary proto.
   //
   // This function has all of the behavior of calling Counts() but instead of
@@ -473,6 +478,7 @@ class AlleleCounter {
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsShiftedToEdge);
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsShiftedAllTheWayToSoftClip);
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarDelInsMergedNoShift);
+  FRIEND_TEST(ComplexVariantTest, ComplexVariantTestCases);
 };
 
 }  // namespace deepvariant

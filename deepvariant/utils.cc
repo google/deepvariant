@@ -79,6 +79,21 @@ string SimplifyRefAlt(absl::string_view ref, absl::string_view alt) {
   }
 }
 
+AlleleType AlleleTypeFromAlt(absl::string_view ref, absl::string_view alt) {
+  if (ref.length() > alt.length()) {
+    return AlleleType::DELETION;
+  } else if (ref.length() < alt.length()) {
+    return AlleleType::INSERTION;
+  } else {
+    if (ref != alt) {
+      return AlleleType::SUBSTITUTION;
+    } else {
+      return AlleleType::REFERENCE;
+    }
+  }
+  return AlleleType::UNSPECIFIED;
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

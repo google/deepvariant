@@ -54,6 +54,8 @@ Allele MakeAllele(absl::string_view bases, AlleleType type, int count,
 // simplified_ref->simplified_alt.
 string SimplifyRefAlt(absl::string_view ref, absl::string_view alt);
 
+AlleleType AlleleTypeFromAlt(absl::string_view ref, absl::string_view alt);
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

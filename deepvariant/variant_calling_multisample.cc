@@ -40,12 +40,14 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/utils.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -257,11 +259,10 @@ namespace {
   // Helper function to generate a map from read id to a vector of alt alleles
   // that are supported by each read.
   absl::flat_hash_map<
-      std::string, std::vector<AlleleAtPosition>> CreateComplexAllelesSupport(
+      std::string, std::vector<AlleleAtPosition>> CreateCombinedAllelesSupport(
         const std::vector<AlleleCount>& allele_counts_context,
         absl::string_view del_allele_ref_bases,
         int del_start,
-        int del_end,
         int del_len
       ) {
     absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
@@ -274,7 +275,7 @@ namespace {
       if (allele_pos < del_start) {
         continue;
       }
-      if (allele_pos >= del_end) {
+      if (allele_pos >= del_start + del_len) {
         break;
       }
       for (const auto& [read_id, read_allele] :
@@ -295,7 +296,7 @@ namespace {
         // We are only interested in cases where there is alt allele that
         // starts after the deletion start and ends before the deletion
         // end.
-        if (allele_pos > del_start &&
+        if (allele_pos >= del_start &&
             read_allele.type() != AlleleType::REFERENCE) {
           found_alt_allele_overlapped_by_deletion++;
         }
@@ -331,11 +332,12 @@ CreateComplexAllelesSupport(
     int del_start, int del_len, absl::string_view del_allele_ref_bases) {
   absl::flat_hash_map<std::string, std::vector<std::string>>
       complex_allele_to_reads;
-  // The set is used to checl the uniqueness of complex alleles.
-  absl::flat_hash_set<std::string> complex_alleles_strings;
   // Iterating over all potential complex alleles supported by a read.
   for (const auto& [read_id, alt_alleles] : read_to_alt_alleles) {
     int start_pos = 0;
+    // The set is used to check the uniqueness of complex alleles.
+    absl::flat_hash_set<
+        std::tuple<AlleleType, std::string>> complex_alleles_strings;
     std::string complex_allele;
     // Iterate over alt alleles for this read.
     for (const auto& allele : alt_alleles) {
@@ -363,13 +365,16 @@ CreateComplexAllelesSupport(
       }
     }
     // Record the complex allele if it is not empty and it is not a duplicate.
+    auto complex_allele_and_type = std::make_tuple(
+        AlleleTypeFromAlt(del_allele_ref_bases, complex_allele),
+        complex_allele);
     if (!complex_allele.empty() && start_pos <= del_len
-        && !complex_alleles_strings.contains(complex_allele)) {
+        && !complex_alleles_strings.contains(complex_allele_and_type)) {
       // Add trailing ref bases.
       absl::StrAppend(&complex_allele,
                       del_allele_ref_bases.substr(start_pos));
       complex_allele_to_reads[complex_allele].push_back(read_id);
-      complex_alleles_strings.insert(complex_allele);
+      complex_alleles_strings.insert(complex_allele_and_type);
     } else {
       // For now we drop sites where at least one of the complex alleles
       // couldn't be generated. In this case normal alleles will be used.
@@ -389,8 +394,9 @@ void ReassignReadSupportForComplexAlleles(
     absl::node_hash_map<std::string, AlleleCount>& allele_counts_mod) {
   bool alt_allels_were_modified = false;
   AlleleCount target_sample_allele_count_mod;
-  const AlleleCount& target_sample_allele_count =
-      original_allele_counts.at(target_sample);
+  auto it  = original_allele_counts.find(target_sample);
+  CHECK(it != original_allele_counts.end());
+  const AlleleCount& target_sample_allele_count = it->second;
   target_sample_allele_count_mod = target_sample_allele_count;
   int total_ref_count = 0;
   for (const auto& [complex_allele, reads] : complex_allele_to_reads) {
@@ -453,83 +459,107 @@ void ReassignReadSupportForComplexAlleles(
 // This function will create a complex variant:
 //   Position 10 Allele 1: ATCG -> A       (Deletion)
 //   Position 10 Allele 2: ATCG -> TTAG    (SNP 1, 2)
-std::vector<Allele> VariantCaller::SelectAltAllelesWithComplexVariant(
-    const absl::node_hash_map<std::string, AlleleCount>&
-        allele_counts_by_sample,
-    absl::string_view target_sample,
-    const std::vector<Allele>& alt_alleles,
-    const std::vector<AlleleCount>& allele_counts_context) const {
+SelectAltAllelesResult
+  VariantCaller::SelectAltAllelesWithComplexVariant(
+        const SelectAltAllelesWithComplexVariantInputOptions& options) const {
+  SelectAltAllelesResult output_options;
   // Scan alt_alleles for deletion and create complex variant candidate if there
   // are other alleles overlapped with this deletion.
   std::vector<Allele>::const_iterator allele_with_del = std::find_if(
-      alt_alleles.cbegin(), alt_alleles.cend(),
+      options.alt_alleles.cbegin(), options.alt_alleles.cend(),
       [](const Allele& allele) {
         return allele.type() == AlleleType::DELETION; });
-  if (allele_with_del == alt_alleles.cend()) {
-    return alt_alleles;
+  if (allele_with_del == options.alt_alleles.cend()) {
+    return {
+      .alt_alleles = options.alt_alleles,
+      .complex_variant_created = false,
+      .ref_bases = "",
+    };
   }
 
-  const AlleleCount& target_sample_allele_count =
-      allele_counts_by_sample.at(target_sample);
+  auto it = allele_counters_per_sample_.find(target_sample_);
+  CHECK(it != allele_counters_per_sample_.end());
+  const std::vector<AlleleCount>& allele_counts_context = it->second->Counts();
+
+  auto it_allele_count = options.allele_counts_by_sample.find(target_sample_);
+  CHECK(it_allele_count != options.allele_counts_by_sample.end());
+  const AlleleCount& target_sample_allele_count = it_allele_count->second;
   // Since there may be multiple deletions of different lengths we need to
   // set del_len to the largest one. This is done in CalcRefBases().
-  std::string del_allele_ref_bases =
-      CalcRefBases(target_sample_allele_count.ref_base(), alt_alleles);
+  output_options.ref_bases =
+      CalcRefBases(target_sample_allele_count.ref_base(), options.alt_alleles);
   // If there are multiple deletions we take the largest one.
-  int del_len = del_allele_ref_bases.size();
+  int del_len = output_options.ref_bases.size();
   int del_start = target_sample_allele_count.position().position();
-  int del_end = target_sample_allele_count.position().position() + del_len;
 
   absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
-      read_to_alt_alleles = CreateComplexAllelesSupport(
-          allele_counts_context, del_allele_ref_bases, del_start,
-          del_end, del_len);
+      read_to_alt_alleles = CreateCombinedAllelesSupport(
+          allele_counts_context, output_options.ref_bases,
+          del_start,  // Starting position of the deletion allele.
+          del_len);  // Length of the deletion allele. This will determine the
+                     // length of the complex allele.
+  if (read_to_alt_alleles.empty()) {
+    output_options.complex_variant_created = false;
+    output_options.ref_bases = "";
+  } else {
+    output_options.complex_variant_created = true;
+  }
 
   absl::flat_hash_map<std::string, std::vector<std::string>>
       complex_allele_to_reads = CreateComplexAllelesSupport(
-          read_to_alt_alleles, del_start, del_len, del_allele_ref_bases);
-  absl::node_hash_map<std::string, AlleleCount> allele_counts_mod;
+          read_to_alt_alleles, del_start, del_len, output_options.ref_bases);
 
   ReassignReadSupportForComplexAlleles(
-      allele_counts_by_sample,
-      target_sample,
+      options.allele_counts_by_sample,
+      target_sample_,
       complex_allele_to_reads,
-      del_allele_ref_bases,
-      allele_counts_mod);
+      output_options.ref_bases,
+      output_options.allele_counts_mod);
 
-  // Call SelectAltAlleles one more time with the modified allele counts.
-  return SelectAltAlleles(
-      allele_counts_mod,
-      allele_counts_context,
-      target_sample,
-      false);
+  // Call SelectAltAlleles one more time with the modified allele counts to run
+  // newly created complex alleles through the filtering.
+  SelectAltAllelesResult output_options_temp = SelectAltAlleles(
+    {
+      .allele_counts_by_sample = output_options.allele_counts_mod,
+      .create_complex_alleles = false,
+      .prev_deletion_end = 0,
+    }
+  );
+  output_options.alt_alleles = std::move(output_options_temp).alt_alleles;
+  return output_options;
 }
 
-// Select the subset of GoodAltAlleles from the alleles of allele_count.
+// Select the subset of GoodAltAlleles from the alleles of allele_count at a
+// single position.
 //
 // Returns the vector of allele objects from allele_count that satisfy
 // IsGoodAltAllele().
-std::vector<Allele> VariantCaller::SelectAltAlleles(
-    const absl::node_hash_map<std::string, AlleleCount>&
-        allele_counts_by_sample,
-    const std::vector<AlleleCount>& allele_counts_context,
-    absl::string_view target_sample,
-    bool process_complex_variant_with_alt_deletion) const {
+SelectAltAllelesResult VariantCaller::SelectAltAlleles(
+    const SelectAltAllelesInputOptions& options) const {
+  SelectAltAllelesResult output_options;
+  // allele_counts_mod is initialized to be the same as allele_counts. If
+  // complex variants are eneabled then allele_counts_mod will be modified.
+  for (const auto& [sample_name, allele_count] :
+           options.allele_counts_by_sample) {
+      output_options.allele_counts_mod.insert({sample_name, allele_count});
+  }
+
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
-  const AlleleCount& target_sample_allele_count =
-      allele_counts_by_sample.at(target_sample);
+  auto it = options.allele_counts_by_sample.find(target_sample_);
+  CHECK(it != options.allele_counts_by_sample.end());
+  const AlleleCount& target_sample_allele_count = it->second;
   std::vector<AlleleCount> all_samples_allele_counts;
-  all_samples_allele_counts.reserve(allele_counts_by_sample.size());
+  all_samples_allele_counts.reserve(options.allele_counts_by_sample.size());
   // "Non-target" samples are referring to all the samples that are providing
   // supportive information. Usually the main truth labels are not from this
   // sample, or usually it means that the calls coming from these non-target
   // samples are not the main focus of our problem.
   std::vector<AlleleCount> non_target_allele_counts;
-  non_target_allele_counts.reserve(allele_counts_by_sample.size());
-  for (const auto& allele_counts_entry : allele_counts_by_sample) {
+  non_target_allele_counts.reserve(options.allele_counts_by_sample.size());
+  for (const auto& allele_counts_entry : options.allele_counts_by_sample) {
     all_samples_allele_counts.push_back(allele_counts_entry.second);
-    if (allele_counts_entry.first != target_sample) {
+    if (allele_counts_entry.first != target_sample_) {
       non_target_allele_counts.push_back(allele_counts_entry.second);
     }
   }
@@ -550,14 +580,21 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
     }
   }  // for (alleles in target samples)
 
-  if (!process_complex_variant_with_alt_deletion)
-    return alt_alleles;
-  else
+  if (options.create_complex_alleles &&
+      options.prev_deletion_end <=
+      target_sample_allele_count.position().position()) {
     return SelectAltAllelesWithComplexVariant(
-        allele_counts_by_sample,
-        target_sample,
-        alt_alleles,
-        allele_counts_context);
+        {
+          .allele_counts_by_sample = options.allele_counts_by_sample,
+          .alt_alleles = std::move(alt_alleles)
+        });
+  } else {
+    return {
+      .alt_alleles = alt_alleles,
+      .complex_variant_created = false,
+      .ref_bases = "",
+    };
+  }
 }
 
 // Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
@@ -584,6 +621,12 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
     const std::string_view alt_bases = alt_allele.bases();
     switch (alt_allele.type()) {
       case AlleleType::SUBSTITUTION:
+        if (alt_bases.size() > 1 && ref_bases.size() > 1) {
+          allele_map[alt_allele] = alt_bases;
+        } else {
+          allele_map[alt_allele] = MakeAltAllele(alt_bases, ref_bases, 1);
+        }
+        break;
       case AlleleType::INSERTION:
         allele_map[alt_allele] = MakeAltAllele(alt_bases, ref_bases, 1);
         break;
@@ -683,8 +726,8 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     ad.push_back(allele_count.ref_supporting_read_count());
 
     absl::btree_map<absl::string_view, const Allele*> alt_to_alleles;
-    for (const auto& entry : allele_map) {
-      alt_to_alleles[entry.second] = &entry.first;
+    for (const auto& [allele, alt_bases] : allele_map) {
+      alt_to_alleles[alt_bases] = &allele;
     }
     CHECK(alt_to_alleles.size() == allele_map.size())
         << "Non-unique alternative alleles!";
@@ -709,42 +752,35 @@ bool VariantCaller::KeepReferenceSite() const {
 
 template <class T>
 std::vector<T> VariantCaller::AlleleCountsGenerator(
-    const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-    const std::string& target_sample,
     std::optional<T> (VariantCaller::*F)(
-        const absl::node_hash_map<std::string, AlleleCount>&,
-        const std::string&, const std::vector<AlleleCount>*,
-        std::vector<AlleleCount>::const_iterator*) const) const {
-  // Get Allele counts for the target sample
-  auto it = allele_counters.find(target_sample);
-  if (it == allele_counters.end()) {
-    LOG(WARNING)
-        << "allele_counters collection does not contain target sample!";
-    return std::vector<T>();
-  }
-
-  // Contains AlleleCount objects for each position of the target sample.
-  const std::vector<AlleleCount>& target_sample_allele_counts =
-      it->second->Counts();
-
+        const absl::node_hash_map<std::string,
+        AlleleCount>&,
+        std::vector<AlleleCount>::const_iterator*,
+        int& skip_next_count_param,
+        int& prev_deletion_end_param) const) const {
   // Initialize a vector of iterators - one iterator per sample.
   absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
       allele_counter_iterators;
-  for (const auto& sample_allele_counters : allele_counters) {
-    allele_counter_iterators[sample_allele_counters.first] =
-        sample_allele_counters.second->Counts().begin();
+  for (const auto& [sample, allele_counter] : allele_counters_per_sample_) {
+    allele_counter_iterators[sample] =
+        allele_counter->Counts().begin();
   }
+  const std::vector<AlleleCount>& target_sample_allele_counts =
+      allele_counters_per_sample_.at(target_sample_)->Counts();
 
   std::vector<T> items;
 
   // Iterate through AlleleCount objects for each position, moving iterators
   // for each sample simultaneously.
-  while (allele_counter_iterators[target_sample] !=
+  int skip_next_count = 0;
+  int prev_deletion_end = 0;
+  while (allele_counter_iterators[target_sample_] !=
          target_sample_allele_counts.end()) {
     absl::node_hash_map<std::string, AlleleCount> allele_counts_per_sample;
-    for (const auto& sample_counter : allele_counters) {
+    for (const auto& sample_counter : allele_counters_per_sample_) {
       if (allele_counter_iterators[sample_counter.first] !=
-          allele_counters.at(sample_counter.first)->Counts().end()) {
+          allele_counters_per_sample_.at(
+              sample_counter.first)->Counts().end()) {
         // allele_counts_per_sample contain AlleleCount for each sample for one
         // position.
         allele_counts_per_sample[sample_counter.first] =
@@ -753,16 +789,23 @@ std::vector<T> VariantCaller::AlleleCountsGenerator(
     }
     // Calling CallVariant for one position. allele_counts_per_sample contains
     // AlleleCount object for this position for each sample.
-    std::optional<T> item = (this->*F)(
-        allele_counts_per_sample, target_sample, &target_sample_allele_counts,
-        &allele_counter_iterators[target_sample]);
-    if (item) {
-      items.push_back(*item);
+    if (skip_next_count > 0) {
+      skip_next_count--;
+    } else {
+      std::optional<T> item = (this->*F)(
+          allele_counts_per_sample,
+          &allele_counter_iterators[target_sample_],
+          skip_next_count,
+          prev_deletion_end);
+      if (item) {
+        items.push_back(*item);
+      }
     }
 
     // Increment all iterators.
     for (auto& it : allele_counter_iterators) {
-      if (it.second != allele_counters.at(it.first)->Counts().end()) {
+      if (it.second !=
+          allele_counters_per_sample_.at(it.first)->Counts().end()) {
         it.second++;
       }
     }
@@ -772,63 +815,89 @@ std::vector<T> VariantCaller::AlleleCountsGenerator(
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
     const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-    const std::string& target_sample) const {
-  return AlleleCountsGenerator<DeepVariantCall>(allele_counters, target_sample,
-                                                &VariantCaller::CallVariant);
+    const std::string& target_sample) {
+  this->allele_counters_per_sample_ = allele_counters;
+  this->target_sample_ = target_sample;
+  // Get Allele counts for the target sample
+  auto it = allele_counters.find(target_sample);
+  if (it == allele_counters.end()) {
+    LOG(FATAL)
+        << "allele_counters collection does not contain target sample!";
+  }
+  return AlleleCountsGenerator<DeepVariantCall>(&VariantCaller::CallVariant);
 }
 
 std::vector<int> VariantCaller::CallPositionsFromAlleleCounts(
     const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-    const std::string& target_sample) const {
-  return AlleleCountsGenerator<int>(allele_counters, target_sample,
-                                    &VariantCaller::CallVariantPosition);
+    const std::string& target_sample) {
+  this->allele_counters_per_sample_ = allele_counters;
+  this->target_sample_ = target_sample;
+  // Get Allele counts for the target sample
+  auto it = allele_counters.find(target_sample);
+  if (it == allele_counters.end()) {
+    LOG(FATAL)
+        << "allele_counters collection does not contain target sample!";
+  }
+  return AlleleCountsGenerator<int>(&VariantCaller::CallVariantPosition);
 }
 
 std::optional<int> VariantCaller::CallVariantPosition(
-    const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    const std::string& target_sample,
-    const std::vector<AlleleCount>* target_sample_allele_counts,
+    const absl::node_hash_map<std::string, AlleleCount>&
+        allele_counts_by_sample,
     std::vector<AlleleCount>::const_iterator*
-        target_sample_allele_count_iterator) const {
+        target_sample_allele_count_iterator,
+    int& skip_next_count,
+    int& prev_deletion_end) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
   const AlleleCount& target_sample_allele_count =
-      allele_counts.at(target_sample);
+      allele_counts_by_sample.at(target_sample_);
   if (!nucleus::AreCanonicalBases(target_sample_allele_count.ref_base())) {
     // We don't emit calls at any site in the genome that isn't one of the
     // canonical DNA bases (one of A, C, G, or T).
     return std::nullopt;
   }
-
-  const std::vector<Allele> alt_alleles = SelectAltAlleles(
-      allele_counts, *target_sample_allele_counts, target_sample, false);
-  if (alt_alleles.empty() && !KeepReferenceSite()) {
+  SelectAltAllelesResult output_options = SelectAltAlleles(
+      {
+      .allele_counts_by_sample = allele_counts_by_sample,
+      .create_complex_alleles = false,
+      .prev_deletion_end = prev_deletion_end
+    });
+  if (output_options.alt_alleles.empty() && !KeepReferenceSite()) {
     return std::nullopt;
   }
   return target_sample_allele_count.position().position();
 }
 
 std::optional<DeepVariantCall> VariantCaller::CallVariant(
-    const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
-    const std::string& target_sample,
-    const std::vector<AlleleCount>* target_sample_allele_counts,
+    const absl::node_hash_map<std::string, AlleleCount>&
+        allele_counts_per_sample,
     std::vector<AlleleCount>::const_iterator*
-        target_sample_allele_count_iterator) const {
+        target_sample_allele_count_iterator,
+    int& skip_next_count,
+    int& prev_deletion_end) const {
   // allele_counts.at will throw an exception if key is not found.
   // Absent target_sample is a critical error.
   const AlleleCount& target_sample_allele_count =
-      allele_counts.at(target_sample);
+      allele_counts_per_sample.at(target_sample_);
   if (!nucleus::AreCanonicalBases(target_sample_allele_count.ref_base())) {
     // We don't emit calls at any site in the genome that isn't one of the
     // canonical DNA bases (one of A, C, G, or T).
     return std::nullopt;
   }
 
-  const std::vector<Allele> alt_alleles = SelectAltAlleles(
-      allele_counts, *target_sample_allele_counts, target_sample, false);
-  if (alt_alleles.empty() && !KeepReferenceSite()) {
+  SelectAltAllelesResult output_options = SelectAltAlleles(
+      {
+      .allele_counts_by_sample = allele_counts_per_sample,
+      .create_complex_alleles = options_.create_complex_alleles(),
+      .prev_deletion_end = prev_deletion_end
+    });
+  std::string ref_bases = output_options.ref_bases;
+  bool complex_variant_created = output_options.complex_variant_created;
+  if (output_options.alt_alleles.empty() && !KeepReferenceSite()) {
     return std::nullopt;
   }
+
   // Creates a non-reference Variant proto based on the information in
   // allele_count and alt_alleles. This variant starts at the position of
   // allele_count with the same reference_name. The reference_bases are
@@ -841,32 +910,60 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
   variant->set_reference_name(
       target_sample_allele_count.position().reference_name());
   variant->set_start(target_sample_allele_count.position().position());
-  const std::string refbases =
-      CalcRefBases(target_sample_allele_count.ref_base(), alt_alleles);
-  variant->set_reference_bases(refbases);
-  variant->set_end(variant->start() + refbases.size());
+  // ref_bases are calculated by SelectAltAlleles only for complex variants.
+  // Otherwise it is calculated here.
+  if (ref_bases.empty()) {
+    ref_bases =
+        CalcRefBases(target_sample_allele_count.ref_base(),
+                     output_options.alt_alleles);
+  }
+  variant->set_reference_bases(ref_bases);
+  variant->set_end(variant->start() + ref_bases.size());
+  // Change the end position of the variant if there is a deletion allele.
+  for (const auto& allele : output_options.alt_alleles) {
+    if (allele.type() == AlleleType::DELETION) {
+      prev_deletion_end = variant->start() + ref_bases.size();
+      break;
+    }
+  }
   AddGenotypes(options_.sample_name(), {-1, -1}, variant);
 
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
   const AlleleMap allele_map =
-      BuildAlleleMap(target_sample_allele_count, alt_alleles, refbases);
+      BuildAlleleMap(target_sample_allele_count,
+                     output_options.alt_alleles, ref_bases);
+
+  // Skip next skip_next_count allele counts if comexple variant was processed.
+  if (ref_bases.size() > 1 && allele_map.size() > 1 &&
+        complex_variant_created) {
+    skip_next_count = ref_bases.size() - 1;
+  }
+
   for (const auto& elt : allele_map) {
     variant->add_alternate_bases(elt.second);
   }
   // If we don't have any alt_alleles, we are generating a reference site so
   // add in the kNoAltAllele.
-  if (alt_alleles.empty()) variant->add_alternate_bases(kNoAltAllele);
+  if (output_options.alt_alleles.empty()) {
+    variant->add_alternate_bases(kNoAltAllele);
+  }
   std::sort(variant->mutable_alternate_bases()->pointer_begin(),
             variant->mutable_alternate_bases()->pointer_end(),
             StringPtrLessThan());
 
   AddReadDepths(target_sample_allele_count, allele_map, variant);
-  AddSupportingReads(allele_counts, allele_map, target_sample, &call);
+  if (output_options.complex_variant_created) {
+    AddSupportingReads(output_options.allele_counts_mod, allele_map,
+                      target_sample_, &call);
+  } else {
+    AddSupportingReads(allele_counts_per_sample, allele_map,
+                      target_sample_, &call);
+  }
   if (options_.small_model_vaf_context_window_size() > 0) {
     AddAdjacentAlleleFractionsAtPosition(
         options_.small_model_vaf_context_window_size(),
-        *target_sample_allele_counts, *target_sample_allele_count_iterator,
+        *target_sample_allele_count_iterator,
         &call);
   }
 
@@ -946,10 +1043,11 @@ void VariantCaller::AddSupportingReads(
 
 void VariantCaller::AddAdjacentAlleleFractionsAtPosition(
     const int window_size,
-    const std::vector<AlleleCount>& target_sample_allele_counts,
     std::vector<AlleleCount>::const_iterator
         target_sample_allele_count_iterator,
     DeepVariantCall* call) const {
+  const std::vector<AlleleCount>& target_sample_allele_counts =
+      allele_counters_per_sample_.at(target_sample_)->Counts();
   int index = std::distance(target_sample_allele_counts.begin(),
                             target_sample_allele_count_iterator);
   int half_window_size = window_size / 2;

@@ -31,6 +31,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -198,30 +199,66 @@ Variant NoVariant(absl::string_view ref = "A") {
 
 class VariantCallingTest : public ::testing::Test {
  protected:
-  void CheckCall(const std::string& ref, const int expected_len,
-                 const int min_alt_count, absl::Span<const Allele> alleles,
-                 const ExpectedVariant expect_variant,
-                 const Variant& partial_expected_variant) {
-    CheckCall(ref, expected_len, VariantCaller(MakeOptions(min_alt_count)),
-              alleles, expect_variant, partial_expected_variant);
-  }
-
   // Checks the result of CallVariant on an AlleleCount with the requested
   // properties from the arguments. Returns the resulting DeepVariantCall
   // produced by CallVariants for further testing in the callee.
   std::optional<DeepVariantCall> CheckCall(const std::string& ref,
                                            const int expected_len,
-                                           const VariantCaller& caller,
+                                           const VariantCallerOptions& options,
                                            absl::Span<const Allele> alleles,
                                            const ExpectedVariant expect_variant,
                                            const Variant& expected_variant) {
-    AlleleCount allele_count = ConstructAlleleCount(ref, alleles, "sample_id");
+    std::string sample_id = "sample_id";
     absl::node_hash_map<std::string, AlleleCount> allele_count_per_sample;
-    allele_count_per_sample["sample_id"] = allele_count;
+    AlleleCount allele_count = ConstructAlleleCount(ref, alleles, sample_id);
+    allele_count_per_sample[sample_id] = allele_count;
     std::vector<AlleleCount> allele_counts_context = {allele_count};
+    std::unique_ptr<VariantCaller> caller =
+        VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+            options, allele_counts_context, sample_id);
+    int skip_next_count = 0;
+    int prev_deletion_end = 0;
+    absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+        allele_counter_iterators;
+    allele_counter_iterators[sample_id] =
+        caller->allele_counters_per_sample_[sample_id]->Counts().begin();
+
     const std::optional<DeepVariantCall> optional_variant =
-        caller.CallVariant(allele_count_per_sample, "sample_id",
-                           &allele_counts_context);
+        caller->CallVariant(allele_count_per_sample,
+                            &allele_counter_iterators[sample_id],
+                            skip_next_count,
+                            prev_deletion_end);
+    CheckVariant(optional_variant, expect_variant, expected_variant);
+    caller->Clear();
+    return optional_variant;
+  }
+
+  // This version of CheckCall is used for tests that need to call the same
+  // instance of VariantCaller multiple times. For example TestRefSitesFraction.
+  std::optional<DeepVariantCall> CheckCall(
+      const std::string& ref,
+      const int expected_len,
+      VariantCaller* caller,
+      absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+          allele_counter_iterators,
+      absl::Span<const Allele> alleles,
+      const ExpectedVariant expect_variant,
+      const Variant& expected_variant) {
+    std::string sample_id = "sample_id";
+    AlleleCount allele_count = ConstructAlleleCount(ref, alleles, sample_id);
+    absl::node_hash_map<std::string, AlleleCount> allele_count_per_sample;
+    allele_count_per_sample[sample_id] = allele_count;
+    std::vector<AlleleCount> allele_counts_context = {allele_count};
+    int skip_next_count = 0;
+    int prev_deletion_end = 0;
+    allele_counter_iterators[sample_id] =
+        caller->allele_counters_per_sample_[sample_id]->Counts().begin();
+
+    const std::optional<DeepVariantCall> optional_variant =
+        caller->CallVariant(allele_count_per_sample,
+                            &allele_counter_iterators[sample_id],
+                            skip_next_count,
+                            prev_deletion_end);
     CheckVariant(optional_variant, expect_variant, expected_variant);
     return optional_variant;
   }
@@ -290,7 +327,8 @@ class VariantCallingTest : public ::testing::Test {
 TEST_F(VariantCallingTest, TestNoVariant) {
   for (const int count : {0, 1, 10, 100}) {
     for (const std::string& ref : {"A", "C", "G", "T"}) {
-      CheckCall(ref, 1, 3, {MakeAllele(ref, AlleleType::REFERENCE, count)},
+      CheckCall(ref, 1, MakeOptions(3),
+                {MakeAllele(ref, AlleleType::REFERENCE, count)},
                 ExpectedVariant::kNoVariantExpected, NoVariant(ref));
     }
   }
@@ -299,7 +337,8 @@ TEST_F(VariantCallingTest, TestNoVariant) {
 TEST_F(VariantCallingTest, TestNoVariantFromSoftclips) {
   for (const int count : {0, 1, 10, 100}) {
     const Allele allele = MakeAllele("ACCCCC", AlleleType::SOFT_CLIP, count);
-    CheckCall("A", 1, 3, {allele}, ExpectedVariant::kNoVariantExpected,
+    CheckCall("A", 1,
+              MakeOptions(3), {allele}, ExpectedVariant::kNoVariantExpected,
               NoVariant());
   }
 }
@@ -311,12 +350,12 @@ TEST_F(VariantCallingTest, TestSNP) {
         if (alt != ref) {
           const Variant variant = MakeExpectedVariant(ref, {alt});
           // there's just alt observed
-          CheckCall(ref, 1, 3,
+          CheckCall(ref, 1, MakeOptions(3),
                     {MakeAllele(alt, AlleleType::SUBSTITUTION, count)},
                     ExpectedVariant::kVariantExpected,
                     WithCounts(variant, {0, count}));
           // we see ref and alt, result is still the same
-          CheckCall(ref, 1, 3,
+          CheckCall(ref, 1, MakeOptions(3),
                     {MakeAllele(alt, AlleleType::SUBSTITUTION, count),
                      MakeAllele(ref, AlleleType::REFERENCE, count)},
                     ExpectedVariant::kVariantExpected,
@@ -333,12 +372,15 @@ TEST_F(VariantCallingTest, TestNonCanonicalBase) {
   const Allele alt_allele = MakeAllele(alt, AlleleType::SUBSTITUTION, count);
 
   // If ref is "A", a canonical base, we make a call.
-  CheckCall("A", 1, 3, {alt_allele}, ExpectedVariant::kVariantExpected,
+  CheckCall("A", 1, MakeOptions(3), {alt_allele},
+            ExpectedVariant::kVariantExpected,
             WithCounts(MakeExpectedVariant("A", {alt}), {0, count}));
   // If ref isn't a canonical base, we don't make a call.
-  CheckCall("N", 1, 3, {alt_allele}, ExpectedVariant::kNoVariantExpected,
+  CheckCall("N", 1, MakeOptions(3),
+            {alt_allele}, ExpectedVariant::kNoVariantExpected,
             NoVariant());
-  CheckCall("R", 1, 3, {alt_allele}, ExpectedVariant::kNoVariantExpected,
+  CheckCall("R", 1, MakeOptions(3),
+            {alt_allele}, ExpectedVariant::kNoVariantExpected,
             NoVariant());
 }
 
@@ -350,11 +392,13 @@ TEST_F(VariantCallingTest, TestMinCount1) {
       WithCounts(MakeExpectedVariant(ref, {alt}), {0, count});
 
   const Allele alt_allele = MakeAllele(alt, AlleleType::SUBSTITUTION, count);
-  CheckCall(ref, 1, count + 1, {alt_allele},
+  CheckCall(ref, 1, MakeOptions(count + 1), {alt_allele},
             ExpectedVariant::kNoVariantExpected, NoVariant());
-  CheckCall(ref, 1, count, {alt_allele}, ExpectedVariant::kVariantExpected,
+  CheckCall(ref, 1, MakeOptions(count),
+            {alt_allele}, ExpectedVariant::kVariantExpected,
             variant);
-  CheckCall(ref, 1, count - 1, {alt_allele}, ExpectedVariant::kVariantExpected,
+  CheckCall(ref, 1, MakeOptions(count - 1), {alt_allele},
+            ExpectedVariant::kVariantExpected,
             variant);
 }
 
@@ -366,7 +410,7 @@ TEST_F(VariantCallingTest, TestMinCount2) {
 
   // Alt1 is above threshold and alt2 is below, so our variant has only alt1.
   CheckCall(
-      ref, 1, count,
+      ref, 1, MakeOptions(count),
       {
           MakeAllele(alt1, AlleleType::SUBSTITUTION, count),
           MakeAllele(alt2, AlleleType::SUBSTITUTION, count - 1),
@@ -376,7 +420,7 @@ TEST_F(VariantCallingTest, TestMinCount2) {
 
   // Both alt1 and alt2 are above threshold, so we get a multi-allelic back.
   CheckCall(
-      ref, 1, count,
+      ref, 1, MakeOptions(count),
       {
           MakeAllele(alt1, AlleleType::SUBSTITUTION, count),
           MakeAllele(alt2, AlleleType::SUBSTITUTION, count),
@@ -385,7 +429,7 @@ TEST_F(VariantCallingTest, TestMinCount2) {
       WithCounts(MakeExpectedVariant(ref, {alt1, alt2}), {0, count, count}));
 
   // Both alt1 and alt2 are below the threshold, so we get a no-call
-  CheckCall(ref, 1, count,
+  CheckCall(ref, 1, MakeOptions(count),
             {
                 MakeAllele(alt1, AlleleType::SUBSTITUTION, count - 1),
                 MakeAllele(alt2, AlleleType::SUBSTITUTION, count - 1),
@@ -399,15 +443,16 @@ TEST_F(VariantCallingTest, TestMinFraction1) {
   const std::string alt = "C";
   const Variant variant = MakeExpectedVariant(ref, {alt});
 
-  VariantCaller caller(MakeOptions(count, 0.1));
+  // VariantCaller caller(MakeOptions(count, 0.1));
 
   // just an alt, with count >= the min so it goes in
-  CheckCall(ref, 1, caller, {MakeAllele(alt, AlleleType::SUBSTITUTION, count)},
+  CheckCall(ref, 1, MakeOptions(count, 0.1),
+            {MakeAllele(alt, AlleleType::SUBSTITUTION, count)},
             ExpectedVariant::kVariantExpected, WithCounts(variant, {0, count}));
 
   // both ref and alt are above the min count and are at 0.5 fraction >= 0.1
   // so our record is variant
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, MakeOptions(count, 0.1),
             {
                 MakeAllele(ref, AlleleType::REFERENCE, count),
                 MakeAllele(alt, AlleleType::SUBSTITUTION, count),
@@ -417,7 +462,7 @@ TEST_F(VariantCallingTest, TestMinFraction1) {
 
   // Here ref is so frequent that alt goes below our 0.1 fraction so the
   // result is a no-call
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, MakeOptions(count, 0.1),
             {
                 MakeAllele(ref, AlleleType::REFERENCE, count * 100),
                 MakeAllele(alt, AlleleType::SUBSTITUTION, count),
@@ -425,7 +470,7 @@ TEST_F(VariantCallingTest, TestMinFraction1) {
             ExpectedVariant::kNoVariantExpected, NoVariant());
 
   // Checking the symmetric case : alt is very frequent
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, MakeOptions(count, 0.1),
             {
                 MakeAllele(ref, AlleleType::REFERENCE, count),
                 MakeAllele(alt, AlleleType::SUBSTITUTION, count * 100),
@@ -439,12 +484,12 @@ TEST_F(VariantCallingTest, TestMinFractionMultiAllelic) {
   const std::string ref = "A";
   const std::string alt1 = "C";
   const std::string alt2 = "G";
-  VariantCaller caller(MakeOptions(count, 0.1));
+  // VariantCaller caller(MakeOptions(count, 0.1));
 
   // both alt1 and alt2 are above the min count and are at 0.5 fraction >= 0.1
   // so our record is contains both
   CheckCall(
-      ref, 1, caller,
+      ref, 1, MakeOptions(count, 0.1),
       {
           MakeAllele(alt1, AlleleType::SUBSTITUTION, count),
           MakeAllele(alt2, AlleleType::SUBSTITUTION, count),
@@ -454,7 +499,7 @@ TEST_F(VariantCallingTest, TestMinFractionMultiAllelic) {
 
   // Here alt1 is so frequent that alt2 goes below our 0.1 fraction so the
   // result is a no-call
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, MakeOptions(count, 0.1),
             {
                 MakeAllele(alt1, AlleleType::SUBSTITUTION, count * 100),
                 MakeAllele(alt2, AlleleType::SUBSTITUTION, count),
@@ -464,7 +509,7 @@ TEST_F(VariantCallingTest, TestMinFractionMultiAllelic) {
                        count * 101));
 
   // Checking the symmetric case : alt2 is very frequent
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, MakeOptions(count, 0.1),
             {
                 MakeAllele(alt1, AlleleType::SUBSTITUTION, count),
                 MakeAllele(alt2, AlleleType::SUBSTITUTION, count * 100),
@@ -474,7 +519,7 @@ TEST_F(VariantCallingTest, TestMinFractionMultiAllelic) {
                        count * 101));
 
   // Finally, ref is so frequent that neither alt1 or alt2 are good enough
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, MakeOptions(count, 0.1),
             {
                 MakeAllele(ref, AlleleType::REFERENCE, count * 100),
                 MakeAllele(alt1, AlleleType::SUBSTITUTION, count),
@@ -500,24 +545,24 @@ TEST_F(VariantCallingTest, TestMinSNPIndelSeparately) {
   options.set_min_fraction_multiplier(1.0);
   options.set_sample_name(kSampleName);
   options.set_ploidy(2);
-  VariantCaller caller(options);
+  // VariantCaller caller(options);
 
   // Check that we respect min_count for SNPs and indels. With a count of 8 we
   // satisfy the requirements for SNPs but not for indels. Bumping the indel
   // allele counts to their minimum produces calls.
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, options,
             {
                 MakeAllele(ref, AlleleType::REFERENCE, 8),
                 MakeAllele(snp_alt, AlleleType::SUBSTITUTION, 8),
             },
             ExpectedVariant::kVariantExpected, WithCounts(snp_variant, {8, 8}));
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, options,
             {
                 MakeAllele(ref, AlleleType::REFERENCE, 8),
                 MakeAllele(ins_alt, AlleleType::INSERTION, 8),
             },
             ExpectedVariant::kNoVariantExpected, NoVariant());
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, options,
             {
                 MakeAllele(ref, AlleleType::REFERENCE, 8),
                 MakeAllele(ins_alt, AlleleType::INSERTION,
@@ -525,14 +570,14 @@ TEST_F(VariantCallingTest, TestMinSNPIndelSeparately) {
             },
             ExpectedVariant::kVariantExpected,
             WithCounts(ins_variant, {8, options.min_count_indels()}));
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, options,
             {
                 MakeAllele(ref, AlleleType::REFERENCE, 8),
                 MakeAllele(del_alt, AlleleType::DELETION, 8),
             },
             ExpectedVariant::kNoVariantExpected, NoVariant());
   CheckCall(
-      ref, 1, caller,
+      ref, 1, options,
       {
           MakeAllele(ref, AlleleType::REFERENCE, 8),
           MakeAllele(del_alt, AlleleType::DELETION, options.min_count_indels()),
@@ -543,33 +588,33 @@ TEST_F(VariantCallingTest, TestMinSNPIndelSeparately) {
   // Check that we respect min_fraction for SNPs and indels. With 20% of the
   // pileup having the allele we satisfy the requirements for SNPs but not for
   // indels. At 50% we call both the SNPs and the indels.
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, options,
             {
                 MakeAllele(ref, AlleleType::REFERENCE, 80),
                 MakeAllele(snp_alt, AlleleType::SUBSTITUTION, 20),
             },
             ExpectedVariant::kVariantExpected,
             WithCounts(snp_variant, {80, 20}));
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, options,
             {
                 MakeAllele(ref, AlleleType::REFERENCE, 80),
                 MakeAllele(ins_alt, AlleleType::INSERTION, 20),
             },
             ExpectedVariant::kNoVariantExpected, NoVariant());
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, options,
             {
                 MakeAllele(ref, AlleleType::REFERENCE, 80),
                 MakeAllele(ins_alt, AlleleType::INSERTION, 80),
             },
             ExpectedVariant::kVariantExpected,
             WithCounts(ins_variant, {80, 80}));
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, options,
             {
                 MakeAllele(ref, AlleleType::REFERENCE, 80),
                 MakeAllele(del_alt, AlleleType::DELETION, 20),
             },
             ExpectedVariant::kNoVariantExpected, NoVariant());
-  CheckCall(ref, 1, caller,
+  CheckCall(ref, 1, options,
             {
                 MakeAllele(ref, AlleleType::REFERENCE, 80),
                 MakeAllele(del_alt, AlleleType::DELETION, 80),
@@ -584,7 +629,7 @@ TEST_F(VariantCallingTest, TestMultAllelicSNP) {
   const std::string alt1 = "C";
   const std::string alt2 = "G";
   const Variant variant = MakeExpectedVariant(ref, {alt1, alt2});
-  CheckCall(ref, 1, count,
+  CheckCall(ref, 1, MakeOptions(count),
             {MakeAllele(alt1, AlleleType::SUBSTITUTION, count),
              MakeAllele(alt2, AlleleType::SUBSTITUTION, count)},
             ExpectedVariant::kVariantExpected,
@@ -597,7 +642,7 @@ TEST_F(VariantCallingTest, TestBiAllelicDeletion) {
     const std::string ref = "A";
     const Allele alt = MakeAllele(alt_bases, AlleleType::DELETION, count);
     const Variant variant = MakeExpectedVariant(alt.bases(), {ref});
-    CheckCall(ref, alt_bases.size(), count, {alt},
+    CheckCall(ref, alt_bases.size(), MakeOptions(count), {alt},
               ExpectedVariant::kVariantExpected,
               WithCounts(variant, {0, count}));
   }
@@ -609,7 +654,8 @@ TEST_F(VariantCallingTest, TestBiAllelicInsertion) {
     const std::string ref = "A";
     const Allele alt = MakeAllele(alt_bases, AlleleType::INSERTION, count);
     const Variant variant = MakeExpectedVariant(ref, {alt.bases()});
-    CheckCall(ref, 1, count, {alt}, ExpectedVariant::kVariantExpected,
+    CheckCall(ref, 1, MakeOptions(count),
+              {alt}, ExpectedVariant::kVariantExpected,
               WithCounts(variant, {0, count}));
   }
 }
@@ -619,7 +665,8 @@ TEST_F(VariantCallingTest, TestDeletionInsertion) {
   const Allele alt1 = MakeAllele("ACCC", AlleleType::INSERTION, count);
   const Allele alt2 = MakeAllele("ATGC", AlleleType::DELETION, count + 1);
   const Variant variant = MakeExpectedVariant("ATGC", {"A", "ACCCTGC"});
-  CheckCall("A", 4, count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
+  CheckCall("A", 4, MakeOptions(count), {alt1, alt2},
+            ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count + 1, count}));
 }
 
@@ -628,7 +675,8 @@ TEST_F(VariantCallingTest, TestTwoDeletions) {
   const Allele alt1 = MakeAllele("AT", AlleleType::DELETION, count);
   const Allele alt2 = MakeAllele("ATGC", AlleleType::DELETION, count + 1);
   const Variant variant = MakeExpectedVariant("ATGC", {"A", "AGC"});
-  CheckCall("A", 4, count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
+  CheckCall("A", 4, MakeOptions(count),
+            {alt1, alt2}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count + 1, count}));
 }
 
@@ -637,7 +685,8 @@ TEST_F(VariantCallingTest, TestTwoInsertions) {
   const Allele alt1 = MakeAllele("AT", AlleleType::INSERTION, count);
   const Allele alt2 = MakeAllele("ATGC", AlleleType::INSERTION, count + 1);
   const Variant variant = MakeExpectedVariant("A", {"AT", "ATGC"});
-  CheckCall("A", 1, count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
+  CheckCall("A", 1, MakeOptions(count),
+            {alt1, alt2}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count, count + 1}));
 }
 
@@ -646,7 +695,8 @@ TEST_F(VariantCallingTest, TestSNPDeletion) {
   const Allele alt1 = MakeAllele("C", AlleleType::SUBSTITUTION, count);
   const Allele alt2 = MakeAllele("ATGC", AlleleType::DELETION, count + 1);
   const Variant variant = MakeExpectedVariant("ATGC", {"A", "CTGC"});
-  CheckCall("A", 4, count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
+  CheckCall("A", 4, MakeOptions(count),
+            {alt1, alt2}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count + 1, count}));
 }
 
@@ -657,7 +707,8 @@ TEST_F(VariantCallingTest, TestDeletionWithNonRefAnchor) {
   const int count = 10;
   const Allele alt = MakeAllele("AA", AlleleType::DELETION, count);
   const Variant variant = MakeExpectedVariant("TA", {"A"});
-  CheckCall("T", 4, count, {alt}, ExpectedVariant::kVariantExpected,
+  CheckCall("T", 4, MakeOptions(count),
+            {alt}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count}));
 }
 
@@ -665,7 +716,8 @@ TEST_F(VariantCallingTest, TestInsertionWithNonRefAnchor) {
   const int count = 10;
   const Allele alt = MakeAllele("AA", AlleleType::INSERTION, count);
   const Variant variant = MakeExpectedVariant("T", {"AA"});
-  CheckCall("T", 4, count, {alt}, ExpectedVariant::kVariantExpected,
+  CheckCall("T", 4, MakeOptions(count),
+            {alt}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count}));
 }
 
@@ -677,7 +729,8 @@ TEST_F(VariantCallingTest, TestDeletionWithNonRefAnchor2) {
   const Allele alt1 = MakeAllele("AA", AlleleType::DELETION, count);
   const Allele alt2 = MakeAllele("TA", AlleleType::DELETION, count + 1);
   const Variant variant = MakeExpectedVariant("TA", {"T"});
-  CheckCall("T", 4, count + 1, {alt2}, ExpectedVariant::kVariantExpected,
+  CheckCall("T", 4, MakeOptions(count + 1),
+            {alt2}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count + 1}));
 }
 
@@ -689,7 +742,8 @@ TEST_F(VariantCallingTest, TestSNPInsertion) {
   const Allele alt1 = MakeAllele("C", AlleleType::SUBSTITUTION, count);
   const Allele alt2 = MakeAllele("ATGC", AlleleType::INSERTION, count + 1);
   const Variant variant = MakeExpectedVariant("A", {"ATGC", "C"});
-  CheckCall("A", 1, count, {alt1, alt2}, ExpectedVariant::kVariantExpected,
+  CheckCall("A", 1, MakeOptions(count),
+            {alt1, alt2}, ExpectedVariant::kVariantExpected,
             WithCounts(variant, {0, count + 1, count}));
 }
 
@@ -709,7 +763,7 @@ TEST_F(VariantCallingTest, TestKitchenSink) {
                   "AGC",
                   "CTGC",
               });
-  CheckCall("A", 4, count, {alt1, alt2, alt3, alt4, alt5},
+  CheckCall("A", 4, MakeOptions(count), {alt1, alt2, alt3, alt4, alt5},
             ExpectedVariant::kVariantExpected,
             WithCounts(variant,
                        {0, count + 3, count + 1, count + 2, count + 4, count}));
@@ -742,10 +796,9 @@ TEST_F(VariantCallingTest, TestReadSupport) {
   const std::string alt2 = "ATG";
   const std::string alt3 = "G";
   const Variant variant = MakeExpectedVariant("ATG", {"A", "ACTTG"});
-  VariantCaller caller(MakeOptions(count, 0.1));
 
   const std::optional<DeepVariantCall> optional_call =
-      CheckCall(ref, 1, caller,
+      CheckCall(ref, 1, MakeOptions(count, 0.1),
                 {
                     MakeAllele(ref, AlleleType::REFERENCE, count),
                     MakeAllele(alt1, AlleleType::INSERTION, count),
@@ -785,10 +838,9 @@ TEST_F(VariantCallingTest, TestRefSites) {
   const std::string ref = "A";
   const std::string alt = "C";
   const Variant variant = MakeExpectedVariant("A", {"."});
-  VariantCaller caller(MakeOptions(count, 0.1, kSampleName, 1.0));
 
   const std::optional<DeepVariantCall> optional_call = CheckCall(
-      ref, 1, caller,
+      ref, 1, MakeOptions(count, 0.1, kSampleName, 1.0),
       {
           MakeAllele(ref, AlleleType::REFERENCE, count),
           MakeAllele(alt, AlleleType::SUBSTITUTION, 1),
@@ -807,13 +859,28 @@ TEST_F(VariantCallingTest, TestRefSitesFraction) {
   const int count = 5;
   const std::string ref = "A";
   const Variant variant = MakeExpectedVariant("A", {"."});
-  VariantCaller caller(MakeOptions(count, 0.1, kSampleName, fraction));
 
   const int tries = 10000;
   int successes = 0;
+
+  std::string sample_id = "sample_id";
+  std::vector<Allele> alleles = {MakeAllele(ref, AlleleType::REFERENCE, count)};
+  AlleleCount allele_count = ConstructAlleleCount(ref, alleles, sample_id);
+  std::vector<AlleleCount> allele_counts_context = {allele_count};
+  std::unique_ptr<VariantCaller> caller =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          MakeOptions(count, 0.1, kSampleName, fraction),
+          allele_counts_context,
+          sample_id);
+  absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+      allele_counter_iterators;
+  allele_counter_iterators[sample_id] =
+      caller->allele_counters_per_sample_[sample_id]->Counts().begin();
+
   for (int i = 0; i < tries; ++i) {
     const std::optional<DeepVariantCall> optional_call = CheckCall(
-        ref, 1, caller, {MakeAllele(ref, AlleleType::REFERENCE, count)},
+        ref, 1, caller.get(), allele_counter_iterators,
+        alleles,
         ExpectedVariant::kMaybeExpected, variant);
     if (optional_call) {
       ++successes;
@@ -822,6 +889,7 @@ TEST_F(VariantCallingTest, TestRefSitesFraction) {
 
   const double rate = (1.0 * successes) / tries;
   EXPECT_THAT(rate, DoubleNear(fraction, 0.02));
+  caller->Clear();
 }
 
 TEST_F(VariantCallingTest, TestCallsFromAlleleCounts) {
@@ -842,7 +910,7 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCounts) {
             MakeTestAlleleCount(0, 0, "sample_id", "G", "C", 13),
             MakeTestAlleleCount(11, 9, "sample_id", "T", "C", 14)})}};
 
-  const VariantCaller caller(MakeOptions());
+  VariantCaller caller(MakeOptions());
   std::vector<DeepVariantCall> candidates =
       caller.CallsFromAlleleCounts(allele_counters, "sample_id");
 
@@ -880,7 +948,7 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCountsUnevenCoverage) {
       {"parent_2", AlleleCounter::InitFromAlleleCounts(
                        {MakeTestAlleleCount(3, 0, "parent_2", "A", "A", 10)})}};
 
-  const VariantCaller caller(MakeOptions(0, 0.2));
+  VariantCaller caller(MakeOptions(0, 0.2));
   std::vector<DeepVariantCall> candidates =
       caller.CallsFromAlleleCounts(allele_counters, "parent_1");
 
@@ -920,7 +988,7 @@ TEST_F(VariantCallingTest,
   // fraction is 0.225 is less than 0.226
   VariantCallerOptions options = MakeOptions(0, 0.226);
   options.set_min_fraction_multiplier(1.0);
-  const VariantCaller caller(options);
+  VariantCaller caller(options);
   std::vector<DeepVariantCall> candidates =
       caller.CallsFromAlleleCounts(allele_counters, "parent_1");
   EXPECT_EQ(candidates.size(), 0);
@@ -929,7 +997,7 @@ TEST_F(VariantCallingTest,
   // in candidate to be created.
   VariantCallerOptions options2 = MakeOptions(0, 0.226);
   options2.set_min_fraction_multiplier(0.5);
-  const VariantCaller caller2(options2);
+  VariantCaller caller2(options2);
   Variant variant = WithCounts(MakeExpectedVariant("A", {"T"}, 10), {18, 2});
 
   std::vector<DeepVariantCall> candidates2 =
@@ -966,7 +1034,7 @@ TEST_F(VariantCallingTest,
       {"parent_2", AlleleCounter::InitFromAlleleCounts({MakeTestAlleleCount(
                        10, 0, "parent_2", "A", "A", 10)})}};
 
-  const VariantCaller caller(MakeOptions(0, 0.1999));
+  VariantCaller caller(MakeOptions(0, 0.1999));
   std::vector<DeepVariantCall> candidates =
       caller.CallsFromAlleleCounts(allele_counters, "parent_1");
 
@@ -1018,7 +1086,7 @@ TEST_F(VariantCallingTest,
       {"parent_2", AlleleCounter::InitFromAlleleCounts({MakeTestAlleleCount(
                        10, 0, "parent_2", "A", "A", 10)})}};
 
-  const VariantCaller caller(MakeOptions(0, 0.1999));
+  VariantCaller caller(MakeOptions(0, 0.1999));
   std::vector<DeepVariantCall> candidates =
       caller.CallsFromAlleleCounts(allele_counters, "parent_1");
 
@@ -1051,7 +1119,7 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCountsDuplicateReadIds) {
       {"parent_2", AlleleCounter::InitFromAlleleCounts(
                        {MakeTestAlleleCount(3, 0, "parent_2", "A", "A", 10)})}};
 
-  const VariantCaller caller(MakeOptions());
+  VariantCaller caller(MakeOptions());
   std::vector<DeepVariantCall> candidates =
       caller.CallsFromAlleleCounts(allele_counters, "child");
 

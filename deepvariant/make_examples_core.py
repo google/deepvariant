@@ -213,6 +213,7 @@ def make_vc_options(
       small_model_vaf_context_window_size=flags_obj.small_model_vaf_context_window_size,
       haploid_contigs=haploid_contigs_str.split(','),
       par_regions_bed=flags_obj.par_regions_bed,
+      create_complex_alleles=flags_obj.create_complex_alleles,
   )
 
 

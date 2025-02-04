@@ -759,6 +759,12 @@ _PAR_REGIONS = flags.DEFINE_string(
     ),
 )
 
+_CREATE_COMPLEX_ALLELES = flags.DEFINE_bool(
+    'create_complex_alleles',
+    False,
+    'If True, complex alleles are enabled.',
+)
+
 
 def shared_flags_to_options(
     add_flags: bool,

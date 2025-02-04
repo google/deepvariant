@@ -56,7 +56,7 @@ PYBIND11_MODULE(variant_calling_multisample, m) {
   py::classh<multi_sample::VariantCaller>(m, "VariantCaller")
       .def(py::init<const VariantCallerOptions&>(), py::arg("options"))
       .def("calls_from_allele_counts",
-           [](const multi_sample::VariantCaller& self,
+           [](multi_sample::VariantCaller& self,
               const std::unordered_map<std::string, AlleleCounter*>&
                   allele_counts_wrapper,
               const std::string& target_sample) {
@@ -65,7 +65,7 @@ PYBIND11_MODULE(variant_calling_multisample, m) {
              return cpp_result;
            })
       .def("call_positions_from_allele_counts",
-           [](const multi_sample::VariantCaller& self,
+           [](multi_sample::VariantCaller& self,
               const std::unordered_map<std::string, AlleleCounter*>&
                   allele_counters,
               const std::string& target_sample) {

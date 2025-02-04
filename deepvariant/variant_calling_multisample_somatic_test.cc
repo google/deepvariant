@@ -32,6 +32,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -162,11 +163,17 @@ TEST(VariantCallingSomaticTest, TestCallVariantWithMaxFractionForNormal) {
   //
   // set_min_fraction_snps >= 0.1
 
-  absl::node_hash_map<std::string, AlleleCount> allele_counts = {};
-  allele_counts["tumor"] = MakeTestAlleleCount(20, 19, "tumor", "A", "T", 10);
-  allele_counts["normal"] = MakeTestAlleleCount(10, 7, "normal", "A", "T", 10);
+  absl::node_hash_map<std::string, AlleleCount> allele_counts_per_sample = {};
+  allele_counts_per_sample["tumor"] =
+      MakeTestAlleleCount(20, 19, "tumor", "A", "T", 10);
+  allele_counts_per_sample["normal"] =
+      MakeTestAlleleCount(10, 7, "normal", "A", "T", 10);
   std::vector<AlleleCount> allele_counts_context = {
     MakeTestAlleleCount(20, 19, "tumor", "A", "T", 10)};
+  std::vector<AlleleCount>::const_iterator target_sample_iterator =
+      allele_counts_context.begin();
+  int skip_next_count = 0;
+  int prev_deletion_end = 0;
 
   VariantCallerOptions options = BasicOptions();
   options.set_min_fraction_snps(0.1);
@@ -174,31 +181,50 @@ TEST(VariantCallingSomaticTest, TestCallVariantWithMaxFractionForNormal) {
   // Set min_fraction_multiplier because we want to test the `CallVariant` for
   // somatic mode.
   options.set_min_fraction_multiplier(std::numeric_limits<float>::infinity());
-  const VariantCaller caller(options);
+  std::unique_ptr<VariantCaller> caller =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          options, allele_counts_context, "tumor");
+
   const std::optional<DeepVariantCall> optional_variant =
-      caller.CallVariant(allele_counts, "tumor", &allele_counts_context);
+      caller->CallVariant(allele_counts_per_sample,
+                         &target_sample_iterator,
+                          skip_next_count,
+                         prev_deletion_end);
   EXPECT_TRUE(static_cast<bool>(optional_variant));
   Variant variant = WithCounts(MakeExpectedVariant("A", {"T"}, 10), {1, 19});
   EXPECT_THAT(optional_variant->variant(), EqualsProto(variant));
+  caller->Clear();
 
   const double EPSILON = 1e-6;
 
   // Now we set max_fraction_snps_for_non_target_sample to 0.7+EPSILON, which
   // should still create the variant.
   options.set_max_fraction_snps_for_non_target_sample(0.7+EPSILON);
-  const VariantCaller caller2(options);
+  std::unique_ptr<VariantCaller> caller2 =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          options, allele_counts_context, "tumor");
   const std::optional<DeepVariantCall> optional_variant2 =
-      caller2.CallVariant(allele_counts, "tumor", &allele_counts_context);
+      caller2->CallVariant(allele_counts_per_sample,
+                         &target_sample_iterator,
+                          skip_next_count,
+                         prev_deletion_end);
   EXPECT_TRUE(static_cast<bool>(optional_variant2));
   EXPECT_THAT(optional_variant2->variant(), EqualsProto(variant));
+  caller2->Clear();
 
   // Now we set max_fraction_snps_for_non_target_sample to 0.7-EPSILON, which
   // should stop the variant from being created.
   options.set_max_fraction_snps_for_non_target_sample(0.7-EPSILON);
-  const VariantCaller caller3(options);
+  std::unique_ptr<VariantCaller> caller3 =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          options, allele_counts_context, "tumor");
   const std::optional<DeepVariantCall> optional_variant3 =
-      caller3.CallVariant(allele_counts, "tumor", &allele_counts_context);
+      caller3->CallVariant(allele_counts_per_sample,
+                         &target_sample_iterator,
+                          skip_next_count,
+                         prev_deletion_end);
   EXPECT_FALSE(static_cast<bool>(optional_variant3));
+  caller3->Clear();
 }
 
 }  // namespace multi_sample

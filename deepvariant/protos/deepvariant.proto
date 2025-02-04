@@ -371,7 +371,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 21
+// Next ID: 22
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -437,6 +437,8 @@ message VariantCallerOptions {
   repeated string haploid_contigs = 19;
 
   string par_regions_bed = 20;
+
+  bool create_complex_alleles = 21;
 }
 
 // Options to control how we label variant calls.
