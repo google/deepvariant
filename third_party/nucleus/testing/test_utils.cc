@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/util/utils.h"
 
@@ -89,7 +90,8 @@ string GetTestData(absl::string_view path, absl::string_view test_data_dir) {
   // const string test_srcdir = getenv("TEST_SRCDIR");
   // const char* test_workspace = getenv("TEST_WORKSPACE");
   absl::string_view test_srcdir = getenv("TEST_SRCDIR");
-  absl::string_view test_workspace = getenv("TEST_WORKSPACE");
+  absl::string_view test_workspace =
+      absl::NullSafeStringView(getenv("TEST_WORKSPACE"));
   test_workspace = !test_workspace.empty() ? test_workspace : kDefaultWorkspace;
   return JoinPaths({test_srcdir, test_workspace, test_data_dir, path});
 }
