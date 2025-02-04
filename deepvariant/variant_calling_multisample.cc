@@ -600,7 +600,7 @@ SelectAltAllelesResult VariantCaller::SelectAltAlleles(
 // Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
 // "GQ" key of info with a numerical value of gq, if provided) to variant.
 void AddGenotypes(const std::string& sample_name,
-                  const std::vector<int>& genotypes, Variant* variant) {
+                  absl::Span<const int> genotypes, Variant* variant) {
   CHECK(variant != nullptr);
 
   VariantCall* call = variant->add_calls();
