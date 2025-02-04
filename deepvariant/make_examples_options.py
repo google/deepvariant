@@ -889,7 +889,7 @@ def shared_flags_to_options(
             f'example_info.json not found in {_CHECKPOINT.value}. Please'
             ' check the checkpoint path.'
         )
-      _, channels_enum = dv_utils.get_shape_and_channels_from_json(
+      _, channels_enum, _ = dv_utils.get_shape_and_channels_from_json(
           f'{model_example_info_json}'
       )
     if channels_enum is not None:

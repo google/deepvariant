@@ -136,22 +136,26 @@ def train(config: ml_collections.ConfigDict):
   )
 
   # Copy example_info.json to checkpoint path.
-  example_info_json_path = os.path.join(
+  model_example_info_path = os.path.join(
+      experiment_dir, 'checkpoints', 'example_info.json'
+  )
+  data_example_info_path = os.path.join(
       os.path.dirname(train_dataset_config.tfrecord_path), 'example_info.json'
   )
-  if not tf.io.gfile.exists(example_info_json_path):
-    example_info_json_path = (
+  if not tf.io.gfile.exists(data_example_info_path):
+    data_example_info_path = (
         train_dataset_config.tfrecord_path.split(',')[0] + '.example_info.json'
     )
-  if not tf.io.gfile.exists(example_info_json_path):
+  if not tf.io.gfile.exists(data_example_info_path):
     raise FileNotFoundError(
         'example_info.json not found in directory'
         f' {os.path.dirname(train_dataset_config.tfrecord_path)}'
     )
   tf.io.gfile.makedirs(os.path.join(experiment_dir, 'checkpoints'))
 
-  # Load in example_info.json, add ablation channels, and output.
-  example_info_json = json.load(tf.io.gfile.GFile(example_info_json_path, 'r'))
+  # Load in example_info.json, add ablation channels,
+  # and copy to checkpoint path..
+  example_info_json = json.load(tf.io.gfile.GFile(data_example_info_path, 'r'))
   input_shape = copy.copy(example_info_json['shape'])
   channel_indices = []
   if config.ablation_channels:
@@ -170,13 +174,14 @@ def train(config: ml_collections.ConfigDict):
       if idx not in ablation_indices:
         channel_indices.append(idx)
 
+    # Input shape is updated to initialize the model,
+    # but the original shape is stored in example_info.json.
+    # ablation happens during preprocessing.
     input_shape[2] = input_shape[2] - len(ablation_indices)
     logging.info('Input shape after channel ablation: %s', str(input_shape))
     logging.info('example_info_json: %s', str(example_info_json))
 
-  with tf.io.gfile.GFile(
-      os.path.join(experiment_dir, 'checkpoints', 'example_info.json'), 'w'
-  ) as fout:
+  with tf.io.gfile.GFile(model_example_info_path, 'w') as fout:
     fout.write(json.dumps(example_info_json))
 
   steps_per_epoch = train_dataset_config.num_examples // config.batch_size
@@ -436,7 +441,7 @@ def train(config: ml_collections.ConfigDict):
   tf.io.gfile.makedirs(pre_ema_checkpoint_path)
 
   tf.io.gfile.copy(
-      example_info_json_path,
+      model_example_info_path,
       os.path.join(use_checkpoint_path, 'example_info.json'),
       overwrite=True,
   )
@@ -459,7 +464,7 @@ def train(config: ml_collections.ConfigDict):
     if not tf.io.gfile.exists(local_example_info_json):
       logging.info('Copying example_info.json to %s', local_example_info_json)
       tf.io.gfile.copy(
-          example_info_json_path,
+          model_example_info_path,
           local_example_info_json,
       )
     tf.train.Checkpoint(

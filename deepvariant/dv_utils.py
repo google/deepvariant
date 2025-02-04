@@ -316,18 +316,26 @@ def get_shape_and_channels_from_json(example_info_json):
         ),
         example_info_json,
     )
-    return None, None
+    return None, None, None
+
   with tf.io.gfile.GFile(example_info_json) as f:
     example_info = json.load(f)
   example_shape = example_info['shape']
   example_channels_enum = example_info['channels']
+
+  channel_indices = []
+  if example_info.get('ablation_channels', None):
+    for idx, channel_enum in enumerate(example_channels_enum):
+      if channel_enum not in example_info['ablation_channels']:
+        channel_indices.append(idx)
+
   logging.info(
       'From %s: Shape of input examples: %s, Channels of input examples: %s.',
       example_info_json,
       str(example_shape),
       str(example_channels_enum),
   )
-  return example_shape, example_channels_enum
+  return example_shape, example_channels_enum, channel_indices
 
 
 def get_tf_record_writer(output_filename: str) -> tf.io.TFRecordWriter:
@@ -358,7 +366,7 @@ def preprocess_images(images, channel_indices=None):
 
   # Ablate channels
   if channel_indices:
-    images = tf.gather(images, channel_indices, axis=3)
+    images = tf.gather(images, channel_indices, axis=-1)
   return images
 
 

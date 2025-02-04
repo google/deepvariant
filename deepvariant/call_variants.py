@@ -28,7 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Calling variants with a trained DeepVariant TF2/Keras model."""
 
+import copy
 import itertools
+import json
 import multiprocessing
 import os
 import time
@@ -441,6 +443,7 @@ class FromStreamDataset(tf.data.Dataset):
 def get_dataset(
     path,
     example_shape,
+    channel_indices,
     batch_size,
     include_debug_info,
     debugging_true_label_mode,
@@ -469,7 +472,7 @@ def get_dataset(
     image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
     image = tf.reshape(image, example_shape)
     image = tf.cast(image, tf.float32)
-    image = dv_utils.preprocess_images(image)
+    image = dv_utils.preprocess_images(image, channel_indices)
     variant = parsed_features['variant/encoded']
     alt_allele_indices = parsed_features['alt_allele_indices/encoded']
     optional_label = None
@@ -481,7 +484,7 @@ def get_dataset(
     """Parses a data from shared memory buffer."""
     image = tf.io.decode_raw(blob.image, tf.uint8)
     image = tf.reshape(image, example_shape)
-    image = dv_utils.preprocess_images(image)
+    image = dv_utils.preprocess_images(image, channel_indices)
     variant = blob.variant
     alt_allele_indices = blob.alt_allele_idx
     return b'', image, variant, alt_allele_indices, None
@@ -625,7 +628,7 @@ def load_model_and_check_shape(
     example_info_json = dv_utils.get_example_info_json_filename(
         examples_filename, 0
     )
-    example_shape, _ = dv_utils.get_shape_and_channels_from_json(
+    example_shape, _, _ = dv_utils.get_shape_and_channels_from_json(
         example_info_json
     )
 
@@ -643,9 +646,11 @@ def load_model_and_check_shape(
   if use_saved_model:
     model = tf.saved_model.load(checkpoint_path)
     model_example_info_json = f'{checkpoint_path}/example_info.json'
-    model_example_shape, _ = dv_utils.get_shape_and_channels_from_json(
-        model_example_info_json
+    model_example_shape, _, channel_indices = (
+        dv_utils.get_shape_and_channels_from_json(model_example_info_json)
     )
+    if channel_indices:
+      raise ValueError('Channel ablation is not supported for saved model.')
     # This usually happens in multi-sample cases where the sample_name
     # is added to the prefix, so we remove it.
     if use_examples_from_stream:
@@ -662,7 +667,6 @@ def load_model_and_check_shape(
               f'File {example_info_json} or {expected_filename} not found.'
               'Please check make_examples output.'
           )
-        example_info_json = expected_filename
 
     # These checks make sure we are using the right model with right input.
     if not use_examples_from_stream:
@@ -687,26 +691,43 @@ def load_model_and_check_shape(
     # If example_shape could not be inferred from the examples, then we try to
     # infer it from the model directory. This is the case when examples from
     # stream is used.
-    if not example_shape:
-      model_dir = os.path.dirname(checkpoint_path)
-      for dirname, subdir, fnames in gfile.Walk(model_dir):
-        if subdir:
-          continue
-        for fname in fnames:
-          if fname.endswith('example_info.json'):
-            model_example_info_json = f'{dirname}/{fname}'
-            break
-      if model_example_info_json:
-        example_shape, _ = dv_utils.get_shape_and_channels_from_json(
-            f'{model_example_info_json}'
-        )
-      else:
-        raise ValueError(
-            'Could not infer example shape from examples or model directory.'
-            'example_info.json was not found in the model directory.'
-        )
+    model_dir = os.path.dirname(checkpoint_path)
+    for dirname, subdir, fnames in gfile.Walk(model_dir):
+      if subdir:
+        continue
+      for fname in fnames:
+        if fname.endswith('example_info.json'):
+          model_example_info_json = f'{dirname}/{fname}'
+          break
+    if model_example_info_json:
+      example_shape, _, channel_indices = (
+          dv_utils.get_shape_and_channels_from_json(
+              f'{model_example_info_json}'
+          )
+      )
+    else:
+      raise ValueError(
+          'Could not infer example shape from examples or model directory.'
+          'example_info.json was not found in the model directory.'
+      )
+
+    # If we are using channel ablation, the example shape of incoming
+    # data remains the same, but the model example shape needs to be
+    # adjusted to reflect the channels that are being ablated.
+    # Update shape to reflect ablation.
+    if channel_indices:
+      model_example_shape = copy.copy(example_shape)
+      model_example_shape[2] = len(channel_indices)
+      logging.info(
+          'Channel Ablation updates model input shape %s.',
+          str(model_example_shape),
+      )
+    else:
+      model_example_shape = example_shape
+
+    logging.info('model_example_shape: %s', model_example_shape)
     model = modeling.inceptionv3(
-        example_shape, init_backbone_with_imagenet=False
+        model_example_shape, init_backbone_with_imagenet=False
     )
     model.load_weights(checkpoint_path).expect_partial()
   return example_shape, model
@@ -806,6 +827,22 @@ def call_variants(
   if checkpoint_path is None:
     raise ValueError('Checkpoint filename must be specified.')
 
+  channel_indices = []
+  if not use_saved_model:
+    if not os.path.isdir(checkpoint_path):
+      example_info_json_path = os.path.join(
+          os.path.dirname(checkpoint_path), 'example_info.json'
+      )
+    else:
+      example_info_json_path = os.path.join(
+          checkpoint_path, 'example_info.json'
+      )
+    example_info = json.loads(tf.io.gfile.GFile(example_info_json_path).read())
+
+    for idx, channel_enum in enumerate(example_info['channels']):
+      if channel_enum not in example_info.get('ablation_channels', []):
+        channel_indices.append(idx)
+
   example_shape, model = load_model_and_check_shape(
       checkpoint_path,
       examples_filename,
@@ -823,6 +860,7 @@ def call_variants(
   enc_image_variant_alt_allele_ds = get_dataset(
       examples_filename,
       example_shape,
+      channel_indices,
       batch_size,
       include_debug_info,
       debugging_true_label_mode,
