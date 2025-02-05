@@ -32,6 +32,7 @@
 
 #include "third_party/nucleus/io/sam_reader.h"
 
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
@@ -538,6 +539,136 @@ TEST_F(ReadRequirementTest, TestMappingQuality) {
   reqs_.set_keep_unaligned(true);
   EXPECT_TRUE(ReadSatisfiesRequirements(read_, reqs_));
 }
+
+
+TEST(Parse5mCAuxTagTest, BasicCase) {
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "TCTCTCTCTCTCTCTCTCTC",
+                                {"20M"},
+                                "read_name");
+  const std::string mm = "C+m?,1,1,1,1,1";
+  const std::vector<int> ml = {1, 2, 3, 4, 5};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
+  std::vector<std::uint8_t> expected{0, 0, 0, 1,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 3,
+                                     0, 0, 0, 4,
+                                     0, 0, 0, 5};
+  EXPECT_EQ(methylated_sites, expected);
+}
+
+TEST(Parse5mCAuxTagTest, MultipleModifications) {
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "ACACACACACTCTCTCTCTC",
+                                {"20M"},
+                                "read_name");
+  const std::string mm = "A-a.,0,0,0,0,0;C+m?,1,1,1,1,1";
+  const std::vector<int> ml = {1, 1, 1, 1, 1, 2, 2, 2, 2, 2};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
+  std::vector<std::uint8_t> expected{0, 0, 0, 2,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 2};
+  EXPECT_EQ(methylated_sites, expected);
+}
+
+TEST(Parse5mCAuxTagTest, ThreeModifications) {
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "ACACACACACTCTCTCTCTC",
+                                {"20M"},
+                                "read_name");
+  const std::string mm = "A-a.,0,0,0,0,0;C+m?,1,1,1,1,1;T-a.,0,0,0,0,0";
+  const std::vector<int> ml = {1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
+  std::vector<uint8_t> expected{0, 0, 0, 2,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 2,
+                                     0, 0, 0, 2};
+  EXPECT_EQ(methylated_sites, expected);
+}
+
+TEST(Parse5mCAuxTagTest, VariableMMDelta) {
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "CACAACAAACAAAAC",
+                                {"15M"},
+                                "read_name");
+  const std::string mm = "A-a.,0,0,0,0,0;C+m?,0,3";
+  const std::vector<int> ml = {0, 0, 0, 0, 0, 1, 2};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
+  std::vector<uint8_t> expected{1, 0, 0,
+                                     0, 0, 0,
+                                     0, 0, 0,
+                                     0, 0, 0,
+                                     0, 0, 2};
+  EXPECT_EQ(methylated_sites, expected);
+}
+
+
+TEST(Parse5mCAuxTagTest, ReverseStrandModifications) {
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "TTTTTGGGGG",
+                                {"10M"},
+                                "read_name");
+  read.mutable_alignment()->mutable_position()->set_reverse_strand(true);
+  const std::string mm = "C+m?,0,0,0,0,0";
+  const std::vector<int> ml = {1, 1, 1, 1, 1};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
+  std::vector<uint8_t> expected{0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
+  EXPECT_EQ(methylated_sites, expected);
+}
+
+TEST(Parse5mCAuxTagTest, MismatchMNTag) {
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "CCCCCTTTTT",
+                                {"10M"},
+                                "read_name");
+  const std::string mm = "C+m?,0,0,0,0,0";
+  const std::vector<int> ml = {1, 1, 1, 1, 1};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  nucleus::SetInfoField("MN", 11, &read);  // Read with mismatched length.
+  auto base_modifications = ParseBaseModifications(read);
+  EXPECT_TRUE(base_modifications.empty());
+}
+
+TEST(Parse5mCAuxTagTest, MatchMNTag) {
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "CCCCCTTTTT",
+                                {"10M"},
+                                "read_name");
+  const std::string mm = "C+m?,0,0,0,0,0";
+  const std::vector<int> ml = {1, 1, 1, 1, 1};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  nucleus::SetInfoField("MN", 10, &read);  // Read with matched length.
+  auto base_modifications = ParseBaseModifications(read);
+  EXPECT_FALSE(base_modifications.empty());
+}
+
 
 }  // namespace sam_reader_internal
 

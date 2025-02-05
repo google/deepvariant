@@ -437,7 +437,7 @@ _PARSE_SAM_AUX_FIELDS = flags.DEFINE_bool(
 )
 _AUX_FIELDS_TO_KEEP = flags.DEFINE_string(
     'aux_fields_to_keep',
-    'HP,OQ,MM,ML',
+    'HP,OQ,MM,ML,MN',
     (
         'Comma-delimited list of auxiliary BAM fields to keep. '
         'This flag is used only when --parse_sam_aux_fields is '

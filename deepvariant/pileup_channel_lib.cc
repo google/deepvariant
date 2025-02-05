@@ -32,8 +32,6 @@
  */
 #include "deepvariant/pileup_channel_lib.h"
 
-#include <math.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -41,7 +39,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "deepvariant/channels/allele_frequency_channel.h"
@@ -63,16 +60,13 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "absl/strings/strip.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "re2/re2.h"
 
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
@@ -84,166 +78,13 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-template <class T>
-std::vector<T> AsVector(const google::protobuf::RepeatedPtrField<T>& container) {
-  return vector<T>(container.begin(), container.end());
-}
+const absl::string_view k5mCMethylationBaseModKey = "Cm";
 
-std::string GetReverseComplement(absl::string_view sequence) {
-  std::string complement;
-  // Iterate through each character in the sequence
-  for (char nucleotide : sequence) {
-    // Convert the character to its complement
-    switch (nucleotide) {
-      case 'A':
-        complement += 'T';
-        break;
-      case 'T':
-        complement += 'A';
-        break;
-      case 'C':
-        complement += 'G';
-        break;
-      case 'G':
-        complement += 'C';
-        break;
-      default:
-        // If the character is not a valid nucleotide, add it unchanged
-        complement += nucleotide;
-        break;
-    }
-  }
-  // Reverse the complement string
-  std::reverse(complement.begin(), complement.end());
-
-  return complement;
-}
-
-constexpr LazyRE2 kBaseModificationRegexp = {R"(([ACGTUN])([-+])([a-z]+|[0-9]+)([.?]?))"};
-
-std::vector<std::uint8_t> Parse5mCAuxTag(const Read& read) {
-  /*
-  Parse MM (base modifications) and ML (modification probabilities) AUX tags
-  and construct an array of methylation values.
-
-  See the SAM Optional Fields Specification for full details:
-  https://samtools.github.io/hts-specs/SAMtags.pdf
-
-  The MM tag is encoded as a string and specifies a list of modifications and
-  their positions. Modifications are delimited by semicolons. Note that a more
-  complex format that combines modifications is also available,
-  but not supported here.
-
-  Example MM tag:
-
-  MM:Z:C+m?,2,3,4;A+a.,1,2,3;
-
-  The first element specifies the base (C), strand (+),
-  type of modification (m=5mC methylation), and
-  how unspecified bases are handled:
-
-    (? = no information; '.' = low prob; '' = low prob).
-
-  The base modification specifier is followed by a comma-separated list of
-  values corresponding to the 0-based nth occurrence of a base.
-
-  2 --> The 3rd C in the sequence.
-  3 --> 4 C's later (The 7th C)
-  4 --> 5 C's later (The 12th C)
-
-  The ML tag specifies the probability of each modification as an integer from
-  0 to 255 inclusive. All values for each set of modifications are concatenated
-  together. Continuing from the example above:
-
-  ML:B:C,1,1,1,2,2,2
-
-  In the above example: the 1's correspond to probabilities for
-    1's correspond to probabilities for 5mC methylation (C+m?).
-    2's correspond to probabilities for 6mA (A+a.).
-  */
-  std::vector<std::uint8_t> result(read.aligned_sequence().size(), 0);
-
-  if (!read.info().contains("MM") || !read.info().contains("ML") ||
-      read.info().at("MM").values_size() == 0)
-    return result;
-
-  const int num_captures = 5;
-  std::vector<absl::string_view> captures(num_captures);
-
-  std::string seq;
-  if (read.alignment().position().reverse_strand()) {
-    seq = GetReverseComplement(read.aligned_sequence());
-  } else {
-    seq = read.aligned_sequence();
-  }
-
-  auto ml_values = AsVector(read.info().at("ML").values());
-
-  const auto mm_base_mods = absl::StrSplit(
-      absl::StripSuffix(read.info().at("MM").values(0).string_value(), ";"),
-      ';'
-  );
-
-  // Wheras MM tag separates base modifications with a semicolon, the ML tag
-  // concatenates the probabilities for each modification.
-  int base_mod_idx = 0;
-  int ml_offset = 0;
-  for (const auto &mm_base_mod : mm_base_mods) {
-    std::vector<std::string> mm_base_mod_split =
-        absl::StrSplit(mm_base_mod, ',');
-    // Continue if no bases are modified.
-    if (mm_base_mod_split.size() <= 1) continue;
-    // Check if base modification is 5mC.
-    kBaseModificationRegexp->Match(mm_base_mod_split[0],
-                                   0,
-                                   mm_base_mod_split[0].size(),
-                                   RE2::Anchor::ANCHOR_BOTH,
-                                   captures.data(),
-                                   num_captures);
-    const char base = captures.at(1)[0];
-    const char strand = captures.at(2)[0];
-    absl::string_view modification = captures.at(3);
-    if (base != 'C' || strand != '+' || modification != "m") {
-      // Subtract 1 for modification spec.
-      ml_offset += mm_base_mod_split.size() - 1;
-      continue;
-    }
-
-    // Remove the first element which defines the type of base modification.
-    mm_base_mod_split.erase(
-        mm_base_mod_split.begin(),
-        mm_base_mod_split.begin() + 1
-    );
-
-    int cth_count = 0;
-    int mm_delta = std::stoi(mm_base_mod_split[base_mod_idx]);
-    for (int pos = 0; pos <= seq.size(); pos++) {
-      switch (seq[pos]) {
-        case 'C':
-          if (cth_count == mm_delta) {
-            result[pos] = ml_values[base_mod_idx + ml_offset].int_value();
-            cth_count = 0;
-            base_mod_idx++;
-            if (base_mod_idx >= mm_base_mod_split.size()) {
-              // If we've reached the end of the mm_split, we're done.
-              if (read.alignment().position().reverse_strand()) {
-                std::reverse(result.begin(), result.end());
-              }
-              return result;
-            }
-            mm_delta = std::stoi(mm_base_mod_split[base_mod_idx]);
-          } else {
-            cth_count += 1;
-          }
-          break;
-        default:
-          break;
-      }
-    }
-    // We should never reach here.
-    LOG(WARNING) << "MM/ML AUX tags appear to be malformed.";
-  }
-  return result;
+std::vector<std::uint8_t> GetBaseModification(const Read& read,
+                                              absl::string_view base_mod_key) {
+  auto it = read.base_modifications().find(base_mod_key);
+  if (it == read.base_modifications().end()) { return {}; }
+  return std::vector<uint8_t>(it->second.begin(), it->second.end());
 }
 
 bool Channels::CalculateChannels(
@@ -335,7 +176,8 @@ bool Channels::CalculateChannels(
               } else if (channel_enum ==
                          DeepVariantChannelEnum::CH_BASE_METHYLATION) {
                 // Get methylation values
-                std::vector<std::uint8_t> mm_values = Parse5mCAuxTag(read);
+                std::vector<std::uint8_t> mm_values =
+                    GetBaseModification(read,  k5mCMethylationBaseModKey);
                 if (!mm_values.empty()) {
                   data[index][col] = ScaleColor(mm_values[read_i], 255);
                 }

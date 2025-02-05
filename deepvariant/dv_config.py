@@ -126,6 +126,7 @@ def get_pacbio_config(config: ml_collections.ConfigDict):
   """Training parameters."""
   config.num_epochs = 8
   config.num_validation_examples = 150_000
+  config.include_snp_indel_metrics = True
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = '/path/to/warmstart/checkpoint'

@@ -1081,6 +1081,7 @@ cc_test(
         "//deepvariant/channels:read_supports_variant_channel",
         "//deepvariant/channels:strand_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/io:sam_reader",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",

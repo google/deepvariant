@@ -657,7 +657,9 @@ cc_library(
         "//third_party/nucleus/util:samplers",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf_lite",
+        "@com_googlesource_code_re2//:re2",
         "@htslib",
     ],
 )

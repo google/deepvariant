@@ -228,6 +228,9 @@ message Read {
   // A map of additional read alignment information. This must be of the form
   // map<string, string[]> (string key mapping to a list of string values).
   map<string, ListValue> info = 17;
+
+  // A map of base modifications.
+  map<string, bytes> base_modifications = 18;
 }
 
 // The SamHeader message represents the metadata present in the header of a

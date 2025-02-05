@@ -517,6 +517,7 @@ class AssemblyRegion(object):
       example, when we only have reads starts in the middle of the region.
       Here's a picture of when this can happen: ref      : acgtACGTACgtgt region
       :     ------ read1    :       GGa
+
   read_span:       ---
   """
 
@@ -769,12 +770,10 @@ class Realigner(object):
     fast_pass_realigner.set_ref_start(contig, ref_start)
     fast_pass_realigner.set_ref_prefix_len(len(ref_prefix))
     fast_pass_realigner.set_ref_suffix_len(len(ref_suffix))
-    fast_pass_realigner.set_haplotypes(
-        [
-            ref_prefix + target + ref_suffix
-            for target in assembled_region.haplotypes
-        ]
-    )
+    fast_pass_realigner.set_haplotypes([
+        ref_prefix + target + ref_suffix
+        for target in assembled_region.haplotypes
+    ])
     return fast_pass_realigner.realign_reads(assembled_region.reads)
 
   def realign_reads(self, reads, region):
@@ -1034,6 +1033,12 @@ def trim_read(read, region):
   new_read.aligned_quality[:] = read.aligned_quality[
       read_trim : read_trim + new_read_length
   ]
+
+  # Set base_modifications
+  for key in read.base_modifications:
+    new_read.base_modifications[key] = read.base_modifications[key][
+        read_trim : read_trim + new_read_length
+    ]
 
   # Direct assignment on a repeated message field is not allowed, so setting
   # the cigar by using 'extend'.

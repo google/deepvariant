@@ -162,6 +162,15 @@ Read TrimRead(const Read& read, const Range& region) {
   auto new_cigar = new_read.mutable_alignment()->mutable_cigar();
   TrimCigar(read.alignment().cigar(), trim_left, ref_length, new_cigar,
             read_trim, new_read_length);
+
+  // Trim 5mC values.
+  for (const auto& [modifier_spec, base_mods] : read.base_modifications()) {
+      CHECK_GE(base_mods.size(), read_trim + new_read_length);
+      (*new_read.mutable_base_modifications())[modifier_spec] =
+          std::string(base_mods.begin() + read_trim,
+                      base_mods.begin() + read_trim + new_read_length);
+  }
+
   new_read.set_fragment_name(read.fragment_name());
   new_read.set_id(read.id());
   new_read.set_read_group_id(read.read_group_id());

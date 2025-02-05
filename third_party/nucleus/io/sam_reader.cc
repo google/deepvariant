@@ -39,14 +39,17 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
 #include "htslib/cram.h"
 #include "htslib/hts.h"
 #include "htslib/hts_endian.h"
@@ -62,6 +65,8 @@
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/utils.h"
 #include "google/protobuf/repeated_field.h"
+#include "re2/re2.h"
+
 
 namespace nucleus {
 
@@ -262,7 +267,7 @@ static inline int HtslibAuxSize(uint8_t type) {
   }
 }
 
-// Returns true iff query starts with the first prefix_len letters of prefix.
+// Returns true if query starts with the first prefix_len letters of prefix.
 static inline bool StartsWith(const string& query, const char prefix[],
                               int prefix_len) {
   return query.compare(0, prefix_len, prefix) == 0;
@@ -470,6 +475,219 @@ static inline bool StartsWith(const string& query, const char prefix[],
   return ::nucleus::Status();
 }
 
+
+template <class T>
+std::vector<T> AsVector(const google::protobuf::RepeatedPtrField<T>& container) {
+  return std::vector<T>(container.begin(), container.end());
+}
+
+std::string GetReverseComplement(const std::string& sequence) {
+  std::string complement;
+  // Iterate through each character in the sequence
+  for (char nucleotide : sequence) {
+    // Convert the character to its complement
+    switch (nucleotide) {
+      case 'A':
+        complement += 'T';
+        break;
+      case 'T':
+        complement += 'A';
+        break;
+      case 'C':
+        complement += 'G';
+        break;
+      case 'G':
+        complement += 'C';
+        break;
+      default:
+        // If the character is not a valid nucleotide, add it unchanged
+        complement += nucleotide;
+        break;
+    }
+  }
+  // Reverse the complement string
+  std::reverse(complement.begin(), complement.end());
+
+  return complement;
+}
+
+// Parsing base modification strings.
+constexpr LazyRE2 kBaseModificationRegexp = {
+    R"(([ACGTUN])([-+])([a-z]+|[0-9]+)([.?]?))"};
+
+std::map<string, string> ParseBaseModifications(
+    const Read& read) {
+  /*
+  Parse MM (base modifications) and ML (modification probabilities) AUX tags
+  and construct a map of base modification values.
+
+  This function currently only supports 5mC methylation. However, it should
+  be easily modifiable to support other types of base modifications.
+
+  See the SAM Optional Fields Specification for full details:
+  https://samtools.github.io/hts-specs/SAMtags.pdf
+
+  The MM tag is encoded as a string and specifies a list of modifications and
+  their positions. Modifications are delimited by semicolons. Note that a more
+  complex format that combines modifications is also available,
+  but not supported here.
+
+  Example MM tag:
+
+  MM:Z:C+m?,2,3,4;A+a.,1,2,3;
+
+  The first element specifies the base (C), strand (+),
+  type of modification (m=5mC methylation), and
+  how unspecified bases are handled:
+
+    (? = no information; '.' = low prob; '' = low prob).
+
+  The base modification specifier is followed by a comma-separated list of
+  values corresponding to the 0-based nth occurrence of a base.
+
+  2 --> The 3rd C in the sequence.
+  3 --> 4 C's later (The 7th C)
+  4 --> 5 C's later (The 12th C)
+
+  The ML tag specifies the probability of each modification as an integer from
+  0 to 255 inclusive. All values for each set of modifications are concatenated
+  together. Continuing from the example above:
+
+  ML:B:C,1,1,1,2,2,2
+
+  In the above example: the 1's correspond to probabilities for
+    1's correspond to probabilities for 5mC methylation (C+m?).
+    2's correspond to probabilities for 6mA (A+a.).
+
+  */
+  std::map<string, string> result = {};
+
+  if (!read.info().contains("MM") || !read.info().contains("ML") ||
+      read.info().at("MM").values_size() == 0) {
+    return result;
+  }
+
+  // The MN tag specifies the length of the sequence at the time MN/ML
+  // were produced. If its value differs from the current sequence length,
+  // then hard-clipping was performed and we cannot reliably
+  // use base modification information.
+  int32_t mn_size;
+  if (read.info().contains("MN")) {
+    mn_size = read.info().at("MN").values()[0].int_value();
+  } else {
+    mn_size = read.aligned_sequence().size();
+  }
+
+  if (mn_size != read.aligned_sequence().size()) {
+    LOG_FIRST_N(WARNING, 1) << "MN tag does not match sequence length. "
+                               "base-modification information will be "
+                               "ignored.";
+    return result;
+  }
+
+  string seq;
+  if (read.alignment().position().reverse_strand()) {
+    seq = GetReverseComplement(read.aligned_sequence());
+  } else {
+    seq = read.aligned_sequence();
+  }
+
+  auto ml_values = AsVector(read.info().at("ML").values());
+
+  const auto mm_base_mods = absl::StrSplit(
+      absl::StripSuffix(read.info().at("MM").values(0).string_value(), ";"),
+      ';'
+  );
+
+  // Wheras MM tag separates base modifications with a semicolon, the ML tag
+  // concatenates the probabilities for each modification.
+  int ml_offset = 0;
+
+  string modification_spec;
+  std::vector<uint8_t> base_modifications = std::vector<uint8_t>(
+      read.aligned_sequence().size(), 0);
+
+  for (const auto &mm_base_mod : mm_base_mods) {
+    int mm_split_idx = 0;
+    std::vector<string> mm_base_mod_split =
+        absl::StrSplit(mm_base_mod, ',');
+    // Continue if no bases are modified.
+    if (mm_base_mod_split.size() <= 1) continue;
+
+    // Check for valid base modification.
+    // Currently we only support 5mC methylation.
+    const int num_captures = 5;
+    std::vector<absl::string_view> captures(num_captures);
+    kBaseModificationRegexp->Match(mm_base_mod_split[0],
+                                   0,
+                                   mm_base_mod_split[0].size(),
+                                   RE2::Anchor::ANCHOR_BOTH,
+                                   captures.data(),
+                                   num_captures);
+    char base = captures.at(1)[0];
+    char strand = captures.at(2)[0];
+    absl::string_view modification = captures.at(3);
+
+    if (base != 'C' || strand != '+' || modification != "m" ||
+        modification.size() != 1) {
+      // Currently only 5mC is supported.
+      // Subtract 1 to account for base specification.
+      ml_offset += mm_base_mod_split.size() - 1;
+      continue;
+    }
+
+    modification_spec = absl::StrFormat("%c%s", base, modification);
+    base_modifications = std::vector<unsigned char>(
+        read.aligned_sequence().size(), 0);
+    // Remove the first element which defines the type of base modification.
+    mm_base_mod_split.erase(
+        mm_base_mod_split.begin(),
+        mm_base_mod_split.begin() + 1
+    );
+
+    int base_count = 0;
+    int mm_delta = std::stoi(mm_base_mod_split[mm_split_idx]);
+    for (int pos = 0; pos <= seq.size(); pos++) {
+      if (seq[pos] == base) {
+        if (base_count == mm_delta) {
+          // If we attempt to fetch a value that is out of bounds, it
+          // suggests hard-clipping was performed and we cannot reliably
+          // use base modification information.
+          if (ml_offset + mm_split_idx >= ml_values.size()) {
+            LOG_FIRST_N(WARNING, 1) << "MM/ML values are out of bounds. "
+                                       "base-modification information will be "
+                                       "ignored.";
+            return {};
+          }
+          // Convert int32 to uint8_t:
+          base_modifications[pos] = ml_values[mm_split_idx + ml_offset].int_value();
+          base_count = 0;
+          mm_split_idx++;
+          if (mm_split_idx >= mm_base_mod_split.size()) {
+            // If we've reached the end of the mm_split, we're done.
+            if (read.alignment().position().reverse_strand()) {
+              std::reverse(base_modifications.begin(),
+                           base_modifications.end());
+            }
+            std::string base_modification_str(
+                reinterpret_cast<char*>(base_modifications.data()),
+                base_modifications.size());
+            result.insert(std::make_pair(
+                modification_spec,
+                std::move(base_modification_str)
+                ));
+            break;
+          }
+          mm_delta = std::stoi(mm_base_mod_split[mm_split_idx]);
+        } else {
+          base_count += 1;
+        }
+      }
+    }
+  }
+  return result;
+}
+
 // Assign aligned_quality. Depending on the use_original_base_quality_scores
 // aligned_quality is read either from "QUAL" field or from "OQ" tag in SAM/BAM.
 ::nucleus::Status AssignAlignedQuality(const bam1_t* b,
@@ -604,6 +822,15 @@ static inline bool StartsWith(const string& query, const char prefix[],
       LOG(WARNING) << "Aux field parsing failure in read " << bam_get_qname(b)
                    << ": " << status;
     }
+  }
+
+  // Parse base modification fields.
+  auto base_modifications = ParseBaseModifications(*read_message);
+
+  for (const auto& [modification_spec, base_modification] :
+       base_modifications) {
+    (*read_message->mutable_base_modifications())[modification_spec] = {
+        base_modification.begin(), base_modification.end()};
   }
 
   // aligned_quality may be read from aux field "OQ", therefore

@@ -199,7 +199,12 @@ bool ReadSatisfiesRequirements(
     const nucleus::genomics::v1::Read& read,
     const nucleus::genomics::v1::ReadRequirements& requirements);
 
+
 }  // namespace sam_reader_internal
+
+
+std::map<string, string> ParseBaseModifications(
+    const nucleus::genomics::v1::Read& read);
 
 }  // namespace nucleus
 
