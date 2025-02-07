@@ -255,63 +255,56 @@ def parse_proto_enum_flag(
 
 
 def resolve_sam_aux_fields(
-    flags_obj: flags.FlagValues, provided_channels: List[str]
-):
-  """Decide value of parse_sam_aux_fields based on other flags."""
-  flags_requiring_sam_aux_fields = [
-      'sort_by_haplotypes',
-      'use_original_quality_scores',
-  ]
-  channels_using_same_aux_fields_optionally = ['haplotype']
+    flags_obj: flags.FlagValues,
+    provided_channels: List[str],
+) -> List[str]:
+  """Determines which auxiliary fields to parse based on passed options.
 
-  parse_sam_aux_fields = flags_obj.parse_sam_aux_fields
-  if parse_sam_aux_fields is None:
-    # User didn't set the 'parse_sam_aux_fields' flag, so default to False
-    # unless a flag is on that would use it.
-    parse_sam_aux_fields = False
-    for flag_name in flags_requiring_sam_aux_fields:
-      if flags_obj[flag_name].value:
-        logging.info(
-            (
-                'Because --%s=true, --parse_sam_aux_fields is set to '
-                'true to enable reading auxiliary fields from reads.'
-            ),
-            flag_name,
-        )
-      parse_sam_aux_fields = True
+  Previously, options were used to set the aux fields to parse, but the list
+  of AUX tags we require can be determined based on the set of flags
+  or channels that are passed in.
 
-    for channel in channels_using_same_aux_fields_optionally:
-      if channel in provided_channels:
-        logging.info(
-            (
-                'Because %s channel is present, --parse_sam_aux_fields is set '
-                'to true to enable reading auxiliary fields from reads.'
-            ),
-            channel,
-        )
-      parse_sam_aux_fields = True
+  Args:
+    flags_obj: DeepVariant Flag Options.
+    provided_channels: The list of channels provided by the user.
 
-  if not parse_sam_aux_fields:
-    for flag_name in flags_requiring_sam_aux_fields:
-      if flags_obj[flag_name].value:
-        raise ValueError(
-            f'If --{flag_name} is '
-            'set then --parse_sam_aux_fields must be set too.'
-        )
+  Returns:
+    A list of auxiliary fields to parse.
+  """
+  aux_fields = set()
 
-    for channel in channels_using_same_aux_fields_optionally:
-      if channel in provided_channels:
-        logging.info(
-            (
-                'Note that %s channel is present but --parse_sam_aux_fields is '
-                'not set.'
-                ' This is fine unless you are expecting to use aux fields from'
-                ' the alignments file, such as haplotype tags from phasing. If'
-                ' you do need to use aux fields, enable --parse_sam_aux_fields.'
-            ),
-            channel,
-        )
-  return parse_sam_aux_fields
+  # If the user is not phasing reads natively, but wants to sort by existing HP
+  # haplotype tag, then add HP to aux fields to parse.
+  if not flags_obj.phase_reads:
+    if (
+        flags_obj.sort_by_haplotypes
+        or flags_obj.reverse_haplotypes
+        or flags_obj.hp_tag_for_assembly_polishing
+        or 'haplotype' in provided_channels
+    ):
+      logging.info(
+          'Parsing HP AUX tag because --phase_reads=False and'
+          ' --sort_by_haplotypes, --reverse_haplotypes,'
+          ' --hp_tag_for_assembly_polishing, and/or haplotype channel is'
+          ' present.'
+      )
+      aux_fields.add('HP')
+
+  # Original quality scores require the OQ tag.
+  if flags_obj.use_original_quality_scores:
+    logging.info(
+        'Parsing OQ AUX tag because --use_original_quality_scores is set.'
+    )
+    aux_fields.add('OQ')
+
+  # Add fields required for channels.
+  if 'base_methylation' in provided_channels:
+    logging.info(
+        'Parsing MM, ML, and MN AUX tags because of base_methylation channel.'
+    )
+    aux_fields.update(['MM', 'ML', 'MN'])
+
+  return list(aux_fields)
 
 
 def logging_with_options(

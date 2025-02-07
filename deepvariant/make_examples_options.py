@@ -424,26 +424,26 @@ _KEEP_SECONDARY_ALIGNMENTS = flags.DEFINE_bool(
     False,
     'If True, keep reads marked as secondary alignments.',
 )
+
+_AUX_FIELD_CHANNEL_DESCRIPTION = """
+    HP is parsed if --phase_reads=False and --sort_by_haplotypes, --reverse_haplotypes, or --hp_tag_for_assembly_polishing are set.
+    HP is parsed if --phase_reads=False and the 'haplotype' channel is requested.
+    OQ is parsed if --use_original_quality_scores is set.
+    MM, ML, MN are parsed if the "base_methylation" channel is requested.
+"""
+
 _PARSE_SAM_AUX_FIELDS = flags.DEFINE_bool(
     'parse_sam_aux_fields',
     None,
-    (
-        'If True, auxiliary fields of the SAM/BAM/CRAM records are parsed. By'
-        ' default this flag is None. This flag will be automatically turned on'
-        ' if other flags need it (e.g., sort_by_haplotypes). If it is'
-        ' explicitly set by the user (either True or False), the user-specified'
-        ' value will be used.'
-    ),
+    '(DEPRECATED); AUX field parsing is controlled based on other flags. '
+    + _AUX_FIELD_CHANNEL_DESCRIPTION,
 )
+
 _AUX_FIELDS_TO_KEEP = flags.DEFINE_string(
     'aux_fields_to_keep',
-    'HP,OQ,MM,ML,MN',
-    (
-        'Comma-delimited list of auxiliary BAM fields to keep. '
-        'This flag is used only when --parse_sam_aux_fields is '
-        'set to true. If set to an empty string, all auxiliary '
-        'fields will be kept.'
-    ),
+    '',
+    '(DEPRECATED); AUX field parsing is controlled based on other flags. '
+    + _AUX_FIELD_CHANNEL_DESCRIPTION,
 )
 _USE_ORIGINAL_QUALITY_SCORES = flags.DEFINE_bool(
     'use_original_quality_scores',
@@ -476,18 +476,12 @@ _SEQUENCING_TYPE = flags.DEFINE_string(
 _SORT_BY_HAPLOTYPES = flags.DEFINE_bool(
     'sort_by_haplotypes',
     False,
-    (
-        'If True, reads are sorted by haplotypes (using HP tag), '
-        'parse_sam_aux_fields has to be set for this to work.'
-    ),
+    'If True, reads are sorted by haplotypes.',
 )
 _REVERSE_HAPLOTYPES = flags.DEFINE_bool(
     'reverse_haplotypes',
     False,
-    (
-        'If True, reads are sorted by haplotypes (using HP tag) in reverse'
-        ' order, parse_sam_aux_fields has to be set for this to work.'
-    ),
+    'If True, reads are sorted by haplotypes in reverse order.',
 )
 _HP_TAG_FOR_ASSEMBLY_POLISHING = flags.DEFINE_integer(
     'hp_tag_for_assembly_polishing',
@@ -1005,14 +999,25 @@ def shared_flags_to_options(
     options.runtime_by_region = runtime_by_region
     options.read_phases_output = read_phases_output
 
-    options.parse_sam_aux_fields = make_examples_core.resolve_sam_aux_fields(
+    if _PARSE_SAM_AUX_FIELDS.value:
+      logging.warning(
+          '--parse_sam_aux_fields is deprecated. %s',
+          _AUX_FIELD_CHANNEL_DESCRIPTION,
+      )
+
+    if _AUX_FIELDS_TO_KEEP.value:
+      logging.warning(
+          '--aux_fields_to_keep is deprecated. %s',
+          _AUX_FIELD_CHANNEL_DESCRIPTION,
+      )
+
+    aux_fields_to_keep = make_examples_core.resolve_sam_aux_fields(
         flags_obj=flags_obj,
         provided_channels=channel_set,
     )
-    if _AUX_FIELDS_TO_KEEP.value:
-      options.aux_fields_to_keep[:] = _AUX_FIELDS_TO_KEEP.value.split(',')
-    else:
-      options.aux_fields_to_keep = None
+    options.parse_sam_aux_fields = bool(aux_fields_to_keep)
+    options.aux_fields_to_keep[:] = aux_fields_to_keep
+    logging.info('Parsing AUX Fields: %s', options.aux_fields_to_keep)
     options.use_original_quality_scores = _USE_ORIGINAL_QUALITY_SCORES.value
 
     if _ADD_HP_CHANNEL.value:

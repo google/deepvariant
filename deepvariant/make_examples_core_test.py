@@ -1185,26 +1185,6 @@ class RegionProcessorTest(parameterized.TestCase):
     )
     self.assertEqual(expected_output, actual)
 
-  @parameterized.parameters('sort_by_haplotypes', 'use_original_quality_scores')
-  def test_flags_strictly_needs_sam_aux_fields(
-      self, flags_strictly_needs_sam_aux_fields
-  ):
-    FLAGS.mode = 'calling'
-    FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.reads = testdata.CHR20_BAM
-    FLAGS.examples = 'examples.tfrecord'
-    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
-    FLAGS[flags_strictly_needs_sam_aux_fields].value = True
-    FLAGS.parse_sam_aux_fields = False
-
-    with self.assertRaisesRegex(
-        Exception,
-        'If --{} is set then --parse_sam_aux_fields must be set too.'.format(
-            flags_strictly_needs_sam_aux_fields
-        ),
-    ):
-      make_examples.default_options(add_flags=True)
-
   # TODO Uncomment sitelist tests once the bug is fixed.
   # def test_output_sitelist_calling(self):
   #   FLAGS.mode = 'calling'
@@ -1252,52 +1232,80 @@ class RegionProcessorTest(parameterized.TestCase):
   #   )
 
   @parameterized.parameters(
-      ('haplotype', True, None),
       (
-          'haplotype',
-          False,
-          (
-              'Note that {} channel is present but --parse_sam_aux_fields is '
-              'not set.'
-          ),
+          {
+              'sort_by_haplotypes': True,
+              'phase_reads': False,
+          },
+          r'Parsing HP AUX tag because [^\n]+ --sort_by_haplotypes',
       ),
       (
-          'haplotype',
-          None,
+          {
+              'reverse_haplotypes': True,
+              'phase_reads': False,
+          },
+          r'Parsing HP AUX tag because [^\n]+ --reverse_haplotypes',
+      ),
+      (
+          {
+              'hp_tag_for_assembly_polishing': True,
+              'sort_by_haplotypes': True,
+              'phase_reads': False,
+          },
+          r'Parsing HP AUX tag because [^\n]+ --hp_tag_for_assembly_polishing',
+      ),
+      (
+          {
+              'channel_list': 'BASE_CHANNELS,haplotype',
+              'phase_reads': False,
+          },
+          r'Parsing HP AUX tag because [^\n]+ haplotype channel is present',
+      ),
+      (
+          # When phase_reads=True, we don't need to parse HP.
+          {
+              'channel_list': 'BASE_CHANNELS,haplotype',
+              'phase_reads': True,
+          },
+          r'Parsing AUX Fields: \[\]',
+      ),
+      (
+          {
+              'use_original_quality_scores': True,
+          },
+          'Parsing OQ AUX tag because --use_original_quality_scores is set.',
+      ),
+      (
+          {
+              'channel_list': 'BASE_CHANNELS,base_methylation',
+          },
           (
-              'Because {} channel is present, --parse_sam_aux_fields is set to'
-              ' true to enable reading auxiliary fields from reads.'
+              'Parsing MM, ML, and MN AUX tags because of base_methylation'
+              ' channel.'
           ),
       ),
   )
-  def test_flag_optionally_needs_sam_aux_fields_with_different_parse_sam_aux_fields(
+  def test_aux_field_handling(
       self,
-      channel_optionally_needs_sam_aux_fields,
-      parse_sam_aux_fields,
-      expected_message,
+      test_flags,
+      expected_log_message,
   ):
-    FLAGS.mode = 'calling'
-    FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.reads = testdata.CHR20_BAM
-    FLAGS.examples = 'examples.tfrecord'
-    FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS
-        + [channel_optionally_needs_sam_aux_fields]
-    )
-    FLAGS.parse_sam_aux_fields = parse_sam_aux_fields
+    flags_to_set = {
+        'mode': 'calling',
+        'ref': testdata.CHR20_FASTA,
+        'reads': testdata.CHR20_BAM,
+        'examples': 'examples.tfrecord',
+        'channel_list': ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS),
+    }
+    flags_to_set.update(test_flags)
+    with flagsaver.flagsaver(**flags_to_set):
+      with self.assertLogs() as logs:
+        make_examples.default_options(add_flags=True)
 
-    with self.assertLogs() as logs:
-      make_examples.default_options(add_flags=True)
-    aux_fields_log_messages = [
-        x for x in logs.output if '--parse_sam_aux_fields' in x
-    ]
-    if aux_fields_log_messages:
-      self.assertRegex(
-          aux_fields_log_messages[0],
-          expected_message.format(channel_optionally_needs_sam_aux_fields),
-      )
-    else:
-      self.assertEmpty(aux_fields_log_messages)
+    self.assertRegex(
+        '\n'.join(logs.output),
+        expected_log_message,
+    )
 
 
 if __name__ == '__main__':

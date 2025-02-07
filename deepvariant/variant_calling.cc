@@ -97,8 +97,8 @@ void AddGenotypes(const string& sample_name, absl::Span<const int> genotypes,
   }
 }
 
-void FillVariant(absl::string_view reference_name, int variant_start,
-                 absl::string_view ref_bases, const string& sample_name,
+void FillVariant(const string& reference_name, int variant_start,
+                 const string& ref_bases, const string& sample_name,
                  absl::Span<const std::string> alternate_bases,
                  Variant* variant) {
   variant->set_reference_name(reference_name);
@@ -264,7 +264,7 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
 
 AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
                          absl::Span<const Allele> alt_alleles,
-                         absl::string_view ref_bases) {
+                         const string& ref_bases) {
   AlleleMap allele_map;
 
   // Compute the alt alleles, recording the mapping from each Allele to its

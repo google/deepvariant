@@ -1472,31 +1472,6 @@ class RegionProcessorTest(parameterized.TestCase):
     in_memory_sam_reader = self.processor.samples[1].in_memory_sam_reader
     in_memory_sam_reader.replace_reads.assert_called_once_with([r1, r2])
 
-  @flagsaver.flagsaver
-  def test_use_original_quality_scores_without_parse_sam_aux_fields(self):
-    FLAGS.mode = 'calling'
-    FLAGS.ref = testdata.CHR20_FASTA
-    FLAGS.reads = testdata.HG001_CHR20_BAM
-    FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
-    FLAGS.reads_parent2 = testdata.NA12892_CHR20_BAM
-    FLAGS.sample_name = 'child'
-    FLAGS.sample_name_to_train = 'child'
-    FLAGS.sample_name_parent1 = 'parent1'
-    FLAGS.sample_name_parent2 = 'parent2'
-    FLAGS.examples = 'examples.tfrecord'
-    FLAGS.channel_list = ','.join(dv_constants.PILEUP_CHANNELS_WITH_INSERT_SIZE)
-    FLAGS.use_original_quality_scores = True
-    FLAGS.parse_sam_aux_fields = False
-
-    with self.assertRaisesRegex(
-        Exception,
-        (
-            'If --use_original_quality_scores is set then '
-            '--parse_sam_aux_fields must be set too.'
-        ),
-    ):
-      make_examples.default_options(add_flags=True)
-
   @parameterized.parameters(
       dict(height_parent=10, height_child=9),
       dict(height_parent=9, height_child=10),
