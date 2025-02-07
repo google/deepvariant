@@ -46,6 +46,7 @@ from third_party.nucleus.io import fasta
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.testing import test_utils
+from third_party.nucleus.util import errors
 from third_party.nucleus.util import ranges
 
 FLAGS = flags.FLAGS
@@ -254,6 +255,22 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
     options = make_examples.default_options(add_flags=True)
     self.assertTrue(make_examples_core.gvcf_output_enabled(options))
+
+  @flagsaver.flagsaver
+  def test_phase_reads_without_track_ref_reads_error(self):
+    FLAGS.mode = 'training'
+    FLAGS.gvcf = '/tmp/foo.vcf'
+    FLAGS.reads = ''
+    FLAGS.ref = ''
+    FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.track_ref_reads = False
+    FLAGS.phase_reads = True
+    with self.assertRaisesRegex(
+        errors.CommandLineError,
+        '--track_ref_reads must be set to True when --phase_reads is set.',
+    ):
+      make_examples.default_options(add_flags=True)
 
   def test_validate_ref_contig_coverage(self):
     ref_contigs = _make_contigs([('1', 100), ('2', 100)])
@@ -1266,6 +1283,7 @@ class RegionProcessorTest(parameterized.TestCase):
           {
               'channel_list': 'BASE_CHANNELS,haplotype',
               'phase_reads': True,
+              'track_ref_reads': True,
           },
           r'Parsing AUX Fields: \[\]',
       ),

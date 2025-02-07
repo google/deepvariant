@@ -594,7 +594,8 @@ _KEEP_LEGACY_ALLELE_COUNTER_BEHAVIOR = flags.DEFINE_bool(
 _PHASE_READS = flags.DEFINE_bool(
     'phase_reads',
     False,
-    'Calculate phases and add HP tag to all reads on a fly.',
+    'Calculate phases and add HP tag to all reads on a fly. --phase_reads'
+    ' requires --track_ref_reads=True.',
 )
 _PHASE_MAX_CANDIDATES = flags.DEFINE_integer(
     'phase_max_candidates',
@@ -949,6 +950,11 @@ def shared_flags_to_options(
 
     # DirectPhasing related flags.
     if _PHASE_READS.value:
+      if not _TRACK_REF_READS.value:
+        errors.log_and_raise(
+            '--track_ref_reads must be set to True when --phase_reads is set.',
+            errors.CommandLineError,
+        )
       options.phase_reads = _PHASE_READS.value
     phase_region_padding = dv_constants.PHASE_READS_REGION_PADDING_PCT
     if phase_region_padding:
