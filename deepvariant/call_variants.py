@@ -214,9 +214,10 @@ _STREAM_EXAMPLES = flags.DEFINE_boolean(
 )
 _ALLOW_EMPTY_EXAMPLES = flags.DEFINE_boolean(
     'allow_empty_examples',
-    False,
-    'If true, call_variants will not crash if the examples are empty. This can'
-    ' reasonably happen when the small model is used.',
+    True,
+    'If true, call_variants will not crash if the examples are empty. This may'
+    ' reasonably happen when the small model is used, or when processing a'
+    ' small region.',
 )
 
 
