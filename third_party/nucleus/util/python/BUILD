@@ -32,8 +32,6 @@ py_test(
     size = "small",
     srcs = ["math_wrap_test.py"],
     data = [],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":math",
         "@absl_py//absl/testing:absltest",
@@ -74,8 +72,6 @@ py_test(
     name = "utils_wrap_test",
     size = "small",
     srcs = ["utils_wrap_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":utils",
         "//third_party/nucleus/io:clif_postproc",

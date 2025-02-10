@@ -46,8 +46,6 @@ py_test(
     size = "small",
     srcs = ["vcf_reader_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":vcf_reader",
         "//third_party/nucleus/io:clif_postproc",
@@ -112,8 +110,6 @@ py_test(
     size = "small",
     srcs = ["vcf_writer_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":vcf_writer",
         "//third_party/nucleus/io:tfrecord",
@@ -179,8 +175,6 @@ py_test(
     size = "small",
     srcs = ["sam_reader_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":sam_reader",
         "//third_party/nucleus/io:clif_postproc",
@@ -248,8 +242,6 @@ py_test(
     size = "small",
     srcs = ["reference_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":reference",
         "//third_party/nucleus/protos:fasta_py_pb2",
@@ -291,8 +283,6 @@ py_test(
     size = "small",
     srcs = ["bed_reader_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":bed_reader",
         "//third_party/nucleus/io:clif_postproc",
@@ -333,8 +323,6 @@ py_test(
     size = "small",
     srcs = ["bed_writer_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":bed_writer",
         "//third_party/nucleus/io:tfrecord",
@@ -422,8 +410,6 @@ py_test(
     size = "small",
     srcs = ["fastq_reader_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":fastq_reader",
         "//third_party/nucleus/io:clif_postproc",
@@ -463,8 +449,6 @@ py_test(
     size = "small",
     srcs = ["fastq_writer_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":fastq_writer",
         "//third_party/nucleus/io:clif_postproc",
@@ -505,8 +489,6 @@ py_test(
     name = "hts_verbose_test",
     size = "small",
     srcs = ["hts_verbose_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":hts_verbose",
         "@absl_py//absl/testing:absltest",
@@ -542,8 +524,6 @@ py_test(
     size = "small",
     srcs = ["gff_reader_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":gff_reader",
         "//third_party/nucleus/io:clif_postproc",
@@ -583,8 +563,6 @@ py_test(
     size = "small",
     srcs = ["gff_writer_wrap_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":gff_writer",
         "//third_party/nucleus/io:clif_postproc",

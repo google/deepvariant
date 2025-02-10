@@ -59,8 +59,6 @@ py_test(
     name = "genomics_reader_test",
     srcs = ["genomics_reader_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":genomics_reader",
         "//third_party/nucleus/protos:gff_py_pb2",
@@ -99,8 +97,6 @@ py_test(
     size = "small",
     srcs = ["vcf_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":vcf",
         "//third_party/nucleus/protos:reference_py_pb2",
@@ -134,8 +130,6 @@ py_test(
     size = "small",
     srcs = ["sam_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     tags = [
         "noasan",  # See internal.
     ],
@@ -169,8 +163,6 @@ py_test(
     size = "small",
     srcs = ["bed_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":bed",
         "//third_party/nucleus/io:clif_postproc",
@@ -199,8 +191,6 @@ py_test(
     size = "small",
     srcs = ["bedgraph_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":bedgraph",
         "//third_party/nucleus/protos:bedgraph_py_pb2",
@@ -227,8 +217,6 @@ py_test(
     size = "small",
     srcs = ["fasta_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":fasta",
         "//third_party/nucleus/protos:struct_py_pb2",
@@ -257,8 +245,6 @@ py_test(
     size = "small",
     srcs = ["fastq_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":fastq",
         "//third_party/nucleus/protos:fastq_py_pb2",
@@ -304,8 +290,6 @@ py_test(
     size = "small",
     srcs = ["sharded_file_utils_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":sharded_file_utils",
         "//third_party/nucleus/protos:reference_py_pb2",
@@ -330,8 +314,6 @@ py_test(
     size = "small",
     srcs = ["tfrecord_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":tfrecord",
         "//third_party/nucleus/protos:reference_py_pb2",
@@ -355,8 +337,6 @@ py_test(
     size = "small",
     srcs = ["tabix_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":tabix",
         ":vcf",
@@ -1146,8 +1126,6 @@ py_test(
     name = "genomics_io_noplugin_test",
     size = "small",
     srcs = ["genomics_io_noplugin_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/testing:py_test_utils",
@@ -1226,8 +1204,6 @@ py_test(
     name = "gff_test",
     srcs = ["gff_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":gff",
         ":tfrecord",
@@ -1242,7 +1218,6 @@ py_test(
 py_binary(
     name = "converter",
     srcs = ["converter.py"],
-    python_version = "PY3",
     deps = [":converter_lib"],
 )
 
@@ -1260,8 +1235,6 @@ py_test(
     name = "converter_test",
     srcs = ["converter_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":converter_lib",
         "//third_party/nucleus/testing:py_test_utils",
@@ -1274,7 +1247,6 @@ py_test(
 py_library(
     name = "gfile",
     srcs = ["gfile.py"],
-    srcs_version = "PY3",
     deps = ["//third_party/nucleus/io/python:gfile"],
 )
 
@@ -1282,8 +1254,6 @@ py_test(
     name = "gfile_test",
     srcs = ["gfile_test.py"],
     data = ["//third_party/nucleus/testdata"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":gfile",
         "//third_party/nucleus/testing:py_test_utils",
