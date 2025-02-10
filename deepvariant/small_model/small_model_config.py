@@ -41,20 +41,26 @@ class PresetConfig(enum.Enum):
 
 
 def set_wgs_config(config: ml_collections.ConfigDict) -> None:
-  # TODO: Create examples for WGS.
+  config.train_tfrecord_directory = "/placer/prod/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b393196659_wgs/b393196659_wgs_train_small_model.examples*.tfrecord.gz"
+  config.tune_tfrecord_directory = "/placer/prod/home/brain-genomics/lucasbrambrink/deepvariant_wgs/b393196659_wgs/b393196659_wgs_tune_small_model.examples*.tfrecord.gz"
+  config.num_train_samples = 941_401_617
+  config.num_tune_samples = 27_693_525
   config.model_params.expand_by_haplotype = False
 
 
 def set_pacbio_config(config: ml_collections.ConfigDict) -> None:
-  config.train_tfrecord_directory = "/placer/prod/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b382481037_pacbio/b382481037_pacbio_train_small_model.examples@100.tfrecord.gz"
-  config.tune_tfrecord_directory = "/placer/prod/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b382481037_pacbio/b382481037_pacbio_tune_small_model.examples@100.tfrecord.gz"
-  config.num_train_samples = 468223382
-  config.num_tune_samples = 14007034
+  config.train_tfrecord_directory = "/placer/prod/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b393196659_pacbio/b393196659_pacbio_train_small_model.examples*.tfrecord.gz"
+  config.tune_tfrecord_directory = "/placer/prod/home/brain-genomics/lucasbrambrink/deepvariant_pacbio/b393196659_pacbio/b393196659_pacbio_tune_small_model.examples*.tfrecord.gz"
+  config.num_train_samples = 592_876_080
+  config.num_tune_samples = 18_221_432
   config.model_params.expand_by_haplotype = True
 
 
 def set_ont_config(config: ml_collections.ConfigDict) -> None:
-  # TODO: Create examples for ONT.
+  config.train_tfrecord_directory = "/placer/prod/home/brain-genomics/lucasbrambrink/deepvariant_ont/b393196659_ont/b393196659_ont_train_small_model.examples*.tfrecord.gz"
+  config.tune_tfrecord_directory = "/placer/prod/home/brain-genomics/lucasbrambrink/deepvariant_ont/b393196659_ont/b393196659_ont_tune_small_model.examples*.tfrecord.gz"
+  config.num_train_samples = 1_667_298_556
+  config.num_tune_samples = 47_022_920
   config.model_params.expand_by_haplotype = True
 
 
@@ -77,9 +83,9 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   model_params.activation = "relu"
   model_params.hidden_layer_sizes = (750, 750)
   model_params.optimizer = "adam"
-  model_params.learning_rate = 1e-02
+  model_params.learning_rate = 1e-04
   model_params.learning_rate_num_epochs_per_decay = 1
-  model_params.learning_rate_decay_rate = 0.999
+  model_params.learning_rate_decay_rate = 0.99
   model_params.weight_decay = 0.0000001
   model_params.steps_per_execution = 128
   model_params.features = ()
