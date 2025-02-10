@@ -488,10 +488,11 @@ bool FastPassAligner::IsAlignmentNormalized(
         CHECK(cur_read_offset + op.length <= read_sequence.size());
         op_sequence =  read_sequence.substr(cur_read_offset, op.length);
       }
-      if ((op.operation == nucleus::genomics::v1::CigarUnit::INSERT
-          && op_sequence.back() == reference_[cur_ref_offset - 1]) ||
-         (cur_read_offset > 0 &&
-          op.operation == nucleus::genomics::v1::CigarUnit::DELETE
+      if (( cur_ref_offset > 0
+           && op.operation == nucleus::genomics::v1::CigarUnit::INSERT
+           && op_sequence.back() == reference_[cur_ref_offset - 1]) ||
+         (cur_read_offset > 0
+          && op.operation == nucleus::genomics::v1::CigarUnit::DELETE
           && op_sequence.back() == read_sequence[cur_read_offset - 1])) {
         return false;
       }
