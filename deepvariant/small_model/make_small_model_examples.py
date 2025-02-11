@@ -28,8 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Module for generating small model examples."""
 
+from collections.abc import Sequence
 import enum
-from typing import Dict, List, Sequence, Tuple
 
 import tensorflow as tf
 
@@ -129,7 +129,7 @@ def _mean_for_attribute(
 
 def _filter_by_haplotype(
     read_infos: Sequence[deepvariant_pb2.DeepVariantCall.ReadSupport],
-    read_phases: Dict[str, int],
+    read_phases: dict[str, int],
     haplotype: int | None = None,
 ) -> Sequence[deepvariant_pb2.DeepVariantCall.ReadSupport]:
   """Filters the reads by haplotype."""
@@ -153,7 +153,7 @@ class FeatureEncoder:
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
       haplotype: int | None = None,
-      read_phases: Dict[str, int] | None = None,
+      read_phases: dict[str, int] | None = None,
   ):
     """Initializes the feature encoder.
 
@@ -513,7 +513,7 @@ class SmallModelExampleFactory:
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
       label: variant_labeler.VariantLabel | None,
-      read_phases: Dict[str, int],
+      read_phases: dict[str, int],
   ) -> tf.train.Example:
     """Encodes a candidate example."""
     feature_encoder = FeatureEncoder(candidate)
@@ -549,9 +549,9 @@ class SmallModelExampleFactory:
   def encode_training_examples(
       self,
       candidates_with_label: Sequence[
-          Tuple[deepvariant_pb2.DeepVariantCall, variant_labeler.VariantLabel]
+          tuple[deepvariant_pb2.DeepVariantCall, variant_labeler.VariantLabel]
       ],
-      read_phases: Dict[str, int],
+      read_phases: dict[str, int],
   ) -> Sequence[tf.train.Example]:
     """Generates examples from the given candidates for training.
 
@@ -576,11 +576,11 @@ class SmallModelExampleFactory:
   def encode_inference_examples(
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
-      read_phases: Dict[str, int],
-  ) -> Tuple[
-      List[deepvariant_pb2.DeepVariantCall],
-      List[deepvariant_pb2.DeepVariantCall],
-      List[Sequence[int]],
+      read_phases: dict[str, int],
+  ) -> tuple[
+      list[deepvariant_pb2.DeepVariantCall],
+      list[deepvariant_pb2.DeepVariantCall],
+      list[Sequence[int]],
   ]:
     """Generates examples from the given candidates for inference.
 

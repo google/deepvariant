@@ -40,7 +40,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from absl import app
 from absl import flags
@@ -341,7 +341,7 @@ def split_extra_args(input_string: str) -> list[str]:
   return re.findall(pattern, input_string)
 
 
-def _extra_args_to_dict(extra_args: str) -> Dict[str, Any]:
+def _extra_args_to_dict(extra_args: str) -> dict[str, Any]:
   """Parses comma-separated list of flag_name=flag_value to dict."""
   args_dict = {}
   if extra_args is None:
@@ -398,7 +398,7 @@ def make_examples_somatic_command(
     candidate_partition_mode=None,
     runtime_by_region_path=None,
     **kwargs,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
   """Returns a make_examples_somatic (command, logfile) for subprocess.
 
   Args:
@@ -599,7 +599,7 @@ def call_variants_command(
     examples: str,
     model_ckpt: str,
     extra_args: str,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
   """Returns a call_variants (command, logfile) for subprocess."""
   binary_name = 'call_variants'
   command = ['time', f'/opt/deepvariant/bin/{binary_name}']
@@ -629,7 +629,7 @@ def postprocess_variants_command(
     pon_filtering: str,
     extra_args: str,
     **kwargs,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
@@ -671,7 +671,7 @@ def postprocess_variants_command(
 
 def vcf_stats_report_command(
     vcf_path: str, title: Optional[str] = None
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
   """Returns a vcf_stats_report (command, logfile) for subprocess.
 
   Args:
@@ -697,7 +697,7 @@ def vcf_stats_report_command(
 
 def runtime_by_region_vis_command(
     runtime_by_region_path: str, title: str = 'DeepVariant'
-) -> Tuple[str, None]:
+) -> tuple[str, None]:
   """Returns a runtime_by_region_vis (command, logfile=None) for subprocess."""
   runtime_report = os.path.join(
       _LOGGING_DIR.value, 'make_examples_runtime_by_region_report.html'

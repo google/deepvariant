@@ -27,8 +27,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Module for calling variants on examples using a trained keras model."""
+from collections.abc import Sequence
 import os
-from typing import List, Sequence, Tuple
 
 import numpy as np
 # pylint: disable=g-import-not-at-top
@@ -122,7 +122,7 @@ class SmallModelVariantCaller:
         ),
     )
 
-  def classify(self, examples: np.ndarray) -> List[Tuple[float, ...]]:
+  def classify(self, examples: np.ndarray) -> list[tuple[float, ...]]:
     """Classifies the given example."""
     predictions = []
     for i in range(0, len(examples), self.batch_size):
@@ -135,9 +135,9 @@ class SmallModelVariantCaller:
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
       examples: Sequence[Sequence[int]],
-  ) -> Tuple[
-      List[deepvariant_pb2.CallVariantsOutput],
-      List[deepvariant_pb2.DeepVariantCall],
+  ) -> tuple[
+      list[deepvariant_pb2.CallVariantsOutput],
+      list[deepvariant_pb2.DeepVariantCall],
   ]:
     """Calls variants on the given examples."""
     probabilities = self.classify(np.array(examples))

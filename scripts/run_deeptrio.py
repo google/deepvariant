@@ -40,7 +40,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import List, Optional
+from typing import Optional
 
 from absl import app
 from absl import flags
@@ -1005,7 +1005,7 @@ def create_all_commands(intermediate_results_dir):
 
 
 def run_commands(
-    commands: List[str], sequential: bool = True, dry_run: bool = False
+    commands: list[str], sequential: bool = True, dry_run: bool = False
 ) -> None:
   """Run commands using subprocess, sequentially or in parallel.
 

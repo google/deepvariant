@@ -41,7 +41,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from absl import app
 from absl import flags
@@ -304,7 +304,7 @@ def trim_suffix(string: str, suffix: str) -> str:
     return string
 
 
-def _extra_args_to_dict(extra_args: str) -> Dict[str, Any]:
+def _extra_args_to_dict(extra_args: str) -> dict[str, Any]:
   """Parses comma-separated list of flag_name=flag_value to dict."""
   args_dict = {}
   if extra_args is None:
@@ -360,7 +360,7 @@ def _use_small_model() -> bool:
 
 
 def _set_small_model_config(
-    special_args: Dict[str, Any],
+    special_args: dict[str, Any],
     model_type: ModelType,
     customized_small_model: str | None,
 ) -> None:
@@ -385,7 +385,7 @@ def load_gbz_into_shared_memory_command(
     gbz,
     gbz_shared_memory_name,
     gbz_shared_memory_size_gb,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
   """Returns a load_gbz_into_shared_memory (command, logfile) for subprocess.
 
   Args:
@@ -419,7 +419,7 @@ def make_examples_pangenome_aware_dv_command(
     extra_args: Optional[str],
     runtime_by_region_path: Optional[str] = None,
     **kwargs,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
   """Returns a make_examples_pangenome_aware_dv (command, logfile) for subprocess.
 
   Args:
@@ -503,7 +503,7 @@ def call_variants_command(
     model_ckpt: str,
     extra_args: str,
     allow_empty_examples: bool,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
   """Returns a call_variants (command, logfile) for subprocess."""
   binary_name = 'call_variants'
   command = ['time', f'/opt/deepvariant/bin/{binary_name}']
@@ -534,7 +534,7 @@ def postprocess_variants_command(
     small_model_cvo_records: str,
     extra_args: str,
     **kwargs,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   cpus = _POSTPROCESS_CPUS.value
   if cpus is None:
@@ -563,7 +563,7 @@ def postprocess_variants_command(
 
 def vcf_stats_report_command(
     vcf_path: str, title: Optional[str] = None
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
   """Returns a vcf_stats_report (command, logfile) for subprocess.
 
   Args:
@@ -589,7 +589,7 @@ def vcf_stats_report_command(
 
 def runtime_by_region_vis_command(
     runtime_by_region_path: str, title: str = 'DeepVariant'
-) -> Tuple[str, None]:
+) -> tuple[str, None]:
   """Returns a runtime_by_region_vis (command, logfile=None) for subprocess."""
   runtime_report = os.path.join(
       _LOGGING_DIR.value, 'make_examples_runtime_by_region_report.html'
