@@ -316,6 +316,85 @@ TEST_F(AlleleCounterTest, TestTotalAlleleCounts) {
   EXPECT_EQ(TotalAlleleCounts(allele_counts), 9);
 }
 
+// Calculate the methylation fraction when there are no alleles.
+TEST_F(AlleleCounterTest, MethylationFraction_NoAlleles) {
+  // No alleles, expect 0 methylation fraction.
+  AlleleCount allele_count =
+      MakeAlleleCount(MakePosition("chr1", 1001), "A", 0, {});
+  EXPECT_DOUBLE_EQ(
+      MethylationFraction(allele_count, true), 0.0);
+  EXPECT_DOUBLE_EQ(
+      MethylationFraction(allele_count, false), 0.0);
+}
+
+// Calculate the methylation fraction when there are some methylated alleles.
+TEST_F(AlleleCounterTest, MethylationFraction_SomeMethylated) {
+  // Some methylated, some not.
+  AlleleCount allele_count = MakeAlleleCount(
+      MakePosition("chr1", 1002), "G", 4,
+      {
+          {"read1", MakeAllele("C", AlleleType::SUBSTITUTION, 1,
+                               false, 20, 30, false,
+                               true)},  // Methylated, counted
+          {"read2", MakeAllele("T", AlleleType::SUBSTITUTION, 1,
+                               false, 20, 30, false,
+                               false)},  // Not methylated
+          {"read3", MakeAllele("A", AlleleType::SUBSTITUTION, 1,
+                               true, 20, 30, false,
+                               true)},  // Methylated, but low quality
+          {"read4", MakeAllele("G", AlleleType::REFERENCE, 1,
+                               false, 20, 30, false,
+                               true)}  // Reference, counted
+      });
+
+  EXPECT_DOUBLE_EQ(
+      MethylationFraction(allele_count, true),
+      3.0 / 4.0);  // Include low quality
+  EXPECT_DOUBLE_EQ(
+      MethylationFraction(allele_count, false),
+      2.0 / 3.0);  // Exclude low quality
+}
+
+// Calculate the methylation fraction when all alleles are methylated.
+TEST_F(AlleleCounterTest, MethylationFraction_AllMethylated_ExcludeLowQuality) {
+  AlleleCount allele_count = MakeAlleleCount(
+      MakePosition("chr1", 1003), "C", 3,
+      {
+          {"read5", MakeAllele("A", AlleleType::SUBSTITUTION, 1,
+                               false, 20, 30, false,
+                               true)},  // Methylated
+          {"read6", MakeAllele("C", AlleleType::SUBSTITUTION, 1,
+                               true, 20, 30, false,
+                               true)},  // Methylated, but low quality
+          {"read7", MakeAllele("G", AlleleType::REFERENCE, 1,
+                               false, 20, 30, false,
+                               true)}  // Methylated ref
+      });
+
+  EXPECT_DOUBLE_EQ(
+      MethylationFraction(allele_count, false),
+      1.0);  // Don't include low quality, all methylated
+}
+
+// Calculate the methylation fraction when no alleles are methylated.
+TEST_F(AlleleCounterTest, MethylationFraction_NoneMethylated) {
+  AlleleCount allele_count = MakeAlleleCount(
+      MakePosition("chr1", 1004), "T", 2,
+      {
+          {"read8", MakeAllele("G", AlleleType::SUBSTITUTION, 1,
+                               false, 20, 30, false,
+                              false)},  // Not methylated
+          {"read9", MakeAllele("T", AlleleType::REFERENCE, 1,
+                               false, 20, 30, false,
+                               false)}  // Reference, not methylated
+      });
+
+  EXPECT_DOUBLE_EQ(
+      MethylationFraction(allele_count, false), 0.0);  // None methylated
+}
+
+
+
 TEST_F(AlleleCounterTest, TestAddSimpleRead) {
   for (const auto& op : {"M", "X", "="}) {
     AddAndCheckReads(MakeRead(chr_, start_, "TCCGT", {absl::StrCat(5, op)}),

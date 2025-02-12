@@ -97,6 +97,8 @@ message Allele {
   int32 avg_base_quality = 6;
 
   bool is_reverse_strand = 7;
+
+  bool is_methylated = 8;
 }
 
 // An AlleleCount summarizes the NGS data observed at a position in the genome.
@@ -231,6 +233,9 @@ message AlleleCount {
 
   // If true reads supporting ref are tracked (read ids are saved).
   bool track_ref_reads = 7;
+
+  // Fraction of methylated reads at this position.
+  float methylation_fraction = 8;
 }
 
 // A lighter-weight version of AlleleCount.
@@ -250,6 +255,8 @@ message AlleleCountSummary {
   int32 total_read_count = 5;
   // Same as in AlleleCount.
   int32 ref_nonconfident_read_count = 6;
+  // Fraction of methylated reads at this position.
+  float methylation_fraction = 7;
 }
 
 // A message encapsulating all of the information about a Variant call site for
@@ -281,6 +288,7 @@ message DeepVariantCall {
     int32 mapping_quality = 3;
     int32 average_base_quality = 4;
     bool is_reverse_strand = 5;
+    bool is_methylated = 6;
   }
   // A map from alt allele in Variant to ReadSupport structure. This structrue
   // is to replace SupportingReads but for back a backward compatibility old
@@ -323,6 +331,14 @@ message AlleleCounterOptions {
   // If True, the behavior in this commit is reverted:
   // https://github.com/google/deepvariant/commit/fbde0674639a28cb9e8004c7a01bbe25240c7d46
   bool keep_legacy_behavior = 5;
+
+  // If True, methylation calling mode is enabled.
+  // Calculation of methylation fraction is done in allele_counter.
+  bool enable_methylation_calling = 6;
+
+  // Threshold for a base to be considered methylated.
+  // This is used in methylation calling mode.
+  double methylation_calling_threshold = 7;
 }
 
 // Variant call for a single site, in a pseudo-biallelic manner. This is an
@@ -657,7 +673,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 82.
+// Next ID: 87.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -940,6 +956,13 @@ message MakeExamplesOptions {
   // The name of the shared memory segment that contains the sequences of the
   // gbz file.
   string gbz_shared_memory_name = 84;
+
+  // Methylation calling related options.
+  // If true, methylation calling mode will be enabled.
+  bool enable_methylation_calling = 85;
+
+  // Sets the minimum threshold for a base to be considered methylated.
+  float methylation_calling_threshold = 86;
 }
 
 // Config describe information needed for a dataset that can be used for

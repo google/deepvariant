@@ -1547,6 +1547,13 @@ class RegionProcessor:
           shared_header=input_bam_header,
       )
 
+    self.options.allele_counter_options.enable_methylation_calling = (
+        self.options.enable_methylation_calling
+    )
+    self.options.allele_counter_options.methylation_calling_threshold = (
+        self.options.methylation_calling_threshold
+    )
+
     self._channels_enum = pileup_image_native.PileupImageEncoderNative(
         self.options.pic_options
     ).all_channels_enum(self.options.pic_options.alt_aligned_pileup)

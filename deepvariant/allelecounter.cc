@@ -46,6 +46,7 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/pileup_channel_lib.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "absl/log/check.h"
@@ -193,6 +194,38 @@ int TotalAlleleCounts(absl::Span<const AlleleCount> allele_counts,
   return total_allele_count;
 }
 
+// Returns the fraction of methylated reads at a position.
+// If `include_low_quality` is set to true, low quality reads will be included
+// in the calculation.
+double MethylationFraction(const AlleleCount& allele_count,
+                           bool include_low_quality) {
+  if (allele_count.read_alleles().empty()) {
+    // Handle the case where there are no alleles.
+    return 0.0;
+  }
+
+  int methylated_count = 0;
+  int total_count = 0;
+
+  // Iterate to get number of methylated alleles.
+  for (const auto& [_, allele] : allele_count.read_alleles()) {
+    // Check allele quality.
+    if (!allele.is_low_quality() || include_low_quality) {
+      ++total_count;
+      if (allele.is_methylated()) {
+        ++methylated_count;
+      }
+    }
+  }
+
+  // Avoid division by zero.
+  if (total_count == 0) {
+    return 0.0;
+  }
+
+  return static_cast<double>(methylated_count) / total_count;
+}
+
 // Returns false if any of the bases from offset to offset+len are canonical
 // bases.
 // If `keep_legacy_behavior` is set to true, this function will also return
@@ -253,6 +286,40 @@ int AlleleIndex(absl::Span<const AlleleCount> allele_counts, int64_t pos) {
     return -1;
   }
   return std::distance(allele_counts.begin(), idx);
+}
+
+bool IsMethylated(const Read& read, int offset,
+                  bool enable_methylation_calling,
+                  double methylation_calling_threshold) {
+  // Check for presence of base modifications. Handle the case where it's
+  // missing.
+  if (read.base_modifications().empty() || !enable_methylation_calling) {
+    return false;
+  }
+
+  // Check if the offset is valid within the base modifications data.
+  // TODO: Handle the case where there are multiple base
+  // modifications. Currently, we're only parsing 5mC modifications.
+  auto it = read.base_modifications().find(k5mCMethylationBaseModKey);
+  if (it == read.base_modifications().end()) {
+    return false;  // "Cm" modification not found
+  }
+
+  // Get the vector of modification values.
+  const auto& modifications = it->second;
+  if (offset < 0 || offset >= modifications.size()) {
+    return false;  // Offset out of bounds
+  }
+
+  // Convert methylation values to the methylation probability.
+  // Methylation values range from 0 to 255 inclusive.
+  double methylation_probability =
+      static_cast<double>(unsigned(modifications[offset])) / 255.0;
+
+  if (methylation_probability > methylation_calling_threshold) {
+    return true;
+  }
+  return false;
 }
 
 void AlleleCounter::Init() {
@@ -461,8 +528,9 @@ void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
 
     // Always create non reference alleles.
     // Reference alleles are created only when the track_ref_reads flag is set
-    // and we know that this position contains a potential candidate.
-    if (to_add_i.type() != AlleleType::REFERENCE ||
+    // and we know that this position contains a potential candidate for phasing
+    // or if the allele is methylated.
+    if (to_add_i.type() != AlleleType::REFERENCE || to_add_i.is_methylated() ||
         (options_.track_ref_reads() &&
          std::binary_search(candidate_positions_.begin(),
                             candidate_positions_.end(), to_add_i.position()))) {
@@ -472,7 +540,7 @@ void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
       const Allele allele = MakeAllele(
           to_add_i.bases(), to_add_i.type(), 1, to_add_i.is_low_quality(),
           to_add_i.mapping_quality(), to_add_i.avg_base_quality(),
-          to_add_i.is_reverse_strand());
+          to_add_i.is_reverse_strand(), to_add_i.is_methylated());
 
       // Naively, there should never be multiple counts for the same read key.
       // We detect such a situation here but only write out a warning. It would
@@ -505,7 +573,7 @@ bool IsOperationMatch(const nucleus::genomics::v1::CigarUnit& op) {
 }
 
 // Merge two operations. If operations are the same type then first operation's
-// length is icreased and second operation length's is set to zero. If
+// length is increased and second operation length's is set to zero. If
 // operations are different types then M operation of length MIN(op1, op2) is
 // added instead of op1. Op2 is converted to the type of a larger operation
 // and length is set to Max(op) - Min(op).
@@ -856,6 +924,13 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
           const int ref_offset = ref_interval_offset + i;
           const int base_offset = read_offset + i;
           bool is_low_quality_read_allele = false;
+          double methylation_calling_threshold =
+              options_.methylation_calling_threshold();
+          bool is_methylated = false;
+          if (IsMethylated(read, i, options_.enable_methylation_calling(),
+                               methylation_calling_threshold)) {
+            is_methylated = true;
+          }
           if (IsValidRefOffset(ref_offset) &&
               CanBasesBeUsed(read, base_offset, 1, options_,
                              is_low_quality_read_allele)) {
@@ -863,11 +938,11 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
                 ref_bases_[ref_offset] == read_seq[base_offset]
                     ? AlleleType::REFERENCE
                     : AlleleType::SUBSTITUTION;
-            to_add.emplace_back(interval_offset + i,
-                                string(read_seq.substr(base_offset, 1)), type,
-                                is_low_quality_read_allele,
-                                read.alignment().mapping_quality(),
-                                read.aligned_quality(base_offset));
+            to_add.emplace_back(
+                interval_offset + i, string(read_seq.substr(base_offset, 1)),
+                type, is_low_quality_read_allele,
+                read.alignment().mapping_quality(),
+                read.aligned_quality(base_offset), is_methylated);
           }
         }
         read_offset += op_len;
@@ -935,6 +1010,7 @@ std::vector<AlleleCountSummary> AlleleCounter::SummaryCounts(
     summary.set_total_read_count(TotalAlleleCounts(allele_count));
     summary.set_ref_nonconfident_read_count(
         allele_count.ref_nonconfident_read_count());
+    summary.set_methylation_fraction(MethylationFraction(allele_count));
     summaries.push_back(summary);
   }
   return summaries;

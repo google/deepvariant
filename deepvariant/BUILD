@@ -74,6 +74,7 @@ cc_library(
     srcs = ["allelecounter.cc"],
     hdrs = ["allelecounter.h"],
     deps = [
+        ":pileup_channel_lib",
         ":utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",

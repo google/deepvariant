@@ -40,6 +40,8 @@
 friend class test_case_name##_##test_name##_Test
 #endif
 
+#include <stdbool.h>
+
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -88,8 +90,19 @@ int TotalAlleleCounts(const AlleleCount& allele_count,
 int TotalAlleleCounts(absl::Span<const AlleleCount> allele_counts,
                       bool include_low_quality = false);
 
+// Returns the fraction of methylated reads at a position.
+// If `include_low_quality` is set to true, low quality reads will be included
+// in the calculation.
+double MethylationFraction(const AlleleCount& allele_count,
+                           bool include_low_quality = false);
+
 // Binary search for allele index by position.
 int AlleleIndex(absl::Span<const AlleleCount> allele_counts, int64_t pos);
+
+// Check if the read is methylated at the given offset.
+bool IsMethylated(const nucleus::genomics::v1::Read& read, int offset,
+                  bool enable_methylation_calling,
+                  double methylation_calling_threshold);
 
 // Represents an Allele observed in a read at a specific position in our
 // interval. Supports the concept that the site should be skipped but still
@@ -109,14 +122,16 @@ class ReadAllele {
   // Creates a ReadAllele with position, bases, and type.
   ReadAllele(int position, absl::string_view bases, const AlleleType& type,
              bool is_low_quality = false, uint8_t mapping_quality = 0,
-             uint8_t avg_base_quality = 0, bool is_reverse_strand = false)
+             uint8_t avg_base_quality = 0, bool is_reverse_strand = false,
+             bool is_methylated = false)
       : position_(position),
         bases_(bases),
         type_(type),
         low_quality_allele_(is_low_quality),
         mapping_quality_(mapping_quality),
         avg_base_quality_(avg_base_quality),
-        is_reverse_strand_(is_reverse_strand){}
+        is_reverse_strand_(is_reverse_strand),
+        is_methylated_(is_methylated){}
 
   // Gets the position of this ReadAllele. Can be < 0 or >= IntervalLength(),
   // indicating that the ReadAllele refers to a position outside of the
@@ -140,6 +155,8 @@ class ReadAllele {
 
   bool is_reverse_strand() const { return is_reverse_strand_; }
 
+  bool is_methylated() const { return is_methylated_; }
+
  private:
   static constexpr int kInvalidPosition = -1;
 
@@ -150,6 +167,7 @@ class ReadAllele {
   uint8_t mapping_quality_ = 0;
   uint8_t avg_base_quality_ = 0;
   bool is_reverse_strand_ = false;
+  bool is_methylated_ = false;
 };
 
 // Workhorse class to compute AlleleCounts over an interval on the genome.

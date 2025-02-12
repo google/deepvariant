@@ -591,6 +591,23 @@ _KEEP_LEGACY_ALLELE_COUNTER_BEHAVIOR = flags.DEFINE_bool(
         'We do not recommend setting this flag to True.'
     ),
 )
+
+_ENABLE_METHYLATION_CALLING = flags.DEFINE_bool(
+    'enable_methylation_calling',
+    False,
+    (
+        'If True, then methylation calling mode will be enabled. This mode uses'
+        ' methylation calling threshold to determine if a base is methylated.'
+    ),
+)
+_METHYLATION_CALLING_THRESHOLD = flags.DEFINE_float(
+    'methylation_calling_threshold',
+    0.5,
+    (
+        'Sets the minimum threshold for a base to be considered methylated.'
+        'This is used in methylation calling mode.'
+    ),
+)
 _PHASE_READS = flags.DEFINE_bool(
     'phase_reads',
     False,
@@ -816,6 +833,8 @@ def shared_flags_to_options(
       trained_small_model_path=_TRAINED_SMALL_MODEL_PATH.value,
       downsample_classes=list(map(float, _DOWNSAMPLE_CLASSES.value)),
       sample_mean_coverage_on_calling_regions=_SAMPLE_MEAN_COVERAGE_ON_CALLING_REGIONS.value,
+      enable_methylation_calling=_ENABLE_METHYLATION_CALLING.value,
+      methylation_calling_threshold=_METHYLATION_CALLING_THRESHOLD.value,
   )
 
   if add_flags:
@@ -947,6 +966,14 @@ def shared_flags_to_options(
 
     if _PILEUP_IMAGE_WIDTH.value:
       options.pic_options.width = _PILEUP_IMAGE_WIDTH.value
+
+    # Methylation related flags.
+    if _ENABLE_METHYLATION_CALLING.value:
+      options.enable_methylation_calling = _ENABLE_METHYLATION_CALLING.value
+    if _METHYLATION_CALLING_THRESHOLD.value:
+      options.methylation_calling_threshold = (
+          _METHYLATION_CALLING_THRESHOLD.value
+      )
 
     # DirectPhasing related flags.
     if _PHASE_READS.value:

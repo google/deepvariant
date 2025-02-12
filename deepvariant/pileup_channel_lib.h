@@ -116,7 +116,12 @@ const float kMaxPixelValueAsFloat = 254.0;
 // TODO: make this value configurable as a flag
 const float MaxFragmentLength = 1000;
 
+//-------------//
+// Methylation //
+//-------------//
+
 std::vector<std::uint8_t> Parse5mCAuxTag(const Read& read);
+extern const absl::string_view k5mCMethylationBaseModKey;
 
 class Channels {
  public:  // public only for tests
