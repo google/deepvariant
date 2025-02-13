@@ -48,6 +48,7 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
 
@@ -196,11 +197,10 @@ class VariantCaller {
   // applied to determine if an allele is good enough to call. If the allele
   // passes all the thresholds, the function returns true. Otherwise, it is
   // rejected and the function returns false.
-  bool AlleleFilter(
-                    const Allele& allele,
+  bool AlleleFilter(const Allele& allele,
                     const AlleleCount& target_sample_allele_count,
-                    const std::vector<AlleleCount>& all_samples_allele_counts,
-                    const std::vector<Allele>& non_target_sample_alleles) const;
+                    absl::Span<const AlleleCount> all_samples_allele_counts,
+                    absl::Span<const Allele> non_target_sample_alleles) const;
   // High-level API for calling variants in a region.
   //
   // Generate DeepVariantCall candidates for each position of the window.

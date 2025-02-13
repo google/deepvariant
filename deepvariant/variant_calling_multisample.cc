@@ -205,10 +205,9 @@ bool IsAllelesTheSame(const Allele& allele1, const Allele& allele2) {
 }
 
 bool VariantCaller::AlleleFilter(
-                  const Allele& allele,
-                  const AlleleCount& target_sample_allele_count,
-                  const std::vector<AlleleCount>& all_samples_allele_counts,
-                  const std::vector<Allele>& non_target_sample_alleles) const {
+    const Allele& allele, const AlleleCount& target_sample_allele_count,
+    absl::Span<const AlleleCount> all_samples_allele_counts,
+    absl::Span<const Allele> non_target_sample_alleles) const {
   const int target_samples_total_count =
       TotalAlleleCounts(target_sample_allele_count);
   const int all_samples_total_count =
