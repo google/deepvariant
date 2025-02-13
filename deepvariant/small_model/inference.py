@@ -27,9 +27,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Module for calling variants on examples using a trained keras model."""
-from collections.abc import Sequence
 import os
-
+from typing import Sequence
 import numpy as np
 # pylint: disable=g-import-not-at-top
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -90,22 +89,31 @@ class SmallModelVariantCaller:
         batch_size,
     )
 
-  def _accept_call_result(self, candidate, genotype_probabilities) -> bool:
+  def _accept_call_result(
+      self, candidate, alt_allele_indices, probability
+  ) -> bool:
     """Determine if the given probability is above the GQ threshold."""
-    threshold = (
-        self.snp_gq_threshold
-        if variant_utils.is_snp(candidate.variant)
-        else self.indel_gq_threshold
-    )
+    if variant_utils.is_snp(
+        candidate.variant,
+        exclude_alleles=make_small_model_examples.get_exclude_alleles(
+            candidate, alt_allele_indices
+        ),
+    ):
+      threshold = self.snp_gq_threshold
+    else:
+      threshold = self.indel_gq_threshold
     return (
         genomics_math.ptrue_to_bounded_phred(
-            max(genotype_probabilities), max_prob=self.MAX_CONFIDENCE
+            max(probability), self.MAX_CONFIDENCE
         )
         >= threshold
     )
 
   def _get_call_variant_outputs(
-      self, candidate, genotype_probabilities
+      self,
+      candidate,
+      genotype_probabilities,
+      alt_allele_indices: tuple[int, ...],
   ) -> deepvariant_pb2.CallVariantsOutput:
     """Returns a CallVariantsOutput for the given candidate and prediction."""
     variant = candidate.variant
@@ -118,7 +126,7 @@ class SmallModelVariantCaller:
         genotype_probabilities=genotype_probabilities,
         debug_info=None,
         alt_allele_indices=deepvariant_pb2.CallVariantsOutput.AltAlleleIndices(
-            indices=[0]
+            indices=alt_allele_indices
         ),
     )
 
@@ -133,22 +141,36 @@ class SmallModelVariantCaller:
 
   def call_variants(
       self,
-      candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      candidates_with_alt_allele_indices: Sequence[
+          tuple[deepvariant_pb2.DeepVariantCall, tuple[int, ...]]
+      ],
       examples: Sequence[Sequence[int]],
   ) -> tuple[
       list[deepvariant_pb2.CallVariantsOutput],
       list[deepvariant_pb2.DeepVariantCall],
   ]:
     """Calls variants on the given examples."""
-    probabilities = self.classify(np.array(examples))
+    genotype_probabilities = self.classify(np.array(examples))
+
     call_variant_outputs = []
-    filtered_candidates = []
-    for candidate, genotype_probabilities in zip(candidates, probabilities):
-      if self._accept_call_result(candidate, genotype_probabilities):
+    candidates_not_called_by_id = {}
+    for (candidate, alt_allele_indices), probability in zip(
+        candidates_with_alt_allele_indices,
+        genotype_probabilities,
+    ):
+      if self._accept_call_result(candidate, alt_allele_indices, probability):
         call_variant_outputs.append(
-            self._get_call_variant_outputs(candidate, genotype_probabilities)
+            self._get_call_variant_outputs(
+                candidate, probability, alt_allele_indices
+            )
         )
       else:
-        filtered_candidates.append(candidate)
+        candidate.make_examples_alt_allele_indices.append(
+            deepvariant_pb2.CallVariantsOutput.AltAlleleIndices(
+                indices=alt_allele_indices
+            )
+        )
+        candidates_not_called_by_id[id(candidate)] = candidate
 
-    return call_variant_outputs, filtered_candidates
+    candidates_not_called = list(candidates_not_called_by_id.values())
+    return call_variant_outputs, candidates_not_called

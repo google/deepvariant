@@ -196,7 +196,11 @@ std::string GetExamplesFilename(const MakeExamplesOptions& options,
 }
 
 std::vector<std::vector<std::string>> ExamplesGenerator::AltAlleleCombinations(
-    const Variant& variant) const {
+    const DeepVariantCall& candidate) const {
+  const Variant& variant = candidate.variant();
+  if (!candidate.make_examples_alt_allele_indices().empty()) {
+    return AltAlleleCombinationsFromIndices(candidate);
+  }
   std::vector<std::vector<std::string>> alt_combinations;
   switch (options_.pic_options().multi_allelic_mode()) {
     case deepvariant::PileupImageOptions::UNSPECIFIED:
@@ -223,6 +227,44 @@ std::vector<std::vector<std::string>> ExamplesGenerator::AltAlleleCombinations(
             alt_combinations.push_back(std::move(one_combination));
           }
         }
+      }
+      break;
+    default:
+      LOG(FATAL) << "Unknown value is specified for PileupImageOptions";
+  }
+  return alt_combinations;
+}
+
+// Generate all combinations of alt alleles given the indices of the alt alleles
+// provided in the DeepVariantCall.
+std::vector<std::vector<std::string>>
+ExamplesGenerator::AltAlleleCombinationsFromIndices(
+    const DeepVariantCall& candidate) const {
+  const Variant& variant = candidate.variant();
+  std::vector<std::vector<std::string>> alt_combinations;
+  std::vector<std::string> alts = {};
+  alts.insert(alts.end(), variant.alternate_bases().begin(),
+              variant.alternate_bases().end());
+  switch (options_.pic_options().multi_allelic_mode()) {
+    case deepvariant::PileupImageOptions::UNSPECIFIED:
+      LOG(FATAL) << "multi_allelic_mode cannot be UNSPECIFIED";
+      break;
+    case deepvariant::PileupImageOptions::NO_HET_ALT_IMAGES:
+      for (const auto& alt_alleles :
+           candidate.make_examples_alt_allele_indices()) {
+        if (alt_alleles.indices().size() == 1) {
+          alt_combinations.push_back({alts[alt_alleles.indices(0)]});
+        }
+      }
+      break;
+    case deepvariant::PileupImageOptions::ADD_HET_ALT_IMAGES:
+      for (const auto& alt_alleles :
+           candidate.make_examples_alt_allele_indices()) {
+        std::vector<std::string> one_combination;
+        for (const int alt_allele_index : alt_alleles.indices()) {
+          one_combination.push_back(alts[alt_allele_index]);
+        }
+        alt_combinations.push_back(std::move(one_combination));
       }
       break;
     default:
@@ -608,7 +650,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
       sample.sample_options.keep_only_window_spanning_reads();
   int min_trimming_overlap = kDefaultMinimumReadOverlap;
   for (const std::vector<std::string>& alt_combination :
-        AltAlleleCombinations(variant)) {
+       AltAlleleCombinations(candidate)) {
     std::vector<std::unique_ptr<ImageRow>> ref_images;
     std::vector<std::vector<std::unique_ptr<ImageRow>>> alt_images(2);
     for (int this_sample_order : sample_order) {

@@ -108,9 +108,17 @@ nucleus::genomics::v1::Variant MakeVariant(
 }
 
 DeepVariantCall MakeDeepVariantCall(
-    const nucleus::genomics::v1::Variant& variant) {
+    const nucleus::genomics::v1::Variant& variant,
+    absl::Span<const std::vector<int>> alt_allele_indices_set) {
   DeepVariantCall dv_call;
   *dv_call.mutable_variant() = variant;
+  for (const auto& alt_allele_indices : alt_allele_indices_set) {
+    CallVariantsOutput::AltAlleleIndices alt_allele_indices_proto;
+    for (const int alt_allele_index : alt_allele_indices) {
+      alt_allele_indices_proto.add_indices(alt_allele_index);
+    }
+    *dv_call.add_make_examples_alt_allele_indices() = alt_allele_indices_proto;
+  }
   return dv_call;
 }
 

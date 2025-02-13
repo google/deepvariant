@@ -478,7 +478,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 struct AltAlleleCombinationsTestData {
   PileupImageOptions_MultiAllelicMode mode;
-  Variant variant;
+  DeepVariantCall call;
   std::vector<std::vector<std::string>> expected_allele_combinations;
 };
 
@@ -496,8 +496,7 @@ TEST_P(AltAlleleCombinationsTest, AltAlleleCombinationsTestCases) {
                               /*test_mode=*/true);
 
   EXPECT_THAT(
-      ExamplesGeneratorPeer::CallAltAlleleCombinations(generator,
-                                                       param.variant),
+      ExamplesGeneratorPeer::CallAltAlleleCombinations(generator, param.call),
       UnorderedElementsAreArray(param.expected_allele_combinations));
 }
 
@@ -505,20 +504,42 @@ INSTANTIATE_TEST_SUITE_P(
     AltAlleleCombinationsTests, AltAlleleCombinationsTest,
     ValuesIn(std::vector<AltAlleleCombinationsTestData>({
         {.mode = deepvariant::PileupImageOptions::ADD_HET_ALT_IMAGES,
-         .variant = MakeVariant("A", {"T"}),
+         .call = MakeDeepVariantCall(MakeVariant("A", {"T"})),
          .expected_allele_combinations = {{"T"}}},
         {.mode = deepvariant::PileupImageOptions::ADD_HET_ALT_IMAGES,
-         .variant = MakeVariant("AT", {"A"}),
+         .call = MakeDeepVariantCall(MakeVariant("AT", {"A"})),
          .expected_allele_combinations = {{"A"}}},
         {.mode = deepvariant::PileupImageOptions::ADD_HET_ALT_IMAGES,
-         .variant = MakeVariant("A", {"ATT"}),
+         .call = MakeDeepVariantCall(MakeVariant("A", {"ATT"})),
          .expected_allele_combinations = {{"ATT"}}},
         {.mode = deepvariant::PileupImageOptions::ADD_HET_ALT_IMAGES,
-        .variant = MakeVariant("AT", {"A", "ATT"}),
+         .call = MakeDeepVariantCall(MakeVariant("AT", {"A", "ATT"})),
          .expected_allele_combinations = {{"A"}, {"ATT"}, {"A", "ATT"}}},
         {.mode = deepvariant::PileupImageOptions::NO_HET_ALT_IMAGES,
-        .variant = MakeVariant("AT", {"A", "ATT"}),
+         .call = MakeDeepVariantCall(MakeVariant("AT", {"A", "ATT"})),
          .expected_allele_combinations = {{"A"}, {"ATT"}}},
+        {.mode = deepvariant::PileupImageOptions::ADD_HET_ALT_IMAGES,
+         .call = MakeDeepVariantCall(MakeVariant("AT", {"A", "ATT", "ATTG"}),
+                                     {
+                                         {0},
+                                         {0, 1},
+                                     }),
+         .expected_allele_combinations = {{"A"}, {"A", "ATT"}}},
+        {.mode = deepvariant::PileupImageOptions::NO_HET_ALT_IMAGES,
+         .call = MakeDeepVariantCall(MakeVariant("AT", {"A", "ATT", "ATTG"}),
+                                     {
+                                         {0},
+                                         {1},
+                                         {0, 1},
+                                     }),
+         .expected_allele_combinations = {{"A"}, {"ATT"}}},
+        {.mode = deepvariant::PileupImageOptions::ADD_HET_ALT_IMAGES,
+         .call = MakeDeepVariantCall(MakeVariant("AT", {"A", "ATT", "ATTG"}),
+                                     {
+                                         {0, 2},
+                                         {1, 2},
+                                     }),
+         .expected_allele_combinations = {{"A", "ATTG"}, {"ATT", "ATTG"}}},
     })));
 
 struct CreateHaplotypeTestData {

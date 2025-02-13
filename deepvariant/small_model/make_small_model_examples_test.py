@@ -112,13 +112,75 @@ FAKE_VARIANT_INSERTION = deepvariant_pb2.DeepVariantCall(
     variant=variants_pb2.Variant(
         reference_bases="A",
         alternate_bases=["AAC"],
-    )
+    ),
+    allele_support_ext={
+        "AAC": deepvariant_pb2.DeepVariantCall.SupportingReadsExt()
+    },
 )
 FAKE_VARIANT_DELETION = deepvariant_pb2.DeepVariantCall(
     variant=variants_pb2.Variant(
         reference_bases="AACC",
         alternate_bases=["C"],
-    )
+    ),
+    allele_support_ext={
+        "C": deepvariant_pb2.DeepVariantCall.SupportingReadsExt()
+    },
+)
+FAKE_VARIANT_MULTIALLELIC_INSERTION = deepvariant_pb2.DeepVariantCall(
+    variant=variants_pb2.Variant(
+        reference_bases="A",
+        alternate_bases=["AC", "ACC", "ACCC"],
+    ),
+    ref_support_ext=deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+        read_infos=[
+            deepvariant_pb2.DeepVariantCall.ReadSupport(
+                read_name="read_1",
+            ),
+            deepvariant_pb2.DeepVariantCall.ReadSupport(
+                read_name="read_2",
+            ),
+            deepvariant_pb2.DeepVariantCall.ReadSupport(
+                read_name="read_3",
+            ),
+        ]
+    ),
+    allele_support_ext={
+        "AC": deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+            read_infos=[
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_4",
+                ),
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_5",
+                ),
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_6",
+                ),
+            ]
+        ),
+        "ACC": deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+            read_infos=[
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_7",
+                ),
+            ]
+        ),
+        "ACCC": deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+            read_infos=[
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_8",
+                ),
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_9",
+                ),
+            ]
+        ),
+    },
+)
+FAKE_VARIANT_MULTIALLELIC_INSERTION_LABEL_HETALT = variant_labeler.VariantLabel(
+    is_confident=True,
+    variant=FAKE_VARIANT_MULTIALLELIC_INSERTION.variant,
+    genotype=(1, 2),
 )
 READ_PHASES = {
     "read_1": 1,
@@ -154,8 +216,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expected_value="A",
       ),
       dict(
-          testcase_name="alt_1_feature",
-          feature=make_small_model_examples.IdentifyingFeature.ALT_1,
+          testcase_name="alt_feature",
+          feature=make_small_model_examples.IdentifyingFeature.ALT,
           expected_value="C",
       ),
   )
@@ -164,7 +226,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
   ):
     self.assertEqual(
         make_small_model_examples.FeatureEncoder(
-            FAKE_VARIANT_CALL_HET, FAKE_VARIANT_CALL_HET_LABEL
+            FAKE_VARIANT_CALL_HET,
+            make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
         ).encode_identifying_feature(
             feature,
         ),
@@ -178,9 +241,21 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expected_value=3,
       ),
       dict(
-          testcase_name="num_reads_supports_alt_1_feature",
-          feature=make_small_model_examples.BaseFeature.NUM_READS_SUPPORTS_ALT_1,
+          testcase_name="num_reads_supports_alt_feature",
+          feature=make_small_model_examples.BaseFeature.NUM_READS_SUPPORTS_ALT,
           expected_value=3,
+      ),
+      dict(
+          testcase_name="alt_indices_depth_feature",
+          feature=make_small_model_examples.BaseFeature.ALT_INDICES_DEPTH,
+          expected_value=6,
+      ),
+      dict(
+          testcase_name="alt_indices_depth_feature_multiallelic",
+          feature=make_small_model_examples.BaseFeature.ALT_INDICES_DEPTH,
+          expected_value=7,
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          alt_allele_indices=(0, 1),
       ),
       dict(
           testcase_name="total_depth_feature",
@@ -188,9 +263,29 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expected_value=6,
       ),
       dict(
-          testcase_name="variant_allele_frequency_1_feature",
-          feature=make_small_model_examples.BaseFeature.VARIANT_ALLELE_FREQUENCY_1,
+          testcase_name="total_depth_feature_multiallelic",
+          feature=make_small_model_examples.BaseFeature.TOTAL_DEPTH,
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          expected_value=9,
+      ),
+      dict(
+          testcase_name="variant_allele_frequency_feature",
+          feature=make_small_model_examples.BaseFeature.VARIANT_ALLELE_FREQUENCY,
           expected_value=50,
+      ),
+      dict(
+          testcase_name="alt_indices_variant_allele_frequency_feature",
+          feature=make_small_model_examples.BaseFeature.ALT_INDICES_VARIANT_ALLELE_FREQUENCY,
+          expected_value=50,
+      ),
+      dict(
+          testcase_name=(
+              "alt_indices_variant_allele_frequency_feature_multiallelic"
+          ),
+          feature=make_small_model_examples.BaseFeature.ALT_INDICES_VARIANT_ALLELE_FREQUENCY,
+          expected_value=57,
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          alt_allele_indices=(0, 1),
       ),
       dict(
           testcase_name="ref_mapping_quality_feature",
@@ -198,8 +293,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expected_value=40,
       ),
       dict(
-          testcase_name="alt_1_mapping_quality_feature",
-          feature=make_small_model_examples.BaseFeature.ALT_1_MAPPING_QUALITY,
+          testcase_name="alt_mapping_quality_feature",
+          feature=make_small_model_examples.BaseFeature.ALT_MAPPING_QUALITY,
           expected_value=50,
       ),
       dict(
@@ -208,8 +303,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expected_value=30,
       ),
       dict(
-          testcase_name="alt_1_base_quality_feature",
-          feature=make_small_model_examples.BaseFeature.ALT_1_BASE_QUALITY,
+          testcase_name="alt_base_quality_feature",
+          feature=make_small_model_examples.BaseFeature.ALT_BASE_QUALITY,
           expected_value=50,
       ),
       dict(
@@ -218,27 +313,74 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expected_value=66,
       ),
       dict(
-          testcase_name="alt_1_reverse_strand_ratio_feature",
-          feature=make_small_model_examples.BaseFeature.ALT_1_REVERSE_STRAND_RATIO,
+          testcase_name="alt_reverse_strand_ratio_feature",
+          feature=make_small_model_examples.BaseFeature.ALT_REVERSE_STRAND_RATIO,
           expected_value=0,
       ),
   )
-  def test_feature_encoder_encode_base_feature(self, feature, expected_value):
+  def test_feature_encoder_encode_base_feature(
+      self,
+      feature,
+      expected_value,
+      candidate=FAKE_VARIANT_CALL_HET,
+      alt_allele_indices=make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+  ):
     self.assertEqual(
         make_small_model_examples.FeatureEncoder(
-            FAKE_VARIANT_CALL_HET, FAKE_VARIANT_CALL_HET_LABEL
+            candidate,
+            alt_allele_indices,
         ).encode_base_feature(
             feature,
         ),
         expected_value,
     )
 
-  def test_feature_encoder_one_hot_encode_label(self):
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="het_label",
+          candidate=FAKE_VARIANT_CALL_HET,
+          alt_allele_indices=(0,),
+          label=FAKE_VARIANT_CALL_HET_LABEL,
+          expected_value=[0, 1, 0],
+      ),
+      dict(
+          testcase_name="hetalt_label_with_alt_allele_indices_0",
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          alt_allele_indices=(0,),
+          label=FAKE_VARIANT_MULTIALLELIC_INSERTION_LABEL_HETALT,
+          expected_value=[0, 1, 0],
+      ),
+      dict(
+          testcase_name="hetalt_label_with_alt_allele_indices_1",
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          alt_allele_indices=(1,),
+          label=FAKE_VARIANT_MULTIALLELIC_INSERTION_LABEL_HETALT,
+          expected_value=[0, 1, 0],
+      ),
+      dict(
+          testcase_name="hetalt_label_with_alt_allele_indices_2",
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          alt_allele_indices=(2,),
+          label=FAKE_VARIANT_MULTIALLELIC_INSERTION_LABEL_HETALT,
+          expected_value=[1, 0, 0],
+      ),
+      dict(
+          testcase_name="hetalt_label_with_alt_allele_indices_1,2",
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          alt_allele_indices=(1, 2),
+          label=FAKE_VARIANT_MULTIALLELIC_INSERTION_LABEL_HETALT,
+          expected_value=[0, 1, 0],
+      ),
+  )
+  def test_feature_encoder_one_hot_encode_label(
+      self, candidate, alt_allele_indices, label, expected_value
+  ):
     self.assertEqual(
         make_small_model_examples.FeatureEncoder(
-            FAKE_VARIANT_CALL_HET
-        ).encode_label(FAKE_VARIANT_CALL_HET_LABEL),
-        [0, 1, 0],
+            candidate,
+            alt_allele_indices,
+        ).encode_label(label),
+        expected_value,
     )
 
   @parameterized.named_parameters(
@@ -332,11 +474,46 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           candidate=FAKE_VARIANT_DELETION,
           expected_value=3,
       ),
+      dict(
+          testcase_name="is_multiallelic_feature_biallelic",
+          feature=make_small_model_examples.VariantFeature.IS_MULTIALLELIC,
+          candidate=FAKE_VARIANT_DELETION,
+          expected_value=0,
+      ),
+      dict(
+          testcase_name="is_multiallelic_feature_multiallelic",
+          feature=make_small_model_examples.VariantFeature.IS_MULTIALLELIC,
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          expected_value=1,
+      ),
+      dict(
+          testcase_name="is_multiple_alt_alleles_feature_alt_allele_indices_0",
+          feature=make_small_model_examples.VariantFeature.IS_MULTIPLE_ALT_ALLELES,
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          expected_value=0,
+          alt_allele_indices=(0,),
+      ),
+      dict(
+          testcase_name=(
+              "is_multiple_alt_alleles_feature_alt_allele_indices_1,2"
+          ),
+          feature=make_small_model_examples.VariantFeature.IS_MULTIPLE_ALT_ALLELES,
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          expected_value=1,
+          alt_allele_indices=(1, 2),
+      ),
   )
-  def test_encode_variant_feature(self, feature, candidate, expected_value):
+  def test_encode_variant_feature(
+      self,
+      feature,
+      candidate,
+      expected_value,
+      alt_allele_indices=make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+  ):
     self.assertEqual(
         make_small_model_examples.FeatureEncoder(
-            candidate
+            candidate,
+            alt_allele_indices,
         ).encode_variant_feature(
             feature,
         ),
@@ -383,10 +560,29 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
   ):
     self.assertEqual(
         make_small_model_examples.FeatureEncoder(
-            FAKE_VARIANT_CALL_HET
+            FAKE_VARIANT_CALL_HET,
+            make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
         ).encode_variant_allele_frequency_at_position(
             vaf_context_window_size,
         ),
+        expected_value,
+    )
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="biallelic_candidate",
+          candidate=FAKE_VARIANT_CALL_HET,
+          expected_value=[(0,)],
+      ),
+      dict(
+          testcase_name="multiallelic_candidate",
+          candidate=FAKE_VARIANT_MULTIALLELIC_INSERTION,
+          expected_value=[(0,), (1,), (2,), (0, 1), (0, 2), (1, 2)],
+      ),
+  )
+  def test_get_set_of_allele_indices(self, candidate, expected_value):
+    self.assertEqual(
+        make_small_model_examples.get_set_of_allele_indices(candidate),
         expected_value,
     )
 
@@ -396,20 +592,24 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expand_by_haplotype=False,
           expected_columns=[
               "num_reads_supports_ref",
-              "num_reads_supports_alt_1",
+              "num_reads_supports_alt",
+              "alt_indices_depth",
               "total_depth",
-              "variant_allele_frequency_1",
+              "variant_allele_frequency",
+              "alt_indices_variant_allele_frequency",
               "ref_mapping_quality",
-              "alt_1_mapping_quality",
+              "alt_mapping_quality",
               "ref_base_quality",
-              "alt_1_base_quality",
+              "alt_base_quality",
               "ref_reverse_strand_ratio",
-              "alt_1_reverse_strand_ratio",
+              "alt_reverse_strand_ratio",
               "is_snp",
               "is_insertion",
               "is_deletion",
               "insertion_length",
               "deletion_length",
+              "is_multiallelic",
+              "is_multiple_alt_alleles",
           ],
       ),
       dict(
@@ -417,20 +617,24 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expand_by_haplotype=False,
           expected_columns=[
               "num_reads_supports_ref",
-              "num_reads_supports_alt_1",
+              "num_reads_supports_alt",
+              "alt_indices_depth",
               "total_depth",
-              "variant_allele_frequency_1",
+              "variant_allele_frequency",
+              "alt_indices_variant_allele_frequency",
               "ref_mapping_quality",
-              "alt_1_mapping_quality",
+              "alt_mapping_quality",
               "ref_base_quality",
-              "alt_1_base_quality",
+              "alt_base_quality",
               "ref_reverse_strand_ratio",
-              "alt_1_reverse_strand_ratio",
+              "alt_reverse_strand_ratio",
               "is_snp",
               "is_insertion",
               "is_deletion",
               "insertion_length",
               "deletion_length",
+              "is_multiallelic",
+              "is_multiple_alt_alleles",
               "variant_allele_frequency_at_minus_1",
               "variant_allele_frequency_at_plus_0",
               "variant_allele_frequency_at_plus_1",
@@ -441,20 +645,24 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expand_by_haplotype=False,
           expected_columns=[
               "num_reads_supports_ref",
-              "num_reads_supports_alt_1",
+              "num_reads_supports_alt",
+              "alt_indices_depth",
               "total_depth",
-              "variant_allele_frequency_1",
+              "variant_allele_frequency",
+              "alt_indices_variant_allele_frequency",
               "ref_mapping_quality",
-              "alt_1_mapping_quality",
+              "alt_mapping_quality",
               "ref_base_quality",
-              "alt_1_base_quality",
+              "alt_base_quality",
               "ref_reverse_strand_ratio",
-              "alt_1_reverse_strand_ratio",
+              "alt_reverse_strand_ratio",
               "is_snp",
               "is_insertion",
               "is_deletion",
               "insertion_length",
               "deletion_length",
+              "is_multiallelic",
+              "is_multiple_alt_alleles",
               "variant_allele_frequency_at_minus_5",
               "variant_allele_frequency_at_minus_4",
               "variant_allele_frequency_at_minus_3",
@@ -473,53 +681,63 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
           expand_by_haplotype=True,
           expected_columns=[
               "num_reads_supports_ref",
-              "num_reads_supports_alt_1",
+              "num_reads_supports_alt",
+              "alt_indices_depth",
               "total_depth",
-              "variant_allele_frequency_1",
+              "variant_allele_frequency",
+              "alt_indices_variant_allele_frequency",
               "ref_mapping_quality",
-              "alt_1_mapping_quality",
+              "alt_mapping_quality",
               "ref_base_quality",
-              "alt_1_base_quality",
+              "alt_base_quality",
               "ref_reverse_strand_ratio",
-              "alt_1_reverse_strand_ratio",
+              "alt_reverse_strand_ratio",
               "is_snp",
               "is_insertion",
               "is_deletion",
               "insertion_length",
               "deletion_length",
+              "is_multiallelic",
+              "is_multiple_alt_alleles",
               "variant_allele_frequency_at_minus_1",
               "variant_allele_frequency_at_plus_0",
               "variant_allele_frequency_at_plus_1",
               "num_reads_supports_ref_hp_0",
-              "num_reads_supports_alt_1_hp_0",
+              "num_reads_supports_alt_hp_0",
+              "alt_indices_depth_hp_0",
               "total_depth_hp_0",
-              "variant_allele_frequency_1_hp_0",
+              "variant_allele_frequency_hp_0",
+              "alt_indices_variant_allele_frequency_hp_0",
               "ref_mapping_quality_hp_0",
-              "alt_1_mapping_quality_hp_0",
+              "alt_mapping_quality_hp_0",
               "ref_base_quality_hp_0",
-              "alt_1_base_quality_hp_0",
+              "alt_base_quality_hp_0",
               "ref_reverse_strand_ratio_hp_0",
-              "alt_1_reverse_strand_ratio_hp_0",
+              "alt_reverse_strand_ratio_hp_0",
               "num_reads_supports_ref_hp_1",
-              "num_reads_supports_alt_1_hp_1",
+              "num_reads_supports_alt_hp_1",
+              "alt_indices_depth_hp_1",
               "total_depth_hp_1",
-              "variant_allele_frequency_1_hp_1",
+              "variant_allele_frequency_hp_1",
+              "alt_indices_variant_allele_frequency_hp_1",
               "ref_mapping_quality_hp_1",
-              "alt_1_mapping_quality_hp_1",
+              "alt_mapping_quality_hp_1",
               "ref_base_quality_hp_1",
-              "alt_1_base_quality_hp_1",
+              "alt_base_quality_hp_1",
               "ref_reverse_strand_ratio_hp_1",
-              "alt_1_reverse_strand_ratio_hp_1",
+              "alt_reverse_strand_ratio_hp_1",
               "num_reads_supports_ref_hp_2",
-              "num_reads_supports_alt_1_hp_2",
+              "num_reads_supports_alt_hp_2",
+              "alt_indices_depth_hp_2",
               "total_depth_hp_2",
-              "variant_allele_frequency_1_hp_2",
+              "variant_allele_frequency_hp_2",
+              "alt_indices_variant_allele_frequency_hp_2",
               "ref_mapping_quality_hp_2",
-              "alt_1_mapping_quality_hp_2",
+              "alt_mapping_quality_hp_2",
               "ref_base_quality_hp_2",
-              "alt_1_base_quality_hp_2",
+              "alt_base_quality_hp_2",
               "ref_reverse_strand_ratio_hp_2",
-              "alt_1_reverse_strand_ratio_hp_2",
+              "alt_reverse_strand_ratio_hp_2",
           ],
       ),
   )
@@ -543,14 +761,14 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             vaf_context_window_size=3
         )
     )
-    small_model_examples = small_model_example_factory.encode_training_examples(
+    training_examples = small_model_example_factory.encode_training_examples(
         [
             (FAKE_VARIANT_CALL_HET, FAKE_VARIANT_CALL_HET_LABEL),
         ],
         {},
     )
     self.assertEqual(
-        small_model_examples[0],
+        training_examples[0],
         tf.train.Example(
             features=tf.train.Features(
                 feature={
@@ -561,6 +779,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
                                     3,
                                     3,
                                     6,
+                                    6,
+                                    50,
                                     50,
                                     40,
                                     50,
@@ -569,6 +789,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
                                     66,
                                     0,
                                     1,
+                                    0,
+                                    0,
                                     0,
                                     0,
                                     0,
@@ -594,6 +816,11 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
                     make_small_model_examples.LABEL_ENCODED: tf.train.Feature(
                         int64_list=tf.train.Int64List(value=[0, 1, 0])
                     ),
+                    make_small_model_examples.GENOTYPE_ENCODED: (
+                        tf.train.Feature(
+                            int64_list=tf.train.Int64List(value=[0, 1])
+                        )
+                    ),
                 }
             )
         ),
@@ -605,19 +832,30 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             vaf_context_window_size=5
         )
     )
-    skipped, kept, examples = (
-        small_model_example_factory.encode_inference_examples(
-            [FAKE_VARIANT_CALL_HET], {}
-        )
+    example_set = small_model_example_factory.encode_inference_examples(
+        [FAKE_VARIANT_CALL_HET, FAKE_VARIANT_MULTIALLELIC_INSERTION], {}
     )
-    self.assertEqual(skipped, [])
-    self.assertEqual(kept, [FAKE_VARIANT_CALL_HET])
+    self.assertEqual(example_set.skipped_candidates, [])
     self.assertEqual(
-        examples[0],
+        example_set.candidates_with_alt_allele_indices,
+        [
+            (FAKE_VARIANT_CALL_HET, (0,)),
+            (FAKE_VARIANT_MULTIALLELIC_INSERTION, (0,)),
+            (FAKE_VARIANT_MULTIALLELIC_INSERTION, (1,)),
+            (FAKE_VARIANT_MULTIALLELIC_INSERTION, (2,)),
+            (FAKE_VARIANT_MULTIALLELIC_INSERTION, (0, 1)),
+            (FAKE_VARIANT_MULTIALLELIC_INSERTION, (0, 2)),
+            (FAKE_VARIANT_MULTIALLELIC_INSERTION, (1, 2)),
+        ],
+    )
+    self.assertEqual(
+        example_set.inference_examples[0],
         [
             3,
             3,
             6,
+            6,
+            50,
             50,
             40,
             50,
@@ -626,6 +864,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             66,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -645,20 +885,25 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             expand_by_haplotype=True,
         )
     )
-    skipped, kept, examples = (
-        small_model_example_factory.encode_inference_examples(
-            [FAKE_VARIANT_CALL_HET],
-            READ_PHASES,
-        )
+    example_set = small_model_example_factory.encode_inference_examples(
+        [FAKE_VARIANT_CALL_HET],
+        READ_PHASES,
     )
-    self.assertEqual(skipped, [])
-    self.assertEqual(kept, [FAKE_VARIANT_CALL_HET])
+    self.assertEqual(example_set.skipped_candidates, [])
     self.assertEqual(
-        examples[0],
+        example_set.candidates_with_alt_allele_indices,
+        [
+            (FAKE_VARIANT_CALL_HET, (0,)),
+        ],
+    )
+    self.assertEqual(
+        example_set.inference_examples[0],
         [
             3,
             3,
             6,
+            6,
+            50,
             50,
             40,
             50,
@@ -667,6 +912,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             66,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -679,6 +926,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             1,
             0,
             1,
+            6,
+            0,
             0,
             40,
             0,
@@ -689,6 +938,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             1,
             2,
             3,
+            6,
+            33,
             66,
             60,
             45,
@@ -699,6 +950,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             1,
             1,
             2,
+            6,
+            16,
             50,
             20,
             60,

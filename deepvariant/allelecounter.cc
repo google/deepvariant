@@ -266,7 +266,7 @@ int GetAvgBaseQuality(const nucleus::genomics::v1::Read& read,
                       CigarUnit cigar_op, int offset, int len) {
   int indel_base_quality = 0;
   if (cigar_op.operation() == CigarUnit::DELETE) {
-    return 0;
+    return read.aligned_quality(offset);
   }
   for (int i = 0; i < len; i++) {
     indel_base_quality += read.aligned_quality(offset + i);
@@ -942,7 +942,8 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
                 interval_offset + i, string(read_seq.substr(base_offset, 1)),
                 type, is_low_quality_read_allele,
                 read.alignment().mapping_quality(),
-                read.aligned_quality(base_offset), is_methylated);
+                read.aligned_quality(base_offset),
+                read.alignment().position().reverse_strand(), is_methylated);
           }
         }
         read_offset += op_len;

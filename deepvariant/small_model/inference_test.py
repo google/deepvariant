@@ -26,7 +26,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for small_model/inference.py."""
 from unittest import mock
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -100,11 +99,23 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
   def test_call_variants(self):
     call_variant_outputs, filtered_candidates = (
         self.variant_caller.call_variants(
-            candidates=[
-                FAKE_VARIANT_CALL_1,
-                FAKE_VARIANT_CALL_2,
-                FAKE_VARIANT_CALL_INSERTION,
-                FAKE_VARIANT_CALL_DELETION,
+            candidates_with_alt_allele_indices=[
+                (
+                    FAKE_VARIANT_CALL_1,
+                    make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+                ),
+                (
+                    FAKE_VARIANT_CALL_2,
+                    make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+                ),
+                (
+                    FAKE_VARIANT_CALL_INSERTION,
+                    make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+                ),
+                (
+                    FAKE_VARIANT_CALL_DELETION,
+                    make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+                ),
             ],
             examples=[
                 tf.train.Example(),

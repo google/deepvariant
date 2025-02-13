@@ -190,7 +190,11 @@ class ExamplesGenerator {
 
   // Generates all pairs of alt alleles and ref.
   std::vector<std::vector<std::string>> AltAlleleCombinations(
-      const nucleus::genomics::v1::Variant& variant) const;
+      const DeepVariantCall& candidate) const;
+
+  // Generates only the specified pairs of alt alleles.
+  std::vector<std::vector<std::string>> AltAlleleCombinationsFromIndices(
+      const DeepVariantCall& candidate) const;
 
   // Creates haplotype by concatenating alt bases and reference from both sides.
   // Haplotype length should be equal pileup image width.
@@ -269,9 +273,8 @@ class ExamplesGeneratorPeer {
  public:
   // Calls private AltAlleleCombinations.
   static std::vector<std::vector<std::string>> CallAltAlleleCombinations(
-      const ExamplesGenerator& generator,
-      const nucleus::genomics::v1::Variant& variant) {
-    return generator.AltAlleleCombinations(variant);
+      const ExamplesGenerator& generator, const DeepVariantCall& candidate) {
+    return generator.AltAlleleCombinations(candidate);
   }
 
   static std::string CallCreateHaplotype(

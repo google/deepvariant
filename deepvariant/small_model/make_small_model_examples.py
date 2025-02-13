@@ -28,8 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Module for generating small model examples."""
 
-from collections.abc import Sequence
+import dataclasses
 import enum
+import itertools
+from typing import Sequence
 
 import tensorflow as tf
 
@@ -42,6 +44,7 @@ from third_party.nucleus.util import variant_utils
 FEATURES_ENCODED = 'features/encoded'
 IDS_ENCODED = 'ids/encoded'
 LABEL_ENCODED = 'label/encoded'
+GENOTYPE_ENCODED = 'genotype/encoded'
 
 
 class GenotypeEncoding(enum.Enum):
@@ -67,7 +70,7 @@ class IdentifyingFeature(SmallModelFeature):
   START = 'start'
   END = 'end'
   REF = 'ref'
-  ALT_1 = 'alt_1'
+  ALT = 'alt'
 
 
 class TruthFeature(SmallModelFeature):
@@ -80,15 +83,17 @@ class BaseFeature(SmallModelFeature):
   """Set of basic features that can be computed over a subset of reads."""
 
   NUM_READS_SUPPORTS_REF = 'num_reads_supports_ref'
-  NUM_READS_SUPPORTS_ALT_1 = 'num_reads_supports_alt_1'
+  NUM_READS_SUPPORTS_ALT = 'num_reads_supports_alt'
+  ALT_INDICES_DEPTH = 'alt_indices_depth'
   TOTAL_DEPTH = 'total_depth'
-  VARIANT_ALLELE_FREQUENCY_1 = 'variant_allele_frequency_1'
+  VARIANT_ALLELE_FREQUENCY = 'variant_allele_frequency'
+  ALT_INDICES_VARIANT_ALLELE_FREQUENCY = 'alt_indices_variant_allele_frequency'
   REF_MAPPING_QUALITY = 'ref_mapping_quality'
-  ALT_1_MAPPING_QUALITY = 'alt_1_mapping_quality'
+  ALT_MAPPING_QUALITY = 'alt_mapping_quality'
   REF_BASE_QUALITY = 'ref_base_quality'
-  ALT_1_BASE_QUALITY = 'alt_1_base_quality'
+  ALT_BASE_QUALITY = 'alt_base_quality'
   REF_REVERSE_STRAND_RATIO = 'ref_reverse_strand_ratio'
-  ALT_1_REVERSE_STRAND_RATIO = 'alt_1_reverse_strand_ratio'
+  ALT_REVERSE_STRAND_RATIO = 'alt_reverse_strand_ratio'
 
 
 class VariantFeature(SmallModelFeature):
@@ -99,6 +104,8 @@ class VariantFeature(SmallModelFeature):
   IS_DELETION = 'is_deletion'
   INSERTION_LENGTH = 'insertion_length'
   DELETION_LENGTH = 'deletion_length'
+  IS_MULTIALLELIC = 'is_multiallelic'
+  IS_MULTIPLE_ALT_ALLELES = 'is_multiple_alt_alleles'
 
 
 ENCODING_BY_GENOTYPE = {
@@ -106,10 +113,16 @@ ENCODING_BY_GENOTYPE = {
     (0, 1): GenotypeEncoding.HET.value,
     (1, 0): GenotypeEncoding.HET.value,
     (1, 1): GenotypeEncoding.HOM_ALT.value,
+    (0,): GenotypeEncoding.REF.value,
+    (1,): GenotypeEncoding.HOM_ALT.value,
 }
 FAKE_CANDIDATE = deepvariant_pb2.DeepVariantCall(
-    variant=variants_pb2.Variant(alternate_bases=[''])
+    variant=variants_pb2.Variant(alternate_bases=['']),
+    allele_support_ext={
+        '': deepvariant_pb2.DeepVariantCall.SupportingReadsExt(read_infos=[])
+    },
 )
+DEFAULT_ALT_ALLELE_INDICES = (0,)
 
 
 def _mean_for_attribute(
@@ -121,10 +134,8 @@ def _mean_for_attribute(
   if not read_infos:
     return 0
   return (
-      multiplier
-      * sum(getattr(r, attribute_name) for r in read_infos)
-      // len(read_infos)
-  )
+      multiplier * sum(getattr(r, attribute_name) for r in read_infos)
+  ) // len(read_infos)
 
 
 def _filter_by_haplotype(
@@ -146,12 +157,49 @@ def _get_context_allele_frequency_offsets(
   return list(range(-half_window_size, half_window_size + 1))
 
 
+def get_set_of_allele_indices(
+    candidate: deepvariant_pb2.DeepVariantCall,
+) -> list[tuple[int, ...]]:
+  """Returns the complete set of allele indices for the candidate."""
+  num_alt_alleles = len(candidate.variant.alternate_bases)
+  biallelic = [(i,) for i in range(num_alt_alleles)]
+  multiallelic = list(itertools.combinations(range(num_alt_alleles), 2))
+  return biallelic + multiallelic
+
+
+def _get_alt_read_infos(
+    candidate: deepvariant_pb2.DeepVariantCall,
+    alt_allele_indices: tuple[int, ...],
+) -> Sequence[deepvariant_pb2.DeepVariantCall.ReadSupport]:
+  """Returns the read infos for the given allele index, where -1 is ref."""
+  read_infos = []
+  for allele_index in alt_allele_indices:
+    alt_base = candidate.variant.alternate_bases[allele_index]
+    if alt_base not in candidate.allele_support_ext:
+      raise ValueError(f'Alt base "{alt_base}" not found in candidate.')
+    read_infos.extend(candidate.allele_support_ext[alt_base].read_infos)
+  return read_infos
+
+
+def get_exclude_alleles(
+    candidate: deepvariant_pb2.DeepVariantCall,
+    alt_allele_indices: tuple[int, ...],
+) -> list[str]:
+  """Returns the list of alleles to exclude from the candidate."""
+  return [
+      alternate_bases
+      for i, alternate_bases in enumerate(candidate.variant.alternate_bases)
+      if i not in alt_allele_indices
+  ]
+
+
 class FeatureEncoder:
   """Class for encoding small model features for a single candidate."""
 
   def __init__(
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
+      alt_allele_indices: tuple[int, ...],
       haplotype: int | None = None,
       read_phases: dict[str, int] | None = None,
   ):
@@ -159,27 +207,35 @@ class FeatureEncoder:
 
     Args:
       candidate: the candidate proto from which to extract the feature.
+      alt_allele_indices: the indices of the alt alleles to consider when
+        computing the feature values.
       haplotype: (optional) the haplotype tag to use for filtering reads.
       read_phases: (optional)a dictionary of read names to haplotype phases.
     """
     self.candidate = candidate
     self.haplotype = haplotype
+    self.alt_allele_indices = alt_allele_indices
     self.ref_read_infos = self.candidate.ref_support_ext.read_infos
+    self.alt_read_infos = _get_alt_read_infos(
+        candidate, self.alt_allele_indices
+    )
+    self.all_alt_read_infos = _get_alt_read_infos(
+        candidate, tuple(range(len(candidate.variant.alternate_bases)))
+    )
     if haplotype is not None and read_phases is not None:
       self.ref_read_infos = _filter_by_haplotype(
           self.ref_read_infos, read_phases, haplotype
       )
-    self.ref_read_infos_count = len(self.ref_read_infos)
-
-    alt_base = candidate.variant.alternate_bases[0]
-    self.alt_1_read_infos = []
-    if alt_base in candidate.allele_support_ext:
-      self.alt_1_read_infos = candidate.allele_support_ext[alt_base].read_infos
-    if haplotype is not None and read_phases is not None:
-      self.alt_1_read_infos = _filter_by_haplotype(
-          self.alt_1_read_infos, read_phases, haplotype
+      self.alt_read_infos = _filter_by_haplotype(
+          self.alt_read_infos, read_phases, haplotype
       )
-    self.alt_1_read_infos_count = len(self.alt_1_read_infos)
+      self.all_alt_read_infos = _filter_by_haplotype(
+          self.all_alt_read_infos, read_phases, haplotype
+      )
+    self.ref_read_infos_count = len(self.ref_read_infos)
+    self.alt_read_infos_count = len(self.alt_read_infos)
+    self.all_alt_read_infos_count = len(self.all_alt_read_infos)
+    self.exclude_alleles = get_exclude_alleles(candidate, alt_allele_indices)
 
   def _get_contig(self) -> str:
     """Returns the contig of the candidate."""
@@ -197,44 +253,60 @@ class FeatureEncoder:
     """Returns the reference base of the candidate."""
     return self.candidate.variant.reference_bases
 
-  def _get_alt_1(self) -> str:
+  def _get_alt(self) -> str:
     """Returns the first alternate base of the candidate."""
-    return self.candidate.variant.alternate_bases[0]
+    return '|'.join(
+        self.candidate.variant.alternate_bases[allele_index]
+        for allele_index in self.alt_allele_indices
+    )
 
   def _get_num_reads_supports_ref(self) -> int:
     """Returns the number of reads supporting the reference base."""
     return self.ref_read_infos_count
 
-  def _get_num_reads_supports_alt_1(self) -> int:
+  def _get_num_reads_supports_alt(self) -> int:
     """Returns the number of reads supporting the alternate base."""
-    return self.alt_1_read_infos_count
+    return self.alt_read_infos_count
+
+  def _get_alt_indices_depth(self) -> int:
+    """Returns the depth of the alt indices."""
+    return self.ref_read_infos_count + self.alt_read_infos_count
 
   def _get_total_depth(self) -> int:
     """Returns the total depth of the candidate."""
-    return self.ref_read_infos_count + self.alt_1_read_infos_count
+    return len(self.candidate.ref_support_ext.read_infos) + sum(
+        len(r.read_infos) for r in self.candidate.allele_support_ext.values()
+    )
 
-  def _get_variant_allele_frequency_1(self) -> int:
+  def _get_alt_indices_variant_allele_frequency(self) -> int:
+    """Returns the ref allele frequency of the candidate."""
+    dp = self._get_alt_indices_depth()
+    if dp == 0:
+      return 0
+    return 100 * self.alt_read_infos_count // dp
+
+  def _get_variant_allele_frequency(self) -> int:
     """Returns the variant allele frequency of the candidate."""
     dp = self._get_total_depth()
     if dp == 0:
       return 0
-    return 100 * self.alt_1_read_infos_count // dp
+    return 100 * self.alt_read_infos_count // dp
 
   def _get_ref_mapping_quality(self) -> int:
     """Returns the mapping quality of the candidate."""
     return _mean_for_attribute(self.ref_read_infos, 'mapping_quality')
 
-  def _get_alt_1_mapping_quality(self) -> int:
+  def _get_alt_mapping_quality(self) -> int:
     """Returns the mapping quality of the candidate."""
-    return _mean_for_attribute(self.alt_1_read_infos, 'mapping_quality')
+    return _mean_for_attribute(self.alt_read_infos, 'mapping_quality')
 
   def _get_ref_base_quality(self) -> int:
     """Returns the mapping quality of the candidate."""
     return _mean_for_attribute(self.ref_read_infos, 'average_base_quality')
 
-  def _get_alt_1_base_quality(self) -> int:
+  def _get_alt_base_quality(self) -> int:
     """Returns the mapping quality of the candidate."""
-    return _mean_for_attribute(self.alt_1_read_infos, 'average_base_quality')
+    return _mean_for_attribute(self.alt_read_infos, 'average_base_quality')
 
   def _get_ref_reverse_strand_ratio(self) -> int:
     """Returns the reverse strand ratio of the candidate."""
@@ -242,47 +314,65 @@ class FeatureEncoder:
         self.ref_read_infos, 'is_reverse_strand', multiplier=100
     )
 
-  def _get_alt_1_reverse_strand_ratio(self) -> int:
+  def _get_alt_reverse_strand_ratio(self) -> int:
     """Returns the reverse strand ratio of the candidate."""
     return _mean_for_attribute(
-        self.alt_1_read_infos, 'is_reverse_strand', multiplier=100
+        self.alt_read_infos, 'is_reverse_strand', multiplier=100
     )
 
   def _get_is_snp(self) -> int:
     """Returns 1 if the candidate is a SNP, 0 otherwise."""
-    return int(variant_utils.is_snp(self.candidate.variant))
+    return int(
+        variant_utils.is_snp(self.candidate.variant, self.exclude_alleles)
+    )
 
   def _get_is_insertion(self) -> int:
     """Returns 1 if the candidate is an insertion, 0 otherwise."""
     return int(
-        variant_utils.is_insertion(
-            self.candidate.variant.reference_bases,
-            self.candidate.variant.alternate_bases[0],
+        variant_utils.variant_is_insertion(
+            self.candidate.variant, self.exclude_alleles
         )
     )
 
   def _get_is_deletion(self) -> int:
     """Returns 1 if the candidate is an insertion, 0 otherwise."""
     return int(
-        variant_utils.is_deletion(
-            self.candidate.variant.reference_bases,
-            self.candidate.variant.alternate_bases[0],
+        variant_utils.variant_is_deletion(
+            self.candidate.variant, self.exclude_alleles
         )
     )
 
+  def _get_is_multiallelic(self) -> int:
+    """Returns 1 if the candidate is a multiallelic, 0 otherwise."""
+    return int(variant_utils.is_multiallelic(self.candidate.variant))
+
   def _get_insertion_length(self) -> int:
     """Returns the insertion length of the candidate."""
-    insertion_length = len(self.candidate.variant.alternate_bases[0]) - len(
-        self.candidate.variant.reference_bases
-    )
-    return max(0, insertion_length)
+    insertion_lengths = [
+        len(self.candidate.variant.alternate_bases[i])
+        - len(self.candidate.variant.reference_bases)
+        for i in self.alt_allele_indices
+    ]
+    return max(0, max(insertion_lengths))
 
   def _get_deletion_length(self) -> int:
     """Returns the deletion length of the candidate."""
-    deletion_length = len(self.candidate.variant.reference_bases) - len(
-        self.candidate.variant.alternate_bases[0]
-    )
-    return max(0, deletion_length)
+    deletion_lengths = [
+        len(self.candidate.variant.reference_bases)
+        - len(self.candidate.variant.alternate_bases[i])
+        for i in self.alt_allele_indices
+    ]
+    return max(0, max(deletion_lengths))
+
+  def _get_is_multiple_alt_alleles(self) -> int:
+    """Returns the length of the alt allele indices."""
+    return int(len(self.alt_allele_indices) > 1)
+
+  def _genotype_label(self, label: variant_labeler.VariantLabel) -> int:
+    """Returns the genotype of the candidate."""
+    if variant_utils.is_biallelic(self.candidate.variant):
+      return ENCODING_BY_GENOTYPE[label.genotype]
+    return label.label_for_alt_alleles(self.alt_allele_indices)
 
   def encode_base_feature(
       self,
@@ -298,24 +388,28 @@ class FeatureEncoder:
     """
     if feature == BaseFeature.NUM_READS_SUPPORTS_REF:
       return self._get_num_reads_supports_ref()
-    elif feature == BaseFeature.NUM_READS_SUPPORTS_ALT_1:
-      return self._get_num_reads_supports_alt_1()
+    elif feature == BaseFeature.NUM_READS_SUPPORTS_ALT:
+      return self._get_num_reads_supports_alt()
+    elif feature == BaseFeature.ALT_INDICES_DEPTH:
+      return self._get_alt_indices_depth()
     elif feature == BaseFeature.TOTAL_DEPTH:
       return self._get_total_depth()
-    elif feature == BaseFeature.VARIANT_ALLELE_FREQUENCY_1:
-      return self._get_variant_allele_frequency_1()
+    elif feature == BaseFeature.ALT_INDICES_VARIANT_ALLELE_FREQUENCY:
+      return self._get_alt_indices_variant_allele_frequency()
+    elif feature == BaseFeature.VARIANT_ALLELE_FREQUENCY:
+      return self._get_variant_allele_frequency()
     elif feature == BaseFeature.REF_MAPPING_QUALITY:
       return self._get_ref_mapping_quality()
-    elif feature == BaseFeature.ALT_1_MAPPING_QUALITY:
-      return self._get_alt_1_mapping_quality()
+    elif feature == BaseFeature.ALT_MAPPING_QUALITY:
+      return self._get_alt_mapping_quality()
     elif feature == BaseFeature.REF_BASE_QUALITY:
       return self._get_ref_base_quality()
-    elif feature == BaseFeature.ALT_1_BASE_QUALITY:
-      return self._get_alt_1_base_quality()
+    elif feature == BaseFeature.ALT_BASE_QUALITY:
+      return self._get_alt_base_quality()
     elif feature == BaseFeature.REF_REVERSE_STRAND_RATIO:
       return self._get_ref_reverse_strand_ratio()
-    elif feature == BaseFeature.ALT_1_REVERSE_STRAND_RATIO:
-      return self._get_alt_1_reverse_strand_ratio()
+    elif feature == BaseFeature.ALT_REVERSE_STRAND_RATIO:
+      return self._get_alt_reverse_strand_ratio()
     else:
       raise ValueError(f'{feature.value} does not map to a callable.')
 
@@ -341,6 +435,10 @@ class FeatureEncoder:
       return self._get_insertion_length()
     elif feature == VariantFeature.DELETION_LENGTH:
       return self._get_deletion_length()
+    elif feature == VariantFeature.IS_MULTIALLELIC:
+      return self._get_is_multiallelic()
+    elif feature == VariantFeature.IS_MULTIPLE_ALT_ALLELES:
+      return self._get_is_multiple_alt_alleles()
     else:
       raise ValueError(f'{feature.value} does not map to a callable.')
 
@@ -364,8 +462,8 @@ class FeatureEncoder:
       return self._get_end()
     elif feature == IdentifyingFeature.REF:
       return self._get_ref()
-    elif feature == IdentifyingFeature.ALT_1:
-      return self._get_alt_1()
+    elif feature == IdentifyingFeature.ALT:
+      return self._get_alt()
     else:
       raise ValueError(f'{feature.value} does not map to a callable.')
 
@@ -408,9 +506,25 @@ class FeatureEncoder:
     Returns:
       A one-hot encoded genotype.
     """
+    genotype_encoding = self._genotype_label(label)
     value = [0 for _ in GenotypeEncoding]
-    value[ENCODING_BY_GENOTYPE[label.genotype]] = 1
+    value[genotype_encoding] = 1
     return value
+
+
+@dataclasses.dataclass
+class InferenceExampleSet:
+  """A set of small model examples."""
+
+  skipped_candidates: list[deepvariant_pb2.DeepVariantCall] = dataclasses.field(
+      default_factory=list
+  )
+  candidates_with_alt_allele_indices: list[
+      tuple[deepvariant_pb2.DeepVariantCall, tuple[int, ...]]
+  ] = dataclasses.field(default_factory=list)
+  inference_examples: list[Sequence[int]] = dataclasses.field(
+      default_factory=list
+  )
 
 
 class SmallModelExampleFactory:
@@ -421,11 +535,13 @@ class SmallModelExampleFactory:
       vaf_context_window_size: int,
       accept_snps: bool = True,
       accept_indels: bool = True,
+      accept_multiallelics: bool = True,
       expand_by_haplotype: bool = False,
       model_features: Sequence[str] | None = None,
   ):
     self.accept_snps = accept_snps
     self.accept_indels = accept_indels
+    self.accept_multiallelics = accept_multiallelics
     self.expand_by_haplotype = expand_by_haplotype
     self.vaf_context_window_size = vaf_context_window_size
     self.model_features = self._get_and_validate_model_features(model_features)
@@ -435,7 +551,9 @@ class SmallModelExampleFactory:
   ) -> Sequence[str]:
     """Returns the model features for the small model."""
     all_features = list(
-        self._encode_candidate_feature_dict(FAKE_CANDIDATE).keys()
+        self._encode_candidate_feature_dict(
+            FAKE_CANDIDATE, DEFAULT_ALT_ALLELE_INDICES
+        ).keys()
     )
     if model_features:
       if not set(model_features).issubset(all_features):
@@ -454,7 +572,7 @@ class SmallModelExampleFactory:
   ) -> bool:
     """Determines if the candidate is eligible for the small model."""
     if not variant_utils.is_biallelic(candidate.variant):
-      return False
+      return self.accept_multiallelics
     elif variant_utils.is_snp(candidate.variant):
       return self.accept_snps
     else:
@@ -463,10 +581,11 @@ class SmallModelExampleFactory:
   def _encode_candidate_feature_dict(
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
+      alt_allele_indices: tuple[int, ...],
       read_phases: dict[str, int] | None = None,
   ) -> dict[str, int]:
     """Encodes all model features for a given candidate into a key-value dict."""
-    feature_encoder = FeatureEncoder(candidate)
+    feature_encoder = FeatureEncoder(candidate, alt_allele_indices)
     candidate_example = {}
     candidate_example.update({
         feature.value: feature_encoder.encode_base_feature(feature)
@@ -484,7 +603,7 @@ class SmallModelExampleFactory:
     if self.expand_by_haplotype:
       for haplotype in Haplotype:
         haplotype_feature_encoder = FeatureEncoder(
-            candidate, haplotype.value, read_phases
+            candidate, alt_allele_indices, haplotype.value, read_phases
         )
         for feature in BaseFeature:
           candidate_example.update({
@@ -494,36 +613,43 @@ class SmallModelExampleFactory:
           })
     return candidate_example
 
-  def _encode_model_features(self, candidate, read_phases) -> Sequence[int]:
+  def _encode_model_features(
+      self,
+      candidate: deepvariant_pb2.DeepVariantCall,
+      alt_allele_indices: tuple[int, ...],
+      read_phases: dict[str, int],
+  ) -> Sequence[int]:
     """Encodes a candidate example into the selected model features.
 
     Args:
       candidate: The candidate to be encoded.
+      alt_allele_indices: The alt-allele indices to use for the candidate.
       read_phases: A dictionary mapping read names to haplotype tags.
 
     Returns:
       A feature vector.
     """
     encoded_candidate = self._encode_candidate_feature_dict(
-        candidate, read_phases
+        candidate, alt_allele_indices, read_phases
     )
     return [encoded_candidate[feature] for feature in self.model_features]
 
-  def _encode_candidate_example(
+  def _encode_training_example(
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
-      label: variant_labeler.VariantLabel | None,
+      alt_allele_indices: tuple[int, ...],
+      label: variant_labeler.VariantLabel,
       read_phases: dict[str, int],
   ) -> tf.train.Example:
     """Encodes a candidate example."""
-    feature_encoder = FeatureEncoder(candidate)
+    feature_encoder = FeatureEncoder(candidate, alt_allele_indices)
     return tf.train.Example(
         features=tf.train.Features(
             feature={
                 FEATURES_ENCODED: tf.train.Feature(
                     int64_list=tf.train.Int64List(
                         value=self._encode_model_features(
-                            candidate, read_phases
+                            candidate, alt_allele_indices, read_phases
                         )
                     )
                 ),
@@ -542,6 +668,9 @@ class SmallModelExampleFactory:
                         value=feature_encoder.encode_label(label)
                     )
                 ),
+                GENOTYPE_ENCODED: tf.train.Feature(
+                    int64_list=tf.train.Int64List(value=label.genotype)
+                ),
             }
         )
     )
@@ -556,52 +685,56 @@ class SmallModelExampleFactory:
     """Generates examples from the given candidates for training.
 
     Args:
-      candidates_with_label: List of candidates with labels to be processed into
+      candidates_with_label: list of candidates with labels to be processed into
         examples.
       read_phases: A dictionary mapping read names to haplotype tags.
 
     Returns:
       A list of encoded candidate examples.
     """
-    candidate_examples = []
+    training_examples = []
     for candidate, label in candidates_with_label:
       if not self._pass_candidate_to_small_model(candidate):
         continue
-      candidate_example = self._encode_candidate_example(
-          candidate, label, read_phases
-      )
-      candidate_examples.append(candidate_example)
-    return candidate_examples
+      alt_allele_indices_set = get_set_of_allele_indices(candidate)
+      for alt_allele_indices in alt_allele_indices_set:
+        candidate_example = self._encode_training_example(
+            candidate, alt_allele_indices, label, read_phases
+        )
+        training_examples.append(candidate_example)
+    return training_examples
 
   def encode_inference_examples(
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
       read_phases: dict[str, int],
-  ) -> tuple[
-      list[deepvariant_pb2.DeepVariantCall],
-      list[deepvariant_pb2.DeepVariantCall],
-      list[Sequence[int]],
-  ]:
+  ) -> InferenceExampleSet:
     """Generates examples from the given candidates for inference.
 
     Args:
-      candidates: List of candidates to be processed into a summary.
+      candidates: list of candidates to be processed into a summary.
       read_phases: A dictionary mapping read names to haplotype tags.
 
     Returns:
-      A tuple containing:
-        A list of all candidates that were skipped.
-        A list of all candidates for which examples were generated.
-        A list of encoded candidate examples.
+      A InferenceExampleSet containing:
+        skipped_candidates: A list of all candidates that were skipped.
+        candidates_with_alt_allele_indices: A list of candidates and
+        alt-allele-indices pairs for which
+        examples were generated.
+        inference_examples: A list of encoded candidate examples.
     """
-    skipped_candidates = []
-    kept_candidates = []
-    examples = []
+    example_set = InferenceExampleSet()
     for candidate in candidates:
       if not self._pass_candidate_to_small_model(candidate):
-        skipped_candidates.append(candidate)
+        example_set.skipped_candidates.append(candidate)
         continue
-      kept_candidates.append(candidate)
-      candidate_example = self._encode_model_features(candidate, read_phases)
-      examples.append(candidate_example)
-    return skipped_candidates, kept_candidates, examples
+      alt_allele_indices_set = get_set_of_allele_indices(candidate)
+      for alt_allele_indices in alt_allele_indices_set:
+        example_set.candidates_with_alt_allele_indices.append(
+            (candidate, alt_allele_indices)
+        )
+        candidate_example = self._encode_model_features(
+            candidate, alt_allele_indices, read_phases
+        )
+        example_set.inference_examples.append(candidate_example)
+    return example_set

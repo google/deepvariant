@@ -80,7 +80,8 @@ nucleus::genomics::v1::Variant MakeVariant(
     int64_t start = kStart);
 
 DeepVariantCall MakeDeepVariantCall(
-    const nucleus::genomics::v1::Variant& variant);
+    const nucleus::genomics::v1::Variant& variant,
+    absl::Span<const std::vector<int>> alt_allele_indices_set = {});
 
 std::unique_ptr<ImageRow> MakeImageRow(
     absl::Span<const std::vector<unsigned char>> data, int width,

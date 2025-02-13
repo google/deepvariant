@@ -1075,14 +1075,6 @@ class OutputsWriter:
     ]
     self._writers = {k: None for k in outputs}
     self.examples_filename = None
-    self.make_small_model_examples = (
-        make_small_model_examples.SmallModelExampleFactory(
-            options.small_model_vaf_context_window_size,
-            accept_snps=options.small_model_snp_gq_threshold > -1,
-            accept_indels=options.small_model_indel_gq_threshold > -1,
-            expand_by_haplotype=options.phase_reads,
-        )
-    )
 
     if options.candidates_filename:
       self._add_writer(
@@ -1328,9 +1320,12 @@ class RegionProcessor:
               batch_size=self.options.small_model_inference_batch_size,
           )
       )
-    self.make_small_model_examples = (
+    self.small_model_example_factory = (
         make_small_model_examples.SmallModelExampleFactory(
             self.options.small_model_vaf_context_window_size,
+            accept_snps=self.options.small_model_snp_gq_threshold > -1,
+            accept_indels=self.options.small_model_indel_gq_threshold > -1,
+            accept_multiallelics=self.options.small_model_call_multiallelics,
             expand_by_haplotype=self.options.phase_reads,
         )
     )
@@ -1802,15 +1797,15 @@ class RegionProcessor:
           'Writing small model examples is only supported in training mode.'
       )
 
-    small_model_examples = (
-        self.make_small_model_examples.encode_training_examples(
+    training_examples = (
+        self.small_model_example_factory.encode_training_examples(
             list(self.label_candidates(candidates, region)),
             read_phases,
         )
     )
-    writer.write_small_model_examples(*small_model_examples)
+    writer.write_small_model_examples(*training_examples)
 
-    n_stats['n_small_model_examples'] += len(small_model_examples)
+    n_stats['n_small_model_examples'] += len(training_examples)
     runtimes['make small_model_examples'] = trim_runtime(
         time.time() - before_make_summaries
     )
@@ -1838,22 +1833,24 @@ class RegionProcessor:
     """
     before_generate_small_model_examples = time.time()
 
-    # skip candidates not suitable for the small model, e.g. indels.
-    skipped_candidates, kept_candidates, examples = (
-        self.make_small_model_examples.encode_inference_examples(
+    inference_example_set = (
+        self.small_model_example_factory.encode_inference_examples(
             candidates, read_phases
         )
     )
     runtimes['small model generate examples'] = trim_runtime(
         time.time() - before_generate_small_model_examples
     )
-    if not kept_candidates:
-      return skipped_candidates
+    if not inference_example_set.candidates_with_alt_allele_indices:
+      return inference_example_set.skipped_candidates
 
     # filtered candidates did not pass the GQ threshold.
     before_call_small_model_examples = time.time()
-    call_variant_outputs, filtered_candidates = (
-        self.small_model_variant_caller.call_variants(kept_candidates, examples)
+    call_variant_outputs, candidates_not_called = (
+        self.small_model_variant_caller.call_variants(
+            inference_example_set.candidates_with_alt_allele_indices,
+            inference_example_set.inference_examples,
+        )
     )
     runtimes['small model call examples'] = trim_runtime(
         time.time() - before_call_small_model_examples
@@ -1869,8 +1866,8 @@ class RegionProcessor:
         time.time() - before_generate_small_model_examples
     )
     # pass skipped and filtered candidates to the large model
-    skipped_candidates.extend(filtered_candidates)
-    return skipped_candidates
+    inference_example_set.skipped_candidates.extend(candidates_not_called)
+    return inference_example_set.skipped_candidates
 
   def find_candidate_positions(self, region: range_pb2.Range) -> Iterator[int]:
     """Finds all candidate positions within a given region."""

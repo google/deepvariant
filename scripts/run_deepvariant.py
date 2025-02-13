@@ -413,6 +413,7 @@ def _set_small_model_config(
   if not _use_small_model():
     return
   special_args['call_small_model_examples'] = True
+  special_args['track_ref_reads'] = True
   config = SMALL_MODEL_CONFIG_BY_MODEL_TYPE.get(model_type)
   if customized_small_model:
     special_args['trained_small_model_path'] = customized_small_model

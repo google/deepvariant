@@ -671,7 +671,7 @@ _DETERMINISTIC_SERIALIZATION = flags.DEFINE_bool(
 _WRITE_SMALL_MODEL_EXAMPLES = flags.DEFINE_bool(
     'write_small_model_examples',
     False,
-    'If True, write small model training examples to TSV files.',
+    'If True, write small model training examples to .tfrecord files.',
 )
 _SKIP_PILEUP_IMAGE_GENERATION = flags.DEFINE_bool(
     'skip_pileup_image_generation',
@@ -686,15 +686,20 @@ _CALL_SMALL_MODEL_EXAMPLES = flags.DEFINE_bool(
 )
 _SMALL_MODEL_SNP_GQ_THRESHOLD = flags.DEFINE_integer(
     'small_model_snp_gq_threshold',
-    -1,
+    0,
     'Sets the minimum threshold for GQ scores for the small model for SNPs. Set'
     ' to -1 to disable calling SNPs with the small model.',
 )
 _SMALL_MODEL_INDEL_GQ_THRESHOLD = flags.DEFINE_integer(
     'small_model_indel_gq_threshold',
-    -1,
+    0,
     'Sets the minimum threshold for GQ scores for the small model for INDELs.'
     ' Set to -1 to disable calling INDELs with the small model.',
+)
+_SMALL_MODEL_CALL_MULTIALLELICS = flags.DEFINE_bool(
+    'small_model_call_multiallelics',
+    True,
+    'Allows the small model to call multiallelic candidate sites.',
 )
 _SMALL_MODEL_INFERENCE_BATCH_SIZE = flags.DEFINE_integer(
     'small_model_inference_batch_size',
@@ -703,7 +708,7 @@ _SMALL_MODEL_INFERENCE_BATCH_SIZE = flags.DEFINE_integer(
 )
 _SMALL_MODEL_VAF_CONTEXT_WINDOW_SIZE = flags.DEFINE_integer(
     'small_model_vaf_context_window_size',
-    11,
+    51,
     'Sets the window size used by small model to produce context VAF allele'
     ' counts. ',
 )
@@ -828,6 +833,7 @@ def shared_flags_to_options(
       call_small_model_examples=_CALL_SMALL_MODEL_EXAMPLES.value,
       small_model_snp_gq_threshold=_SMALL_MODEL_SNP_GQ_THRESHOLD.value,
       small_model_indel_gq_threshold=_SMALL_MODEL_INDEL_GQ_THRESHOLD.value,
+      small_model_call_multiallelics=_SMALL_MODEL_CALL_MULTIALLELICS.value,
       small_model_inference_batch_size=_SMALL_MODEL_INFERENCE_BATCH_SIZE.value,
       small_model_vaf_context_window_size=_SMALL_MODEL_VAF_CONTEXT_WINDOW_SIZE.value,
       trained_small_model_path=_TRAINED_SMALL_MODEL_PATH.value,
