@@ -21,11 +21,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 55m33.71s
-call_variants                    | 19m40.56s
-postprocess_variants (with gVCF) | 6m50.33s
-vcf_stats_report (optional)      | 5m23.41s (optional)
-total                            | 91m26.96s (1h31m26.96s)
+make_examples                    |  56m34.04s
+call_variants                    |  19m50.18s
+postprocess_variants (with gVCF) |  6m57.90s
+vcf_stats_report (optional)      |  5m19.46s (optional)
+total                            |  94m2.52s (1h34m2.52s)
 
 ### Accuracy
 
@@ -48,11 +48,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 3m14.07s
-call_variants                    | 0m32.51s
-postprocess_variants (with gVCF) | 0m37.17s
-vcf_stats_report (optional)      | 0m4.81s (optional)
-total                            | 4m55.20s
+make_examples                    | 3m13.68s
+call_variants                    | 0m32.94s
+postprocess_variants (with gVCF) | 0m37.31s
+vcf_stats_report (optional)      | 0m4.86s (optional)
+total                            | 4m47.21s
 
 ### Accuracy
 
@@ -88,11 +88,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 33m19.20s
-call_variants                    | 17m28.00s
-postprocess_variants (with gVCF) | 4m37.32s
-vcf_stats_report (optional)      | 5m24.01s (optional)
-total                            | 68m48.24s (1h08m48.24s)
+make_examples                    | 29m51.41s
+call_variants                    | 17m32.35s
+postprocess_variants (with gVCF) | 4m37.72s
+vcf_stats_report (optional)      | 5m17.50s (optional)
+total                            | 64m57.53s (1h04m57.53s)
 
 ### Accuracy
 
@@ -119,11 +119,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | 89m21.74s
-call_variants                    | 22m44.53s
-postprocess_variants (with gVCF) | 6m28.74s
-vcf_stats_report (optional)      | 6m24.47s (optional)
-total                            | 130m13.46s (2h10m13.46s)
+make_examples                    | 50m58.80s
+call_variants                    | 22m5.93s
+postprocess_variants (with gVCF) | 6m25.89s
+vcf_stats_report (optional)      | 6m15.13s (optional)
+total                            | 91m2.08s (1h31m2.08s)
 
 ### Accuracy
 
@@ -147,11 +147,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 72m3.17s
-call_variants                    | 26m4.37s
-postprocess_variants (with gVCF) | 3m26.80s
-vcf_stats_report (optional)      | 5m9.13s (optional)
-total                            | 125m17.97s (2h05m17.97s)
+make_examples                    | 71m54.91
+call_variants                    | 25m56.68
+postprocess_variants (with gVCF) | 3m29.36s
+vcf_stats_report (optional)      | 5m13.84s (optional)
+total                            | 125m10.23s (2h5m10.23s)
 
 ### Accuracy
 
