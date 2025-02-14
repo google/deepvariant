@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
-ARG VERSION=1.8.0
+ARG VERSION=1.9.0-rc0
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
 FROM continuumio/miniconda3 as conda_setup
@@ -231,15 +231,6 @@ WORKDIR /opt/smallmodels/pacbio/variables
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.pacbio.smallmodel/variables/variables.data-00000-of-00001 .
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.pacbio.smallmodel/variables/variables.index .
 RUN chmod -R +r /opt/smallmodels/pacbio/*
-
-WORKDIR /opt/smallmodels/hybrid_pacbio_illumina
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.hybrid.smallmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.hybrid.smallmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.hybrid.smallmodel/keras_metadata.pb .
-WORKDIR /opt/smallmodels/hybrid_pacbio_illumina/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.hybrid.smallmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.hybrid.smallmodel/variables/variables.index .
-RUN chmod -R +r /opt/smallmodels/hybrid_pacbio_illumina/*
 
 WORKDIR /opt/smallmodels/ont_r104
 ADD https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.ont.smallmodel/fingerprint.pb .
