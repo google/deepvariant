@@ -266,7 +266,7 @@ int GetAvgBaseQuality(const nucleus::genomics::v1::Read& read,
                       CigarUnit cigar_op, int offset, int len) {
   int indel_base_quality = 0;
   if (cigar_op.operation() == CigarUnit::DELETE) {
-    return read.aligned_quality(offset);
+    return read.aligned_quality(std::max(0, offset - 1));
   }
   for (int i = 0; i < len; i++) {
     indel_base_quality += read.aligned_quality(offset + i);
