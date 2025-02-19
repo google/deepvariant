@@ -32,25 +32,39 @@
 #include "deepvariant/channels/read_mapping_percent_channel.h"
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-void ReadMappingPercentChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  read_level_data = std::vector<unsigned char>(
-      1, ScaleColor(ReadMappingPercent(read), kMaxMappingPercent));
+ReadMappingPercentChannel::ReadMappingPercentChannel(
+    int width,
+    const learning::genomics::deepvariant::PileupImageOptions& options)
+    : Channel(width, options) {
+  read_mapping_percent_color_ = std::nullopt;
 }
-void ReadMappingPercentChannel::FillRefData(
-    const std::string& ref_bases, std::vector<unsigned char>& ref_data) {
-  ref_data = std::vector<unsigned char>(
-      width_, static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+
+void ReadMappingPercentChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
+  if (!read_mapping_percent_color_.has_value()) {
+    read_mapping_percent_color_ = std::optional<unsigned char>{
+        ScaleColor(ReadMappingPercent(read), kMaxMappingPercent)};
+  }
+  data[col] = read_mapping_percent_color_.value();
+}
+
+void ReadMappingPercentChannel::FillRefBase(
+    std::vector<unsigned char>& ref_data, int col, char ref_base,
+    const std::string& ref_bases) {
+  ref_data[col] = static_cast<std::uint8_t>(kMaxPixelValueAsFloat);
 }
 
 // Read Mapping Percent: Calculates percentage of bases mapped to reference.

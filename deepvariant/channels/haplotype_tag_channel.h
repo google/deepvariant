@@ -35,6 +35,7 @@
 #include <math.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -56,12 +57,17 @@ using nucleus::genomics::v1::Read;
 
 class HaplotypeTagChannel : public Channel {
  public:
-  using Channel::Channel;
-  void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
-                         const std::vector<std::string>& alt_alleles,
-                         std::vector<unsigned char>& read_level_data) override;
-  void FillRefData(const std::string& ref_bases,
-                   std::vector<unsigned char>& ref_data) override;
+  HaplotypeTagChannel(
+      int width,
+      const learning::genomics::deepvariant::PileupImageOptions& options);
+
+  void FillReadBase(std::vector<unsigned char>& data, int col, char read_base,
+                    char ref_base, int base_quality, const Read& read,
+                    int read_index, const DeepVariantCall& dv_call,
+                    const std::vector<std::string>& alt_alleles) override;
+
+  void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
+                   const std::string& ref_bases) override;
 
   // Public for testing
   int GetHPValueForHPChannel(const Read& read,
@@ -70,6 +76,8 @@ class HaplotypeTagChannel : public Channel {
  private:
   // Scales an input value to pixel range 0-254.
   std::uint8_t ScaleColor(int value, float max_val) const;
+
+  std::optional<unsigned char> haplotype_tag_color_;
 };
 }  // namespace deepvariant
 }  // namespace genomics

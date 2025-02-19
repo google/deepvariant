@@ -38,12 +38,10 @@ using learning::genomics::deepvariant::PileupImageOptions;
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-
-Channel::Channel(int width, const PileupImageOptions& options) {
-  width_ = width;
-  options_ = options;
-};
-
+Channel::Channel(
+    int width,
+    const learning::genomics::deepvariant::PileupImageOptions& options)
+    : width_(width), options_(options) {}
 Channel::~Channel() = default;
 
 }  // namespace deepvariant

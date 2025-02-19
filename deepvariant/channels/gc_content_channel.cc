@@ -32,27 +32,47 @@
 #include "deepvariant/channels/gc_content_channel.h"
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-void GcContentChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  read_level_data =
-      std::vector<unsigned char>(1, ScaleColor(GcContent(read), kMaxGcContent));
+
+GcContentChannel::GcContentChannel(
+    int width,
+    const learning::genomics::deepvariant::PileupImageOptions& options)
+    : Channel(width, options) {
+  read_gc_content_color_ = std::nullopt;
+  ref_gc_content_color_ = std::nullopt;
 }
-void GcContentChannel::FillRefData(const std::string& ref_bases,
-                                   std::vector<unsigned char>& ref_data) {
-  Read refRead;
-  refRead.set_aligned_sequence(ref_bases);
-  ref_data = std::vector<unsigned char>(
-      width_, ScaleColor(GcContent(refRead), kMaxGcContent));
+
+void GcContentChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
+  if (!read_gc_content_color_.has_value()) {
+    read_gc_content_color_ = std::optional<unsigned char>{
+        ScaleColor(GcContent(read), kMaxGcContent)};
+  }
+  data[col] = read_gc_content_color_.value();
+}
+
+void GcContentChannel::FillRefBase(std::vector<unsigned char>& ref_data,
+                                   int col, char ref_base,
+                                   const std::string& ref_bases) {
+  if (!ref_gc_content_color_.has_value()) {
+    Read refRead;
+    refRead.set_aligned_sequence(ref_bases);
+    ref_gc_content_color_ = std::optional<unsigned char>{
+        ScaleColor(GcContent(refRead), kMaxGcContent)};
+  }
+  ref_data[col] = ref_gc_content_color_.value();
 }
 
 int GcContentChannel::GcContent(const Read& read) {

@@ -29,13 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_IS_HOMOPOLYMER_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_IS_HOMOPOLYMER_CHANNEL_H_
-
-#include <math.h>
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_DIFFERS_FROM_REF_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_DIFFERS_FROM_REF_CHANNEL_H_
 
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -50,15 +47,14 @@
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+
 using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 
-class IsHomopolymerChannel : public Channel {
+class BaseDiffersFromRefChannel : public Channel {
  public:
-  IsHomopolymerChannel(
-      int width,
-      const learning::genomics::deepvariant::PileupImageOptions& options);
+  using Channel::Channel;
 
   void FillReadBase(std::vector<unsigned char>& data, int col, char read_base,
                     char ref_base, int base_quality, const Read& read,
@@ -68,21 +64,11 @@ class IsHomopolymerChannel : public Channel {
   void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
                    const std::string& ref_bases) override;
 
-  // Generates a vector indicating homopolymers of 3 or more.
-  // Public for testing
-  std::vector<std::uint8_t> IsHomopolymer(const Read& read);
-
  private:
-  // Scales an input vector to pixel range 0-254
-  std::vector<std::uint8_t> ScaleColorVector(
-      std::vector<std::uint8_t>& channel_values, float max_val);
-  static const constexpr int kMaxIsHomopolymer = 1;
-
-  std::optional<std::vector<std::uint8_t>> read_is_homopolymer_color_vector_;
-  std::optional<std::vector<std::uint8_t>> ref_is_homopolymer_color_vector_;
+  int MatchesRefColor(bool base_matches_ref);
 };
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_IS_HOMOPOLYMER_CHANNEL_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_DIFFERS_FROM_REF_CHANNEL_H_

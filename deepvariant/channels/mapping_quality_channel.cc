@@ -39,19 +39,22 @@
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-void MappingQualityChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
+
+void MappingQualityChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
   const int mapping_quality = read.alignment().mapping_quality();
-  read_level_data = std::vector<unsigned char>(
-      1, ScaleColor(mapping_quality, options_.mapping_quality_cap()));
+
+  data[col] = ScaleColor(mapping_quality, options_.mapping_quality_cap());
 }
-void MappingQualityChannel::FillRefData(const std::string& ref_bases,
-                                        std::vector<unsigned char>& ref_data) {
+
+void MappingQualityChannel::FillRefBase(std::vector<unsigned char>& ref_data,
+                                        int col, char ref_base,
+                                        const std::string& ref_bases) {
   int ref_qual = options_.reference_base_quality();
-  ref_data = std::vector<unsigned char>(
-      width_, ScaleColor(ref_qual, options_.base_quality_cap()));
+  ref_data[col] = ScaleColor(ref_qual, options_.base_quality_cap());
 }
 
 // Scales an input value to pixel range 0-254.

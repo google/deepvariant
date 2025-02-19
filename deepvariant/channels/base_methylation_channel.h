@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC.
+ * Copyright 2025 Google LLC.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,10 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_IS_HOMOPOLYMER_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_IS_HOMOPOLYMER_CHANNEL_H_
-
-#include <math.h>
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_METHYLATION_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_METHYLATION_CHANNEL_H_
 
 #include <cstdint>
 #include <optional>
@@ -41,6 +39,7 @@
 
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -50,13 +49,14 @@
 namespace learning {
 namespace genomics {
 namespace deepvariant {
+
 using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 
-class IsHomopolymerChannel : public Channel {
+class BaseMethylationChannel : public Channel {
  public:
-  IsHomopolymerChannel(
+  BaseMethylationChannel(
       int width,
       const learning::genomics::deepvariant::PileupImageOptions& options);
 
@@ -68,21 +68,19 @@ class IsHomopolymerChannel : public Channel {
   void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
                    const std::string& ref_bases) override;
 
-  // Generates a vector indicating homopolymers of 3 or more.
-  // Public for testing
-  std::vector<std::uint8_t> IsHomopolymer(const Read& read);
+  static const constexpr absl::string_view k5mCMethylationBaseModKey = "Cm";
 
  private:
+  std::vector<std::uint8_t> GetBaseModification(const Read& read);
+
   // Scales an input vector to pixel range 0-254
   std::vector<std::uint8_t> ScaleColorVector(
       std::vector<std::uint8_t>& channel_values, float max_val);
-  static const constexpr int kMaxIsHomopolymer = 1;
 
-  std::optional<std::vector<std::uint8_t>> read_is_homopolymer_color_vector_;
-  std::optional<std::vector<std::uint8_t>> ref_is_homopolymer_color_vector_;
+  std::optional<std::vector<unsigned char>> base_methylation_color_vector_;
 };
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_IS_HOMOPOLYMER_CHANNEL_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_METHYLATION_CHANNEL_H_

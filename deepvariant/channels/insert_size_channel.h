@@ -35,6 +35,7 @@
 #include <math.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -56,12 +57,17 @@ using nucleus::genomics::v1::Read;
 
 class InsertSizeChannel : public Channel {
  public:
-  using Channel::Channel;
-  void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
-                         const std::vector<std::string>& alt_alleles,
-                         std::vector<unsigned char>& read_level_data) override;
-  void FillRefData(const std::string& ref_bases,
-                   std::vector<unsigned char>& ref_data) override;
+  InsertSizeChannel(
+      int width,
+      const learning::genomics::deepvariant::PileupImageOptions& options);
+
+  void FillReadBase(std::vector<unsigned char>& data, int col, char read_base,
+                    char ref_base, int base_quality, const Read& read,
+                    int read_index, const DeepVariantCall& dv_call,
+                    const std::vector<std::string>& alt_alleles) override;
+
+  void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
+                   const std::string& ref_bases) override;
 
   // Generates a vector reflecting the fragment length of the read
   // Public for testing.
@@ -70,6 +76,8 @@ class InsertSizeChannel : public Channel {
  private:
   // normalizes a Read's `fragment_length` to a pixel value
   int normalizeFragmentLength(const Read& read);
+
+  std::optional<std::vector<unsigned char>> insert_size_color_vector_;
 };
 }  // namespace deepvariant
 }  // namespace genomics

@@ -127,6 +127,21 @@ cc_library(
 )
 
 cc_library(
+    name = "read_base_channel",
+    srcs = ["read_base_channel.cc"],
+    hdrs = ["read_base_channel.h"],
+    deps = [
+        ":channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+    ],
+)
+
+cc_library(
     name = "read_mapping_percent_channel",
     srcs = ["read_mapping_percent_channel.cc"],
     hdrs = ["read_mapping_percent_channel.h"],
@@ -215,6 +230,52 @@ cc_library(
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "@com_google_absl//absl/log",
+    ],
+)
+
+cc_library(
+    name = "base_methylation_channel",
+    srcs = ["base_methylation_channel.cc"],
+    hdrs = ["base_methylation_channel.h"],
+    deps = [
+        ":channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_library(
+    name = "base_quality_channel",
+    srcs = ["base_quality_channel.cc"],
+    hdrs = ["base_quality_channel.h"],
+    deps = [
+        ":channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+    ],
+)
+
+cc_library(
+    name = "base_differs_from_ref_channel",
+    srcs = ["base_differs_from_ref_channel.cc"],
+    hdrs = ["base_differs_from_ref_channel.h"],
+    deps = [
+        ":channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
     ],
 )
 

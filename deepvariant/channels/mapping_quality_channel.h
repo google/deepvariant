@@ -53,11 +53,14 @@ using nucleus::genomics::v1::Read;
 class MappingQualityChannel : public Channel {
  public:
   using Channel::Channel;
-  void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
-                         const std::vector<std::string>& alt_alleles,
-                         std::vector<unsigned char>& read_level_data) override;
-  void FillRefData(const std::string& ref_bases,
-                   std::vector<unsigned char>& ref_data) override;
+
+  void FillReadBase(std::vector<unsigned char>& data, int col, char read_base,
+                    char ref_base, int base_quality, const Read& read,
+                    int read_index, const DeepVariantCall& dv_call,
+                    const std::vector<std::string>& alt_alleles) override;
+
+  void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
+                   const std::string& ref_bases) override;
 
  private:
   // Scales an input value to pixel range 0-254.

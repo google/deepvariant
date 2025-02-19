@@ -287,10 +287,11 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
 
   // Calculate Channels
   Channels channel_set{options_};
-  // TODO Allocate all the channel vectors to ref_bases.size() here
-  // instead of in the channel subclasses to improve efficiency and readability.
   img_row.channel_data =
       std::vector<std::vector<unsigned char>>(channel_enums_.size());
+  for (int i = 0; i < channel_enums_.size(); ++i) {
+    img_row.channel_data[i] = std::vector<unsigned char>(ref_bases.size(), 0);
+  }
   bool ok = channel_set.CalculateChannels(
       img_row.channel_data, channel_enums_, read, ref_bases, dv_call,
       alt_alleles, image_start_pos, channels_enum_to_blank);
@@ -312,6 +313,9 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeReference(
   Channels channel_set{options_};
   img_row.channel_data =
       std::vector<std::vector<unsigned char>>(channel_enums_.size());
+  for (int i = 0; i < channel_enums_.size(); ++i) {
+    img_row.channel_data[i] = std::vector<unsigned char>(ref_bases.size(), 0);
+  }
   channel_set.CalculateRefRows(img_row.channel_data, channel_enums_, ref_bases);
 
   return std::make_unique<ImageRow>(img_row);

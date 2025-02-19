@@ -32,25 +32,39 @@
 #include "deepvariant/channels/identity_channel.h"
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-void IdentityChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  read_level_data =
-      std::vector<unsigned char>(1, ScaleColor(Identity(read), kMaxIdentity));
+
+IdentityChannel::IdentityChannel(
+    int width,
+    const learning::genomics::deepvariant::PileupImageOptions& options)
+    : Channel(width, options) {
+  identity_color_ = std::nullopt;
 }
-void IdentityChannel::FillRefData(const std::string& ref_bases,
-                                  std::vector<unsigned char>& ref_data) {
-  ref_data = std::vector<unsigned char>(
-      width_, static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+
+void IdentityChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
+  if (!identity_color_.has_value()) {
+    identity_color_ =
+        std::optional<unsigned char>{ScaleColor(Identity(read), kMaxIdentity)};
+  }
+  data[col] = identity_color_.value();
+}
+
+void IdentityChannel::FillRefBase(std::vector<unsigned char>& ref_data, int col,
+                                  char ref_base, const std::string& ref_bases) {
+  ref_data[col] = static_cast<std::uint8_t>(kMaxPixelValueAsFloat);
 }
 
 // Identity: Similar to mapping percent but with a slightly different def.

@@ -43,6 +43,9 @@
 
 #include "deepvariant/channels/allele_frequency_channel.h"
 #include "deepvariant/channels/avg_base_quality_channel.h"
+#include "deepvariant/channels/base_differs_from_ref_channel.h"
+#include "deepvariant/channels/base_methylation_channel.h"
+#include "deepvariant/channels/base_quality_channel.h"
 #include "deepvariant/channels/blank_channel.h"
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/channels/gap_compressed_identity_channel.h"
@@ -53,6 +56,7 @@
 #include "deepvariant/channels/insert_size_channel.h"
 #include "deepvariant/channels/is_homopolymer_channel.h"
 #include "deepvariant/channels/mapping_quality_channel.h"
+#include "deepvariant/channels/read_base_channel.h"
 #include "deepvariant/channels/read_mapping_percent_channel.h"
 #include "deepvariant/channels/read_supports_variant_channel.h"
 #include "deepvariant/channels/strand_channel.h"
@@ -78,14 +82,6 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-const absl::string_view k5mCMethylationBaseModKey = "Cm";
-
-std::vector<std::uint8_t> GetBaseModification(const Read& read,
-                                              absl::string_view base_mod_key) {
-  auto it = read.base_modifications().find(base_mod_key);
-  if (it == read.base_modifications().end()) { return {}; }
-  return std::vector<uint8_t>(it->second.begin(), it->second.end());
-}
 
 bool Channels::CalculateChannels(
     std::vector<std::vector<unsigned char>>& data,
@@ -93,6 +89,10 @@ bool Channels::CalculateChannels(
     absl::string_view ref_bases, const DeepVariantCall& dv_call,
     const std::vector<std::string>& alt_alleles, int image_start_pos,
     const absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank) {
+  CHECK_EQ(data.size(), channel_enums.size())
+      << "Size of provided data vector does not match the number of channels "
+         "specified";
+
   int maxEnumValue = getMaxEnumValue(channel_enums);
   channel_enum_to_index_ = std::vector<int>(maxEnumValue + 1);
   int currIndex = 0;
@@ -101,28 +101,15 @@ bool Channels::CalculateChannels(
     currIndex++;
   }
 
-  /*--------------------------------------
-  Calculate read-level channels
-  ---------------------------------------*/
-  CHECK_EQ(data.size(), channel_enums.size())
-      << "Size of provided data vector does not match the number of channels "
-         "specified";
-  std::vector<std::vector<unsigned char>> read_level_data =
-      std::vector<std::vector<unsigned char>>(channel_enums.size());
-
+  std::vector<std::unique_ptr<Channel>> channel_objects =
+      std::vector<std::unique_ptr<Channel>>(maxEnumValue + 1);
   for (const DeepVariantChannelEnum channel_enum : channel_enums) {
-    int index = channel_enum_to_index_[channel_enum];
-    data[index] = std::vector<unsigned char>(ref_bases.size(), 0);
-    if (!isBaseLevelChannel(channel_enum) &&
-        !channels_enum_to_blank.contains(channel_enum)) {
-      bool ok = CalculateReadLevelData(read_level_data, channel_enum, read,
-                                       dv_call, alt_alleles);
-      if (!ok) return false;
-    }
+    channel_objects[channel_enum] =
+        Channels::ChannelEnumToObject(channel_enum, ref_bases.size(), options_);
   }
 
   /*--------------------------------------
-  Calculate base-level channels
+  Calculate channels
   ---------------------------------------*/
 
   // Handler for each component of the CIGAR string, as subdivided
@@ -156,86 +143,22 @@ bool Channels::CalculateChannels(
               base_quality < options_.read_requirements().min_base_quality()) {
             return false;
           }
-
-          // Calculate base level values for channels
-          for (int i = 0; i < channel_enums.size(); ++i) {
-            DeepVariantChannelEnum channel_enum = channel_enums[i];
-            int index = channel_enum_to_index_[channel_enum];
-            if (isBaseLevelChannel(channel_enum) &&
-                !channels_enum_to_blank.contains(channel_enum)) {
-              if (channel_enum == DeepVariantChannelEnum::CH_READ_BASE) {
-                data[index][col] = BaseColor(read_base, options_);
-              } else if (channel_enum ==
-                         DeepVariantChannelEnum::CH_BASE_QUALITY) {
-                data[index][col] =
-                    ScaleColor(base_quality, options_.base_quality_cap());
-              } else if (channel_enum ==
-                         DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF) {
-                bool matches_ref = (read_base == ref_bases[col]);
-                data[index][col] = MatchesRefColor(matches_ref, options_);
-              } else if (channel_enum ==
-                         DeepVariantChannelEnum::CH_BASE_METHYLATION) {
-                // Get methylation values
-                std::vector<std::uint8_t> mm_values =
-                    GetBaseModification(read,  k5mCMethylationBaseModKey);
-                if (!mm_values.empty()) {
-                  data[index][col] = ScaleColor(mm_values[read_i], 255);
-                }
-              }
-            }
-          }
-
-          // Fill in base level value for read level channels from
-          // previously calculated read level values
-          for (int i = 0; i < channel_enums.size(); ++i) {
-            DeepVariantChannelEnum channel_enum = channel_enums[i];
-            int index = channel_enum_to_index_[channel_enum];
-            if (!isBaseLevelChannel(channel_enum) &&
-                !channels_enum_to_blank.contains(channel_enum)) {
-              // Channels that assign the same value for all columns use a
-              // size 1 vector.
-              if (read_level_data[index].size() == 1) {
-                data[index][col] = read_level_data[index][0];
-              } else if (index >= 0 && index < read_level_data.size() &&
-                         read_i >= 0 &&
-                         read_i < read_level_data[index].size()) {
-                data[index][col] = read_level_data[index][read_i];
-              } else {
-                // This is an error
-                LOG(WARNING) << "Warning. Read level data seems off after "
-                                "cigar operations.";
-                return false;
-              }
+          char ref_base = ref_bases[col];
+          // Calculate channel values
+          for (const DeepVariantChannelEnum channel_enum : channel_enums) {
+            if (!channels_enum_to_blank.contains(channel_enum)) {
+              CHECK_LT(col, ref_bases.size());
+              CHECK_GE(col, 0);
+              int index = channel_enum_to_index_[channel_enum];
+              channel_objects[channel_enum]->FillReadBase(
+                  data[index], col, read_base, ref_base, base_quality, read,
+                  read_i, dv_call, alt_alleles);
             }
           }
         }
         return true;
       };
   return CalculateBaseLevelData(read, action_per_cigar_unit);
-}
-
-// Calculate values for channels that only depend on information at the
-// granularity of an entire read.
-bool Channels::CalculateReadLevelData(
-    std::vector<std::vector<unsigned char>>& read_level_data,
-    const DeepVariantChannelEnum channel_enum, const Read& read,
-    const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles) {
-  int index = channel_enum_to_index_[channel_enum];
-
-  const int mapping_quality = read.alignment().mapping_quality();
-  const int min_mapping_quality =
-      options_.read_requirements().min_mapping_quality();
-  // Bail early if this read's mapping quality is too low.
-  if (mapping_quality < min_mapping_quality) {
-    return false;
-  }
-
-  std::unique_ptr<Channel> readLevelChannel = Channels::ChannelEnumToObject(
-      channel_enum, read.aligned_sequence().size(), options_);
-  readLevelChannel->FillReadLevelData(read, dv_call, alt_alleles,
-                                      read_level_data[index]);
-  return true;
 }
 
 // Calculate values for channels that depend on information at the
@@ -348,29 +271,18 @@ void Channels::CalculateRefRows(
     currIndex++;
   }
 
+  std::vector<std::unique_ptr<Channel>> channel_objects =
+      std::vector<std::unique_ptr<Channel>>(maxEnumValue + 1);
+  for (const DeepVariantChannelEnum channel_enum : channel_enums) {
+    channel_objects[channel_enum] =
+        Channels::ChannelEnumToObject(channel_enum, ref_bases.size(), options_);
+  }
+
   for (const DeepVariantChannelEnum channel_enum : channel_enums) {
     int index = channel_enum_to_index_[channel_enum];
-
-    std::unique_ptr<Channel> readLevelChannel =
-        Channels::ChannelEnumToObject(channel_enum, ref_bases.size(), options_);
-    if (readLevelChannel != nullptr) {
-      readLevelChannel->FillRefData(ref_bases, ref_data[index]);
-      // Base-level channels
-    } else if (channel_enum == DeepVariantChannelEnum::CH_READ_BASE) {
-      ref_data[index] = BaseColorVector(ref_bases, options_);
-    } else if (channel_enum == DeepVariantChannelEnum::CH_BASE_QUALITY) {
-      int ref_qual = options_.reference_base_quality();
-      ref_data[index] = std::vector<unsigned char>(
-          ref_bases.size(), ScaleColor(ref_qual, options_.base_quality_cap()));
-    } else if (channel_enum ==
-               DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF) {
-      int ref = MatchesRefColor(true, options_);
-      ref_data[index] = std::vector<unsigned char>(
-          ref_bases.size(), static_cast<std::uint8_t>(ref));
-    } else if (channel_enum == DeepVariantChannelEnum::CH_BASE_METHYLATION) {
-      ref_data[index] = std::vector<unsigned char>(ref_bases.size(), 0);
-    } else {
-      ref_data[index] = std::vector<unsigned char>(ref_bases.size(), 0);
+    for (int i = 0; i < ref_bases.size(); ++i) {
+      channel_objects[channel_enum]->FillRefBase(ref_data[index], i,
+                                                 ref_bases[i], ref_bases);
     }
   }
 }
@@ -455,31 +367,19 @@ int Channels::MatchesRefColor(bool base_matches_ref,
   return static_cast<int>(kMaxPixelValueAsFloat * alpha);
 }
 
-//-----------------------//
-// Experimental Channels //
-//-----------------------//
-constexpr bool Channels::isBaseLevelChannel(
-    DeepVariantChannelEnum channelEnum) {
-  switch (channelEnum) {
-    case DeepVariantChannelEnum::CH_READ_BASE:
-    case DeepVariantChannelEnum::CH_BASE_QUALITY:
-    case DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF:
-    case DeepVariantChannelEnum::CH_BASE_METHYLATION:
-      return true;
-    default:
-      return false;
-  }
-}
-
 // Given a channel enum for a read-level channel instantiates a corresponding
 // channel object, containing the methods to populate that channel.
 std::unique_ptr<Channel> Channels::ChannelEnumToObject(
     DeepVariantChannelEnum channel_enum, int width,
     const learning::genomics::deepvariant::PileupImageOptions& options) {
-  if (isBaseLevelChannel(channel_enum)) {
-    return nullptr;
-  }
   switch (channel_enum) {
+    case DeepVariantChannelEnum::CH_READ_BASE:
+      return std::unique_ptr<Channel>(new ReadBaseChannel(width, options));
+    case DeepVariantChannelEnum::CH_BASE_QUALITY:
+      return std::unique_ptr<Channel>(new BaseQualityChannel(width, options));
+    case DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF:
+      return std::unique_ptr<Channel>(
+          new BaseDiffersFromRefChannel(width, options));
     case DeepVariantChannelEnum::CH_MAPPING_QUALITY:
       return std::unique_ptr<Channel>(
           new MappingQualityChannel(width, options));
@@ -519,6 +419,9 @@ std::unique_ptr<Channel> Channels::ChannelEnumToObject(
       // Return a blank channel which will be filled in later after joining and
       // sorting reads by position.
       return std::unique_ptr<Channel>(new BlankChannel(width, options));
+    case DeepVariantChannelEnum::CH_BASE_METHYLATION:
+      return std::unique_ptr<Channel>(
+          new BaseMethylationChannel(width, options));
     default:
       LOG(FATAL) << "Channel '"
                  << DeepVariantChannelEnum_Name(channel_enum)

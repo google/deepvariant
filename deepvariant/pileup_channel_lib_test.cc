@@ -524,6 +524,9 @@ TEST_P(GetChannelDataTest, ReadData) {
 
   std::vector<std::vector<unsigned char>> data =
       std::vector<std::vector<unsigned char>>(channel_enums.size());
+  for (int i = 0; i < channel_enums.size(); ++i) {
+    data[i] = std::vector<unsigned char>(ref_read.aligned_sequence().size());
+  }
   channel_set.CalculateChannels(data, channel_enums, read,
                                 ref_read.aligned_sequence(), dv_call,
                                 alt_alleles, 0, param.channels_enum_to_blank);
@@ -666,6 +669,10 @@ TEST(GetRefChannelDataTest, ReadData) {
   }
   std::vector<std::vector<unsigned char>> ref_data =
       std::vector<std::vector<unsigned char>>(channel_enums.size());
+  for (int i = 0; i < channel_enums.size(); ++i) {
+    ref_data[i] =
+        std::vector<unsigned char>(ref_read.aligned_sequence().size());
+  }
   channel_set.CalculateRefRows(ref_data, channel_enums,
                                ref_read.aligned_sequence());
 

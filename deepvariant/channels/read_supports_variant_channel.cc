@@ -33,9 +33,11 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
@@ -43,19 +45,30 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-void ReadSupportsVariantChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  int supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
-
-  read_level_data = std::vector<unsigned char>(
-      1, static_cast<std::uint8_t>(SupportsAltColor(supports_alt)));
+ReadSupportsVariantChannel::ReadSupportsVariantChannel(
+    int width,
+    const learning::genomics::deepvariant::PileupImageOptions& options)
+    : Channel(width, options) {
+  supports_variant_color_ = std::nullopt;
 }
-void ReadSupportsVariantChannel::FillRefData(
-    const std::string& ref_bases, std::vector<unsigned char>& ref_data) {
-  ref_data = std::vector<unsigned char>(
-      width_, static_cast<std::uint8_t>(SupportsAltColor(0)));
+
+void ReadSupportsVariantChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
+  if (!supports_variant_color_.has_value()) {
+    int read_supports_alt = ReadSupportsAlt(dv_call, read, alt_alleles);
+    supports_variant_color_ = std::optional<unsigned char>{
+        static_cast<unsigned char>(SupportsAltColor(read_supports_alt))};
+  }
+  data[col] = supports_variant_color_.value();
+}
+
+void ReadSupportsVariantChannel::FillRefBase(
+    std::vector<unsigned char>& ref_data, int col, char ref_base,
+    const std::string& ref_bases) {
+  ref_data[col] = SupportsAltColor(0);
 }
 
 // Does this read support ref, one of the alternative alleles, or an allele we

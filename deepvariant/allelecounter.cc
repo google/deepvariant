@@ -42,7 +42,7 @@
 #include <utility>
 #include <vector>
 
-#include "deepvariant/pileup_channel_lib.h"
+#include "deepvariant/channels/base_methylation_channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "absl/log/check.h"
@@ -297,7 +297,8 @@ bool IsMethylated(const Read& read, int offset,
   // Check if the offset is valid within the base modifications data.
   // TODO: Handle the case where there are multiple base
   // modifications. Currently, we're only parsing 5mC modifications.
-  auto it = read.base_modifications().find(k5mCMethylationBaseModKey);
+  auto it = read.base_modifications().find(
+      BaseMethylationChannel::k5mCMethylationBaseModKey);
   if (it == read.base_modifications().end()) {
     return false;  // "Cm" modification not found
   }

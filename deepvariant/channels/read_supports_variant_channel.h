@@ -33,6 +33,7 @@
 #define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_READ_SUPPORTS_VARIANT_CHANNEL_H_
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -54,12 +55,17 @@ using nucleus::genomics::v1::Read;
 
 class ReadSupportsVariantChannel : public Channel {
  public:
-  using Channel::Channel;
-  void FillReadLevelData(const Read& read, const DeepVariantCall& dv_call,
-                         const std::vector<std::string>& alt_alleles,
-                         std::vector<unsigned char>& read_level_data) override;
-  void FillRefData(const std::string& ref_bases,
-                   std::vector<unsigned char>& ref_data) override;
+  ReadSupportsVariantChannel(
+      int width,
+      const learning::genomics::deepvariant::PileupImageOptions& options);
+
+  void FillReadBase(std::vector<unsigned char>& data, int col, char read_base,
+                    char ref_base, int base_quality, const Read& read,
+                    int read_index, const DeepVariantCall& dv_call,
+                    const std::vector<std::string>& alt_alleles) override;
+
+  void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
+                   const std::string& ref_bases) override;
 
   // Does this read support ref, one of the alternative alleles, or an allele we
   // aren't considering?
@@ -68,6 +74,9 @@ class ReadSupportsVariantChannel : public Channel {
                       absl::Span<const std::string> alt_alleles);
   // Public for testing
   int SupportsAltColor(int read_supports_alt) const;
+
+ private:
+  std::optional<unsigned char> supports_variant_color_;
 };
 }  // namespace deepvariant
 }  // namespace genomics

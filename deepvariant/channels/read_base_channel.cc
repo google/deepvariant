@@ -29,56 +29,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_GC_CONTENT_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_GC_CONTENT_CHANNEL_H_
+#include "deepvariant/channels/read_base_channel.h"
 
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <vector>
 
-#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "third_party/nucleus/protos/cigar.pb.h"
-#include "third_party/nucleus/protos/position.pb.h"
-#include "third_party/nucleus/protos/reads.pb.h"
-#include "third_party/nucleus/protos/struct.pb.h"
-#include "third_party/nucleus/protos/variants.pb.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-using learning::genomics::deepvariant::DeepVariantCall;
-using nucleus::genomics::v1::CigarUnit;
-using nucleus::genomics::v1::Read;
 
-class GcContentChannel : public Channel {
- public:
-  GcContentChannel(
-      int width,
-      const learning::genomics::deepvariant::PileupImageOptions& options);
+void ReadBaseChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
+  data[col] = BaseColor(read_base);
+}
 
-  void FillReadBase(std::vector<unsigned char>& data, int col, char read_base,
-                    char ref_base, int base_quality, const Read& read,
-                    int read_index, const DeepVariantCall& dv_call,
-                    const std::vector<std::string>& alt_alleles) override;
+void ReadBaseChannel::FillRefBase(std::vector<unsigned char>& ref_data, int col,
+                                  char ref_base, const std::string& ref_bases) {
+  ref_data[col] = BaseColor(ref_base);
+}
 
-  void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
-                   const std::string& ref_bases) override;
+int ReadBaseChannel::BaseColor(char base) {
+  switch (base) {
+    case 'A':
+      return (options_.base_color_offset_a_and_g() +
+              options_.base_color_stride() * 3);
+    case 'G':
+      return (options_.base_color_offset_a_and_g() +
+              options_.base_color_stride() * 2);
+    case 'T':
+      return (options_.base_color_offset_t_and_c() +
+              options_.base_color_stride() * 1);
+    case 'C':
+      return (options_.base_color_offset_t_and_c() +
+              options_.base_color_stride() * 0);
+    default:
+      return 0;
+  }
+}
 
-  // public for testing
-  int GcContent(const Read& read);
-
- private:
-  // Scales an input value to pixel range 0-254.
-  std::uint8_t ScaleColor(int value, float max_val) const;
-
-  static const constexpr int kMaxGcContent = 100;
-
-  std::optional<unsigned char> read_gc_content_color_;
-  std::optional<unsigned char> ref_gc_content_color_;
-};
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_GC_CONTENT_CHANNEL_H_

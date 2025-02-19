@@ -32,28 +32,52 @@
 #include "deepvariant/channels/homopolymer_weighted_channel.h"
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-void HomopolymerWeightedChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  std::vector<std::uint8_t> homopolymer_weighted = HomopolymerWeighted(read);
-  read_level_data =
-      ScaleColorVector(homopolymer_weighted, kMaxHomopolymerWeighted);
+
+HomopolymerWeightedChannel::HomopolymerWeightedChannel(
+    int width,
+    const learning::genomics::deepvariant::PileupImageOptions& options)
+    : Channel(width, options) {
+  read_homopolymer_weighted_color_vector_ = std::nullopt;
+  ref_homopolymer_weighted_color_vector_ = std::nullopt;
 }
-void HomopolymerWeightedChannel::FillRefData(
-    const std::string& ref_bases, std::vector<unsigned char>& ref_data) {
-  Read refRead;
-  refRead.set_aligned_sequence(ref_bases);
-  std::vector<std::uint8_t> homopolymer_weighted = HomopolymerWeighted(refRead);
-  ref_data = ScaleColorVector(homopolymer_weighted, kMaxHomopolymerWeighted);
+
+void HomopolymerWeightedChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
+  if (!read_homopolymer_weighted_color_vector_.has_value()) {
+    std::vector<std::uint8_t> homopolymer_weighted = HomopolymerWeighted(read);
+    read_homopolymer_weighted_color_vector_ =
+        std::optional<std::vector<std::uint8_t>>{
+            ScaleColorVector(homopolymer_weighted, kMaxHomopolymerWeighted)};
+  }
+  data[col] = read_homopolymer_weighted_color_vector_.value().at(read_index);
+}
+
+void HomopolymerWeightedChannel::FillRefBase(
+    std::vector<unsigned char>& ref_data, int col, char ref_base,
+    const std::string& ref_bases) {
+  if (!ref_homopolymer_weighted_color_vector_.has_value()) {
+    Read refRead;
+    refRead.set_aligned_sequence(ref_bases);
+    std::vector<std::uint8_t> homopolymer_weighted =
+        HomopolymerWeighted(refRead);
+    ref_homopolymer_weighted_color_vector_ =
+        std::optional<std::vector<std::uint8_t>>{
+            ScaleColorVector(homopolymer_weighted, kMaxHomopolymerWeighted)};
+  }
+  ref_data[col] = ref_homopolymer_weighted_color_vector_.value().at(col);
 }
 
 std::vector<std::uint8_t> HomopolymerWeightedChannel::HomopolymerWeighted(
@@ -61,7 +85,7 @@ std::vector<std::uint8_t> HomopolymerWeightedChannel::HomopolymerWeighted(
   // Generates a vector reflecting the number of repeats observed.
   // ATCGGGAA
   // 11133322
-  std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size());
+  std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size(), 0);
   const auto& seq = read.aligned_sequence();
   homopolymer[0] = 1;
   int current_weight = 1;

@@ -34,9 +34,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/types/span.h"
 
@@ -44,20 +46,30 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-void AlleleFrequencyChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  const float allele_frequency =
-      ReadAlleleFrequency(dv_call, read, alt_alleles);
-  read_level_data = std::vector<unsigned char>(
-      1, static_cast<std::uint8_t>(AlleleFrequencyColor(allele_frequency)));
+AlleleFrequencyChannel::AlleleFrequencyChannel(
+    int width,
+    const learning::genomics::deepvariant::PileupImageOptions& options)
+    : Channel(width, options) {
+  allele_frequency_color_ = std::nullopt;
 }
-void AlleleFrequencyChannel::FillRefData(const std::string& ref_bases,
-                                         std::vector<unsigned char>& ref_data) {
-  int allele_frequency_color = AlleleFrequencyColor(0);
-  ref_data = std::vector<unsigned char>(
-      width_, static_cast<std::uint8_t>(allele_frequency_color));
+
+void AlleleFrequencyChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
+  if (!allele_frequency_color_.has_value()) {
+    float allele_frequency = ReadAlleleFrequency(dv_call, read, alt_alleles);
+    allele_frequency_color_ =
+        std::optional<unsigned char>{AlleleFrequencyColor(allele_frequency)};
+  }
+  data[col] = allele_frequency_color_.value();
+}
+
+void AlleleFrequencyChannel::FillRefBase(std::vector<unsigned char>& ref_data,
+                                         int col, char ref_base,
+                                         const std::string& ref_bases) {
+  ref_data[col] = AlleleFrequencyColor(0);
 }
 
 // Get allele frequency color for a read.

@@ -33,25 +33,41 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-void InsertSizeChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  read_level_data = ReadInsertSize(read);
+InsertSizeChannel::InsertSizeChannel(
+    int width,
+    const learning::genomics::deepvariant::PileupImageOptions& options)
+    : Channel(width, options) {
+  insert_size_color_vector_ = std::nullopt;
 }
-void InsertSizeChannel::FillRefData(const std::string& ref_bases,
-                                    std::vector<unsigned char>& ref_data) {
-  ref_data = std::vector<unsigned char>(
-      width_, static_cast<std::uint8_t>(kMaxPixelValueAsFloat));
+
+void InsertSizeChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
+  if (!insert_size_color_vector_.has_value()) {
+    insert_size_color_vector_ =
+        std::optional<std::vector<unsigned char>>{ReadInsertSize(read)};
+  }
+  data[col] = insert_size_color_vector_.value().at(read_index);
+}
+
+void InsertSizeChannel::FillRefBase(std::vector<unsigned char>& ref_data,
+                                    int col, char ref_base,
+                                    const std::string& ref_bases) {
+  ref_data[col] = static_cast<std::uint8_t>(kMaxPixelValueAsFloat);
 }
 
 std::vector<std::uint8_t> InsertSizeChannel::ReadInsertSize(const Read& read) {

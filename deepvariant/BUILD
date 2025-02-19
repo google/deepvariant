@@ -74,8 +74,8 @@ cc_library(
     srcs = ["allelecounter.cc"],
     hdrs = ["allelecounter.h"],
     deps = [
-        ":pileup_channel_lib",
         ":utils",
+        "//deepvariant/channels:base_methylation_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",
         "//third_party/nucleus/protos:cigar_cc_pb2",
@@ -86,10 +86,8 @@ cc_library(
         "//third_party/nucleus/util:proto_ptr",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -1023,7 +1021,7 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//:protobuf_lite",
     ],
 )
 
@@ -1034,6 +1032,9 @@ cc_library(
     deps = [
         "//deepvariant/channels:allele_frequency_channel",
         "//deepvariant/channels:avg_base_quality_channel",
+        "//deepvariant/channels:base_differs_from_ref_channel",
+        "//deepvariant/channels:base_methylation_channel",
+        "//deepvariant/channels:base_quality_channel",
         "//deepvariant/channels:blank_channel",
         "//deepvariant/channels:channel",
         "//deepvariant/channels:gap_compressed_identity_channel",
@@ -1044,6 +1045,7 @@ cc_library(
         "//deepvariant/channels:insert_size_channel",
         "//deepvariant/channels:is_homopolymer_channel",
         "//deepvariant/channels:mapping_quality_channel",
+        "//deepvariant/channels:read_base_channel",
         "//deepvariant/channels:read_mapping_percent_channel",
         "//deepvariant/channels:read_supports_variant_channel",
         "//deepvariant/channels:strand_channel",
@@ -1058,8 +1060,6 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
-        "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -1084,7 +1084,6 @@ cc_test(
         "//deepvariant/channels:read_supports_variant_channel",
         "//deepvariant/channels:strand_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
-        "//third_party/nucleus/io:sam_reader",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",

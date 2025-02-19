@@ -50,26 +50,21 @@ using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 
-// Class for channels that only depend on information at the
-// granularity of an entire read
+// Class for channels
 class Channel {
  public:
   Channel(int width,
           const learning::genomics::deepvariant::PileupImageOptions& options);
   virtual ~Channel();
 
-  // Fills the provided read_level_data reference. The length of read_level_data
-  // is width_, unless all values are the same, in which case we use a vector of
-  // size 1 to save memory.
-  virtual void FillReadLevelData(
-      const Read& read, const DeepVariantCall& dv_call,
-      const std::vector<std::string>& alt_alleles,
-      std::vector<unsigned char>& read_level_data) = 0;
+  virtual void FillReadBase(std::vector<unsigned char>& data, int col,
+                            char read_base, char ref_base, int base_quality,
+                            const Read& read, int read_index,
+                            const DeepVariantCall& dv_call,
+                            const std::vector<std::string>& alt_alleles) = 0;
 
-  // Fills the provided ref_data reference.
-  // The length of ref_data_ is always width_.
-  virtual void FillRefData(const std::string& ref_bases,
-                           std::vector<unsigned char>& ref_data) = 0;
+  virtual void FillRefBase(std::vector<unsigned char>& ref_data, int col,
+                           char ref_base, const std::string& ref_bases) = 0;
 
   int width_;
 

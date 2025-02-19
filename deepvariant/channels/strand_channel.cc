@@ -35,23 +35,24 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-void StrandChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  const bool is_forward_strand = !read.alignment().position().reverse_strand();
 
-  read_level_data = std::vector<unsigned char>(
-      1, static_cast<std::uint8_t>(StrandColor(is_forward_strand)));
+void StrandChannel::FillReadBase(std::vector<unsigned char>& data, int col,
+                                 char read_base, char ref_base,
+                                 int base_quality, const Read& read,
+                                 int read_index, const DeepVariantCall& dv_call,
+                                 const std::vector<std::string>& alt_alleles) {
+  is_forward_strand_ = !read.alignment().position().reverse_strand();
+  data[col] = static_cast<std::uint8_t>(StrandColor(is_forward_strand_));
 }
-void StrandChannel::FillRefData(const std::string& ref_bases,
-                                std::vector<unsigned char>& ref_data) {
-  ref_data = std::vector<unsigned char>(
-      width_, static_cast<std::uint8_t>(StrandColor(true)));
+
+void StrandChannel::FillRefBase(std::vector<unsigned char>& ref_data, int col,
+                                char ref_base, const std::string& ref_bases) {
+  ref_data[col] = static_cast<std::uint8_t>(StrandColor(true));
 }
 
 int StrandChannel::StrandColor(bool on_positive_strand) const {

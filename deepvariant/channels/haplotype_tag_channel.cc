@@ -32,27 +32,43 @@
 #include "deepvariant/channels/haplotype_tag_channel.h"
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/log.h"
 
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-void HaplotypeTagChannel::FillReadLevelData(
-    const Read& read, const DeepVariantCall& dv_call,
-    const std::vector<std::string>& alt_alleles,
-    std::vector<unsigned char>& read_level_data) {
-  const int hp_value =
-      GetHPValueForHPChannel(read, options_.hp_tag_for_assembly_polishing());
 
-  read_level_data = std::vector<unsigned char>(1, ScaleColor(hp_value, 2));
+HaplotypeTagChannel::HaplotypeTagChannel(
+    int width,
+    const learning::genomics::deepvariant::PileupImageOptions& options)
+    : Channel(width, options) {
+  haplotype_tag_color_ = std::nullopt;
 }
-void HaplotypeTagChannel::FillRefData(const std::string& ref_bases,
-                                      std::vector<unsigned char>& ref_data) {
-  ref_data = std::vector<unsigned char>(width_, ScaleColor(0, 2));
+
+void HaplotypeTagChannel::FillReadBase(
+    std::vector<unsigned char>& data, int col, char read_base, char ref_base,
+    int base_quality, const Read& read, int read_index,
+    const DeepVariantCall& dv_call,
+    const std::vector<std::string>& alt_alleles) {
+  if (!haplotype_tag_color_.has_value()) {
+    const int hp_value =
+        GetHPValueForHPChannel(read, options_.hp_tag_for_assembly_polishing());
+    haplotype_tag_color_ =
+        std::optional<unsigned char>{ScaleColor(hp_value, 2)};
+  }
+  data[col] = haplotype_tag_color_.value();
+}
+
+void HaplotypeTagChannel::FillRefBase(std::vector<unsigned char>& ref_data,
+                                      int col, char ref_base,
+                                      const std::string& ref_bases) {
+  ref_data[col] = ScaleColor(0, 2);
 }
 
 int HaplotypeTagChannel::GetHPValueForHPChannel(
