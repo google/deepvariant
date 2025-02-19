@@ -37,6 +37,7 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/testing_utils.h"
 #include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
@@ -47,9 +48,13 @@
 #include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/protos/reference.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
+#include "google/protobuf/repeated_ptr_field.h"
 
 namespace learning {
 namespace genomics {

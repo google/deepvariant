@@ -31,8 +31,6 @@
 
 #include "deepvariant/pileup_image_native.h"
 
-#include <math.h>
-
 #include <algorithm>
 #include <cstdint>
 #include <memory>

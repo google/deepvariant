@@ -44,6 +44,7 @@
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
+#include "google/protobuf/repeated_ptr_field.h"
 
 namespace learning {
 namespace genomics {

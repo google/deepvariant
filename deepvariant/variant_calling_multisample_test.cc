@@ -51,6 +51,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/util/utils.h"

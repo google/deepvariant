@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/protos/realigner.pb.h"
 #include "deepvariant/realigner/fast_pass_aligner.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -50,6 +51,7 @@
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "google/protobuf/repeated_ptr_field.h"
 
 namespace learning {
 namespace genomics {

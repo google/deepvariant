@@ -33,11 +33,9 @@
 
 #include <vector>
 
-#include <gmock/gmock.h>
-#include <gmock/gmock-matchers.h>
-#include <gmock/gmock-more-matchers.h>
-
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "tensorflow/core/platform/test.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"

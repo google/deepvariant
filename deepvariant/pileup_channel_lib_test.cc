@@ -31,6 +31,7 @@
 
 #include "deepvariant/pileup_channel_lib.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
