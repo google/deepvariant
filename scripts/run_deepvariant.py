@@ -309,12 +309,6 @@ SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
         indel_gq_threshold=25,
         vaf_context_window=51,
     ),
-    ModelType.HYBRID_PACBIO_ILLUMINA: SmallModelConfig(
-        small_model_checkpoint='/opt/smallmodels/hybrid_pacbio_illumina',
-        snp_gq_threshold=25,
-        indel_gq_threshold=30,
-        vaf_context_window=51,
-    ),
 }
 
 # Current release version of DeepVariant.
