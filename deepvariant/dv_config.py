@@ -214,6 +214,7 @@ def get_pangenome_wgs_config(config: ml_collections.ConfigDict):
 
 def get_deepsomatic_wgs_config(config: ml_collections.ConfigDict):
   get_wgs_config(config)
+  config.best_checkpoint_metric = 'tune/f1_homalt'
   config.learning_rate = 0.00009483389877395854
   config.learning_rate_decay_rate = 0.5
   config.warmup_steps = 10000
@@ -228,6 +229,7 @@ def get_deepsomatic_wes_config(
 ):
   """Config parameters for wgs training."""
   get_wgs_config(config)
+  config.best_checkpoint_metric = 'tune/f1_homalt'
   # Exome Dataset
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
@@ -281,6 +283,7 @@ def get_deepsomatic_ont_tumor_normal_config(config: ml_collections.ConfigDict):
 def get_deepsomatic_pacbio_tumor_only_config(config: ml_collections.ConfigDict):
   """Training parameters."""
   get_pacbio_config(config)
+  config.best_checkpoint_metric = 'tune/f1_homalt'
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
@@ -296,6 +299,7 @@ def get_deepsomatic_ont_tumor_only_config(config: ml_collections.ConfigDict):
 
 def get_deepsomatic_wgs_tumor_only_config(config: ml_collections.ConfigDict):
   get_wgs_config(config)
+  config.best_checkpoint_metric = 'tune/f1_homalt'
   config.class_weights = '1,1,10'
   config.train_dataset_pbtxt = '/placer/prod/home/brain-genomics/danielecook/deepsomatic/ds_wgs_tumor_only/ds_wgs_tumor_only_train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/placer/prod/home/brain-genomics/danielecook/deepsomatic/ds_wgs_tumor_only/ds_wgs_tumor_only_tune.dataset_config.pbtxt'
@@ -306,6 +310,7 @@ def get_deepsomatic_wgs_ffpe_config(
     config: ml_collections.ConfigDict,
 ):
   get_wgs_config(config)
+  config.best_checkpoint_metric = 'tune/f1_homalt'
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = '/path/to/warmstart/checkpoint'
@@ -316,6 +321,7 @@ def get_deepsomatic_wes_ffpe_config(
 ):
   """Config parameters for wgs training."""
   get_wgs_config(config)
+  config.best_checkpoint_metric = 'tune/f1_homalt'
   # Exome Dataset
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
