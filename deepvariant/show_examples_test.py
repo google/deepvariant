@@ -140,6 +140,7 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
   def test_show_examples_end2end_calling_examples(self):
     output_prefix = test_utils.test_tmpfile('calling')
     FLAGS.examples = testdata.GOLDEN_CALLING_EXAMPLES
+    FLAGS.example_info_json = FLAGS.examples + '.example_info.json'
     FLAGS.output = output_prefix
     show_examples.run()
     ls = glob.glob('{}*'.format(output_prefix))
@@ -155,6 +156,7 @@ class ShowExamplesEnd2EndTest(absltest.TestCase):
   def test_show_examples_end2end_training_examples(self):
     output_prefix = test_utils.test_tmpfile('training')
     FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES
+    FLAGS.example_info_json = FLAGS.examples + '.example_info.json'
     FLAGS.output = output_prefix
     show_examples.run()
     ls = glob.glob('{}*'.format(output_prefix))
