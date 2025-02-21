@@ -94,55 +94,55 @@ RUN \
   BASH_HEADER='#!/bin/bash' && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/make_examples.zip "$@"' > \
+    '/usr/bin/python3 /opt/deepvariant/bin/make_examples.zip "$@"' > \
     /opt/deepvariant/bin/make_examples && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/call_variants.zip "$@"' > \
+    '/usr/bin/python3 /opt/deepvariant/bin/call_variants.zip "$@"' > \
     /opt/deepvariant/bin/call_variants && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
+    '/usr/bin/python3 /opt/deepvariant/bin/postprocess_variants.zip "$@"' > \
     /opt/deepvariant/bin/postprocess_variants && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/vcf_stats_report.zip "$@"' > \
+    '/usr/bin/python3 /opt/deepvariant/bin/vcf_stats_report.zip "$@"' > \
     /opt/deepvariant/bin/vcf_stats_report && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/show_examples.zip "$@"' > \
+    '/usr/bin/python3 /opt/deepvariant/bin/show_examples.zip "$@"' > \
     /opt/deepvariant/bin/show_examples && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/runtime_by_region_vis.zip "$@"' > \
+    '/usr/bin/python3 /opt/deepvariant/bin/runtime_by_region_vis.zip "$@"' > \
     /opt/deepvariant/bin/runtime_by_region_vis && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/multisample_make_examples.zip "$@"' > \
+    '/usr/bin/python3 /opt/deepvariant/bin/multisample_make_examples.zip "$@"' > \
     /opt/deepvariant/bin/multisample_make_examples && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 -u /opt/deepvariant/bin/labeled_examples_to_vcf.zip "$@"' > \
+    '/usr/bin/python3 -u /opt/deepvariant/bin/labeled_examples_to_vcf.zip "$@"' > \
     /opt/deepvariant/bin/labeled_examples_to_vcf && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/convert_to_saved_model.zip "$@"' > \
+    '/usr/bin/python3 /opt/deepvariant/bin/convert_to_saved_model.zip "$@"' > \
     /opt/deepvariant/bin/convert_to_saved_model && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 -u /opt/deepvariant/bin/make_examples_somatic.zip "$@"' > \
+    '/usr/bin/python3 -u /opt/deepvariant/bin/make_examples_somatic.zip "$@"' > \
     /opt/deepvariant/bin/make_examples_somatic && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
+    '/usr/bin/python3 -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
     /opt/deepvariant/bin/run_deepvariant && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 -u /opt/deepvariant/bin/run_deepsomatic.py "$@"' > \
+    '/usr/bin/python3 -u /opt/deepvariant/bin/run_deepsomatic.py "$@"' > \
     /opt/deepvariant/bin/run_deepsomatic && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    'python3 /opt/deepvariant/bin/train.zip "$@"' > \
+    '/usr/bin/python3 /opt/deepvariant/bin/train.zip "$@"' > \
     /opt/deepvariant/bin/train && \
   chmod +x /opt/deepvariant/bin/make_examples \
     /opt/deepvariant/bin/call_variants \
