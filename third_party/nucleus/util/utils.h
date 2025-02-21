@@ -51,6 +51,8 @@
 
 namespace nucleus {
 
+std::string GetFileContent(const std::string& filename);
+
 // Enum specifying a group of canonical DNA sequence bases.
 enum class CanonicalBases {
   // Only allows ACGT bases.

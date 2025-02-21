@@ -43,8 +43,6 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/core/status_matchers.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/env.h"
 
 namespace nucleus {
 
@@ -58,7 +56,6 @@ void CreateRecord(const string& id, const string& description,
   record->set_sequence(sequence);
   record->set_quality(quality);
 }
-
 
 class FastqWriterTest : public ::testing::Test {
  protected:
@@ -91,9 +88,7 @@ TEST_F(FastqWriterTest, WritingWorks) {
   ASSERT_THAT(writer->Close(), IsOK());
   writer.reset();
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &contents));
+  const string contents = nucleus::GetFileContent(output_filename);
   const string kExpectedFastqContent =
       "@NODESC:header\n"
       "GATTACA\n"
@@ -118,9 +113,7 @@ TEST_F(FastqWriterTest, WritesGzippedFiles) {
                     .ValueOrDie());
   ASSERT_THAT(writer->Close(), IsOK());
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &contents));
+  const string contents = nucleus::GetFileContent(output_filename);
   EXPECT_THAT(IsGzipped(contents),
               "FASTQ writer should be able to writed gzipped output");
 }
