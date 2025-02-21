@@ -104,6 +104,7 @@ def deepvariant_header(
           description='Variant allele fractions.',
       ),
       vcf_constants.reserved_format_field('PL'),
+      vcf_constants.reserved_format_field('PS'),
   ]
   if add_info_candidates:
     info_fields.append(
