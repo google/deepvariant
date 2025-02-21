@@ -597,12 +597,10 @@ def expected_alt_allele_indices(num_alternate_bases: int) -> list[list[int]]:
   ]
   # alt_allele_indices starts from 0, where 0 refers to the first alt allele.
   # pylint: disable=g-complex-comprehension
-  return sorted(
-      [
-          [i - 1 for i in alt_allele_indices]
-          for alt_allele_indices in alt_allele_indices_list
-      ]
-  )
+  return sorted([
+      [i - 1 for i in alt_allele_indices]
+      for alt_allele_indices in alt_allele_indices_list
+  ])
   # pylint: enable=g-complex-comprehension
 
 
@@ -610,12 +608,10 @@ def _check_alt_allele_indices(
     call_variants_outputs: Sequence[deepvariant_pb2.CallVariantsOutput],
 ) -> bool:
   """Returns True if and only if the alt allele indices are valid."""
-  all_alt_allele_indices = sorted(
-      [
-          list(call_variants_output.alt_allele_indices.indices)
-          for call_variants_output in call_variants_outputs
-      ]
-  )
+  all_alt_allele_indices = sorted([
+      list(call_variants_output.alt_allele_indices.indices)
+      for call_variants_output in call_variants_outputs
+  ])
   if all_alt_allele_indices != expected_alt_allele_indices(
       len(call_variants_outputs[0].variant.alternate_bases)
   ):
@@ -914,13 +910,11 @@ def get_multiallelic_distributions(
 
   assert len(alt_allele_indices_to_probs) == 3
   # Concatenate all probabilities into one array.
-  final_probs = np.array(
-      [
-          alt_allele_indices_to_probs[first_alt_index]
-          + alt_allele_indices_to_probs[second_alt_index]
-          + alt_allele_indices_to_probs[(first_alt_index, second_alt_index)]
-      ]
-  )
+  final_probs = np.array([
+      alt_allele_indices_to_probs[first_alt_index]
+      + alt_allele_indices_to_probs[second_alt_index]
+      + alt_allele_indices_to_probs[(first_alt_index, second_alt_index)]
+  ])
   return final_probs
 
 
