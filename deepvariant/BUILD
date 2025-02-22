@@ -1517,18 +1517,6 @@ py_library(
     ],
 )
 
-py_test(
-    name = "runtime_by_region_vis_test",
-    srcs = ["runtime_by_region_vis_test.py"],
-    data = [":testdata"],
-    deps = [
-        ":py_testdata",
-        ":runtime_by_region_vis_lib",
-        "@absl_py//absl/testing:absltest",
-        "@absl_py//absl/testing:parameterized",
-    ],
-)
-
 py_binary(
     name = "multisample_make_examples",
     srcs = [
