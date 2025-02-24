@@ -74,6 +74,8 @@ const char* const kSupportingUncalledAllele = "UNCALLED_ALLELE";
 const char* const kDPFormatField = "DP";
 const char* const kADFormatField = "AD";
 const char* const kVAFFormatField = "VAF";
+const char* const kMFFormatField = "MF";
+const char* const kMDFormatField = "MD";
 
 // The VCF/Variant allele string to use when you don't have any alt alleles.
 const char* const kNoAltAllele = ".";
@@ -741,7 +743,7 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
   }
 }
 
-// Returns true if the current site should be emited, even if it's a reference
+// Returns true if the current site should be emitted, even if it's a reference
 // site. This function is used to return reference site samples if the
 // member variable fraction_reference_sites_to_emit >= 0.0 by pulling draws
 // from a random number and returning true if the number <= the threshold.
@@ -966,6 +968,10 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
         &call);
   }
 
+  // Add methylation information ( methylation fraction (MF) and methylation
+  // depth (MD) ) to the INFO field of each call.
+  ComputeMethylationStats(target_sample_allele_count, allele_map, variant);
+
   return std::make_optional(call);
 }
 
@@ -1067,6 +1073,91 @@ void VariantCaller::AddAdjacentAlleleFractionsAtPosition(
         [context_allele_count.position().position()] = vaf;
   }
 }
+
+
+// Helper function to compute both methylation fraction and methylation depth
+// Computes the methylation statistics for reference and alternate alleles.
+//
+// This function calculates:
+// - Methylation Fraction (MF): The fraction of methylated reads for each
+//   allele.
+// - Methylation Depth (MD): The count of methylated reads for each allele.
+//
+// Low-quality reads (as determined by `allele.is_low_quality()`) are
+// excluded from both calculations.
+//
+// @param allele_count The AlleleCount object containing read-level information.
+// @param allele_map   A mapping from observed alleles to their corresponding
+//                     alternate bases.
+//
+// @return A pair of vectors:
+// - The first MF vector contains the methylation fractions for each allele.
+// - The second MD vector contains the methylation depths for each allele.
+//
+// The vectors are guaranteed to be the same size, with each element
+// corresponding to a unique allele.
+// Computes and adds methylation fraction (MF) and methylation depth (MD)
+// to the INFO field of the variant for a single target sample.
+void VariantCaller::ComputeMethylationStats(
+    const AlleleCount& target_sample_allele_count, const AlleleMap& allele_map,
+    Variant* variant) const {
+  // Ensure variant is not null
+  CHECK(variant != nullptr);
+
+  std::vector<double> mf_values;
+  std::vector<int> md_values;
+
+  // Compute statistics for REF allele
+  int ref_methylated_count = 0, ref_total_count = 0;
+  for (const auto& [read_name, allele] :
+       target_sample_allele_count.read_alleles()) {
+    if ((allele.bases() == target_sample_allele_count.ref_base()) &&
+         !allele.is_low_quality()) {
+      ++ref_total_count;
+      if (allele.is_methylated() && !allele.is_low_quality()) {
+        ++ref_methylated_count;
+      }
+    }
+  }
+
+  mf_values.push_back(
+      ref_total_count > 0
+          ? static_cast<double>(ref_methylated_count) / ref_total_count
+          : 0.0);
+  md_values.push_back(ref_methylated_count);
+
+  // Compute statistics for ALT alleles
+  for (const auto& [alt_allele, alt_bases] : allele_map) {
+    int alt_methylated_count = 0, alt_total_count = 0;
+
+    for (const auto& [read_name, read_allele] :
+         target_sample_allele_count.read_alleles()) {
+      if (read_allele.bases() == alt_allele.bases() &&
+          !read_allele.is_low_quality()) {
+        ++alt_total_count;
+        if (read_allele.is_methylated() && !read_allele.is_low_quality()) {
+          ++alt_methylated_count;
+        }
+      }
+    }
+
+    mf_values.push_back(
+        alt_total_count > 0
+            ? static_cast<double>(alt_methylated_count) / alt_total_count
+            : 0.0);
+    md_values.push_back(alt_methylated_count);
+  }
+
+  bool has_nonzero_mf = std::any_of(
+    mf_values.begin(), mf_values.end(), [](double mf) { return mf > 0.0; });
+
+  // Only add MF and MD field if at least one value is > 0
+  if (has_nonzero_mf) {
+    nucleus::SetInfoField(kMFFormatField, mf_values, variant->mutable_calls(0));
+    nucleus::SetInfoField(kMDFormatField, md_values, variant->mutable_calls(0));
+  }
+}
+
 
 }  // namespace multi_sample
 }  // namespace deepvariant

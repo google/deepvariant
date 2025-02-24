@@ -55,6 +55,8 @@ namespace genomics {
 namespace deepvariant {
 namespace vcf_candidate_importer {
 
+using nucleus::genomics::v1::Variant;
+
 // The alternate allele string for the gVCF "any" alternate allele.
 extern const char* const kGVCFAltAllele;
 
@@ -70,6 +72,8 @@ extern const char* const kSupportingUncalledAllele;
 extern const char* const kDPFormatField;
 extern const char* const kADFormatField;
 extern const char* const kVAFFormatField;
+extern const char* const kMFFormatField;
+extern const char* const kMDFormatField;
 
 // Implements the less functionality needed to use an Allele as an key in a map.
 struct OrderAllele {
@@ -182,6 +186,12 @@ class VariantCaller {
       const std::vector<AlleleCount>& allele_counts,
       absl::Span<const nucleus::genomics::v1::Variant> variants_in_region)
       const;
+
+    // Helper function to compute the methylation fraction for a given allele.
+  void ComputeMethylationStats(
+    const AlleleCount& allele_count,
+    const AlleleMap& allele_map,
+    Variant* variant) const;
 
   // Primary interface function for calling variants.
   //

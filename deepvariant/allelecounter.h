@@ -90,12 +90,6 @@ int TotalAlleleCounts(const AlleleCount& allele_count,
 int TotalAlleleCounts(absl::Span<const AlleleCount> allele_counts,
                       bool include_low_quality = false);
 
-// Returns the fraction of methylated reads at a position.
-// If `include_low_quality` is set to true, low quality reads will be included
-// in the calculation.
-double MethylationFraction(const AlleleCount& allele_count,
-                           bool include_low_quality = false);
-
 // Binary search for allele index by position.
 int AlleleIndex(absl::Span<const AlleleCount> allele_counts, int64_t pos);
 

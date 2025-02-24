@@ -191,38 +191,6 @@ int TotalAlleleCounts(absl::Span<const AlleleCount> allele_counts,
   return total_allele_count;
 }
 
-// Returns the fraction of methylated reads at a position.
-// If `include_low_quality` is set to true, low quality reads will be included
-// in the calculation.
-double MethylationFraction(const AlleleCount& allele_count,
-                           bool include_low_quality) {
-  if (allele_count.read_alleles().empty()) {
-    // Handle the case where there are no alleles.
-    return 0.0;
-  }
-
-  int methylated_count = 0;
-  int total_count = 0;
-
-  // Iterate to get number of methylated alleles.
-  for (const auto& [_, allele] : allele_count.read_alleles()) {
-    // Check allele quality.
-    if (!allele.is_low_quality() || include_low_quality) {
-      ++total_count;
-      if (allele.is_methylated()) {
-        ++methylated_count;
-      }
-    }
-  }
-
-  // Avoid division by zero.
-  if (total_count == 0) {
-    return 0.0;
-  }
-
-  return static_cast<double>(methylated_count) / total_count;
-}
-
 // Returns false if any of the bases from offset to offset+len are canonical
 // bases.
 // If `keep_legacy_behavior` is set to true, this function will also return
@@ -1009,7 +977,6 @@ std::vector<AlleleCountSummary> AlleleCounter::SummaryCounts(
     summary.set_total_read_count(TotalAlleleCounts(allele_count));
     summary.set_ref_nonconfident_read_count(
         allele_count.ref_nonconfident_read_count());
-    summary.set_methylation_fraction(MethylationFraction(allele_count));
     summaries.push_back(summary);
   }
   return summaries;

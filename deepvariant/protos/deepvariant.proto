@@ -233,9 +233,6 @@ message AlleleCount {
 
   // If true reads supporting ref are tracked (read ids are saved).
   bool track_ref_reads = 7;
-
-  // Fraction of methylated reads at this position.
-  float methylation_fraction = 8;
 }
 
 // A lighter-weight version of AlleleCount.
@@ -255,8 +252,6 @@ message AlleleCountSummary {
   int32 total_read_count = 5;
   // Same as in AlleleCount.
   int32 ref_nonconfident_read_count = 6;
-  // Fraction of methylated reads at this position.
-  float methylation_fraction = 7;
 }
 
 // A message encapsulating all of the information about a Variant call site for

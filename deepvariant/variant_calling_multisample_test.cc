@@ -67,24 +67,52 @@ using ReferenceSequence = nucleus::genomics::v1::ReferenceSequence;
 
 constexpr char kSampleName[] = "MySampleName";
 
-AlleleCount MakeTestAlleleCount(int total_n, int alt_n,
-                                const std::string& sample_id,
-                                const std::string& ref = "A",
-                                const std::string& alt = "C", int start = 100) {
-  CHECK_GE(total_n, alt_n) << "Total number of reads must be >= n alt reads";
+AlleleCount MakeTestAlleleCount(
+    int total_n, int alt_n, const std::string& sample_id,
+    const std::string& ref = "A", const std::string& alt = "C", int start = 100,
+    int methylated_ref_n = 0, int methylated_alt_n = 0,
+    bool track_ref_reads = false) {
+  CHECK_GE(total_n, alt_n) << "Total number of reads must be ≥ n alt reads";
+  CHECK_GE(total_n - alt_n, methylated_ref_n)
+      << "Methylated ref reads must be ≤ total ref reads";
+  CHECK_GE(alt_n, methylated_alt_n)
+      << "Methylated alt reads must be ≤ alt reads";
+
   AlleleCount allele_count;
   *(allele_count.mutable_position()) = nucleus::MakePosition("chr1", start);
   allele_count.set_ref_base(ref);
   allele_count.set_ref_supporting_read_count(total_n - alt_n);
-  const Allele read_allele = MakeAllele(alt, AlleleType::SUBSTITUTION, 1);
+
+  // Create reference alleles if we're tracking ref reads,
+  // marking some as methylated
+  if (track_ref_reads) {
+    for (int i = 0; i < total_n - alt_n; ++i) {
+      bool is_methylated = (i < methylated_ref_n);
+      Allele ref_allele = MakeAllele(ref, AlleleType::REFERENCE, 1,
+                                    false, 30, 30, false, is_methylated);
+      (*allele_count.mutable_read_alleles())[StrCat(sample_id,
+                                                    "_ref_read_", i)] =
+                                                    ref_allele;
+
+      Allele* new_allele =
+          (*allele_count.mutable_sample_alleles())[sample_id].add_alleles();
+      *new_allele = ref_allele;
+    }
+  }
+
+  // Create alternate alleles, marking some as methylated
   for (int i = 0; i < alt_n; ++i) {
-    (*allele_count.mutable_read_alleles())[StrCat(sample_id, "_read_", i)] =
-        read_allele;
+    bool is_methylated = (i < methylated_alt_n);
+    Allele alt_allele = MakeAllele(alt, AlleleType::SUBSTITUTION, 1,
+                                   false, 30, 30, false, is_methylated);
+    (*allele_count.mutable_read_alleles())[StrCat(sample_id, "_alt_read_", i)] =
+        alt_allele;
 
     Allele* new_allele =
         (*allele_count.mutable_sample_alleles())[sample_id].add_alleles();
-    *new_allele = read_allele;
+    *new_allele = alt_allele;
   }
+
   return allele_count;
 }
 
@@ -282,6 +310,282 @@ TEST(VariantCallingTest,
 
   DeepVariantCall call = optional_variant.value();
   EXPECT_THAT(call.allele_frequency_at_position().size(), window_size);
+  caller->Clear();
+}
+
+// Compute methylation statistics when only reference alleles are present.
+TEST(VariantCallingTest, TestCallVariantComputeMethylationStatsOnlyReference) {
+  VariantCallerOptions options = BasicOptions();
+  // Currently, methylation calculations need ref
+  // reads be tracked otherwise only alt reads are considered in
+  // allele_counts.read_alleles.
+  bool track_ref_reads = true;
+
+  // Create an AlleleCount with 20 total reads, 0 alternate,
+  // 2 methylated reference reads, and 0 methylated alternate read.
+  AlleleCount allele_count = MakeTestAlleleCount(
+      20, 10, "sample", "G", "C", 500, 2, 0, track_ref_reads);
+
+  // Create target sample allele counts for context
+  const std::vector<AlleleCount> target_sample_allele_counts = {
+      MakeTestAlleleCount(20, 5, "sample", "G", "C", 497),
+      MakeTestAlleleCount(20, 7, "sample", "G", "C", 498),
+      MakeTestAlleleCount(20, 9, "sample", "G", "C", 499),
+      allele_count,  // Position of interest
+      MakeTestAlleleCount(20, 11, "sample", "G", "C", 501),
+      MakeTestAlleleCount(20, 13, "sample", "G", "C", 502),
+      MakeTestAlleleCount(20, 15, "sample", "G", "C", 503),
+  };
+
+  // Create VariantCaller
+  std::unique_ptr<VariantCaller> caller =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          options, target_sample_allele_counts, "sample");
+
+  absl::node_hash_map<std::string, AlleleCount> allele_counts;
+  allele_counts["sample"] = allele_count;
+
+  absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+      allele_counter_iterators;
+
+  int skip_next_count = 0;
+  int prev_deletion_end = 0;
+
+  // Compute Methylation Stats via CallVariant
+  const std::optional<DeepVariantCall> optional_variant =
+      caller->CallVariant(allele_counts,
+                          &allele_counter_iterators["sample"],
+                          skip_next_count, prev_deletion_end);
+
+  DeepVariantCall call = optional_variant.value();
+
+  // // Ensure variant has expected reference and alternate bases
+  EXPECT_EQ(call.variant().reference_bases(), "G");
+
+  // Ensure INFO field contains MF and MD
+  EXPECT_TRUE(call.variant().calls(0).info().contains("MF"));
+  EXPECT_TRUE(call.variant().calls(0).info().contains("MD"));
+
+  // Check MF (Methylation Fraction)
+  // MF = (# methylated ref) / (total ref = total - alt)
+  // MF (REF) = (2) / (20-10) = 0.2
+  EXPECT_EQ(call.variant().calls(0).info().at("MF").values(0).number_value(),
+            0.2);
+  // MF (ALT) = (0) / (10) = 0.0
+  EXPECT_EQ(call.variant().calls(0).info().at("MF").values(1).number_value(),
+            0);
+
+  // Check MD (Methylation Depth)
+  // MD = number of methylated reads
+  // MD = 2 (methylated ref)
+  EXPECT_EQ(call.variant().calls(0).info().at("MD").values(0).int_value(), 2);
+  // MD = 0 (methylated alt)
+  EXPECT_EQ(call.variant().calls(0).info().at("MD").values(1).int_value(), 0);
+
+  caller->Clear();
+}
+
+// Calculate the methylation statistics when some alleles are methylated.
+TEST(VariantCallingTest, TestCallVariantComputeMethylationStatsSomeMethylated) {
+  VariantCallerOptions options = BasicOptions();
+  // Currently, methylation calculations need ref
+  // reads be tracked otherwise only alt reads are considered in
+  // allele_counts.read_alleles.
+  bool track_ref_reads = true;
+
+  // Create an AlleleCount with 20 total reads, 10 alternate,
+  // 2 methylated reference reads, and 3 methylated alternate reads.
+  AlleleCount allele_count = MakeTestAlleleCount(
+      20, 10, "sample", "G", "C", 500, 2, 3, track_ref_reads);
+
+  // Create target sample allele counts for context
+  const std::vector<AlleleCount> target_sample_allele_counts = {
+      MakeTestAlleleCount(20, 5, "sample", "G", "C", 497),
+      MakeTestAlleleCount(20, 7, "sample", "G", "C", 498),
+      MakeTestAlleleCount(20, 9, "sample", "G", "C", 499),
+      allele_count,  // Position of interest
+      MakeTestAlleleCount(20, 11, "sample", "G", "C", 501),
+      MakeTestAlleleCount(20, 13, "sample", "G", "C", 502),
+      MakeTestAlleleCount(20, 15, "sample", "G", "C", 503),
+  };
+
+  // Create VariantCaller
+  std::unique_ptr<VariantCaller> caller =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          options, target_sample_allele_counts, "sample");
+
+  absl::node_hash_map<std::string, AlleleCount> allele_counts;
+  allele_counts["sample"] = allele_count;
+
+  absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+      allele_counter_iterators;
+
+  int skip_next_count = 0;
+  int prev_deletion_end = 0;
+
+  // Compute Methylation Stats via CallVariant
+  const std::optional<DeepVariantCall> optional_variant =
+      caller->CallVariant(allele_counts,
+                          &allele_counter_iterators["sample"],
+                          skip_next_count, prev_deletion_end);
+
+  DeepVariantCall call = optional_variant.value();
+
+  // Ensure variant has expected reference and alternate bases
+  EXPECT_EQ(call.variant().reference_bases(), "G");
+
+  // Ensure INFO field contains MF and MD
+  EXPECT_TRUE(call.variant().calls(0).info().contains("MF"));
+  EXPECT_TRUE(call.variant().calls(0).info().contains("MD"));
+
+  // Check MF (Methylation Fraction)
+  // MF (REF) = (# methylated ref) / (total ref)
+  // MF (REF) = (2) / (10) = 0.2
+  EXPECT_EQ(call.variant().calls(0).info().at("MF").values(0).number_value(),
+            0.2);
+
+  // MF (ALT) = (# methylated alt) / (total alt)
+  // MF (ALT) = (3) / (10) = 0.3
+  EXPECT_EQ(call.variant().calls(0).info().at("MF").values(1).number_value(),
+            0.3);
+
+  // Check MD (Methylation Depth)
+  // MD (REF) = 2 methylated ref reads
+  EXPECT_EQ(call.variant().calls(0).info().at("MD").values(0).int_value(), 2);
+
+  // MD (ALT) = 3 methylated alt reads
+  EXPECT_EQ(call.variant().calls(0).info().at("MD").values(1).int_value(), 3);
+
+  caller->Clear();
+}
+
+// Calculate the methylation statistics when all alleles are not methylated.
+TEST(VariantCallingTest, TestCallVariantComputeMethylationStatsNoMethylation) {
+  VariantCallerOptions options = BasicOptions();
+  // Currently, methylation calculations need ref
+  // reads be tracked otherwise only alt reads are considered in
+  // allele_counts.read_alleles.
+  bool track_ref_reads = true;
+
+  // Create an AlleleCount with 20 total reads, 10 alternate,
+  // 0 methylated reference reads, and 0 methylated alternate reads.
+  AlleleCount allele_count = MakeTestAlleleCount(
+      20, 10, "sample", "G", "C", 500, 0, 0, track_ref_reads);
+
+  // Create target sample allele counts for context
+  const std::vector<AlleleCount> target_sample_allele_counts = {
+      MakeTestAlleleCount(20, 5, "sample", "G", "C", 497),
+      MakeTestAlleleCount(20, 7, "sample", "G", "C", 498),
+      MakeTestAlleleCount(20, 9, "sample", "G", "C", 499),
+      allele_count,  // Position of interest
+      MakeTestAlleleCount(20, 11, "sample", "G", "C", 501),
+      MakeTestAlleleCount(20, 13, "sample", "G", "C", 502),
+      MakeTestAlleleCount(20, 15, "sample", "G", "C", 503),
+  };
+
+  // Create VariantCaller
+  std::unique_ptr<VariantCaller> caller =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          options, target_sample_allele_counts, "sample");
+
+  absl::node_hash_map<std::string, AlleleCount> allele_counts;
+  allele_counts["sample"] = allele_count;
+
+  absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+      allele_counter_iterators;
+
+  int skip_next_count = 0;
+  int prev_deletion_end = 0;
+
+  // Compute Methylation Stats via CallVariant
+  const std::optional<DeepVariantCall> optional_variant =
+      caller->CallVariant(allele_counts,
+                          &allele_counter_iterators["sample"],
+                          skip_next_count, prev_deletion_end);
+
+  DeepVariantCall call = optional_variant.value();
+
+  // Ensure variant has expected reference and alternate bases
+  EXPECT_EQ(call.variant().reference_bases(), "G");
+
+  // Ensure INFO field contains MF and MD
+  EXPECT_FALSE(call.variant().calls(0).info().contains("MF"));
+  EXPECT_FALSE(call.variant().calls(0).info().contains("MD"));
+
+  caller->Clear();
+}
+
+// Ensure low-quality methylated ALT reads are excluded from methylation counts.
+TEST(VariantCallingTest,
+     TestCallVariantComputeMethylationStatsIgnoreLowQualityMethylation) {
+  VariantCallerOptions options = BasicOptions();
+  bool track_ref_reads = true;
+
+  // Create an AlleleCount with 20 total reads, 10 alternate,
+  // 3 methylated alternate reads, and 2 of them are low-quality.
+  AlleleCount allele_count = MakeTestAlleleCount(
+      20, 10, "sample", "G", "C", 500, 0, 3, track_ref_reads);
+  allele_count.mutable_read_alleles()
+      ->at("sample_alt_read_1")
+      .set_is_low_quality(true);
+  allele_count.mutable_read_alleles()
+      ->at("sample_alt_read_2")
+      .set_is_low_quality(true);
+
+  // Create target sample allele counts for context
+  const std::vector<AlleleCount> target_sample_allele_counts = {
+      MakeTestAlleleCount(20, 5, "sample", "G", "C", 497),
+      MakeTestAlleleCount(20, 7, "sample", "G", "C", 498),
+      MakeTestAlleleCount(20, 9, "sample", "G", "C", 499),
+      allele_count,  // Position of interest
+      MakeTestAlleleCount(20, 11, "sample", "G", "C", 501),
+      MakeTestAlleleCount(20, 13, "sample", "G", "C", 502),
+      MakeTestAlleleCount(20, 15, "sample", "G", "C", 503),
+  };
+
+  // Create VariantCaller
+  std::unique_ptr<VariantCaller> caller =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          options, target_sample_allele_counts, "sample");
+
+  absl::node_hash_map<std::string, AlleleCount> allele_counts;
+  allele_counts["sample"] = allele_count;
+
+  absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+      allele_counter_iterators;
+
+  int skip_next_count = 0;
+  int prev_deletion_end = 0;
+
+  // Compute Methylation Stats via CallVariant
+  const std::optional<DeepVariantCall> optional_variant =
+      caller->CallVariant(allele_counts,
+                          &allele_counter_iterators["sample"],
+                          skip_next_count, prev_deletion_end);
+
+  DeepVariantCall call = optional_variant.value();
+
+  // Ensure variant has expected reference and alternate bases
+  EXPECT_EQ(call.variant().reference_bases(), "G");
+
+  // Ensure INFO field contains MF and MD with correct values
+  EXPECT_TRUE(call.variant().calls(0).info().contains("MF"));
+  EXPECT_TRUE(call.variant().calls(0).info().contains("MD"));
+
+  nucleus::genomics::v1::ListValue expected_list_value;
+
+  // Extract MF values and check correctness
+  const auto& mf_list = call.variant().calls(0).info().at("MF").values();
+  ASSERT_EQ(mf_list.size(), 2);
+  EXPECT_FLOAT_EQ(mf_list[0].number_value(), 0.0);
+  EXPECT_FLOAT_EQ(mf_list[1].number_value(), 0.125);
+
+  // Extract MD values and check correctness
+  const auto& md_list = call.variant().calls(0).info().at("MD").values();
+  ASSERT_EQ(md_list.size(), 2);
+  EXPECT_EQ(md_list[0].int_value(), 0);
+  EXPECT_EQ(md_list[1].int_value(), 1);
+
   caller->Clear();
 }
 

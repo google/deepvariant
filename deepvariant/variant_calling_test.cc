@@ -96,10 +96,11 @@ AlleleCount MakeAlleleCount(const absl::string_view chr_name, int start,
 
 AlleleCount MakeTestAlleleCount(int total_n, int alt_n,
                                 const absl::string_view ref = "A",
-                                int start = 100) {
+                                int start = 100, bool is_methylated = false) {
   CHECK_GE(total_n, alt_n) << "Total number of reads must be >= n alt reads";
   std::vector<Allele> read_alleles;
-  const Allele read_allele = MakeAllele("C", AlleleType::SUBSTITUTION, 1);
+  const Allele read_allele = MakeAllele("C", AlleleType::SUBSTITUTION, 1, false,
+                                        0, 0, false, is_methylated);
   for (int i = 0; i < alt_n; ++i) {
     read_alleles.push_back(read_allele);
   }
@@ -133,23 +134,20 @@ VariantCallerOptions MakeOptions(
   return options;
 }
 
-Variant MakeExpectedVariant(const absl::string_view ref,
-                            absl::Span<const absl::string_view> alts,
-                            const int64_t start = kStart) {
+Variant MakeExpectedVariant(
+    const absl::string_view ref, absl::Span<const absl::string_view> alts,
+    const int64_t start = kStart,
+    std::optional<std::vector<double>> mf_values = std::nullopt,
+    std::optional<std::vector<int>> md_values = std::nullopt) {
   Variant variant;
   variant.set_reference_name(kChr);
   variant.set_start(start);
   variant.set_reference_bases(ref.data(), ref.size());
-  for (const auto alt_allele : alts)
+  for (const auto alt_allele : alts) {
     variant.add_alternate_bases(alt_allele.data(), alt_allele.size());
+  }
 
   if (alts.empty()) {
-    // Variant should be a single bp gVCF record with the kGVCFAltAllele
-    // marker, genotypes of 0/0, and a GQ value of 0 (currently not
-    // determined). Note that these are simple, baseline tests for any site
-    // that doesn't have a variant call. Detailed testing of the proper gVCF
-    // statistical calculations will come when those calculations appear.
-    // TODO: Revise this test in full gVCF calculations CL.
     variant.set_end(variant.start() + 1);
     variant.add_alternate_bases(kGVCFAltAllele);
     CHECK(google::protobuf::TextFormat::ParseFromString(
@@ -160,7 +158,6 @@ Variant MakeExpectedVariant(const absl::string_view ref,
         "info: { key: \"GQ\" value { values { int_value: 1 } } }",
         variant.add_calls()));
   } else {
-    // End is start + ref length according to Variant.proto spec.
     variant.set_end(variant.start() + ref.length());
     CHECK(google::protobuf::TextFormat::ParseFromString("genotype: -1 genotype: -1",
                                               variant.add_calls()));
@@ -168,6 +165,17 @@ Variant MakeExpectedVariant(const absl::string_view ref,
 
   VariantCall* call = variant.mutable_calls(0);
   call->set_call_set_name(kSampleName);
+
+  // Add MF (methylation fraction) if provided
+  if (mf_values) {
+    nucleus::SetInfoField(kMFFormatField, *mf_values, call);
+  }
+
+  // Add MD (methylation depth) if provided
+  if (md_values) {
+    nucleus::SetInfoField(kMDFormatField, *md_values, call);
+  }
+
   return variant;
 }
 
@@ -852,23 +860,33 @@ TEST_F(VariantCallingTest, TestCallsFromAlleleCounts) {
   // Our test AlleleCounts are 5 positions:
   //
   // 1: A ref  [no reads]
-  // 2: G/C variant
+  // 2: G/C variant (methylated)
   // 3: G ref  [no reads]
   // 4: G ref  [no reads]
-  // 5: T/C variant
+  // 5: T/C variant (methylated)
   //
   std::vector<AlleleCount> allele_counts = {
-      MakeTestAlleleCount(0, 0, "A", 10), MakeTestAlleleCount(10, 10, "G", 11),
-      MakeTestAlleleCount(0, 0, "G", 12), MakeTestAlleleCount(0, 0, "G", 13),
-      MakeTestAlleleCount(11, 9, "T", 14)};
+      MakeTestAlleleCount(0, 0, "A", 10, false),
+      MakeTestAlleleCount(10, 10, "G", 11, true),  // read_alleles methylated.
+      MakeTestAlleleCount(0, 0, "G", 12, false),
+      MakeTestAlleleCount(0, 0, "G", 13, false),
+      MakeTestAlleleCount(11, 9, "T", 14, true)  // read_alleles methylated.
+  };
 
   const VariantCaller caller(MakeOptions());
   std::vector<DeepVariantCall> candidates =
       caller.CallsFromAlleleCounts(allele_counts);
 
   // We expect our candidates to have 2 and 5 in order.
-  Variant variant2 = WithCounts(MakeExpectedVariant("G", {"C"}, 11), {0, 10});
-  Variant variant5 = WithCounts(MakeExpectedVariant("T", {"C"}, 14), {2, 9});
+  Variant variant2 = WithCounts(
+      MakeExpectedVariant("G", {"C"}, 11, std::vector<double>{0, 1},
+                          std::vector<int>{0, 10}),
+                          {0, 10});
+  Variant variant5 = WithCounts(MakeExpectedVariant("T", {"C"}, 14,
+                        std::vector<double>{0, 1},
+                        std::vector<int>{0, 9}),
+                        {2, 9});
+
   ASSERT_THAT(candidates.size(), Eq(2));
   EXPECT_THAT(candidates[0].variant(), EqualsProto(variant2));
   EXPECT_THAT(candidates[1].variant(), EqualsProto(variant5));
@@ -1209,12 +1227,246 @@ TEST_F(VariantCallingTest, TestComputeVariantDifferentRefs2) {
                  ref_supporting_read_count + read_alleles.size()));
   QCHECK_EQ(dv_call->allele_support_size(), 1);
   // Confirm that the 4 alleles "MakeAllele("TACAC", AlleleType::DELETION, 1)
-  // above are correctly added to the corrresponding variant
+  // above are correctly added to the corresponding variant
   // "TACACACACAC->TACACAC", which is the same as "TACAC->T" after the
   // right-trimming simplification.
   const auto it = dv_call->allele_support().find("TACACAC");
   QCHECK(it != dv_call->allele_support().end());
   QCHECK_EQ(it->second.read_names_size(), 4);
+}
+
+// Calculate the methylation statistics when there are no alleles.
+TEST_F(VariantCallingTest, ComputeMethylationStats_NoAlleles) {
+  int count = 2;
+  VariantCaller caller(MakeOptions(count));
+
+  AlleleCount allele_count = MakeAlleleCount(
+      "chr1",  // chr_name
+      1000,    // arbitrary position
+      "A",     // ref_base
+      0,       // no reference supporting reads
+      {});     // no reads/alternate alleles
+
+  AlleleMap allele_map;
+
+  Variant variant = MakeExpectedVariant("A", {}, 1000);
+  caller.ComputeMethylationStats(allele_count, allele_map, &variant);
+
+  EXPECT_EQ(variant.calls_size(), 1);
+
+  // Ensure MF and MD are NOT present
+  EXPECT_EQ(variant.calls(0).info().count("MF"), 0);
+  EXPECT_EQ(variant.calls(0).info().count("MD"), 0);
+}
+
+// Calculate the methylation statistics when only reference alleles are present.
+TEST_F(VariantCallingTest, ComputeMethylationStats_OnlyReference) {
+  int count = 2;
+  VariantCaller caller(MakeOptions(count));
+
+  std::string ref_base = "G";
+  std::vector<Allele> read_alleles = {
+      MakeAllele("G", AlleleType::REFERENCE, 1, false, 30, 30, false,
+                 false),  // Unmethylated
+      MakeAllele("G", AlleleType::REFERENCE, 1, false, 30, 30, false,
+                 true),  // Methylated
+      MakeAllele("G", AlleleType::REFERENCE, 1, false, 30, 30, false,
+                 false),  // Unmethylated
+      MakeAllele("G", AlleleType::REFERENCE, 1, false, 30, 30, false,
+                 true)  // Methylated
+  };
+
+  AlleleCount allele_count =
+      MakeAlleleCount("chr1", 500, ref_base, 4, read_alleles);
+  AlleleMap allele_map;
+
+  Variant variant = MakeExpectedVariant("G", {}, 500);
+  caller.ComputeMethylationStats(allele_count, allele_map, &variant);
+
+  EXPECT_EQ(variant.calls_size(), 1);
+
+  // Expected values for MF
+  nucleus::genomics::v1::ListValue expected_list_value;
+  google::protobuf::TextFormat::ParseFromString("values { number_value: 0.5 }",
+                                      &expected_list_value);
+  EXPECT_THAT(variant.calls(0).info().at("MF"),
+              EqualsProto(expected_list_value));
+
+  // Expected values for MD
+  google::protobuf::TextFormat::ParseFromString("values { int_value: 2 }",
+                                      &expected_list_value);
+  EXPECT_THAT(variant.calls(0).info().at("MD"),
+              EqualsProto(expected_list_value));
+}
+
+// Calculate the methylation statistics when some alleles are methylated.
+TEST_F(VariantCallingTest, ComputeMethylationStats_SomeMethylated) {
+  int count = 2;
+  VariantCaller caller(MakeOptions(count));
+
+  std::string ref_base = "G";
+  std::vector<Allele> read_alleles = {
+      MakeAllele("G", AlleleType::REFERENCE, 1, false, 30, 30, false,
+                 false),  // Unmethylated
+      MakeAllele("G", AlleleType::REFERENCE, 1, false, 30, 30, false,
+                 true),  // Methylated
+      MakeAllele("T", AlleleType::SUBSTITUTION, 1, false, 30, 30, false,
+                 false),  // Not methylated
+      MakeAllele("C", AlleleType::SUBSTITUTION, 1, false, 30, 30, false,
+                 true)  // Methylated
+  };
+
+  AlleleCount allele_count =
+      MakeAlleleCount("chr1", 100, ref_base, 2, read_alleles);
+  AlleleMap allele_map;
+  allele_map.emplace(read_alleles[2], "T");  // Not methylated
+  allele_map.emplace(read_alleles[3], "C");  // Methylated
+
+  Variant variant = MakeExpectedVariant("G", {"C", "T"}, 100);
+  caller.ComputeMethylationStats(allele_count, allele_map, &variant);
+
+  EXPECT_EQ(variant.calls_size(), 1);
+
+  // Expected values for MF
+  nucleus::genomics::v1::ListValue expected_list_value;
+  google::protobuf::TextFormat::ParseFromString(
+      "values { number_value: 0.5 } values { number_value: 1.0 } "
+      "values { number_value: 0.0 }",
+      &expected_list_value);
+  EXPECT_THAT(variant.calls(0).info().at("MF"),
+              EqualsProto(expected_list_value));
+
+  // Expected values for MD
+  google::protobuf::TextFormat::ParseFromString(
+      "values { int_value: 1 } values { int_value: 1 } values { int_value: 0 }",
+      &expected_list_value);
+  EXPECT_THAT(variant.calls(0).info().at("MD"),
+              EqualsProto(expected_list_value));
+}
+
+// Calculate the methylation statistics when all alleles are methylated.
+TEST_F(VariantCallingTest, ComputeMethylationStats_AllMethylated) {
+  int count = 2;
+  VariantCaller caller(MakeOptions(count));
+
+  std::string ref_base = "C";
+  std::vector<Allele> read_alleles = {
+      MakeAllele("C", AlleleType::REFERENCE, 1, false, 30, 30, false, true),
+      MakeAllele("C", AlleleType::REFERENCE, 1, false, 30, 30, false, true),
+      MakeAllele("G", AlleleType::SUBSTITUTION, 1, false, 30, 30, false, true),
+      MakeAllele("T", AlleleType::SUBSTITUTION, 1, false, 30, 30, false, true)
+  };
+
+  AlleleCount allele_count =
+      MakeAlleleCount("chr1", 200, ref_base, 2, read_alleles);
+  AlleleMap allele_map;
+  allele_map.emplace(read_alleles[2], "G");
+  allele_map.emplace(read_alleles[3], "T");
+
+  Variant variant = MakeExpectedVariant("C", {"G", "T"}, 200);
+  caller.ComputeMethylationStats(allele_count, allele_map, &variant);
+
+  EXPECT_EQ(variant.calls_size(), 1);
+
+  // Expected values for MF
+  nucleus::genomics::v1::ListValue expected_list_value;
+  google::protobuf::TextFormat::ParseFromString(
+      "values { number_value: 1.0 } values { number_value: 1.0 } "
+      "values { number_value: 1.0 }",
+      &expected_list_value);
+  EXPECT_THAT(variant.calls(0).info().at("MF"),
+              EqualsProto(expected_list_value));
+
+  // Expected values for MD
+  google::protobuf::TextFormat::ParseFromString(
+      "values { int_value: 2 } values { int_value: 1 } values { int_value: 1 }",
+      &expected_list_value);
+  EXPECT_THAT(variant.calls(0).info().at("MD"),
+              EqualsProto(expected_list_value));
+}
+
+// Calculate the methylation statistics when no alleles are methylated.
+TEST_F(VariantCallingTest, ComputeMethylationStats_NoneMethylated) {
+  int count = 2;
+  VariantCaller caller(MakeOptions(count));
+
+  std::string ref_base = "T";
+  std::vector<Allele> read_alleles = {
+      MakeAllele("T", AlleleType::REFERENCE, 1, false, 30, 30, false, false),
+      MakeAllele("T", AlleleType::REFERENCE, 1, false, 30, 30, false, false),
+      MakeAllele("A", AlleleType::SUBSTITUTION, 1, false, 30, 30, false, false),
+      MakeAllele("G", AlleleType::SUBSTITUTION, 1, false, 30, 30, false, false)
+  };
+
+  AlleleCount allele_count =
+      MakeAlleleCount("chr1", 300, ref_base, 2, read_alleles);
+
+  AlleleMap allele_map;
+  allele_map.emplace(read_alleles[2], "A");
+  allele_map.emplace(read_alleles[3], "G");
+
+  Variant variant = MakeExpectedVariant("T", {"A", "G"}, 300);
+  caller.ComputeMethylationStats(allele_count, allele_map, &variant);
+
+  EXPECT_EQ(variant.calls_size(), 1);
+
+  // MF and MD should not be present in the variant calls
+  EXPECT_EQ(variant.calls(0).info().count("MF"), 0);
+  EXPECT_EQ(variant.calls(0).info().count("MD"), 0);
+}
+
+// Ensure low-quality methylated ALT reads are excluded from methylation counts.
+TEST_F(VariantCallingTest,
+       ComputeMethylationStats_IgnoreLowQualityMethylatedReads) {
+  int count = 2;
+  VariantCaller caller(MakeOptions(count));
+
+  std::string ref_base = "A";
+  std::vector<Allele> read_alleles = {
+      MakeAllele("A", AlleleType::REFERENCE, 1, false, 30, 30, false,
+                 false),  // Unmethylated REF
+      MakeAllele("A", AlleleType::REFERENCE, 1, false, 30, 30, false,
+                 true),  // Methylated REF
+      MakeAllele("C", AlleleType::SUBSTITUTION, 1, false, 30, 30, false,
+                 false),  // Unmethylated ALT
+      MakeAllele("C", AlleleType::SUBSTITUTION, 1, false, 30, 30, false,
+                 true),  // Methylated ALT
+      MakeAllele("C", AlleleType::SUBSTITUTION, 1, true, 30, 30, false,
+                 true)  // Low-quality Methylated ALT (should be ignored)
+  };
+
+  AlleleCount allele_count =
+      MakeAlleleCount("chr1", 300, ref_base, 2, read_alleles);
+  allele_count.mutable_read_alleles()
+      ->at("read_4")
+      .set_is_methylated(true);
+  allele_count.mutable_read_alleles()
+      ->at("read_4")
+      .set_is_low_quality(true);
+
+  AlleleMap allele_map;
+  allele_map.emplace(read_alleles[2], "C");  // Unmethylated ALT
+  allele_map.emplace(read_alleles[3], "C");  // Methylated ALT
+
+  Variant variant = MakeExpectedVariant("A", {"C"}, 300);
+  caller.ComputeMethylationStats(allele_count, allele_map, &variant);
+
+  EXPECT_EQ(variant.calls_size(), 1);
+
+  // Expected values for MF (Methylation Fraction)
+  nucleus::genomics::v1::ListValue expected_list_value;
+  google::protobuf::TextFormat::ParseFromString(
+      "values { number_value: 0.5 } values { number_value: 0.5 }",
+      &expected_list_value);
+  EXPECT_THAT(variant.calls(0).info().at("MF"),
+              EqualsProto(expected_list_value));
+
+  // Expected values for MD (Methylation Depth)
+  google::protobuf::TextFormat::ParseFromString(
+      "values { int_value: 1 } values { int_value: 1 }",
+      &expected_list_value);
+  EXPECT_THAT(variant.calls(0).info().at("MD"),
+              EqualsProto(expected_list_value));
 }
 
 }  // namespace vcf_candidate_importer

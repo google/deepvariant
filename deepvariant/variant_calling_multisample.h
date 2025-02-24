@@ -51,6 +51,7 @@
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
+#include "third_party/nucleus/util/utils.h"
 
 namespace nucleus {
 class VcfReader;
@@ -62,9 +63,11 @@ namespace multi_sample {
 
 using learning::genomics::deepvariant::Allele;
 using learning::genomics::deepvariant::AlleleCount;
+using learning::genomics::deepvariant::AlleleCounter;
 using learning::genomics::deepvariant::AlleleType;
 using learning::genomics::deepvariant::DeepVariantCall;
 using learning::genomics::deepvariant::VariantCallerOptions;
+using nucleus::genomics::v1::Variant;
 
 // The alternate allele string for the gVCF "any" alternate allele.
 extern const char* const kGVCFAltAllele;
@@ -76,11 +79,14 @@ extern const char* const kGVCFAltAllele;
 // alternate allele either.
 extern const char* const kSupportingUncalledAllele;
 
-// Constants for the AD (depth by allele), DP (total depth), and VAF (variant
-// allele fraction) format fields.
+// Constants for the AD (depth by allele), DP (total depth), VAF (variant
+// allele fraction), MF (methylation fraction), and MD (methylation depth)
+// format fields.
 extern const char* const kDPFormatField;
 extern const char* const kADFormatField;
 extern const char* const kVAFFormatField;
+extern const char* const kMFFormatField;
+extern const char* const kMDFormatField;
 
 // Implements the less functionality needed to use an Allele as a key in a map.
 struct OrderAllele {
@@ -265,6 +271,12 @@ class VariantCaller {
           target_sample_allele_count_iterator,
       DeepVariantCall* call) const;
 
+  // Computes and adds methylation fraction (MF) and methylation depth (MD)
+  // to the INFO field of the variant
+  void ComputeMethylationStats(
+      const AlleleCount& target_sample_allele_count,
+      const AlleleMap& allele_map, Variant* variant) const;
+
   void Clear() {
     for (auto& [sample, allele_counter] : allele_counters_per_sample_) {
       if (allele_counter != nullptr) {
@@ -355,6 +367,7 @@ class VariantCaller {
   FRIEND_TEST(VariantCallingTest,
               TestCallVariantAddAdjacentAlleleFractionsAtPositionSize0);
   FRIEND_TEST(VariantCallingTest, TestRefSitesFraction);
+  FRIEND_TEST(VariantCallingTest, TestCallVariantNew);
   friend class VariantCallingTest;
 };
 
