@@ -978,6 +978,7 @@ class RegionProcessorTest(parameterized.TestCase):
             {'main_sample': candidates},
             {'main_sample': []},
             {'main_sample': {}},
+            0,
         ),
     )
     self.processor.process(self.region)
@@ -999,7 +1000,12 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr = self.add_mock('realign_reads', retval=[])
     mock_cir = self.add_mock(
         'candidates_in_region',
-        retval=({'main_sample': []}, {'main_sample': []}, {'main_sample': {}}),
+        retval=(
+            {'main_sample': []},
+            {'main_sample': []},
+            {'main_sample': {}},
+            0,
+        ),
     )
     self.processor.process(self.region)
     test_utils.assert_not_called_workaround(self.mock_init)
@@ -1017,15 +1023,21 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_rr = self.add_mock('realign_reads', retval=[])
     mock_cir = self.add_mock(
         'candidates_in_region',
-        retval=({'main_sample': []}, {'main_sample': []}, {'main_sample': {}}),
+        retval=(
+            {'main_sample': []},
+            {'main_sample': []},
+            {'main_sample': {}},
+            0,
+        ),
     )
-    candidates, gvcfs, runtimes, read_phases = self.processor.process(
-        self.region
+    candidates, gvcfs, runtimes, read_phases, phased_reads_count = (
+        self.processor.process(self.region)
     )
     self.assertEmpty(candidates['main_sample'])
     self.assertEmpty(gvcfs['main_sample'])
     self.assertEmpty(read_phases['main_sample'])
     self.assertIsInstance(runtimes, dict)
+    self.assertEqual(phased_reads_count, 0)
     mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
@@ -1052,15 +1064,17 @@ class RegionProcessorTest(parameterized.TestCase):
             {'main_sample': [mock_candidate]},
             {'main_sample': []},
             {'main_sample': {}},
+            0,
         ),
     )
-    candidates, gvcfs, runtimes, read_phases = self.processor.process(
-        self.region
+    candidates, gvcfs, runtimes, read_phases, phased_reads_count = (
+        self.processor.process(self.region)
     )
     self.assertEqual(candidates['main_sample'], [mock_candidate])
     self.assertEmpty(gvcfs['main_sample'])
     self.assertEmpty(read_phases['main_sample'])
     self.assertIsInstance(runtimes, dict)
+    self.assertEqual(phased_reads_count, 0)
     mock_rrna.assert_called_once_with(
         region=self.region,
         sam_readers=None,
@@ -1087,14 +1101,16 @@ class RegionProcessorTest(parameterized.TestCase):
             {'main_sample': [c1, c2]},
             {'main_sample': []},
             {'main_sample': {}},
+            0,
         ),
     )
-    candidates, gvcfs, runtimes, read_phases = self.processor.process(
-        self.region
+    candidates, gvcfs, runtimes, read_phases, phased_reads_count = (
+        self.processor.process(self.region)
     )
     self.assertEqual(candidates['main_sample'], [c1, c2])
     self.assertEmpty(gvcfs['main_sample'])
     self.assertEmpty(read_phases['main_sample'])
+    self.assertEqual(phased_reads_count, 0)
     self.assertIsInstance(runtimes, dict)
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with(
         [r1, r2]
@@ -1120,16 +1136,18 @@ class RegionProcessorTest(parameterized.TestCase):
             {'main_sample': [c1, c2]},
             {'main_sample': []},
             {'main_sample': {}},
+            2,
         ),
     )
 
-    candidates, gvcfs, runtimes, read_phases = self.processor.process(
-        self.region
+    candidates, gvcfs, runtimes, read_phases, phased_reads_count = (
+        self.processor.process(self.region)
     )
     self.assertEqual(candidates['main_sample'], [c1, c2])
     self.assertEmpty(gvcfs['main_sample'])
     self.assertEmpty(read_phases['main_sample'])
     self.assertIsInstance(runtimes, dict)
+    self.assertEqual(phased_reads_count, 2)
     main_sample.sam_readers[0].query.assert_called_once_with(self.region)
     self.processor.realigner.realign_reads.assert_called_once_with(
         [], self.region
@@ -1142,7 +1160,7 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_ac = self.add_mock('_make_allele_counter_for_region')
 
     self.assertEqual(
-        ({}, {}, {}), self.processor.candidates_in_region(self.region)
+        ({}, {}, {}, 0), self.processor.candidates_in_region(self.region)
     )
 
     main_sample.in_memory_sam_reader.query.assert_called_once_with(self.region)
@@ -1199,6 +1217,7 @@ class RegionProcessorTest(parameterized.TestCase):
         {'main_sample': ['variant']},
         {'main_sample': ['gvcf'] if include_gvcfs else []},
         {'main_sample': {}},
+        0,
     )
     self.assertEqual(expected_output, actual)
 

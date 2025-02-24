@@ -1967,6 +1967,7 @@ class RegionProcessor:
       Dict[str, Sequence[variants_pb2.Variant]],
       Dict[str, Union[float, int]],
       Dict[str, Dict[str, int]],
+      int,
   ]:
     """Finds candidates and creates corresponding examples in a region.
 
@@ -1986,6 +1987,7 @@ class RegionProcessor:
       3. runtimes: A dict of runtimes in seconds keyed by stage.
       4. read_phases_by_sample: A dict keyed by sample role, each a dict of
       read_name & read_number to read_phase.
+      5. phased_reads_count: The number of reads that were phased.
     """
     runtimes = {}
 
@@ -2037,16 +2039,22 @@ class RegionProcessor:
           region, padding_fraction, self.contig_dict
       )
 
-      candidates_by_sample, gvcfs_by_sample, read_phases_by_sample = (
-          self.candidates_in_region(
-              region=region, region_n=region_n, padded_region=region_expanded
-          )
+      (
+          candidates_by_sample,
+          gvcfs_by_sample,
+          read_phases_by_sample,
+          phased_reads_count,
+      ) = self.candidates_in_region(
+          region=region, region_n=region_n, padded_region=region_expanded
       )
 
     else:
-      candidates_by_sample, gvcfs_by_sample, read_phases_by_sample = (
-          self.candidates_in_region(region=region, region_n=region_n)
-      )
+      (
+          candidates_by_sample,
+          gvcfs_by_sample,
+          read_phases_by_sample,
+          phased_reads_count,
+      ) = self.candidates_in_region(region=region, region_n=region_n)
 
     for sample in self.samples:
       role = sample.options.role
@@ -2104,6 +2112,7 @@ class RegionProcessor:
         gvcfs_by_sample,
         runtimes,
         read_phases_by_sample,
+        phased_reads_count,
     )
 
   def region_reads_norealign(
@@ -2321,6 +2330,9 @@ class RegionProcessor:
     candidate variant protos. The ALT_PS field is a phased genotype.
     The PS_CONTIG field is a string that identifies the continious contig
     within which the phasing is consistent.
+
+    Returns:
+      The number of phased variants.
     """
     # Calling into direct_phasing_cpp to get phased alleles.
     # direct_phasing_cpp preserves the state until the next call to
@@ -2403,6 +2415,7 @@ class RegionProcessor:
           index += 1
         variant_utils.set_info(candidate.variant, 'ALT_PS', phased_genotype)
         variant_utils.set_info(candidate.variant, 'PS_CONTIG', phase_contig)
+    return len(phased_variants)
 
   def candidates_in_region(
       self,
@@ -2413,6 +2426,7 @@ class RegionProcessor:
       Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]],
       Dict[str, Sequence[variants_pb2.Variant]],
       Dict[str, Dict[str, int]],
+      int,
   ]:
     """Finds candidates in the region using the designated variant caller.
 
@@ -2436,6 +2450,8 @@ class RegionProcessor:
       item is a dict keyed by the read name and number, where the value is the
       phase/HP tag of the
       read.
+      The fourth value, phased_reads_count, is the number of reads that were
+      phased.
     """
     for sample in self.samples:
       sample.reads = sample.in_memory_sam_reader.query(region)
@@ -2444,7 +2460,7 @@ class RegionProcessor:
     if not main_sample.reads and not gvcf_output_enabled(self.options):
       # If we are generating gVCF output we cannot safely abort early here as
       # we need to return the gVCF records calculated by the caller below.
-      return {}, {}, {}
+      return {}, {}, {}, 0
 
     allele_counters = {}
     candidate_positions = []
@@ -2542,6 +2558,7 @@ class RegionProcessor:
     candidates = {}
     gvcfs = {}
     read_phases_by_sample = {}
+    phased_reads_count = 0
     left_padding = 0
     right_padding = 0
     if padded_region is not None:
@@ -2603,24 +2620,26 @@ class RegionProcessor:
             if writer and self.options.read_phases_output:
               writer.write_read_phase(read, read_phase, region_n)
           if self.options.output_phase_info:
-            self.add_phasing_to_candidate(candidates[role], read_id_to_phase)
+            phased_reads_count = self.add_phasing_to_candidate(
+                candidates[role], read_id_to_phase
+            )
           # This logic below will write out the DOT files under the directory
           # specified by the flag --realigner_diagnostics, if phase_reads is
           # set to True.
           # TODO: Extend the logic to work for multi-sample cases.
-          if (
-              self.options.phase_reads
-              and self.options.realigner_options.diagnostics.output_root
-              and len(self.samples) == 1
-          ):
-            self.log_graph_metrics(region, self.direct_phasing_cpp)
+      if (
+          self.options.phase_reads
+          and self.options.realigner_options.diagnostics.output_root
+          and len(self.samples) == 1  # TODO
+      ):
+        self.log_graph_metrics(region, self.direct_phasing_cpp)
 
       if padded_region is not None:
         candidates[role] = self.filter_candidates_by_region(
             candidates[role], region
         )
 
-    return candidates, gvcfs, read_phases_by_sample
+    return candidates, gvcfs, read_phases_by_sample, phased_reads_count
 
   def get_channels(self) -> List[int]:
     # All the example would have the same list of channels.
@@ -3031,6 +3050,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       'n_examples': 0,
       'n_small_model_examples': 0,
       'n_small_model_calls': 0,
+      'n_phased_candidates': 0,
   }
   example_shape = None
   region_n = 0
@@ -3054,9 +3074,13 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
           )
       continue
 
-    (candidates_by_sample, gvcfs_by_sample, runtimes, read_phases_by_sample) = (
-        region_processor.process(region, region_n)
-    )
+    (
+        candidates_by_sample,
+        gvcfs_by_sample,
+        runtimes,
+        read_phases_by_sample,
+        phased_reads_count,
+    ) = region_processor.process(region, region_n)
     for sample in samples_that_need_writers:
       role = sample.options.role
       if role not in candidates_by_sample:
@@ -3107,6 +3131,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
 
       n_stats['n_candidates'] += len(candidates_by_sample[role])
       n_stats['n_regions'] += 1
+      n_stats['n_phased_candidates'] += phased_reads_count
 
       before_write_outputs = time.time()
       writer.write_candidates(*candidates_by_sample[role])
@@ -3220,6 +3245,10 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   logging_with_options(
       options, 'Found %s candidate variants' % n_stats['n_candidates']
   )
+  if options.phase_reads:
+    logging_with_options(
+        options, 'Phased %s candidate variants' % n_stats['n_phased_candidates']
+    )
   logging_with_options(options, 'Created %s examples' % n_stats['n_examples'])
   logging_with_options(
       options,

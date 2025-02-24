@@ -1460,14 +1460,17 @@ class RegionProcessorTest(parameterized.TestCase):
     r1, r2 = mock.Mock(), mock.Mock()
     c1, c2 = mock.Mock(), mock.Mock()
     self.add_mock('region_reads_norealign', retval=[r1, r2])
-    self.add_mock('candidates_in_region', retval=({'child': [c1, c2]}, {}, {}))
-    candidates_dict, gvcfs_dict, runtimes, read_phases = self.processor.process(
-        self.region
+    self.add_mock(
+        'candidates_in_region', retval=({'child': [c1, c2]}, {}, {}, 2)
+    )
+    candidates_dict, gvcfs_dict, runtimes, read_phases, phased_reads_count = (
+        self.processor.process(self.region)
     )
     self.assertEqual({'child': [c1, c2]}, candidates_dict)
     self.assertEqual({}, gvcfs_dict)
     self.assertEqual({}, read_phases)
     self.assertIsInstance(runtimes, dict)
+    self.assertEqual(phased_reads_count, 2)
 
     in_memory_sam_reader = self.processor.samples[1].in_memory_sam_reader
     in_memory_sam_reader.replace_reads.assert_called_once_with([r1, r2])
