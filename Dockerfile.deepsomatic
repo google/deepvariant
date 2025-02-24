@@ -147,23 +147,25 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEP
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ont.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/deepsomatic/ont/*
 
-WORKDIR /opt/models/deepsomatic/ffpe_wgs
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/example_info.json .
-WORKDIR /opt/models/deepsomatic/ffpe_wgs/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/variables/variables.index .
-RUN chmod -R +r /opt/models/deepsomatic/ffpe_wgs/*
+# TODO: Please use gs://brain-genomics/pichuan/xm_experiments/150568855/wu_1/last/checkpoint-230400-0.98131-1 for ffpe_wgs.
+# WORKDIR /opt/models/deepsomatic/ffpe_wgs
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/fingerprint.pb .
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/saved_model.pb .
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/example_info.json .
+# WORKDIR /opt/models/deepsomatic/ffpe_wgs/variables
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/variables/variables.data-00000-of-00001 .
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/variables/variables.index .
+# RUN chmod -R +r /opt/models/deepsomatic/ffpe_wgs/*
 
-WORKDIR /opt/models/deepsomatic/ffpe_wes
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/fingerprint.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/saved_model.pb .
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/example_info.json .
-WORKDIR /opt/models/deepsomatic/ffpe_wes/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/variables/variables.data-00000-of-00001 .
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/variables/variables.index .
-RUN chmod -R +r /opt/models/deepsomatic/ffpe_wes/*
+# TODO: Please use gs://brain-genomics/pichuan/xm_experiments/151320731/wu_1/last/checkpoint-26880-0.32836-1 for ffpe_wes.
+# WORKDIR /opt/models/deepsomatic/ffpe_wes
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/fingerprint.pb .
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/saved_model.pb .
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/example_info.json .
+# WORKDIR /opt/models/deepsomatic/ffpe_wes/variables
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/variables/variables.data-00000-of-00001 .
+# ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wes.savedmodel/variables/variables.index .
+# RUN chmod -R +r /opt/models/deepsomatic/ffpe_wes/*
 
 # Tumor-only models
 WORKDIR /opt/models/deepsomatic/wgs_tumor_only
