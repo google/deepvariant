@@ -50,7 +50,6 @@
 #include "third_party/nucleus/core/status_matchers.h"
 #include "google/protobuf/map.h"
 #include "google/protobuf/repeated_field.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 

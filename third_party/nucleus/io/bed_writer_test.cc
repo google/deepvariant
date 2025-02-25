@@ -41,10 +41,7 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "third_party/nucleus/testing/test_utils.h"
-#include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/core/status_matchers.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/env.h"
 
 namespace nucleus {
 
@@ -100,9 +97,8 @@ TEST_F(BedWriterTest, WritingWorks) {
   ASSERT_THAT(writer->Close(), IsOK());
   writer.reset();
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &contents));
+  string contents = nucleus::GetFileContent(output_filename);
+
   const string kExpectedBedContent =
       "chr1\t10\t20\tfirst\t100\t+\t12\t18\t255,124,1\t3\t2,6,2\t10,12,18\n"
       "chr1\t100\t200\tsecond\t250\t.\t120\t180\t252,122,12\t2\t35,40\t100,"
@@ -118,9 +114,7 @@ TEST_F(BedWriterTest, WritesGzippedFiles) {
                     .ValueOrDie());
   ASSERT_THAT(writer->Close(), IsOK());
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &contents));
+  string contents = nucleus::GetFileContent(output_filename);
   EXPECT_THAT(IsGzipped(contents),
               "BED writer should be able to writed gzipped output");
 }
@@ -139,9 +133,7 @@ TEST_F(BedWriterTest, WritingTruncatedWorks) {
   ASSERT_THAT(writer->Close(), IsOK());
   writer.reset();
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &contents));
+  string contents = nucleus::GetFileContent(output_filename);
   const string kExpectedBedContent =
       "chr1\t10\t20\tfirst\t100\t+\n"
       "chr1\t100\t200\tsecond\t250\t.\n";

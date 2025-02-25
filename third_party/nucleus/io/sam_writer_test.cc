@@ -32,6 +32,8 @@
 
 #include "third_party/nucleus/io/sam_writer.h"
 
+#include <filesystem>
+#include <fstream>
 #include <utility>
 #include <vector>
 
@@ -123,14 +125,11 @@ TEST_F(SamWriterTest, WriteHeaderLines) {
       "Illumina3D_S6_L004_R2_001.fastq.gz",
       //  @CO line.
       "@CO\tA single line comment."};
-  std::unique_ptr<tensorflow::WritableFile> expected_file;
-  TF_CHECK_OK(tensorflow::Env::Default()->NewAppendableFile(expected_filename_,
-                                                            &expected_file));
+  std::ofstream expected_file(expected_filename_);
   for (const auto& header : kExpectedSamHeaders) {
-    TF_CHECK_OK(expected_file->Append(header));
-    TF_CHECK_OK(expected_file->Append("\n"));
+    expected_file << header << "\n";
   }
-  TF_CHECK_OK(expected_file->Close());
+  expected_file.close();
 
   auto reader = std::move(
       SamReader::FromFile(expected_filename_, SamReaderOptions()).ValueOrDie());
@@ -139,9 +138,7 @@ TEST_F(SamWriterTest, WriteHeaderLines) {
       SamWriter::ToFile(actual_filename_, reader->Header()).ValueOrDie());
   ASSERT_THAT(writer->Close(), IsOK());
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           actual_filename_, &contents));
+  string contents = nucleus::GetFileContent(actual_filename_);
   std::vector<absl::string_view> lines =
       absl::StrSplit(contents, '\n', absl::SkipEmpty());
   const size_t kNumHeaders = TF_ARRAYSIZE(kExpectedSamHeaders);
@@ -176,14 +173,11 @@ TEST_F(SamWriterTest, WriteOneBodyLine) {
       "348",                                      // TLEN
       "CCCTAACCCTAACCCTAACCCTAACCCTANNNNNN",      // SEQ
       "AAA7<<7FAFA..FFFF7FFFF))F<FFF######"};     // QUAL
-  std::unique_ptr<tensorflow::WritableFile> expected_file;
-  TF_CHECK_OK(tensorflow::Env::Default()->NewAppendableFile(expected_filename_,
-                                                            &expected_file));
-  TF_CHECK_OK(expected_file->Append(kExpectedSamHeader));
-  TF_CHECK_OK(expected_file->Append("\n"));
-  TF_CHECK_OK(expected_file->Append(absl::StrJoin(
-      kExpectedSamContent.begin(), kExpectedSamContent.end(), "\t")));
-  TF_CHECK_OK(expected_file->Close());
+  std::ofstream expected_file(expected_filename_);
+  expected_file << kExpectedSamHeader << "\n";
+  expected_file << absl::StrJoin(kExpectedSamContent.begin(),
+                                 kExpectedSamContent.end(), "\t");
+  expected_file.close();
 
   auto reader = std::move(
       SamReader::FromFile(expected_filename_, SamReaderOptions()).ValueOrDie());
@@ -196,9 +190,7 @@ TEST_F(SamWriterTest, WriteOneBodyLine) {
   }
   ASSERT_THAT(writer->Close(), IsOK());
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           actual_filename_, &contents));
+  string contents = nucleus::GetFileContent(actual_filename_);
   std::vector<absl::string_view> lines = absl::StrSplit(contents, '\n');
   ASSERT_EQ(4u, lines.size());
   EXPECT_EQ("@HD\tSO:unknown\tGO:none", lines.at(0));
@@ -300,7 +292,7 @@ TEST_P(SamBamWriterTest, WriteAndThenRead) {
   for (size_t i = 0; i < reads.size(); ++i) {
     EXPECT_THAT(reads2[i], EqualsProto(reads[i]));
   }
-  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(actual_filename));
+  std::filesystem::remove(actual_filename);
 }
 
 // Test CRAM formats.
@@ -355,7 +347,7 @@ TEST_P(CramWriterTest, WriteAndThenRead) {
   for (size_t i = 0; i < reads.size(); ++i) {
     EXPECT_THAT(reads2[i], EqualsProto(reads[i]));
   }
-  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(output_filename));
+  std::filesystem::remove(output_filename);
 }
 
 }  // namespace nucleus

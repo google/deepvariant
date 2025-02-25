@@ -60,6 +60,7 @@ constexpr char kDefaultWorkspace[] = "";
 // Used to read in local outputs during testing.
 string GetFileContent(const string& filename);
 
+
 // Simple getter for test files in the right testdata path.
 // This uses JoinPath, so no leading or trailing "/" are necessary.
 string GetTestData(

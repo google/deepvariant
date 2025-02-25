@@ -32,6 +32,7 @@
 
 #include "third_party/nucleus/io/bedgraph_writer.h"
 
+#include <filesystem>
 #include <utility>
 #include <vector>
 
@@ -83,15 +84,13 @@ TEST(BedGraphWriterTest, Writes) {
   ASSERT_THAT(writer->Close(), IsOK());
   writer.reset();
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &contents));
+  string contents = nucleus::GetFileContent(output_filename);
   const string kExpectedBedContent =
       "chr1\t10\t20\t100.1\n"
       "chr1\t100\t200\t250.5\n"
       "chr1\t300\t320\t25.13\n";
   EXPECT_EQ(kExpectedBedContent, contents);
-  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(output_filename));
+  std::filesystem::remove(output_filename);
 }
 
 TEST(BedGraphWriterTest, WritesGzippedFiles) {
@@ -107,12 +106,10 @@ TEST(BedGraphWriterTest, WritesGzippedFiles) {
   }
   ASSERT_THAT(writer->Close(), IsOK());
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &contents));
+  string contents = nucleus::GetFileContent(output_filename);
   EXPECT_THAT(IsGzipped(contents),
               "BED writer should be able to writed gzipped output");
-  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(output_filename));
+  std::filesystem::remove(output_filename);
 }
 
 TEST(BedGraphWriterTest, RoundTrip) {
@@ -134,7 +131,7 @@ TEST(BedGraphWriterTest, RoundTrip) {
   std::vector<BedGraphRecord> actual = as_vector(reader2->Iterate());
 
   EXPECT_THAT(actual, ::testing::Pointwise(EqualsProto(), expected));
-  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(output_filename));
+  std::filesystem::remove(output_filename);
 }
 
 }  // namespace nucleus
