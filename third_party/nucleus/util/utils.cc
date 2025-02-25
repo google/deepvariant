@@ -31,9 +31,7 @@
  */
 
 #include <algorithm>
-#include <fstream>
 #include <map>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -89,15 +87,6 @@ int PosInFasta(const std::map<string, int>& contig_name_to_pos_in_fasta,
 }
 
 }  // namespace
-
-// Reads the contents of a file into a string.
-std::string GetFileContent(const std::string& filename) {
-  std::ifstream file(filename);
-  std::stringstream buffer;
-  buffer << file.rdbuf();
-  file.close();
-  return buffer.str();
-}
 
 bool IsCanonicalBase(const char base, const CanonicalBases canon) {
   return GetCanonicalBases(canon).find(base) != string_view::npos;

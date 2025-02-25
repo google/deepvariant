@@ -45,8 +45,7 @@
 #include "third_party/nucleus/core/status_matchers.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "google/protobuf/text_format.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/env.h"
+#include "third_party/nucleus/testing/test_utils.h"
 
 namespace nucleus {
 
@@ -120,9 +119,7 @@ TEST(GffWriterTest, WritesGffRecords) {
   ASSERT_THAT(gff_writer->Write(record2), IsOK());
   ASSERT_THAT(gff_writer->Close(), IsOK());
 
-  string contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           out_fname, &contents));
+  const string contents = nucleus::GetFileContent(out_fname);
   EXPECT_EQ(kExpectedGffText, contents);
 }
 

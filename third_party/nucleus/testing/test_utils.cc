@@ -32,8 +32,10 @@
 
 #include "third_party/nucleus/testing/test_utils.h"
 
+#include <string>
 #include <vector>
-
+#include <fstream>
+#include <sstream>
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
@@ -84,6 +86,15 @@ string JoinPaths(std::initializer_list<T> paths) {
 }
 
 }  // namespace
+
+// Reads the contents of a file into a string.
+string GetFileContent(const std::string& filename) {
+  std::ifstream file(filename);
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  file.close();
+  return buffer.str();
+}
 
 // Simple getter for test files in the right testdata path.
 string GetTestData(absl::string_view path, absl::string_view test_data_dir) {
