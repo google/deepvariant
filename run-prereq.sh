@@ -290,4 +290,7 @@ sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libboost-graph-dev >
 # Just being safe, downgrade load-bearing dependencies at the end if needed.
 pip3 install "${PIP_ARGS[@]}" 'protobuf==4.21.9'
 
+# internal#comment9
+pip3 install "${PIP_ARGS[@]}" "jax==0.4.35"
+
 note_build_stage "run-prereq.sh complete"
