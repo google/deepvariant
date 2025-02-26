@@ -47,7 +47,7 @@ TEST(TFRecordReaderTest, Simple) {
 
   ASSERT_TRUE(reader->GetNext());
 
-  tensorflow::tstring s = reader->record();
+  std::string s = reader->record();
 
   nucleus::genomics::v1::Variant v;
   v.ParseFromArray(s.data(), s.size());

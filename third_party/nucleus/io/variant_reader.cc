@@ -90,7 +90,7 @@ bool VariantReader::GetNext() { return internal_reader_->GetNext(); }
 // Return the current record contents.  Only valid after GetNext()
 // has returned true.
 IndexedVariant VariantReader::ReadRecord() {
-  tensorflow::tstring data = internal_reader_->record();
+  std::string data = internal_reader_->record();
   std::unique_ptr<Variant> proto = std::make_unique<Variant>();
   CHECK(proto->ParseFromArray(data.data(), data.length()))
       << "Failed to parse proto";

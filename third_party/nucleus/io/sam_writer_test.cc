@@ -34,6 +34,8 @@
 
 #include <filesystem>
 #include <fstream>
+#include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -44,6 +46,7 @@
 #include "tensorflow/core/platform/test.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/io/sam_reader.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
 #include "third_party/nucleus/testing/test_utils.h"
@@ -94,11 +97,12 @@ class SamWriterTest : public ::testing::Test {
         actual_filename_(MakeTempFile(kSamActualFilename)) {}
   void TearDown() override {
     // Ignore file not found errors.
-    auto ignored = tensorflow::Env::Default()->DeleteFile(expected_filename_);
-    ignored = tensorflow::Env::Default()->DeleteFile(actual_filename_);
+    std::error_code ignored;
+    std::filesystem::remove(expected_filename_, ignored);
+    std::filesystem::remove(actual_filename_, ignored);
   }
-  const string expected_filename_;
-  const string actual_filename_;
+  const std::string expected_filename_;
+  const std::string actual_filename_;
 };
 
 // Make sure writing @SQ, @RG, @PG, and @CO works.
