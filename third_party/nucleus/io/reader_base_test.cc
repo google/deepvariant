@@ -45,7 +45,6 @@
 #include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/core/status_matchers.h"
 #include "third_party/nucleus/core/statusor.h"
-#include "tensorflow/core/lib/core/errors.h"
 
 using ::testing::Pointee;
 using ::testing::StrEq;

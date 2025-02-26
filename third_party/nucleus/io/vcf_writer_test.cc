@@ -50,8 +50,6 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "google/protobuf/repeated_field.h"
-#include "tensorflow/core/lib/core/status.h"
-#include "tensorflow/core/platform/env.h"
 
 namespace nucleus {
 
@@ -507,9 +505,7 @@ TEST(VcfWriterTest, WritesVCF) {
   // (Close file to guarantee flushed to disk).
   writer.reset();
 
-  string vcf_contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &vcf_contents));
+  string vcf_contents = nucleus::GetFileContent(output_filename);
 
   const string kExpectedVcfContent =
       string(kExpectedHeaderFmt) +
@@ -555,9 +551,7 @@ TEST(VcfWriterTest, WritesVCFSomaticMode) {
   // (Close file to guarantee flushed to disk).
   writer.reset();
 
-  string vcf_contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &vcf_contents));
+  string vcf_contents = nucleus::GetFileContent(output_filename);
 
   const string kExpectedVcfContent =
       string(kExpectedSomaticHeaderFmt) +
@@ -578,9 +572,7 @@ TEST(VcfWriterTest, WritesVCFWithoutHeader) {
   ASSERT_THAT(writer->Write(v1), IsOK());
 
   writer = nullptr;
-  string vcf_contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &vcf_contents));
+  string vcf_contents = nucleus::GetFileContent(output_filename);
 
   const string kExpectedVcfContent =
       "Chr1\t21\tDogSNP1\tA\tT\t0\t.\t.\tGT\t0/1\t0/0\n";
@@ -611,9 +603,7 @@ TEST(VcfWriterTest, RoundsVCFQuals) {
   // (close file to guarantee flushed to disk)
   writer.reset();
 
-  string vcf_contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &vcf_contents));
+  string vcf_contents = nucleus::GetFileContent(output_filename);
 
   const string kExpectedVcfContent =
       string(kExpectedHeaderFmt) +
@@ -655,9 +645,7 @@ TEST(VcfWriterTest, ExcludesFields) {
   // (close file to guarantee flushed to disk)
   writer.reset();
 
-  string vcf_contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &vcf_contents));
+  string vcf_contents = nucleus::GetFileContent(output_filename);
 
   const string kExpectedVcfContent =
       string(kExpectedHeaderFmt) +
@@ -677,14 +665,8 @@ TEST(VcfWriterTest, WritesVCFWithLikelihoods) {
   }
   ASSERT_THAT(writer->Close(), IsOK());
 
-  string expected_vcf_contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(
-      tensorflow::Env::Default(), GetTestData(kVcfLikelihoodsVcfOutput),
-      &expected_vcf_contents));
-
-  string vcf_contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           out_fname, &vcf_contents));
+  string expected_vcf_contents = nucleus::GetFileContent(GetTestData(kVcfLikelihoodsVcfOutput));
+  string vcf_contents = nucleus::GetFileContent(out_fname);
 
   EXPECT_EQ(expected_vcf_contents, vcf_contents);
 }
@@ -694,9 +676,7 @@ TEST(VcfWriterTest, WritesGzippedVCF) {
   auto writer = MakeDogVcfWriter(output_filename, false);
   ASSERT_THAT(writer->Close(), IsOK());
 
-  string vcf_contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &vcf_contents));
+  string vcf_contents = nucleus::GetFileContent(output_filename);
   EXPECT_THAT(IsGzipped(vcf_contents),
               "VCF writer should be able to writed gzipped output");
 }
@@ -756,9 +736,7 @@ TEST(VcfWriterTest, HandlesRedefinedPL) {
   // (Close file to guarantee flushed to disk).
   writer.reset();
 
-  string vcf_contents;
-  TF_CHECK_OK(tensorflow::ReadFileToString(tensorflow::Env::Default(),
-                                           output_filename, &vcf_contents));
+  string vcf_contents = nucleus::GetFileContent(output_filename);
 
   const string kExpectedVcfContent =
       "##fileformat=VCFv4.2\n"

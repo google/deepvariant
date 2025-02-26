@@ -33,6 +33,7 @@
 #include "third_party/nucleus/io/sam_reader.h"
 
 #include <cstdint>
+#include <filesystem>
 #include <string>
 #include <utility>
 #include <vector>
@@ -47,7 +48,6 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/core/status_matchers.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 
@@ -283,7 +283,7 @@ TEST(SamReaderTest, TestMatePosition) {
     auto read = reads[0];
     EXPECT_FALSE(read.has_next_mate_position());
   }
-  TF_CHECK_OK(tensorflow::Env::Default()->DeleteFile(output_filename));
+  std::filesystem::remove(output_filename);
 }
 
 class SamReaderQueryTest : public ::testing::Test {

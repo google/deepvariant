@@ -37,9 +37,6 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/substitute.h"
 #include "third_party/nucleus/platform/types.h"
-#include "third_party/nucleus/util/utils.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 

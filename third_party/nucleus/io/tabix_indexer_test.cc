@@ -31,6 +31,8 @@
  */
 
 #include "third_party/nucleus/io/tabix_indexer.h"
+#include <memory>
+#include <utility>
 
 #include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
@@ -42,7 +44,6 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/core/status_matchers.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 

@@ -450,7 +450,6 @@ cc_test(
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
@@ -503,7 +502,6 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -520,7 +518,6 @@ cc_test(
         "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
@@ -570,7 +567,6 @@ cc_library(
         "//third_party/nucleus/util:proto_ptr",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -682,7 +678,6 @@ cc_test(
         "//third_party/nucleus/testing:gunit_extras",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
@@ -731,7 +726,6 @@ cc_test(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
@@ -774,7 +768,6 @@ cc_test(
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
         "@com_google_protobuf//:protobuf_lite",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
@@ -817,7 +810,6 @@ cc_test(
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
         "@com_google_protobuf//:protobuf_lite",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
@@ -882,7 +874,6 @@ cc_test(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -909,7 +900,6 @@ cc_test(
         "//third_party/nucleus/core:statusor",
         "//third_party/nucleus/platform:types",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
@@ -1005,7 +995,7 @@ cc_library(
         ":hts_path",
         "//third_party/nucleus/core:status",
         "//third_party/nucleus/platform:types",
-        "@org_tensorflow//tensorflow/core:lib",
+        "@com_google_absl//absl/log",
     ],
 )
 
@@ -1021,7 +1011,6 @@ cc_test(
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -1065,7 +1054,6 @@ cc_test(
         "//third_party/nucleus/platform:types",
         "//third_party/nucleus/testing:cpp_test_utils",
         "@com_google_googletest//:gtest_main",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 

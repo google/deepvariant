@@ -32,9 +32,11 @@
 
 #include "third_party/nucleus/io/tabix_indexer.h"
 
+#include "third_party/nucleus/core/status.h"
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/platform/types.h"
-#include "tensorflow/core/lib/core/errors.h"
+#include "absl/log/log.h"
+
 
 namespace nucleus {
 

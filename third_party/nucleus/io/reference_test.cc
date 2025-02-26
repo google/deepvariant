@@ -52,7 +52,6 @@
 #include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 #include "third_party/nucleus/core/status_matchers.h"
-#include "tensorflow/core/lib/core/status.h"
 
 using absl::StrCat;
 using std::make_pair;
