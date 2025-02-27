@@ -247,7 +247,9 @@ _PON_FILTERING = flags.DEFINE_string(
 # listed here will be have its values cleaned up if we've removed any alt
 # alleles.
 # Each tuple contains: field name, ref_is_zero.
-_ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset([('AD', True), ('VAF', False)])
+_ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset(
+    [('AD', True), ('VAF', False), ('MF', True), ('MD', True)]
+)
 
 # The number of places past the decimal point to round QUAL estimates to.
 _QUAL_PRECISION = 7
@@ -540,6 +542,10 @@ def add_call_to_variant(
   call.is_phased, genotype = maybe_phase_genotype(variant, genotype)
   if call.is_phased:
     variantcall_utils.set_ps(call, variant_utils.get_info(variant, 'PS_CONTIG'))
+  if is_methylated(call):
+    mf = variantcall_utils.get_mf(call)
+    mt = variantcall_utils.determine_methylation_type(mf)
+    variantcall_utils.set_mt(call, mt)
   variantcall_utils.set_gt(call, genotype)
   variantcall_utils.set_gq(call, gq)
   gls = [genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions]
@@ -769,6 +775,29 @@ def get_alt_alleles_to_remove(
   if len(alt_alleles_to_remove) == len(canonical_variant.alternate_bases):
     alt_alleles_to_remove -= set([max_qual_allele])
   return alt_alleles_to_remove
+
+
+def is_methylated(call: variants_pb2.VariantCall) -> bool:
+  """Determines if a VariantCall is methylated.
+
+  A variant is considered methylated if any of its methylation fractions
+  (MF) for the reference or alternate alleles is greater than 0.
+
+  Args:
+    call: A `variants_pb2.VariantCall` object.
+
+  Returns:
+    bool: True if any `methylation_fraction` value is greater than 0,
+          otherwise False.
+  """
+  if 'MF' not in call.info:
+    return False
+
+  mf_values = variantcall_utils.get_mf(call)
+  if any(mf > 0 for mf in mf_values):
+    return True
+
+  return False
 
 
 class AlleleRemapper:

@@ -70,6 +70,9 @@ class VcfConstantsTest(parameterized.TestCase):
       'DP',
       'GT',
       'GQ',
+      'MF',
+      'MD',
+      'MT',
   )
   def test_invalid_get_reserved_filter(self, field_id):
     with self.assertRaisesRegex(ValueError, 'No reserved field with id'):
@@ -81,7 +84,7 @@ class VcfConstantsTest(parameterized.TestCase):
       'AD',
       'ADF',
       'END',
-      'H2',
+      'H2'
   )
   def test_get_reserved_info(self, field_id):
     info = vcf_constants.reserved_info_field(field_id)
@@ -94,6 +97,7 @@ class VcfConstantsTest(parameterized.TestCase):
       'GQ',
       'GL',
       'FT',
+      'MT'
   )
   def test_invalid_get_reserved_info(self, field_id):
     with self.assertRaisesRegex(ValueError, 'No reserved field with id'):
@@ -108,6 +112,9 @@ class VcfConstantsTest(parameterized.TestCase):
       'GL',
       'FT',
       'PL',
+      'MF',
+      'MD',
+      'MT',
   )
   def test_get_reserved_format(self, field_id):
     fmt = vcf_constants.reserved_format_field(field_id)
@@ -221,6 +228,9 @@ class VcfConstantsTest(parameterized.TestCase):
       dict(field='AD', expected=struct_utils.set_int_field),
       dict(field='GL', expected=struct_utils.set_number_field),
       dict(field='FT', expected=struct_utils.set_string_field),
+      dict(field='MF', expected=struct_utils.set_number_field),
+      dict(field='MD', expected=struct_utils.set_int_field),
+      dict(field='MT', expected=struct_utils.set_string_field),
   )
   def test_reserved_format_field_set_fn(self, field, expected):
     actual = vcf_constants.reserved_format_field_set_fn(field)

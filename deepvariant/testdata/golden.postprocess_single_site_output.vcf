@@ -12,6 +12,9 @@
 ##FORMAT=<ID=VAF,Number=A,Type=Float,Description="Variant allele fractions.">
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods rounded to the closest integer">
 ##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phase set">
+##FORMAT=<ID=MF,Number=R,Type=Float,Description="Methylation fraction for each of the reference and alternate allele">
+##FORMAT=<ID=MD,Number=R,Type=Integer,Description="Methylation depth for each of the reference and alternate allele">
+##FORMAT=<ID=MT,Number=1,Type=String,Description="Methylation type: 0/0=Unmethylated, 0/1=Heterozygous, 1/1=Methylated">
 ##FORMAT=<ID=MED_DP,Number=1,Type=Integer,Description="Median DP observed within the GVCF block rounded to the nearest integer.">
 ##DeepVariant_version=1.8.0
 ##contig=<ID=chr20,length=63025520>

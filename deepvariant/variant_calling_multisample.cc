@@ -1111,10 +1111,9 @@ void VariantCaller::ComputeMethylationStats(
   int ref_methylated_count = 0, ref_total_count = 0;
   for (const auto& [read_name, allele] :
        target_sample_allele_count.read_alleles()) {
-    if ((allele.bases() == target_sample_allele_count.ref_base()) &&
-         !allele.is_low_quality()) {
+    if (allele.type() == AlleleType::REFERENCE && !allele.is_low_quality()) {
       ++ref_total_count;
-      if (allele.is_methylated() && !allele.is_low_quality()) {
+      if (allele.is_methylated()) {
         ++ref_methylated_count;
       }
     }
@@ -1132,10 +1131,11 @@ void VariantCaller::ComputeMethylationStats(
 
     for (const auto& [read_name, read_allele] :
          target_sample_allele_count.read_alleles()) {
-      if (read_allele.bases() == alt_allele.bases() &&
+      auto it = FindAllele(read_allele, allele_map);
+      if (it != allele_map.end() && it->second == alt_bases &&
           !read_allele.is_low_quality()) {
         ++alt_total_count;
-        if (read_allele.is_methylated() && !read_allele.is_low_quality()) {
+        if (read_allele.is_methylated()) {
           ++alt_methylated_count;
         }
       }
@@ -1148,16 +1148,15 @@ void VariantCaller::ComputeMethylationStats(
     md_values.push_back(alt_methylated_count);
   }
 
-  bool has_nonzero_mf = std::any_of(
-    mf_values.begin(), mf_values.end(), [](double mf) { return mf > 0.0; });
-
   // Only add MF and MD field if at least one value is > 0
+  bool has_nonzero_mf = std::any_of(
+      mf_values.begin(), mf_values.end(), [](double mf) { return mf > 0.0; });
+
   if (has_nonzero_mf) {
     nucleus::SetInfoField(kMFFormatField, mf_values, variant->mutable_calls(0));
     nucleus::SetInfoField(kMDFormatField, md_values, variant->mutable_calls(0));
   }
 }
-
 
 }  // namespace multi_sample
 }  // namespace deepvariant

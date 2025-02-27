@@ -976,6 +976,12 @@ def shared_flags_to_options(
     # Methylation related flags.
     if _ENABLE_METHYLATION_CALLING.value:
       options.enable_methylation_calling = _ENABLE_METHYLATION_CALLING.value
+      if not _TRACK_REF_READS.value:
+        errors.log_and_raise(
+            '--track_ref_reads must be set to True when'
+            ' --enable_methylation_calling is set.',
+            errors.CommandLineError,
+        )
     if _METHYLATION_CALLING_THRESHOLD.value:
       options.methylation_calling_threshold = (
           _METHYLATION_CALLING_THRESHOLD.value

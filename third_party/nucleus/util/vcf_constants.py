@@ -259,6 +259,33 @@ RESERVED_FORMAT_FIELDS = [
         type=STRING_TYPE,
         description='Model ID: Identifies which model called this variant.',
     ),
+    # Adding new FORMAT fields for methylation not from VCF 4.3 spec.
+    variants_pb2.VcfFormatInfo(
+        id='MF',
+        number='R',
+        type=FLOAT_TYPE,
+        description=(
+            'Methylation fraction for each of the reference and alternate'
+            ' allele'
+        ),
+    ),
+    variants_pb2.VcfFormatInfo(
+        id='MD',
+        number='R',
+        type=INTEGER_TYPE,
+        description=(
+            'Methylation depth for each of the reference and alternate allele'
+        ),
+    ),
+    variants_pb2.VcfFormatInfo(
+        id='MT',
+        number='1',
+        type=STRING_TYPE,
+        description=(
+            'Methylation type: 0/0=Unmethylated, 0/1=Heterozygous,'
+            ' 1/1=Methylated'
+        ),
+    ),
 ]
 
 # Map from field type to the function used to set struct_pb2.Value elements

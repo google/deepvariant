@@ -92,6 +92,7 @@ class VariantcallUtilsTests(parameterized.TestCase):
       dict(field_name='GT', reader=None, expected=[0, 1]),
       dict(field_name='FT', reader=None, expected='LowQual'),
       dict(field_name='FT', reader=True, expected='LowQual'),
+      dict(field_name='MT', reader=None, expected='0/0'),
   )
   def test_get_format(self, field_name, reader, expected):
     if reader is not None:
@@ -107,6 +108,7 @@ class VariantcallUtilsTests(parameterized.TestCase):
     variantcall_utils.set_format(call, 'GL', [-1, -3, -5.5])
     variantcall_utils.set_format(call, 'GT', [0, 1])
     variantcall_utils.set_format(call, 'FT', ['LowQual'])
+    variantcall_utils.set_format(call, 'MT', ['0/0'])
     actual = variantcall_utils.get_format(call, field_name, vcf_object=reader)
     self.assertEqual(actual, expected)
 
@@ -146,6 +148,12 @@ class VariantcallUtilsTests(parameterized.TestCase):
           setter=variantcall_utils.set_med_dp,
           getter=variantcall_utils.get_med_dp,
           values=range(10),
+      ),
+      dict(
+          field_name='MT',
+          setter=variantcall_utils.set_mt,
+          getter=variantcall_utils.get_mt,
+          values=['0/0', '0/1'],
       ),
   )
   def test_variantcall_format_roundtrip(self, field_name, setter, getter,
@@ -247,6 +255,115 @@ class VariantcallUtilsTests(parameterized.TestCase):
     call = variants_pb2.VariantCall(genotype=genotype)
     actual = variantcall_utils.is_heterozygous(call)
     self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      dict(mf=[0.0, 0.0], expected='0/0'),
+      dict(mf=[0.2, 0.2], expected='0/0'),
+      dict(mf=[0.1, 0.9], expected='0/1'),
+      dict(mf=[0.5, 0.5], expected='0/0'),
+      dict(mf=[0.9, 0.1], expected='0/1'),
+      dict(mf=[0.8, 0.8], expected='1/1'),
+      dict(mf=[1.0, 1.0], expected='1/1'),
+      dict(mf=[], expected=''),
+      dict(mf=None, expected=''),
+  )
+  def test_determine_methylation_type(self, mf, expected):
+    actual = variantcall_utils.determine_methylation_type(mf)
+    self.assertEqual(actual, expected)
+
+  @parameterized.parameters(
+      dict(
+          variant_call=variants_pb2.VariantCall(
+              info={
+                  'MT': struct_pb2.ListValue(
+                      values=[struct_pb2.Value(string_value='0/0')]
+                  )
+              }
+          ),
+          expected='0/0',
+      ),
+      dict(
+          variant_call=variants_pb2.VariantCall(
+              info={
+                  'MT': struct_pb2.ListValue(
+                      values=[struct_pb2.Value(string_value='0/1')]
+                  )
+              }
+          ),
+          expected='0/1',
+      ),
+      dict(
+          variant_call=variants_pb2.VariantCall(
+              info={
+                  'MT': struct_pb2.ListValue(
+                      values=[struct_pb2.Value(string_value='1/1')]
+                  )
+              }
+          ),
+          expected='1/1',
+      ),
+      dict(
+          variant_call=variants_pb2.VariantCall(info={}),
+          expected='',
+      ),
+      dict(
+          variant_call=variants_pb2.VariantCall(),
+          expected='',
+      ),
+  )
+  def test_get_mt(self, variant_call, expected):
+    got = variantcall_utils.get_mt(variant_call=variant_call)
+    self.assertEqual(expected, got)
+
+  @parameterized.parameters(
+      dict(
+          variant_call=variants_pb2.VariantCall(
+              info={
+                  'MF': struct_pb2.ListValue(
+                      values=[
+                          struct_pb2.Value(number_value=0.1),
+                          struct_pb2.Value(number_value=0.2),
+                      ]
+                  )
+              }
+          ),
+          expected=[0.1, 0.2],
+      ),
+      dict(
+          variant_call=variants_pb2.VariantCall(
+              info={
+                  'MF': struct_pb2.ListValue(
+                      values=[
+                          struct_pb2.Value(number_value=0.5),
+                          struct_pb2.Value(number_value=0.8),
+                      ]
+                  )
+              }
+          ),
+          expected=[0.5, 0.8],
+      ),
+      dict(
+          variant_call=variants_pb2.VariantCall(
+              info={
+                  'MF': struct_pb2.ListValue(
+                      values=[struct_pb2.Value(number_value=1.0)]
+                  )
+              }
+          ),
+          expected=[1.0],
+      ),
+      dict(
+          variant_call=variants_pb2.VariantCall(info={}),
+          expected=[],
+      ),
+      dict(
+          variant_call=variants_pb2.VariantCall(),
+          expected=[],
+      ),
+  )
+  def test_get_mf(self, variant_call, expected):
+    got = variantcall_utils.get_mf(variant_call=variant_call)
+    self.assertEqual(expected, got)
 
 
 if __name__ == '__main__':

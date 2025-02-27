@@ -32,7 +32,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from third_party.nucleus.protos import struct_pb2
+from typing import List
+
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import vcf_constants
@@ -40,6 +41,8 @@ from third_party.nucleus.util import vcf_constants
 # Special-cased FORMAT fields that are first-class fields in the VariantCall.
 _GL = 'GL'
 _GT = 'GT'
+_MF = 'MF'
+_MT = 'MT'
 
 # The max number of regions we can expect to be processed by a single shard.
 _MAX_REGIONS_INSIDE_SHARD = 100_000
@@ -77,7 +80,9 @@ def set_format(variant_call, field_name, value, vcf_object=None):
   if field_name == _GT:
     set_gt(variant_call, value)
     return
-
+  if field_name == _MT:
+    set_mt(variant_call, value)
+    return
   if vcf_object is None:
     set_field_fn = vcf_constants.reserved_format_field_set_fn(field_name)
   else:
@@ -104,6 +109,12 @@ def get_format(variant_call, field_name, vcf_object=None):
     return get_gl(variant_call)
   if field_name == _GT:
     return get_gt(variant_call)
+  if field_name == _MF:
+    return get_mf(variant_call)
+  if field_name == _MT:
+    return get_mt(variant_call)
+  if field_name == _MF:
+    return get_mf(variant_call)
 
   if vcf_object is None:
     get_field_fn = vcf_constants.reserved_format_field_get_fn(field_name)
@@ -287,3 +298,69 @@ def is_heterozygous(variant_call):
     True if and only if the call is heterozygous.
   """
   return len({gt for gt in variant_call.genotype if gt >= 0}) >= 2
+
+
+def get_mt(variant_call):
+  """Returns the methylation type (MT) of the VariantCall.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to retrieve MT from.
+
+  Returns:
+      A string representing the methylation type (e.g., "0/0", "0/1", "1/1").
+      Returns an empty string if MT is not present.
+  """
+  if not variant_call.info or 'MT' not in variant_call.info:
+    return ''
+  return variant_call.info['MT'].values[0].string_value
+
+
+def set_mt(variant_call, mt_value):
+  """Sets the methylation type (MT) in VariantCall.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to modify.
+      mt_value: str. The methylation type (e.g., "0/0", "0/1", "1/1").
+  """
+  struct_utils.set_string_field(variant_call.info, 'MT', mt_value)
+
+
+def get_mf(variant_call):
+  """Returns the methylation depth (MD) of the VariantCall.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to retrieve MD from.
+  """
+  if not variant_call.info or 'MF' not in variant_call.info:
+    return []
+
+  mf_values = variant_call.info['MF'].values
+  return [val.number_value for val in mf_values if hasattr(val, 'number_value')]
+
+
+def determine_methylation_type(mf_values, low_threshold=0.2,
+                               high_threshold=0.8):
+  """Determines the methylation type (MT) based on methylation fraction (MF) values.
+
+  Args:
+    mf_values (list[float]): List of methylation fractions.
+    low_threshold (float): Upper bound for unmethylated classification.
+    high_threshold (float): Lower bound for methylated classification.
+
+  Returns:
+    str: Methylation type as "0/0" (Unmethylated), "0/1" (Heterozygous), or
+    "1/1" (Methylated).
+  """
+  if not mf_values:
+    return ''
+
+  below_low = any(mf <= low_threshold for mf in mf_values)
+  above_high = any(mf >= high_threshold for mf in mf_values)
+
+  if below_low and above_high:
+    return '0/1'  # Heterozygous methylation (one allele low, one high)
+  elif above_high:
+    return '1/1'  # Fully methylated
+  else:
+    return '0/0'  # Unmethylated
+
