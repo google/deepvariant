@@ -32,7 +32,6 @@
 #include "deepvariant/channels/read_supports_variant_channel.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>

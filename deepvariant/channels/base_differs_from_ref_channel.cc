@@ -31,7 +31,6 @@
 
 #include "deepvariant/channels/base_differs_from_ref_channel.h"
 
-#include <cstdint>
 #include <string>
 #include <vector>
 

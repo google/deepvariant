@@ -31,7 +31,6 @@
 
 #include "deepvariant/channels/blank_channel.h"
 
-#include <cstdint>
 #include <string>
 #include <vector>
 

@@ -31,7 +31,6 @@
 
 #include "deepvariant/channels/read_base_channel.h"
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
