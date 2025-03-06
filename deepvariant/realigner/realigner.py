@@ -260,6 +260,9 @@ _ALLELE_COUNT_LINEAR_MODEL_DEFAULT = realigner_pb2.WindowSelectorModel(
 # Minimum length of read to retain following splitting with --split_skip_reads.
 _MIN_SPLIT_LEN = 15
 
+# Minimum number of supporting reads to retain an allele for window selection.
+_MIN_ALLELE_SUPPORT = 2
+
 # ---------------------------------------------------------------------------
 # Set configuration settings.
 # ---------------------------------------------------------------------------
@@ -348,6 +351,7 @@ def window_selector_config(flags_obj):
       window_selector_model=window_selector_model,
       keep_legacy_behavior=keep_legacy_behavior,
       realign_all=flags_obj.realign_all,
+      min_allele_support=_MIN_ALLELE_SUPPORT,
   )
 
   return ws_config

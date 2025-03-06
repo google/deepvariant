@@ -60,25 +60,54 @@ void UpdateCounts(T by, int start, int end, std::vector<T>* counts) {
   }
 }
 
+bool AlleleFilter(
+    const Allele& allele, int total_count,
+    const WindowSelectorOptions& config) {
+  if (allele.type() == AlleleType::REFERENCE) {
+    return false;
+  }
+  // No alleles with read support less than 2 are used. The same filter is used
+  // for candidate creaetion later. However, candidates filter is more strict
+  // and also filters out low quality alleles and allele fractions.
+  if (allele.count() < config.min_allele_support()) {
+    return false;
+  }
+  return true;
+}
+
+
+std::vector<Allele> SelectAltAlleles(
+    const AlleleCount& allele_count,
+    const WindowSelectorOptions& config
+    ) {
+  const std::vector<Allele> target_sample_alleles =
+      SumAlleleCounts(allele_count);
+  const int target_samples_total_count =
+      TotalAlleleCounts(allele_count);
+
+  std::vector<Allele> alt_alleles;
+  for (const auto& allele : target_sample_alleles) {
+    if (AlleleFilter(allele, target_samples_total_count, config)) {
+      alt_alleles.push_back(allele);
+    }
+  }
+  return alt_alleles;
+}
+
 std::vector<int> VariantReadsWindowSelectorCandidates(
-    const AlleleCounter& allele_counter) {
+    const AlleleCounter& allele_counter, const WindowSelectorOptions& config) {
   // We start with a vector of 0s, one for each position in allele_counter.
   std::vector<int> window_counts(allele_counter.Counts().size(), 0);
 
-  // Now loop over all of the counts, incrementing the window_counts for all
-  // SUBSTITITION, INSERT, DELETE, and SOFT_CLIP alleles.
+  // Now loop over all of the counts. Alleles are created for each position
+  // in the allele_counter. window_counts are increamented for each allele by
+  // the number of reads supporting the allele.
   const std::vector<AlleleCount>& counts = allele_counter.Counts();
   for (int i = 0; i < counts.size(); ++i) {
-    for (const auto& entry : counts[i].read_alleles()) {
-      const Allele& allele = entry.second;
-
-      // We used to discard low quality allele counts. Now we keep them, but
-      // in order to maintain the original logic the filter is added.
-      if (allele.is_low_quality()) {
-        continue;
-      }
-
-      int start, end;
+    auto alt_alleles = SelectAltAlleles(counts[i], config);
+    for (const auto& allele : alt_alleles) {
+      int start = 0;
+      int end = 0;
       switch (allele.type()) {
         case SUBSTITUTION:
           start = i; end = i + 1;

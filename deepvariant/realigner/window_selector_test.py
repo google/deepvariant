@@ -59,6 +59,7 @@ class AlleleCountLinearWindowSelectorTest(parameterized.TestCase):
         min_windows_distance=4,
         region_expansion_in_bp=20,
         window_selector_model=window_selector_model,
+        min_allele_support=1,
     )
 
   def assertCandidatesFromReadsEquals(

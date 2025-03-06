@@ -49,8 +49,9 @@ PYBIND11_MODULE(window_selector, m) {
   using namespace ::learning::genomics::deepvariant;  // NOLINT
 
   m.def("variant_reads_candidates_from_allele_counter",
-        &VariantReadsWindowSelectorCandidates, py::arg("allele_counter"))
-      .def("allele_count_linear_candidates_from_allele_counter",
-           &AlleleCountLinearWindowSelectorCandidates,
-           py::arg("allele_counter"), py::arg("config"));
+        &VariantReadsWindowSelectorCandidates,
+        py::arg("allele_counter"), py::arg("config"))
+  .def("allele_count_linear_candidates_from_allele_counter",
+        &AlleleCountLinearWindowSelectorCandidates,
+        py::arg("allele_counter"), py::arg("config"));
 }

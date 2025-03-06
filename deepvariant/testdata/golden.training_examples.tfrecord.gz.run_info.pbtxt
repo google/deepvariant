@@ -3480,6 +3480,7 @@ options {
           max_num_supporting_reads: 300
         }
       }
+      min_allele_support: 2
     }
     dbg_config {
       min_k: 10
@@ -3566,12 +3567,12 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 32
-  cpu_frequency_mhz: 2449.9980000000014
-  total_memory_mb: 120736
-  wall_time_seconds: 1.5220973491668701
-  cpu_user_time_seconds: 8.958618
-  cpu_system_time_seconds: 2.884493
+  physical_core_count: 12
+  cpu_frequency_mhz: 2529.0650833333334
+  total_memory_mb: 128668
+  wall_time_seconds: 0.8386318683624268
+  cpu_user_time_seconds: 7.803262
+  cpu_system_time_seconds: 2.354191
   memory_peak_rss_mb: 581
   write_bytes: 278528
 }

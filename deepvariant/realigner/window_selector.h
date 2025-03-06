@@ -60,7 +60,7 @@ namespace deepvariant {
 //   allele_count->Interval(). So result[0] is the count for
 //   allele_count->Interval().start().
 std::vector<int> VariantReadsWindowSelectorCandidates(
-    const AlleleCounter& allele_counter);
+    const AlleleCounter& allele_counter, const WindowSelectorOptions& config);
 
 std::vector<float> AlleleCountLinearWindowSelectorCandidates(
     const AlleleCounter& allele_counter,

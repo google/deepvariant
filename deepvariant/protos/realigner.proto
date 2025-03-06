@@ -91,7 +91,7 @@ message WindowSelectorModel {
 }
 
 // Config parameters for "window selector (ws)" phase.
-// Next ID: 11.
+// Next ID: 12.
 message WindowSelectorOptions {
   // Minimum number of supporting reads to call a reference position for
   // local assembly.
@@ -139,6 +139,8 @@ message WindowSelectorOptions {
   // If True, realign all regions. With this options window selector is not
   // used.
   bool realign_all = 10;
+
+  int32 min_allele_support = 11;
 }
 
 // Config parameters for "de-Bruijn graph (dbg)" phase.
