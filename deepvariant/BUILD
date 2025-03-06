@@ -1544,6 +1544,7 @@ py_library(
         ":variant_caller",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:allelecounter",
+        "//deepvariant/small_model:inference",
         "//third_party/nucleus/io:sam",
         "//third_party/nucleus/protos:reads_py_pb2",
     ],

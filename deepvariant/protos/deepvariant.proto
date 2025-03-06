@@ -601,7 +601,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
-// Next ID: 18.
+// Next ID: 19.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -669,6 +669,8 @@ message SampleOptions {
   bool skip_phasing = 16;
 
   bool skip_normalization = 17;
+
+  string small_model_path = 18;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
@@ -911,8 +913,6 @@ message MakeExamplesOptions {
   int32 small_model_indel_gq_threshold = 78;
   // Allow small model to call multiallelics.
   bool small_model_call_multiallelics = 87;
-  // Path to the pickled small model.
-  string trained_small_model_path = 66;
   // Batch size to use during inference
   int32 small_model_inference_batch_size = 76;
   // Small model context window size
@@ -965,6 +965,8 @@ message MakeExamplesOptions {
 
   // Sets the minimum threshold for a base to be considered methylated.
   float methylation_calling_threshold = 86;
+
+  reserved 66;
 }
 
 // Config describe information needed for a dataset that can be used for

@@ -190,6 +190,12 @@ _GBZ_SHARED_MEMORY_NAME = flags.DEFINE_string(
     ),
 )
 
+_TRAINED_SMALL_MODEL_PATH = flags.DEFINE_string(
+    'trained_small_model_path',
+    '',
+    'Path to a small model checkpoint directory.',
+)
+
 # Change any flag defaults that differ for Pangenome-aware DeepVariant.
 # I'm setting this to float('inf') because we don't want to include any
 # candidates from the non-target (i.e., pangenome) sample.
@@ -219,6 +225,7 @@ def reads_and_pangenome_samples_from_flags(add_flags=True, flags_obj=None):
       ),
       order=[0, 1],
       pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT,
+      small_model_path=_TRAINED_SMALL_MODEL_PATH.value,
   )
   def variant_type_string_to_enum(variant_type_string):
     variant_type_string = variant_type_string.upper()

@@ -101,6 +101,11 @@ CANDIDATE_POSITIONS_ = flags.DEFINE_string(
     None,
     'Path to the binary file containing candidate positions.',
 )
+_TRAINED_SMALL_MODEL_PATH = flags.DEFINE_string(
+    'trained_small_model_path',
+    '',
+    'Path to a small model checkpoint directory.',
+)
 
 
 def one_sample_from_flags(add_flags=True, flags_obj=None):
@@ -117,6 +122,7 @@ def one_sample_from_flags(add_flags=True, flags_obj=None):
       ),
       order=[0],
       pileup_height=dv_constants.PILEUP_DEFAULT_HEIGHT,
+      small_model_path=_TRAINED_SMALL_MODEL_PATH.value,
   )
 
   if add_flags:

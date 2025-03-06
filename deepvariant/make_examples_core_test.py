@@ -42,6 +42,7 @@ from deepvariant import make_examples_core
 from deepvariant import testdata
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.protos import realigner_pb2
+from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.io import fasta
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
@@ -949,6 +950,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.mock_init = self.add_mock('initialize')
     for sample in self.processor.samples:
       sample.in_memory_sam_reader = mock.Mock()
+      sample.small_model_variant_caller = mock.Mock()
     self.default_shape = [5, 5, 7]
 
   def tearDown(self):
@@ -1153,6 +1155,53 @@ class RegionProcessorTest(parameterized.TestCase):
         [], self.region
     )
     main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
+
+  def test_call_small_model_examples(self):
+    self.processor.options.mode = deepvariant_pb2.MakeExamplesOptions.CALLING
+    self.processor.options.call_small_model_examples = True
+    candidate1, candidate2 = mock.Mock(), mock.Mock()
+    n_stats = {'n_small_model_calls': 0}
+    mock_writer = mock.Mock()
+    self.processor.small_model_example_factory = mock.Mock()
+    fake_inference_example_set = make_small_model_examples.InferenceExampleSet(
+        skipped_candidates=[],
+        candidates_with_alt_allele_indices=[
+            (candidate1, (0,)),
+            (candidate2, (0,)),
+        ],
+        inference_examples=[[], []],
+    )
+    self.processor.small_model_example_factory.encode_inference_examples.return_value = (
+        fake_inference_example_set
+    )
+    cvo_candidate1, cvo_candidate2 = mock.Mock(), mock.Mock()
+    main_sample = self.processor.samples[0]
+    main_sample.small_model_variant_caller.call_variants.return_value = (
+        [cvo_candidate1, cvo_candidate2],
+        [],
+    )
+
+    candidates = [candidate1, candidate2]
+    self.processor.call_small_model_examples_in_region(
+        candidates=candidates,
+        read_phases={},
+        sample=main_sample,
+        writer=mock_writer,
+        n_stats=n_stats,
+        runtimes={},
+    )
+
+    self.processor.small_model_example_factory.encode_inference_examples.assert_called_once_with(
+        candidates, {}
+    )
+    main_sample.small_model_variant_caller.call_variants.assert_called_once_with(
+        fake_inference_example_set.candidates_with_alt_allele_indices,
+        fake_inference_example_set.inference_examples,
+    )
+    mock_writer.write_call_variant_outputs.assert_called_once_with(
+        cvo_candidate1, cvo_candidate2
+    )
+    self.assertEqual(n_stats['n_small_model_calls'], 2)
 
   def test_candidates_in_region_no_reads(self):
     main_sample = self.processor.samples[0]

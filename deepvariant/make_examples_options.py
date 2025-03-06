@@ -712,11 +712,6 @@ _SMALL_MODEL_VAF_CONTEXT_WINDOW_SIZE = flags.DEFINE_integer(
     'Sets the window size used by small model to produce context VAF allele'
     ' counts. ',
 )
-_TRAINED_SMALL_MODEL_PATH = flags.DEFINE_string(
-    'trained_small_model_path',
-    '',
-    'Path to a pickled, pre-trained small model.',
-)
 _STREAM_EXAMPLES = flags.DEFINE_bool(
     'stream_examples',
     False,
@@ -836,7 +831,6 @@ def shared_flags_to_options(
       small_model_call_multiallelics=_SMALL_MODEL_CALL_MULTIALLELICS.value,
       small_model_inference_batch_size=_SMALL_MODEL_INFERENCE_BATCH_SIZE.value,
       small_model_vaf_context_window_size=_SMALL_MODEL_VAF_CONTEXT_WINDOW_SIZE.value,
-      trained_small_model_path=_TRAINED_SMALL_MODEL_PATH.value,
       downsample_classes=list(map(float, _DOWNSAMPLE_CLASSES.value)),
       sample_mean_coverage_on_calling_regions=_SAMPLE_MEAN_COVERAGE_ON_CALLING_REGIONS.value,
       enable_methylation_calling=_ENABLE_METHYLATION_CALLING.value,

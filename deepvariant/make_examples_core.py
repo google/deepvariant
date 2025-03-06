@@ -1310,16 +1310,6 @@ class RegionProcessor:
     self.contig_dict = ranges.contigs_dict(
         fasta.IndexedFastaReader(self.options.reference_filename).header.contigs
     )
-    self._small_model_variant_caller = None
-    if self.options.call_small_model_examples:
-      self.small_model_variant_caller = (
-          small_model_inference.SmallModelVariantCaller.from_model_path(
-              model_path=self.options.trained_small_model_path,
-              snp_gq_threshold=self.options.small_model_snp_gq_threshold,
-              indel_gq_threshold=self.options.small_model_indel_gq_threshold,
-              batch_size=self.options.small_model_inference_batch_size,
-          )
-      )
     self.small_model_example_factory = (
         make_small_model_examples.SmallModelExampleFactory(
             self.options.small_model_vaf_context_window_size,
@@ -1397,21 +1387,6 @@ class RegionProcessor:
       make_examples_native: make_examples_native_module.ExamplesGenerator,
   ):
     self._make_examples_native = make_examples_native
-
-  @property
-  def small_model_variant_caller(
-      self,
-  ) -> small_model_inference.SmallModelVariantCaller:
-    if self._small_model_variant_caller is None:
-      raise ValueError('small_model_variant_caller is not initialized.')
-    return self._small_model_variant_caller
-
-  @small_model_variant_caller.setter
-  def small_model_variant_caller(
-      self,
-      small_model_variant_caller: small_model_inference.SmallModelVariantCaller,
-  ):
-    self._small_model_variant_caller = small_model_variant_caller
 
   def _make_direct_phasing_obj(self) -> direct_phasing.DirectPhasing:
     return direct_phasing.DirectPhasing()
@@ -1514,6 +1489,18 @@ class RegionProcessor:
           sample.options.variant_caller_options,
           sample.options.proposed_variants_filename,
       )
+      if (
+          self.options.call_small_model_examples
+          and sample.options.small_model_path
+      ):
+        sample.small_model_variant_caller = (
+            small_model_inference.SmallModelVariantCaller.from_model_path(
+                model_path=sample.options.small_model_path,
+                snp_gq_threshold=self.options.small_model_snp_gq_threshold,
+                indel_gq_threshold=self.options.small_model_indel_gq_threshold,
+                batch_size=self.options.small_model_inference_batch_size,
+            )
+        )
 
     if 'allele_frequency' in self.options.pic_options.channels:
       population_vcf_readers = allele_frequency.make_population_vcf_readers(
@@ -1814,6 +1801,7 @@ class RegionProcessor:
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
       read_phases: Dict[str, int],
+      sample: sample_lib.Sample,
       writer: OutputsWriter,
       n_stats: Dict[str, int],
       runtimes: Dict[str, float],
@@ -1823,6 +1811,7 @@ class RegionProcessor:
     Args:
       candidates: List of candidates to be processed into examples.
       read_phases: A dictionary of read names to haplotype phases.
+      sample: The sample to call small model examples for.
       writer: A OutputsWriter used to write out examples.
       n_stats: A dictionary that is used to accumulate counts for reporting.
       runtimes: A dictionary that recorded runtime information for reporting.
@@ -1846,8 +1835,9 @@ class RegionProcessor:
 
     # filtered candidates did not pass the GQ threshold.
     before_call_small_model_examples = time.time()
+    assert sample.small_model_variant_caller is not None
     call_variant_outputs, candidates_not_called = (
-        self.small_model_variant_caller.call_variants(
+        sample.small_model_variant_caller.call_variants(
             inference_example_set.candidates_with_alt_allele_indices,
             inference_example_set.inference_examples,
         )
@@ -3109,6 +3099,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
             region_processor.call_small_model_examples_in_region(
                 candidates_by_sample[role],
                 read_phases_by_sample[role],
+                sample,
                 writer,
                 n_stats,
                 runtimes,
