@@ -1366,7 +1366,7 @@ class RegionProcessorTest(parameterized.TestCase):
               'channel_list': 'BASE_CHANNELS,base_methylation',
           },
           (
-              'Parsing MM, ML, and MN AUX tags because of base_methylation'
+              'Parsing MM, ML, and MN AUX tags because of base modification'
               ' channel.'
           ),
       ),

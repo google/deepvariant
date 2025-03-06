@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "deepvariant/channels/base_methylation_channel.h"
+#include "deepvariant/channels/base_6ma_channel.h"
 
 #include <cstdint>
 #include <optional>
@@ -44,14 +44,14 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-BaseMethylationChannel::BaseMethylationChannel(
+Base6mAChannel::Base6mAChannel(
     int width,
     const learning::genomics::deepvariant::PileupImageOptions& options)
     : Channel(width, options) {
   base_methylation_color_vector_ = std::nullopt;
 }
 
-void BaseMethylationChannel::FillReadBase(
+void Base6mAChannel::FillReadBase(
     std::vector<unsigned char>& data, int col, char read_base, char ref_base,
     int base_quality, const Read& read, int read_index,
     const DeepVariantCall& dv_call,
@@ -66,15 +66,15 @@ void BaseMethylationChannel::FillReadBase(
   }
 }
 
-void BaseMethylationChannel::FillRefBase(std::vector<unsigned char>& ref_data,
+void Base6mAChannel::FillRefBase(std::vector<unsigned char>& ref_data,
                                          int col, char ref_base,
                                          const std::string& ref_bases) {
   ref_data[col] = 0;
 }
 
-std::vector<std::uint8_t> BaseMethylationChannel::GetBaseModification(
+std::vector<std::uint8_t> Base6mAChannel::GetBaseModification(
     const Read& read) {
-  auto it = read.base_modifications().find(nucleus::k5mC);
+  auto it = read.base_modifications().find(nucleus::k6mA);
   if (it == read.base_modifications().end()) {
     return {};
   }
@@ -83,7 +83,7 @@ std::vector<std::uint8_t> BaseMethylationChannel::GetBaseModification(
 }
 
 // Scales an input vector to pixel range 0-254
-std::vector<std::uint8_t> BaseMethylationChannel::ScaleColorVector(
+std::vector<std::uint8_t> Base6mAChannel::ScaleColorVector(
     std::vector<std::uint8_t>& channel_values, float max_val) {
   for (int i = 0; i < channel_values.size(); i++) {
     int value = channel_values[i];

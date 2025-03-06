@@ -45,6 +45,7 @@
 #include "deepvariant/channels/avg_base_quality_channel.h"
 #include "deepvariant/channels/base_differs_from_ref_channel.h"
 #include "deepvariant/channels/base_methylation_channel.h"
+#include "deepvariant/channels/base_6ma_channel.h"
 #include "deepvariant/channels/base_quality_channel.h"
 #include "deepvariant/channels/blank_channel.h"
 #include "deepvariant/channels/channel.h"
@@ -422,6 +423,9 @@ std::unique_ptr<Channel> Channels::ChannelEnumToObject(
     case DeepVariantChannelEnum::CH_BASE_METHYLATION:
       return std::unique_ptr<Channel>(
           new BaseMethylationChannel(width, options));
+    case DeepVariantChannelEnum::CH_BASE_6MA:
+      return std::unique_ptr<Channel>(
+          new Base6mAChannel(width, options));
     default:
       LOG(FATAL) << "Channel '"
                  << DeepVariantChannelEnum_Name(channel_enum)
@@ -472,6 +476,9 @@ DeepVariantChannelEnum Channels::ChannelStrToEnum(const std::string& channel) {
   }
   if (channel == ch_base_methylation) {
     return DeepVariantChannelEnum::CH_BASE_METHYLATION;
+  }
+  if (channel == ch_base_6ma) {
+    return DeepVariantChannelEnum::CH_BASE_6MA;
   }
   CHECK(false) << "Channel '" << channel << "' should have a corresponding "
                << "enum in DeepVariantChannelEnum.";

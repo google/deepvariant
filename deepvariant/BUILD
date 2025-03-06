@@ -78,6 +78,7 @@ cc_library(
         "//deepvariant/channels:base_methylation_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",
+        "//third_party/nucleus/io:sam_reader",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:range_cc_pb2",
@@ -1032,6 +1033,7 @@ cc_library(
     deps = [
         "//deepvariant/channels:allele_frequency_channel",
         "//deepvariant/channels:avg_base_quality_channel",
+        "//deepvariant/channels:base_6ma_channel",
         "//deepvariant/channels:base_differs_from_ref_channel",
         "//deepvariant/channels:base_methylation_channel",
         "//deepvariant/channels:base_quality_channel",

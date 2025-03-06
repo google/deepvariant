@@ -51,6 +51,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/io/sam_reader.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/range.pb.h"
@@ -266,7 +267,7 @@ bool IsMethylated(const Read& read, int offset,
   // TODO: Handle the case where there are multiple base
   // modifications. Currently, we're only parsing 5mC modifications.
   auto it = read.base_modifications().find(
-      BaseMethylationChannel::k5mCMethylationBaseModKey);
+      nucleus::k5mC);
   if (it == read.base_modifications().end()) {
     return false;  // "Cm" modification not found
   }

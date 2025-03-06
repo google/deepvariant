@@ -26,6 +26,7 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+// LINT: LEGACY_NAMES // copybara:strip
 
 syntax = "proto3";
 
@@ -1177,7 +1178,7 @@ message MakeExamplesRunInfo {
   MakeExamplesStats stats = 4;
 }
 
-// Next ID: 24.
+// Next ID: 25.
 enum DeepVariantChannelEnum {
   // Default should be unspecified.
   CH_UNSPECIFIED = 0;
@@ -1219,4 +1220,5 @@ enum DeepVariantChannelEnum {
   CH_INSERT_SIZE = 19;
   CH_MEAN_COVERAGE = 22;
   CH_BASE_METHYLATION = 23;
+  CH_BASE_6MA = 24;
 }

@@ -551,7 +551,7 @@ TEST(Parse5mCAuxTagTest, BasicCase) {
   const std::vector<int> ml = {1, 2, 3, 4, 5};
   nucleus::SetInfoField("MM",  mm, &read);
   nucleus::SetInfoField("ML", ml, &read);
-  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::string c_m_str = ParseBaseModifications(read)[nucleus::k5mC];
   std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
   std::vector<std::uint8_t> expected{0, 0, 0, 1,
                                      0, 0, 0, 2,
@@ -571,7 +571,7 @@ TEST(Parse5mCAuxTagTest, MultipleModifications) {
   const std::vector<int> ml = {1, 1, 1, 1, 1, 2, 2, 2, 2, 2};
   nucleus::SetInfoField("MM",  mm, &read);
   nucleus::SetInfoField("ML", ml, &read);
-  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::string c_m_str = ParseBaseModifications(read)[nucleus::k5mC];
   std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
   std::vector<std::uint8_t> expected{0, 0, 0, 2,
                                      0, 0, 0, 2,
@@ -591,7 +591,7 @@ TEST(Parse5mCAuxTagTest, ThreeModifications) {
   const std::vector<int> ml = {1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1};
   nucleus::SetInfoField("MM",  mm, &read);
   nucleus::SetInfoField("ML", ml, &read);
-  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::string c_m_str = ParseBaseModifications(read)[nucleus::k5mC];
   std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
   std::vector<uint8_t> expected{0, 0, 0, 2,
                                      0, 0, 0, 2,
@@ -611,7 +611,7 @@ TEST(Parse5mCAuxTagTest, VariableMMDelta) {
   const std::vector<int> ml = {0, 0, 0, 0, 0, 1, 2};
   nucleus::SetInfoField("MM",  mm, &read);
   nucleus::SetInfoField("ML", ml, &read);
-  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::string c_m_str = ParseBaseModifications(read)[nucleus::k5mC];
   std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
   std::vector<uint8_t> expected{1, 0, 0,
                                      0, 0, 0,
@@ -633,7 +633,7 @@ TEST(Parse5mCAuxTagTest, ReverseStrandModifications) {
   const std::vector<int> ml = {1, 1, 1, 1, 1};
   nucleus::SetInfoField("MM",  mm, &read);
   nucleus::SetInfoField("ML", ml, &read);
-  std::string c_m_str = ParseBaseModifications(read)["Cm"];
+  std::string c_m_str = ParseBaseModifications(read)[nucleus::k5mC];
   std::vector<uint8_t> methylated_sites(c_m_str.begin(), c_m_str.end());
   std::vector<uint8_t> expected{0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
   EXPECT_EQ(methylated_sites, expected);
@@ -667,6 +667,35 @@ TEST(Parse5mCAuxTagTest, MatchMNTag) {
   nucleus::SetInfoField("MN", 10, &read);  // Read with matched length.
   auto base_modifications = ParseBaseModifications(read);
   EXPECT_FALSE(base_modifications.empty());
+}
+
+TEST(Parse6mATagTest, Parse5mCand6mA) {
+  Read read = nucleus::MakeRead("chr1",
+                                1,
+                                "ACCCAGGGTGGGTGGG",
+                                {"16M"},
+                                "read_name");
+  const std::string mm = "C+m?,0,0,0;A+a?,0,0;T-a?,0,0";
+  const std::vector<int> ml = {7, 8, 9, 1, 2, 3, 4};
+  nucleus::SetInfoField("MM",  mm, &read);
+  nucleus::SetInfoField("ML", ml, &read);
+  auto base_modifications = ParseBaseModifications(read);
+  std::string c_5mc_str = base_modifications[nucleus::k5mC];
+  std::string c_6ma_str = base_modifications[nucleus::k6mA];
+  std::vector<uint8_t> bm_5mc_sites(c_5mc_str.begin(), c_5mc_str.end());
+  std::vector<uint8_t> bm_6ma_sites(c_6ma_str.begin(), c_6ma_str.end());
+  // Check 5mC modifications.
+  std::vector<uint8_t> expected_5mc{0, 7, 8, 9,
+                                    0, 0, 0, 0,
+                                    0, 0, 0, 0,
+                                    0, 0, 0, 0};
+  EXPECT_EQ(bm_5mc_sites, expected_5mc);
+  // Check 6mA modifications.
+  std::vector<uint8_t> expected_6ma{1, 0, 0, 0,
+                                    2, 0, 0, 0,
+                                    3, 0, 0, 0,
+                                    4, 0, 0, 0};
+  EXPECT_EQ(bm_6ma_sites, expected_6ma);
 }
 
 

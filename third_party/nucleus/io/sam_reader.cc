@@ -37,6 +37,7 @@
 #include <stdint.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <string>
@@ -628,15 +629,20 @@ std::map<string, string> ParseBaseModifications(
     char strand = captures.at(2)[0];
     absl::string_view modification = captures.at(3);
 
-    if (base != 'C' || strand != '+' || modification != "m" ||
-        modification.size() != 1) {
-      // Currently only 5mC is supported.
+    string modification_spec;
+    if (base == 'C' && strand == '+' && modification == "m") {
+      modification_spec = nucleus::k5mC;
+    } else if (base == 'A' && strand == '+' && modification == "a") {
+      modification_spec = nucleus::k6mA;
+    } else if (base == 'T' && strand == '-' && modification == "a") {
+      modification_spec = nucleus::k6mA;
+    } else {
+      // Currently only 5mC and 6mA methylation is supported.
       // Subtract 1 to account for base specification.
       ml_offset += mm_base_mod_split.size() - 1;
       continue;
     }
 
-    modification_spec = absl::StrFormat("%c%s", base, modification);
     base_modifications = std::vector<unsigned char>(
         read.aligned_sequence().size(), 0);
     // Remove the first element which defines the type of base modification.
@@ -660,23 +666,46 @@ std::map<string, string> ParseBaseModifications(
             return {};
           }
           // Convert int32 to uint8_t:
-          base_modifications[pos] = ml_values[mm_split_idx + ml_offset].int_value();
+          base_modifications[pos] =
+              ml_values[mm_split_idx + ml_offset].int_value();
           base_count = 0;
           mm_split_idx++;
           if (mm_split_idx >= mm_base_mod_split.size()) {
             // If we've reached the end of the mm_split, we're done.
-            if (read.alignment().position().reverse_strand()) {
-              std::reverse(base_modifications.begin(),
-                           base_modifications.end());
-            }
+
+            // Update the ml_offset
+            ml_offset += mm_split_idx;
+
             std::string base_modification_str(
                 reinterpret_cast<char*>(base_modifications.data()),
                 base_modifications.size());
-            result.insert(std::make_pair(
-                modification_spec,
-                std::move(base_modification_str)
-                ));
-            break;
+            // Reverse base modifications if they were aligned to the reverse
+            // strand.
+            if (read.alignment().position().reverse_strand()) {
+              std::reverse(base_modification_str.begin(),
+                           base_modification_str.end());
+            }
+
+            if (result.find(std::string(modification_spec)) != result.end()) {
+              // If the modification spec already exists, then values have
+              // already been encoded on the forward or reverse strand, and
+              // we need to merge the two.
+              std::string merged_base_modifications(
+                  base_modification_str.size(), 0);
+              for (size_t i = 0; i < base_modification_str.size(); ++i) {
+                merged_base_modifications[i] = std::max(
+                    result[modification_spec][i],
+                    base_modification_str[i]);
+              }
+              result[modification_spec] = merged_base_modifications;
+              break;
+            } else {
+              result.insert(std::make_pair(
+                  modification_spec,
+                  std::move(base_modification_str)
+                  ));
+              break;
+            }
           }
           mm_delta = std::stoi(mm_base_mod_split[mm_split_idx]);
         } else {

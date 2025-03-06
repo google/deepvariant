@@ -298,11 +298,13 @@ def resolve_sam_aux_fields(
     aux_fields.add('OQ')
 
   # Add fields required for channels.
-  if 'base_methylation' in provided_channels:
-    logging.info(
-        'Parsing MM, ML, and MN AUX tags because of base_methylation channel.'
-    )
-    aux_fields.update(['MM', 'ML', 'MN'])
+  for base_mod_channel in ['base_methylation', 'base_6ma']:
+    if base_mod_channel in provided_channels:
+      logging.info(
+          'Parsing MM, ML, and MN AUX tags because of base modification'
+          ' channel.'
+      )
+      aux_fields.update(['MM', 'ML', 'MN'])
 
   return list(aux_fields)
 

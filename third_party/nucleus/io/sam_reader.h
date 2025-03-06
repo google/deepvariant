@@ -36,6 +36,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include "third_party/nucleus/io/reader_base.h"
@@ -51,6 +52,10 @@ namespace nucleus {
 
 // Alias for the abstract base class for SAM record iterables.
 using SamIterable = Iterable<nucleus::genomics::v1::Read>;
+
+// Define constants for the base modification types.
+const char k5mC[] = "5mC";
+const char k6mA[] = "6mA";
 
 // A SAM/BAM/CRAM reader.
 //
@@ -86,7 +91,7 @@ class SamReader : public Reader {
   //
   // ref_path can be "", in which case the argument is ignored, or must point
   // to an existing FASTA file. If not "" and the reads_path points to a CRAM
-  // file, the CRAM_OPT_REFERNECE field will be set to this path so that the
+  // file, the CRAM_OPT_REFERENCE field will be set to this path so that the
   // CRAM decoder uses ref_path to decode the reference-compressed read
   // sequences in the CRAM file. Because many low-level IO routines (e.g. stat)
   // are currently directly used in the CRAM implementation in htslib, ref_path

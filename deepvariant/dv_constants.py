@@ -105,6 +105,7 @@ CHANNELS = [
     'base_channels_alternate_allele_2',
     'mean_coverage',
     'base_methylation',
+    'base_6ma',
 ]
 
 ALT_ALIGNED_PILEUP_CHANNELS = [
@@ -152,6 +153,7 @@ CHANNEL_ENUM_TO_STRING = {
     ),
     deepvariant_pb2.CH_MEAN_COVERAGE: 'mean_coverage',
     deepvariant_pb2.CH_BASE_METHYLATION: 'base_methylation',
+    deepvariant_pb2.CH_BASE_6MA: 'base_6ma',
 }
 
 # Create a reverse mapping

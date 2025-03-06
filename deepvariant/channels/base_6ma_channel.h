@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_METHYLATION_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_METHYLATION_CHANNEL_H_
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_6MA_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_6MA_CHANNEL_H_
 
 #include <cstdint>
 #include <optional>
@@ -54,9 +54,9 @@ using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::CigarUnit;
 using nucleus::genomics::v1::Read;
 
-class BaseMethylationChannel : public Channel {
+class Base6mAChannel : public Channel {
  public:
-  BaseMethylationChannel(
+  Base6mAChannel(
       int width,
       const learning::genomics::deepvariant::PileupImageOptions& options);
 
@@ -67,6 +67,7 @@ class BaseMethylationChannel : public Channel {
 
   void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
                    const std::string& ref_bases) override;
+
 
  private:
   std::vector<std::uint8_t> GetBaseModification(const Read& read);
@@ -81,4 +82,4 @@ class BaseMethylationChannel : public Channel {
 }  // namespace genomics
 }  // namespace learning
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_METHYLATION_CHANNEL_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_BASE_6MA_CHANNEL_H_
