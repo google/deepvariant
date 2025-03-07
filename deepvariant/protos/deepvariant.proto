@@ -602,7 +602,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
-// Next ID: 19.
+// Next ID: 21.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -672,11 +672,21 @@ message SampleOptions {
   bool skip_normalization = 17;
 
   string small_model_path = 18;
+
+  // If true, reads are downsampled using a non-uniform distribution. This is
+  // useful for DeepSomatic, where we want to downsample the normal reads more
+  // aggressively than the tumor reads.
+  bool use_non_uniform_downsampling = 19;
+
+  // The threshold for the non-uniform downsampling. If the number of reads
+  // representing an allele is less than this threshold, the reads are not
+  // downsampled.
+  int32 non_uniform_downsampling_threshold = 20;
 }
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 88.
+// Next ID: 90.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -966,6 +976,16 @@ message MakeExamplesOptions {
 
   // Sets the minimum threshold for a base to be considered methylated.
   float methylation_calling_threshold = 86;
+
+  // If true, reads are downsampled using a non-uniform distribution. This is
+  // useful for DeepSomatic, where we want to downsample the normal reads more
+  // aggressively than the tumor reads.
+  bool use_non_uniform_downsampling = 88;
+
+  // The threshold for the non-uniform downsampling. If the number of reads
+  // representing an allele is less than this threshold, the reads are not
+  // downsampled.
+  int32 non_uniform_downsampling_threshold = 89;
 
   reserved 66;
 }

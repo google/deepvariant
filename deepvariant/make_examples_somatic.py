@@ -180,10 +180,20 @@ def tumor_normal_samples_from_flags(flags_obj):
         reads_filenames=reads_filenames_split,
     )
     if role == 'tumor':
+      # Set up non-uniform downsampling only for the tumor sample.
+      sample_options.use_non_uniform_downsampling = (
+          flags_obj.use_non_uniform_downsampling
+      )
+      sample_options.non_uniform_downsampling_threshold = (
+          flags_obj.non_uniform_downsampling_threshold
+      )
+
       if flags_obj.reads_normal and flags_obj.reads_tumor:
         sample_options.order.extend([0, 1])
       else:
         sample_options.order.extend([0])
+    else:
+      sample_options.use_non_uniform_downsampling = False
 
     downsample_fraction = (
         flags_obj.downsample_fraction_tumor

@@ -777,6 +777,22 @@ _CREATE_COMPLEX_ALLELES = flags.DEFINE_bool(
     'If True, complex alleles are enabled.',
 )
 
+_USE_NON_UNIFORM_DOWNSAMPLING = flags.DEFINE_bool(
+    'use_non_uniform_downsampling',
+    False,
+    'If True, reads are downsampled using a non-uniform distribution. This is '
+    'useful for DeepSomatic, where we want to downsample the normal reads more '
+    'aggressively than the tumor reads.',
+)
+
+_NON_UNIFORM_DOWNSAMPLING_THRESHOLD = flags.DEFINE_integer(
+    'non_uniform_downsampling_threshold',
+    3,
+    'The threshold for the non-uniform downsampling. If the number of reads '
+    'representing an allele is less than this threshold, the reads are not '
+    'downsampled.',
+)
+
 
 def shared_flags_to_options(
     add_flags: bool,
