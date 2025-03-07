@@ -18,10 +18,8 @@ ARG DV_GPU_BUILD=0
 ARG VERSION=1.9.0-rc0
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
-FROM continuumio/miniconda3 as conda_setup
-RUN conda config --add channels defaults && \
-    conda config --add channels bioconda && \
-    conda config --add channels conda-forge
+FROM condaforge/miniforge3:24.9.2-0 as conda_setup
+RUN conda config --add channels bioconda
 RUN conda create -n bio \
                     bioconda::bcftools=1.15 \
                     bioconda::samtools=1.15 \
