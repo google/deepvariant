@@ -320,6 +320,47 @@ def logging_with_options(
   logging.info('%s%s', prefix, message)
 
 
+def log_summary_stats(
+    options: deepvariant_pb2.MakeExamplesOptions,
+    n_stats: dict[str, int],
+) -> None:
+  """Prints the summary stats in a neatly-formatted way.
+
+  Example output:
+  '''
+  Summary stats:
+        2869 candidate variants found
+        2500 candidate variants phased
+         253 examples written
+        2493 small model examples called
+  '''
+
+  Args:
+    options: The MakeExamplesOptions proto.
+    n_stats: A dictionary of stats to log.
+  """
+  stat_to_description = {
+      'n_candidates': 'candidate variants found',
+      'n_examples': 'examples written',
+  }
+  if options.phase_reads:
+    stat_to_description['n_phased_candidates'] = 'candidate variants phased'
+  if options.write_small_model_examples:
+    stat_to_description['n_small_model_examples'] = (
+        'small model examples written'
+    )
+  if options.call_small_model_examples:
+    stat_to_description['n_small_model_calls'] = 'small model examples called'
+
+  stats_to_log = {k: v for k, v in n_stats.items() if k in stat_to_description}
+  longest_stat = max((len(str(x)) for x in stats_to_log.values()))
+  message_rows = ['Summary stats:']
+  for stat_name, description in stat_to_description.items():
+    message = f'\t{str(n_stats[stat_name]).rjust(longest_stat)} {description}'
+    message_rows.append(message)
+  logging_with_options(options, '\n'.join(message_rows))
+
+
 # ---------------------------------------------------------------------------
 # Simple utilities
 # ---------------------------------------------------------------------------
@@ -3235,19 +3276,4 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       )
 
   region_processor.make_examples_native.signal_shard_finished()
-  logging_with_options(
-      options, 'Found %s candidate variants' % n_stats['n_candidates']
-  )
-  if options.phase_reads:
-    logging_with_options(
-        options, 'Phased %s candidate variants' % n_stats['n_phased_candidates']
-    )
-  logging_with_options(options, 'Created %s examples' % n_stats['n_examples'])
-  logging_with_options(
-      options,
-      'Created %s small model examples' % n_stats['n_small_model_examples'],
-  )
-  logging_with_options(
-      options,
-      'Small Model called %s candidates' % n_stats['n_small_model_calls'],
-  )
+  log_summary_stats(options, n_stats)
