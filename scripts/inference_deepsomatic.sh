@@ -496,6 +496,9 @@ if [[ "${MODEL_TYPE}" = "WES" || "${MODEL_TYPE}" = "FFPE_WES" ]]; then
     echo "Error: --regions is not used with model_type WES. Please use --capture_bed." >&2
     exit 1
   fi
+fi
+
+if [[ ! -z "${CAPTURE_BED}" ]]; then
   extra_args+=( --regions "/input/$(basename "$CAPTURE_BED")")
   sompy_args+=( -T "${INPUT_DIR}/$(basename $CAPTURE_BED)")
 fi
@@ -611,7 +614,7 @@ function copy_data() {
   copy_gs_or_http_file "${REF}.gz.gzi" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.gzi" "${INPUT_DIR}"
   copy_gs_or_http_file "${REF}.fai" "${INPUT_DIR}"
-  if [[ "${MODEL_TYPE}" = "WES" || "${MODEL_TYPE}" = "FFPE_WES" ]]; then
+  if [[ ! -z "${CAPTURE_BED}" ]]; then
     copy_gs_or_http_file "${CAPTURE_BED}" "${INPUT_DIR}"
   fi
   if [[ -n "${PROPOSED_VARIANTS}" ]]; then
