@@ -219,7 +219,7 @@ sudo docker run \
     --output_vcf=output/HG005.output.vcf.gz \
     --num_shards=$(nproc) \
     --regions=data/chr20_CDS_3x.bed \
-    --make_examples_extra_args="split_skip_reads=true,channel_list='BASE_CHANNELS'" \
+    --make_examples_extra_args="split_skip_reads=true,channels=''" \
     --intermediate_results_dir output/intermediate_results_dir
 ```
 
@@ -239,7 +239,8 @@ sudo docker run \
     *   `split_skip_reads=true` - *Important!* This flag is critical for RNA-seq
         variant calling to work properly. It enables RNA-seq data to be
         processed efficiently.
-    *   `--channel_list='BASE_CHANNELS'` - Sets the channel list for the RNA-seq
+    *   `channels=''` - Resets the channel list to be appropriate for the
+        RNA-seq model.
         model.
 *   `--intermediate_results_dir` - Outputs results to an intermediate directory.
 
