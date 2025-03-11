@@ -232,7 +232,7 @@ def input_fn(
       deterministic=False,
   )
 
-  if is_training:
+  if is_training and config.shuffle_buffer_elements:
     ds = ds.shuffle(
         config.shuffle_buffer_elements, reshuffle_each_iteration=True
     )
