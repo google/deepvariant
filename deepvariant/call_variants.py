@@ -693,9 +693,7 @@ def load_model_and_check_shape(
     # infer it from the model directory. This is the case when examples from
     # stream is used.
     model_dir = os.path.dirname(checkpoint_path)
-    for dirname, subdir, fnames in gfile.Walk(model_dir):
-      if subdir:
-        continue
+    for dirname, _, fnames in gfile.Walk(model_dir):
       for fname in fnames:
         if fname.endswith('example_info.json'):
           model_example_info_json = f'{dirname}/{fname}'
@@ -708,7 +706,7 @@ def load_model_and_check_shape(
       )
     else:
       raise ValueError(
-          'Could not infer example shape from examples or model directory.'
+          'Could not infer example shape from examples or model directory. '
           'example_info.json was not found in the model directory.'
       )
 
