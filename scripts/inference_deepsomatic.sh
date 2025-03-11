@@ -465,6 +465,31 @@ elif [[ "${MODEL_PRESET}" = "FFPE_WES" ]]; then
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 
+elif [[ "${MODEL_PRESET}" = "FFPE_WGS_TUMOR_ONLY" ]]; then
+  MODEL_TYPE="FFPE_WGS_TUMOR_ONLY"
+  BASE="${HOME}/deepsomatic-case-studies"
+
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  # Unset BAM_NORMAL, since it's not used in tumor-only model.
+  BAM_NORMAL=""
+  SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wgs"
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wgs-case-study/FFG_IL_T_6h.bwa.dedup.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+
+elif [[ "${MODEL_PRESET}" = "FFPE_WES_TUMOR_ONLY" ]]; then
+  MODEL_TYPE="FFPE_WES_TUMOR_ONLY"
+  BASE="${HOME}/deepsomatic-case-studies"
+
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  # Unset BAM_NORMAL, since it's not used in tumor-only model.
+  BAM_NORMAL=""
+  SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wes"
+  CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/seqc2_hg38.exome_regions.bed}"
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wes-case-study/FFX_IL_T_6h_1.bwa.dedup.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+
 else
   if [[ -n "${MODEL_PRESET}" ]]; then
     echo "Error: --model_preset must be one of WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES." >&2

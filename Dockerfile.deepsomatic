@@ -167,6 +167,26 @@ ADD https://storage.googleapis.com/brain-genomics/pichuan/share/b396766464.deeps
 ADD https://storage.googleapis.com/brain-genomics/pichuan/share/b396766464.deepsomatic.ffpe_wes.savedmodel/variables/variables.index .
 RUN chmod -R +r /opt/models/deepsomatic/ffpe_wes/*
 
+# FFPE WGS Tumor-only
+# TODO: This is from internal#comment26. Please move to the official location later.
+RUN mkdir -p /opt/models/deepsomatic/ffpe_wgs_tumor_only/variables && \
+    wget -qO /opt/models/deepsomatic/ffpe_wgs_tumor_only/fingerprint.pb https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wgs_tumor_only.savedmodel/fingerprint.pb && \
+    wget -qO /opt/models/deepsomatic/ffpe_wgs_tumor_only/saved_model.pb https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wgs_tumor_only.savedmodel/saved_model.pb && \
+    wget -qO /opt/models/deepsomatic/ffpe_wgs_tumor_only/example_info.json https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wgs_tumor_only.savedmodel/example_info.json && \
+    wget -qO /opt/models/deepsomatic/ffpe_wgs_tumor_only/variables/variables.data-00000-of-00001 https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wgs_tumor_only.savedmodel/variables/variables.data-00000-of-00001 && \
+    wget -qO /opt/models/deepsomatic/ffpe_wgs_tumor_only/variables/variables.index https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wgs_tumor_only.savedmodel/variables/variables.index && \
+    chmod -R +r /opt/models/deepsomatic/ffpe_wgs_tumor_only/*
+
+# FFPE WES Tumor-only
+# TODO: This is from internal#comment26. Please move to the official location later.
+RUN mkdir -p /opt/models/deepsomatic/ffpe_wes_tumor_only/variables && \
+    wget -qO /opt/models/deepsomatic/ffpe_wes_tumor_only/fingerprint.pb https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wes_tumor_only.savedmodel/fingerprint.pb && \
+    wget -qO /opt/models/deepsomatic/ffpe_wes_tumor_only/saved_model.pb https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wes_tumor_only.savedmodel/saved_model.pb && \
+    wget -qO /opt/models/deepsomatic/ffpe_wes_tumor_only/example_info.json https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wes_tumor_only.savedmodel/example_info.json && \
+    wget -qO /opt/models/deepsomatic/ffpe_wes_tumor_only/variables/variables.data-00000-of-00001 https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wes_tumor_only.savedmodel/variables/variables.data-00000-of-00001 && \
+    wget -qO /opt/models/deepsomatic/ffpe_wes_tumor_only/variables/variables.index https://storage.googleapis.com/brain-genomics/pichuan/share/b400512689.deepsomatic.ffpe_wes_tumor_only.savedmodel/variables/variables.index && \
+    chmod -R +r /opt/models/deepsomatic/ffpe_wes_tumor_only/*
+
 # Tumor-only models
 WORKDIR /opt/models/deepsomatic/wgs_tumor_only
 ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.wgs_tumor_only.savedmodel/fingerprint.pb .
