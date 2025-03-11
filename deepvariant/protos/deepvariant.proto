@@ -686,7 +686,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 90.
+// Next ID: 91.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -986,6 +986,8 @@ message MakeExamplesOptions {
   // representing an allele is less than this threshold, the reads are not
   // downsampled.
   int32 non_uniform_downsampling_threshold = 89;
+
+  bool output_debug_info = 90;
 
   reserved 66;
 }

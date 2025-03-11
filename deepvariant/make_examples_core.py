@@ -3091,6 +3091,12 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   denovo_regions = read_denovo_regions(options.denovo_regions_filename)
   for region in regions:
     region_n += 1
+    if options.output_debug_info:
+      logging_with_options(
+          options,
+          'Processing %s:%d-%d'
+          % (region.reference_name, region.start, region.end),
+      )
 
     if options.mode == mode_candidate_sweep and candidates_writer:
       candidates_in_region = list(

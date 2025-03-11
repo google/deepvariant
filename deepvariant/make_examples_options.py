@@ -793,6 +793,13 @@ _NON_UNIFORM_DOWNSAMPLING_THRESHOLD = flags.DEFINE_integer(
     'downsampled.',
 )
 
+# This flag should be default to true for internal use.
+_OUTPUT_DEBUG_INFO = flags.DEFINE_bool(
+    'output_debug_info',
+    False,
+    'If True, output debug info to the log.',
+)
+
 
 def shared_flags_to_options(
     add_flags: bool,
@@ -1214,6 +1221,8 @@ def shared_flags_to_options(
         '--small_model_vaf_context_window_size must be an odd number.',
         errors.CommandLineError,
     )
+  if _OUTPUT_DEBUG_INFO.value:
+    options.output_debug_info = _OUTPUT_DEBUG_INFO.value
 
   return options
 
