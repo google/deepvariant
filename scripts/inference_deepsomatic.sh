@@ -48,7 +48,7 @@ Flags:
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
---model_preset Preset case study to run: WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES.
+--model_preset Preset case study to run: WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES, FFPE_WGS_TUMOR_ONLY, FFPE_WES_TUMOR_ONLY, WGS_TUMOR_ONLY, PACBIO_TUMOR_ONLY, ONT_TUMOR_ONLY.
 --pon_filtering Path to PON (panel of normal) VCF. If set, pass --pon_filtering to postprocess_variants.
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
@@ -58,7 +58,7 @@ Flags:
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
 
 If model_preset is not specified, the below flags are required:
---model_type Type of DeepSomatic model to run (WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES)
+--model_type Type of DeepSomatic model to run (WGS,WES,PACBIO,ONT,FFPE_WGS,FFPE_WES,FFPE_WGS_TUMOR_ONLY,FFPE_WES_TUMOR_ONLY,WGS_TUMOR_ONLY,PACBIO_TUMOR_ONLY,ONT_TUMOR_ONLY)
 --ref Path to GCP bucket containing ref file (.fa)
 --bam_normal Path to GCP bucket containing BAM_NORMAL
 --bam_tumor Path to GCP bucket containing BAM_TUMOR
@@ -492,7 +492,7 @@ elif [[ "${MODEL_PRESET}" = "FFPE_WES_TUMOR_ONLY" ]]; then
 
 else
   if [[ -n "${MODEL_PRESET}" ]]; then
-    echo "Error: --model_preset must be one of WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES." >&2
+    echo "Error: --model_preset must be one of WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES, FFPE_WGS_TUMOR_ONLY, FFPE_WES_TUMOR_ONLY, WGS_TUMOR_ONLY, PACBIO_TUMOR_ONLY, ONT_TUMOR_ONLY." >&2
     exit 1
   fi
 fi
