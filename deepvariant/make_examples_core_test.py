@@ -1192,7 +1192,7 @@ class RegionProcessorTest(parameterized.TestCase):
     )
 
     self.processor.small_model_example_factory.encode_inference_examples.assert_called_once_with(
-        candidates, {}
+        candidates, {}, [0]
     )
     main_sample.small_model_variant_caller.call_variants.assert_called_once_with(
         fake_inference_example_set.candidates_with_alt_allele_indices,

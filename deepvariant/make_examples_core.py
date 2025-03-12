@@ -1356,6 +1356,7 @@ class RegionProcessor:
     self.small_model_example_factory = (
         make_small_model_examples.SmallModelExampleFactory(
             self.options.small_model_vaf_context_window_size,
+            sample_names=[sample.options.name for sample in self.samples],
             accept_snps=self.options.small_model_snp_gq_threshold > -1,
             accept_indels=self.options.small_model_indel_gq_threshold > -1,
             accept_multiallelics=self.options.small_model_call_multiallelics,
@@ -1806,6 +1807,7 @@ class RegionProcessor:
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
       read_phases: Dict[str, int],
+      sample: sample_lib.Sample,
       region: range_pb2.Range,
       writer: OutputsWriter,
       n_stats: Dict[str, int],
@@ -1816,6 +1818,7 @@ class RegionProcessor:
     Args:
       candidates: List of candidates to be processed into examples.
       read_phases: A dictionary of read names to haplotype phases.
+      sample: The sample for which to generate small model examples.
       region: The region to generate examples.
       writer: A OutputsWriter used to write out examples.
       n_stats: A dictionary that is used to accumulate counts for reporting.
@@ -1826,11 +1829,11 @@ class RegionProcessor:
       raise ValueError(
           'Writing small model examples is only supported in training mode.'
       )
-
     training_examples = (
         self.small_model_example_factory.encode_training_examples(
             list(self.label_candidates(candidates, region)),
             read_phases,
+            sample.options.order,
         )
     )
     writer.write_small_model_examples(*training_examples)
@@ -1854,7 +1857,7 @@ class RegionProcessor:
     Args:
       candidates: List of candidates to be processed into examples.
       read_phases: A dictionary of read names to haplotype phases.
-      sample: The sample to call small model examples for.
+      sample: The sample for which to call small model examples.
       writer: A OutputsWriter used to write out examples.
       n_stats: A dictionary that is used to accumulate counts for reporting.
       runtimes: A dictionary that recorded runtime information for reporting.
@@ -1867,7 +1870,7 @@ class RegionProcessor:
 
     inference_example_set = (
         self.small_model_example_factory.encode_inference_examples(
-            candidates, read_phases
+            candidates, read_phases, sample.options.order
         )
     )
     runtimes['small model generate examples'] = trim_runtime(
@@ -3134,6 +3137,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
         region_processor.write_small_model_examples_in_region(
             candidates_by_sample[role],
             read_phases_by_sample[role],
+            sample,
             region,
             writer,
             n_stats,

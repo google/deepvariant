@@ -996,6 +996,7 @@ void VariantCaller::AddSupportingReads(
       alt_allele_support;
   absl::flat_hash_set<std::string> ref_support;
   for (const auto& allele_counts_entry : allele_counts) {
+    const std::string& sample_name = allele_counts_entry.first;
     const AlleleCount& allele_count = allele_counts_entry.second;
     for (const auto& read_name_allele : allele_count.read_alleles()) {
       const std::string& read_name = read_name_allele.first;
@@ -1028,6 +1029,7 @@ void VariantCaller::AddSupportingReads(
         read_info->set_mapping_quality(allele.mapping_quality());
         read_info->set_average_base_quality(allele.avg_base_quality());
         read_info->set_is_reverse_strand(allele.is_reverse_strand());
+        read_info->set_sample_name(sample_name);
       } else {
         call->add_ref_support(read_name);
         DeepVariantCall_SupportingReadsExt& support_infos =
@@ -1041,6 +1043,7 @@ void VariantCaller::AddSupportingReads(
         read_info->set_mapping_quality(allele.mapping_quality());
         read_info->set_average_base_quality(allele.avg_base_quality());
         read_info->set_is_reverse_strand(allele.is_reverse_strand());
+        read_info->set_sample_name(sample_name);
       }
     }
   }

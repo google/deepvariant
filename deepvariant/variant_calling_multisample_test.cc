@@ -241,7 +241,6 @@ TEST(VariantCallingTest,
   VariantCallerOptions options = BasicOptions();
   options.set_small_model_vaf_context_window_size(window_size);
 
-  // const VariantCaller caller(options);
   std::unique_ptr<VariantCaller> caller =
       VariantCaller::MakeTestVariantCallerFromAlleleCounts(
           options,
@@ -291,7 +290,6 @@ TEST(VariantCallingTest,
   VariantCallerOptions options = BasicOptions();
   options.set_small_model_vaf_context_window_size(window_size);
 
-  // const VariantCaller caller(options);
   std::unique_ptr<VariantCaller> caller =
       VariantCaller::MakeTestVariantCallerFromAlleleCounts(
           options,
@@ -310,6 +308,49 @@ TEST(VariantCallingTest,
 
   DeepVariantCall call = optional_variant.value();
   EXPECT_THAT(call.allele_frequency_at_position().size(), window_size);
+  caller->Clear();
+}
+
+// Test AddSupportingReads with multiple samples.
+TEST(VariantCallingTest,
+     TestAddSupportingReadsWithMultipleSamples) {
+  AlleleCount allele_count_1 =
+      MakeTestAlleleCount(20, 19, "sample_1", "A", "T", 0);
+  AlleleCount allele_count_2 =
+      MakeTestAlleleCount(20, 5, "sample_2", "A", "C", 0);
+  const std::vector<AlleleCount>& target_sample_allele_counts = {
+      allele_count_1,
+      allele_count_2,
+  };
+  absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+      allele_counter_iterators;
+
+  absl::node_hash_map<std::string, AlleleCount> allele_counts = {
+    {"sample_1", allele_count_1},
+    {"sample_2", allele_count_2},
+  };
+
+  std::unique_ptr<VariantCaller> caller =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          BasicOptions(),
+          target_sample_allele_counts,
+          "sample_1");
+  int skip_next_count = 0;
+  int prev_deletion_end = 0;
+  const std::optional<DeepVariantCall> optional_variant_1 =
+      caller->CallVariant(allele_counts,
+                         &allele_counter_iterators["sample_1"],
+                         skip_next_count, prev_deletion_end);
+  EXPECT_TRUE(static_cast<bool>(optional_variant_1));
+
+  DeepVariantCall call = optional_variant_1.value();
+  DeepVariantCall::SupportingReadsExt support_ext_1 =
+      call.allele_support_ext().at("T");
+  EXPECT_THAT(call.allele_support_ext().contains("C"), false);
+  EXPECT_THAT(support_ext_1.read_infos().size(), 19);
+  EXPECT_THAT(support_ext_1.read_infos().at(0).sample_name(), "sample_1");
+  EXPECT_THAT(support_ext_1.read_infos().at(0).mapping_quality(), 30);
+  EXPECT_THAT(support_ext_1.read_infos().at(0).average_base_quality(), 30);
   caller->Clear();
 }
 

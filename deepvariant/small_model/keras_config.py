@@ -110,6 +110,7 @@ def keras_mlp_model(config: ml_collections.ConfigDict) -> tf.keras.Model:
   input_shape = len(
       make_small_model_examples.SmallModelExampleFactory(
           vaf_context_window_size=model_params.vaf_context_window_size,
+          sample_names=[str(i) for i in range(model_params.num_samples)],
           expand_by_haplotype=model_params.expand_by_haplotype,
       ).model_features
   )

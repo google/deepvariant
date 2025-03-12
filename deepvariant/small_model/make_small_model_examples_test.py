@@ -35,7 +35,7 @@ from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.protos import variants_pb2
 
-
+MAIN_SAMPLE = "main_sample"
 FAKE_VARIANT_HET = variants_pb2.Variant(
     reference_name="chr9",
     start=5000,
@@ -53,18 +53,21 @@ FAKE_VARIANT_CALL_HET = deepvariant_pb2.DeepVariantCall(
                 mapping_quality=60,
                 average_base_quality=30,
                 is_reverse_strand=False,
+                sample_name=MAIN_SAMPLE,
             ),
             deepvariant_pb2.DeepVariantCall.ReadSupport(
                 read_name="read_2",
                 mapping_quality=20,
                 average_base_quality=35,
                 is_reverse_strand=True,
+                sample_name=MAIN_SAMPLE,
             ),
             deepvariant_pb2.DeepVariantCall.ReadSupport(
                 read_name="read_3",
                 mapping_quality=40,
                 average_base_quality=25,
                 is_reverse_strand=True,
+                sample_name=MAIN_SAMPLE,
             ),
         ]
     ),
@@ -76,18 +79,21 @@ FAKE_VARIANT_CALL_HET = deepvariant_pb2.DeepVariantCall(
                     mapping_quality=60,
                     average_base_quality=50,
                     is_reverse_strand=False,
+                    sample_name=MAIN_SAMPLE,
                 ),
                 deepvariant_pb2.DeepVariantCall.ReadSupport(
                     read_name="read_5",
                     mapping_quality=30,
                     average_base_quality=60,
                     is_reverse_strand=False,
+                    sample_name=MAIN_SAMPLE,
                 ),
                 deepvariant_pb2.DeepVariantCall.ReadSupport(
                     read_name="read_6",
                     mapping_quality=60,
                     average_base_quality=40,
                     is_reverse_strand=False,
+                    sample_name=MAIN_SAMPLE,
                 ),
             ]
         )
@@ -135,12 +141,15 @@ FAKE_VARIANT_MULTIALLELIC_INSERTION = deepvariant_pb2.DeepVariantCall(
         read_infos=[
             deepvariant_pb2.DeepVariantCall.ReadSupport(
                 read_name="read_1",
+                sample_name=MAIN_SAMPLE,
             ),
             deepvariant_pb2.DeepVariantCall.ReadSupport(
                 read_name="read_2",
+                sample_name=MAIN_SAMPLE,
             ),
             deepvariant_pb2.DeepVariantCall.ReadSupport(
                 read_name="read_3",
+                sample_name=MAIN_SAMPLE,
             ),
         ]
     ),
@@ -149,12 +158,15 @@ FAKE_VARIANT_MULTIALLELIC_INSERTION = deepvariant_pb2.DeepVariantCall(
             read_infos=[
                 deepvariant_pb2.DeepVariantCall.ReadSupport(
                     read_name="read_4",
+                    sample_name=MAIN_SAMPLE,
                 ),
                 deepvariant_pb2.DeepVariantCall.ReadSupport(
                     read_name="read_5",
+                    sample_name=MAIN_SAMPLE,
                 ),
                 deepvariant_pb2.DeepVariantCall.ReadSupport(
                     read_name="read_6",
+                    sample_name=MAIN_SAMPLE,
                 ),
             ]
         ),
@@ -162,6 +174,7 @@ FAKE_VARIANT_MULTIALLELIC_INSERTION = deepvariant_pb2.DeepVariantCall(
             read_infos=[
                 deepvariant_pb2.DeepVariantCall.ReadSupport(
                     read_name="read_7",
+                    sample_name=MAIN_SAMPLE,
                 ),
             ]
         ),
@@ -169,9 +182,11 @@ FAKE_VARIANT_MULTIALLELIC_INSERTION = deepvariant_pb2.DeepVariantCall(
             read_infos=[
                 deepvariant_pb2.DeepVariantCall.ReadSupport(
                     read_name="read_8",
+                    sample_name=MAIN_SAMPLE,
                 ),
                 deepvariant_pb2.DeepVariantCall.ReadSupport(
                     read_name="read_9",
+                    sample_name=MAIN_SAMPLE,
                 ),
             ]
         ),
@@ -190,6 +205,54 @@ READ_PHASES = {
     "read_5": 1,
     "read_6": 2,
 }
+FAKE_VARIANT_MULTI_SAMPLE_SNP = deepvariant_pb2.DeepVariantCall(
+    variant=variants_pb2.Variant(
+        reference_bases="A",
+        alternate_bases=["T"],
+    ),
+    ref_support_ext=deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+        read_infos=[
+            deepvariant_pb2.DeepVariantCall.ReadSupport(
+                read_name="read_1",
+                sample_name="sample_1",
+            ),
+            deepvariant_pb2.DeepVariantCall.ReadSupport(
+                read_name="read_2",
+                sample_name="sample_1",
+            ),
+            deepvariant_pb2.DeepVariantCall.ReadSupport(
+                read_name="read_3",
+                sample_name="sample_2",
+            ),
+        ]
+    ),
+    allele_support_ext={
+        "T": deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+            read_infos=[
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_4",
+                    sample_name="sample_1",
+                ),
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_5",
+                    sample_name="sample_2",
+                ),
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_6",
+                    sample_name="sample_3",
+                ),
+            ]
+        ),
+    },
+)
+FAKE_VARIANT_MULTI_SAMPLE_SNP_LABEL_HET = variant_labeler.VariantLabel(
+    is_confident=True,
+    variant=FAKE_VARIANT_MULTI_SAMPLE_SNP.variant,
+    genotype=(0, 1),
+)
+BASE_FEATURE_VALUES_TOGETHER = [3, 3, 6, 6, 50, 50, 0, 0, 0, 0, 0, 0]
+BASE_FEATURE_VALUES_SAMPLE_1 = [2, 1, 3, 6, 16, 33, 0, 0, 0, 0, 0, 0]
+BASE_FEATURE_VALUES_SAMPLE_2 = [1, 1, 2, 6, 16, 50, 0, 0, 0, 0, 0, 0]
 
 
 class SmallModelMakeExamplesTest(parameterized.TestCase):
@@ -590,6 +653,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
       dict(
           window_size=0,
           expand_by_haplotype=False,
+          sample_names=[MAIN_SAMPLE],
           expected_columns=[
               "num_reads_supports_ref",
               "num_reads_supports_alt",
@@ -615,6 +679,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
       dict(
           window_size=3,
           expand_by_haplotype=False,
+          sample_names=[MAIN_SAMPLE],
           expected_columns=[
               "num_reads_supports_ref",
               "num_reads_supports_alt",
@@ -643,6 +708,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
       dict(
           window_size=11,
           expand_by_haplotype=False,
+          sample_names=[MAIN_SAMPLE],
           expected_columns=[
               "num_reads_supports_ref",
               "num_reads_supports_alt",
@@ -679,6 +745,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
       dict(
           window_size=3,
           expand_by_haplotype=True,
+          sample_names=[MAIN_SAMPLE],
           expected_columns=[
               "num_reads_supports_ref",
               "num_reads_supports_alt",
@@ -702,52 +769,275 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
               "variant_allele_frequency_at_minus_1",
               "variant_allele_frequency_at_plus_0",
               "variant_allele_frequency_at_plus_1",
-              "num_reads_supports_ref_hp_0",
-              "num_reads_supports_alt_hp_0",
-              "alt_indices_depth_hp_0",
-              "total_depth_hp_0",
-              "variant_allele_frequency_hp_0",
-              "alt_indices_variant_allele_frequency_hp_0",
-              "ref_mapping_quality_hp_0",
-              "alt_mapping_quality_hp_0",
-              "ref_base_quality_hp_0",
-              "alt_base_quality_hp_0",
-              "ref_reverse_strand_ratio_hp_0",
-              "alt_reverse_strand_ratio_hp_0",
-              "num_reads_supports_ref_hp_1",
-              "num_reads_supports_alt_hp_1",
-              "alt_indices_depth_hp_1",
-              "total_depth_hp_1",
-              "variant_allele_frequency_hp_1",
-              "alt_indices_variant_allele_frequency_hp_1",
-              "ref_mapping_quality_hp_1",
-              "alt_mapping_quality_hp_1",
-              "ref_base_quality_hp_1",
-              "alt_base_quality_hp_1",
-              "ref_reverse_strand_ratio_hp_1",
-              "alt_reverse_strand_ratio_hp_1",
-              "num_reads_supports_ref_hp_2",
-              "num_reads_supports_alt_hp_2",
-              "alt_indices_depth_hp_2",
-              "total_depth_hp_2",
-              "variant_allele_frequency_hp_2",
-              "alt_indices_variant_allele_frequency_hp_2",
-              "ref_mapping_quality_hp_2",
-              "alt_mapping_quality_hp_2",
-              "ref_base_quality_hp_2",
-              "alt_base_quality_hp_2",
-              "ref_reverse_strand_ratio_hp_2",
-              "alt_reverse_strand_ratio_hp_2",
+              "main_sample_num_reads_supports_ref_hp_0",
+              "main_sample_num_reads_supports_alt_hp_0",
+              "main_sample_alt_indices_depth_hp_0",
+              "main_sample_total_depth_hp_0",
+              "main_sample_variant_allele_frequency_hp_0",
+              "main_sample_alt_indices_variant_allele_frequency_hp_0",
+              "main_sample_ref_mapping_quality_hp_0",
+              "main_sample_alt_mapping_quality_hp_0",
+              "main_sample_ref_base_quality_hp_0",
+              "main_sample_alt_base_quality_hp_0",
+              "main_sample_ref_reverse_strand_ratio_hp_0",
+              "main_sample_alt_reverse_strand_ratio_hp_0",
+              "main_sample_num_reads_supports_ref_hp_1",
+              "main_sample_num_reads_supports_alt_hp_1",
+              "main_sample_alt_indices_depth_hp_1",
+              "main_sample_total_depth_hp_1",
+              "main_sample_variant_allele_frequency_hp_1",
+              "main_sample_alt_indices_variant_allele_frequency_hp_1",
+              "main_sample_ref_mapping_quality_hp_1",
+              "main_sample_alt_mapping_quality_hp_1",
+              "main_sample_ref_base_quality_hp_1",
+              "main_sample_alt_base_quality_hp_1",
+              "main_sample_ref_reverse_strand_ratio_hp_1",
+              "main_sample_alt_reverse_strand_ratio_hp_1",
+              "main_sample_num_reads_supports_ref_hp_2",
+              "main_sample_num_reads_supports_alt_hp_2",
+              "main_sample_alt_indices_depth_hp_2",
+              "main_sample_total_depth_hp_2",
+              "main_sample_variant_allele_frequency_hp_2",
+              "main_sample_alt_indices_variant_allele_frequency_hp_2",
+              "main_sample_ref_mapping_quality_hp_2",
+              "main_sample_alt_mapping_quality_hp_2",
+              "main_sample_ref_base_quality_hp_2",
+              "main_sample_alt_base_quality_hp_2",
+              "main_sample_ref_reverse_strand_ratio_hp_2",
+              "main_sample_alt_reverse_strand_ratio_hp_2",
+          ],
+      ),
+      dict(
+          window_size=0,
+          expand_by_haplotype=False,
+          sample_names=["sample_1", "sample_2"],
+          expected_columns=[
+              "num_reads_supports_ref",
+              "num_reads_supports_alt",
+              "alt_indices_depth",
+              "total_depth",
+              "variant_allele_frequency",
+              "alt_indices_variant_allele_frequency",
+              "ref_mapping_quality",
+              "alt_mapping_quality",
+              "ref_base_quality",
+              "alt_base_quality",
+              "ref_reverse_strand_ratio",
+              "alt_reverse_strand_ratio",
+              "sample_1_num_reads_supports_ref",
+              "sample_1_num_reads_supports_alt",
+              "sample_1_alt_indices_depth",
+              "sample_1_total_depth",
+              "sample_1_variant_allele_frequency",
+              "sample_1_alt_indices_variant_allele_frequency",
+              "sample_1_ref_mapping_quality",
+              "sample_1_alt_mapping_quality",
+              "sample_1_ref_base_quality",
+              "sample_1_alt_base_quality",
+              "sample_1_ref_reverse_strand_ratio",
+              "sample_1_alt_reverse_strand_ratio",
+              "sample_2_num_reads_supports_ref",
+              "sample_2_num_reads_supports_alt",
+              "sample_2_alt_indices_depth",
+              "sample_2_total_depth",
+              "sample_2_variant_allele_frequency",
+              "sample_2_alt_indices_variant_allele_frequency",
+              "sample_2_ref_mapping_quality",
+              "sample_2_alt_mapping_quality",
+              "sample_2_ref_base_quality",
+              "sample_2_alt_base_quality",
+              "sample_2_ref_reverse_strand_ratio",
+              "sample_2_alt_reverse_strand_ratio",
+              "is_snp",
+              "is_insertion",
+              "is_deletion",
+              "insertion_length",
+              "deletion_length",
+              "is_multiallelic",
+              "is_multiple_alt_alleles",
+          ],
+      ),
+      dict(
+          window_size=0,
+          expand_by_haplotype=False,
+          sample_names=["sample_2", "sample_1"],
+          expected_columns=[
+              "num_reads_supports_ref",
+              "num_reads_supports_alt",
+              "alt_indices_depth",
+              "total_depth",
+              "variant_allele_frequency",
+              "alt_indices_variant_allele_frequency",
+              "ref_mapping_quality",
+              "alt_mapping_quality",
+              "ref_base_quality",
+              "alt_base_quality",
+              "ref_reverse_strand_ratio",
+              "alt_reverse_strand_ratio",
+              "sample_2_num_reads_supports_ref",
+              "sample_2_num_reads_supports_alt",
+              "sample_2_alt_indices_depth",
+              "sample_2_total_depth",
+              "sample_2_variant_allele_frequency",
+              "sample_2_alt_indices_variant_allele_frequency",
+              "sample_2_ref_mapping_quality",
+              "sample_2_alt_mapping_quality",
+              "sample_2_ref_base_quality",
+              "sample_2_alt_base_quality",
+              "sample_2_ref_reverse_strand_ratio",
+              "sample_2_alt_reverse_strand_ratio",
+              "sample_1_num_reads_supports_ref",
+              "sample_1_num_reads_supports_alt",
+              "sample_1_alt_indices_depth",
+              "sample_1_total_depth",
+              "sample_1_variant_allele_frequency",
+              "sample_1_alt_indices_variant_allele_frequency",
+              "sample_1_ref_mapping_quality",
+              "sample_1_alt_mapping_quality",
+              "sample_1_ref_base_quality",
+              "sample_1_alt_base_quality",
+              "sample_1_ref_reverse_strand_ratio",
+              "sample_1_alt_reverse_strand_ratio",
+              "is_snp",
+              "is_insertion",
+              "is_deletion",
+              "insertion_length",
+              "deletion_length",
+              "is_multiallelic",
+              "is_multiple_alt_alleles",
+          ],
+      ),
+      dict(
+          window_size=0,
+          expand_by_haplotype=True,
+          sample_names=["sample_1", "sample_2"],
+          expected_columns=[
+              "num_reads_supports_ref",
+              "num_reads_supports_alt",
+              "alt_indices_depth",
+              "total_depth",
+              "variant_allele_frequency",
+              "alt_indices_variant_allele_frequency",
+              "ref_mapping_quality",
+              "alt_mapping_quality",
+              "ref_base_quality",
+              "alt_base_quality",
+              "ref_reverse_strand_ratio",
+              "alt_reverse_strand_ratio",
+              "sample_1_num_reads_supports_ref",
+              "sample_1_num_reads_supports_alt",
+              "sample_1_alt_indices_depth",
+              "sample_1_total_depth",
+              "sample_1_variant_allele_frequency",
+              "sample_1_alt_indices_variant_allele_frequency",
+              "sample_1_ref_mapping_quality",
+              "sample_1_alt_mapping_quality",
+              "sample_1_ref_base_quality",
+              "sample_1_alt_base_quality",
+              "sample_1_ref_reverse_strand_ratio",
+              "sample_1_alt_reverse_strand_ratio",
+              "sample_2_num_reads_supports_ref",
+              "sample_2_num_reads_supports_alt",
+              "sample_2_alt_indices_depth",
+              "sample_2_total_depth",
+              "sample_2_variant_allele_frequency",
+              "sample_2_alt_indices_variant_allele_frequency",
+              "sample_2_ref_mapping_quality",
+              "sample_2_alt_mapping_quality",
+              "sample_2_ref_base_quality",
+              "sample_2_alt_base_quality",
+              "sample_2_ref_reverse_strand_ratio",
+              "sample_2_alt_reverse_strand_ratio",
+              "is_snp",
+              "is_insertion",
+              "is_deletion",
+              "insertion_length",
+              "deletion_length",
+              "is_multiallelic",
+              "is_multiple_alt_alleles",
+              "sample_1_num_reads_supports_ref_hp_0",
+              "sample_1_num_reads_supports_alt_hp_0",
+              "sample_1_alt_indices_depth_hp_0",
+              "sample_1_total_depth_hp_0",
+              "sample_1_variant_allele_frequency_hp_0",
+              "sample_1_alt_indices_variant_allele_frequency_hp_0",
+              "sample_1_ref_mapping_quality_hp_0",
+              "sample_1_alt_mapping_quality_hp_0",
+              "sample_1_ref_base_quality_hp_0",
+              "sample_1_alt_base_quality_hp_0",
+              "sample_1_ref_reverse_strand_ratio_hp_0",
+              "sample_1_alt_reverse_strand_ratio_hp_0",
+              "sample_1_num_reads_supports_ref_hp_1",
+              "sample_1_num_reads_supports_alt_hp_1",
+              "sample_1_alt_indices_depth_hp_1",
+              "sample_1_total_depth_hp_1",
+              "sample_1_variant_allele_frequency_hp_1",
+              "sample_1_alt_indices_variant_allele_frequency_hp_1",
+              "sample_1_ref_mapping_quality_hp_1",
+              "sample_1_alt_mapping_quality_hp_1",
+              "sample_1_ref_base_quality_hp_1",
+              "sample_1_alt_base_quality_hp_1",
+              "sample_1_ref_reverse_strand_ratio_hp_1",
+              "sample_1_alt_reverse_strand_ratio_hp_1",
+              "sample_1_num_reads_supports_ref_hp_2",
+              "sample_1_num_reads_supports_alt_hp_2",
+              "sample_1_alt_indices_depth_hp_2",
+              "sample_1_total_depth_hp_2",
+              "sample_1_variant_allele_frequency_hp_2",
+              "sample_1_alt_indices_variant_allele_frequency_hp_2",
+              "sample_1_ref_mapping_quality_hp_2",
+              "sample_1_alt_mapping_quality_hp_2",
+              "sample_1_ref_base_quality_hp_2",
+              "sample_1_alt_base_quality_hp_2",
+              "sample_1_ref_reverse_strand_ratio_hp_2",
+              "sample_1_alt_reverse_strand_ratio_hp_2",
+              "sample_2_num_reads_supports_ref_hp_0",
+              "sample_2_num_reads_supports_alt_hp_0",
+              "sample_2_alt_indices_depth_hp_0",
+              "sample_2_total_depth_hp_0",
+              "sample_2_variant_allele_frequency_hp_0",
+              "sample_2_alt_indices_variant_allele_frequency_hp_0",
+              "sample_2_ref_mapping_quality_hp_0",
+              "sample_2_alt_mapping_quality_hp_0",
+              "sample_2_ref_base_quality_hp_0",
+              "sample_2_alt_base_quality_hp_0",
+              "sample_2_ref_reverse_strand_ratio_hp_0",
+              "sample_2_alt_reverse_strand_ratio_hp_0",
+              "sample_2_num_reads_supports_ref_hp_1",
+              "sample_2_num_reads_supports_alt_hp_1",
+              "sample_2_alt_indices_depth_hp_1",
+              "sample_2_total_depth_hp_1",
+              "sample_2_variant_allele_frequency_hp_1",
+              "sample_2_alt_indices_variant_allele_frequency_hp_1",
+              "sample_2_ref_mapping_quality_hp_1",
+              "sample_2_alt_mapping_quality_hp_1",
+              "sample_2_ref_base_quality_hp_1",
+              "sample_2_alt_base_quality_hp_1",
+              "sample_2_ref_reverse_strand_ratio_hp_1",
+              "sample_2_alt_reverse_strand_ratio_hp_1",
+              "sample_2_num_reads_supports_ref_hp_2",
+              "sample_2_num_reads_supports_alt_hp_2",
+              "sample_2_alt_indices_depth_hp_2",
+              "sample_2_total_depth_hp_2",
+              "sample_2_variant_allele_frequency_hp_2",
+              "sample_2_alt_indices_variant_allele_frequency_hp_2",
+              "sample_2_ref_mapping_quality_hp_2",
+              "sample_2_alt_mapping_quality_hp_2",
+              "sample_2_ref_base_quality_hp_2",
+              "sample_2_alt_base_quality_hp_2",
+              "sample_2_ref_reverse_strand_ratio_hp_2",
+              "sample_2_alt_reverse_strand_ratio_hp_2",
           ],
       ),
   )
   def test_small_model_example_factory_model_features(
-      self, window_size, expand_by_haplotype, expected_columns
+      self, window_size, expand_by_haplotype, sample_names, expected_columns
   ):
     small_model_example_factory = (
         make_small_model_examples.SmallModelExampleFactory(
             vaf_context_window_size=window_size,
             expand_by_haplotype=expand_by_haplotype,
+            sample_names=sample_names,
         )
     )
     self.assertEqual(
@@ -758,7 +1048,8 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
   def test_encode_training_examples(self):
     small_model_example_factory = (
         make_small_model_examples.SmallModelExampleFactory(
-            vaf_context_window_size=3
+            vaf_context_window_size=3,
+            sample_names=[MAIN_SAMPLE],
         )
     )
     training_examples = small_model_example_factory.encode_training_examples(
@@ -766,6 +1057,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             (FAKE_VARIANT_CALL_HET, FAKE_VARIANT_CALL_HET_LABEL),
         ],
         {},
+        sample_order=[0],
     )
     self.assertEqual(
         training_examples[0],
@@ -829,11 +1121,12 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
   def test_encode_inference_examples(self):
     small_model_example_factory = (
         make_small_model_examples.SmallModelExampleFactory(
-            vaf_context_window_size=5
+            vaf_context_window_size=5,
+            sample_names=[MAIN_SAMPLE],
         )
     )
     example_set = small_model_example_factory.encode_inference_examples(
-        [FAKE_VARIANT_CALL_HET, FAKE_VARIANT_MULTIALLELIC_INSERTION], {}
+        [FAKE_VARIANT_CALL_HET, FAKE_VARIANT_MULTIALLELIC_INSERTION], {}, [0]
     )
     self.assertEqual(example_set.skipped_candidates, [])
     self.assertEqual(
@@ -882,12 +1175,12 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
     small_model_example_factory = (
         make_small_model_examples.SmallModelExampleFactory(
             vaf_context_window_size=5,
+            sample_names=[MAIN_SAMPLE],
             expand_by_haplotype=True,
         )
     )
     example_set = small_model_example_factory.encode_inference_examples(
-        [FAKE_VARIANT_CALL_HET],
-        READ_PHASES,
+        [FAKE_VARIANT_CALL_HET], READ_PHASES, [0]
     )
     self.assertEqual(example_set.skipped_candidates, [])
     self.assertEqual(
@@ -961,6 +1254,46 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             0,
         ],
     )
+
+  @parameterized.parameters(
+      dict(
+          sample_order=[0, 1],
+          expected_values=[
+              BASE_FEATURE_VALUES_TOGETHER,
+              BASE_FEATURE_VALUES_SAMPLE_1,
+              BASE_FEATURE_VALUES_SAMPLE_2,
+          ],
+      ),
+      dict(
+          sample_order=[1, 0],
+          expected_values=[
+              BASE_FEATURE_VALUES_TOGETHER,
+              BASE_FEATURE_VALUES_SAMPLE_2,
+              BASE_FEATURE_VALUES_SAMPLE_1,
+          ],
+      ),
+  )
+  def test_encode_inference_examples_multi_sample(
+      self, sample_order, expected_values
+  ):
+    small_model_example_factory = (
+        make_small_model_examples.SmallModelExampleFactory(
+            vaf_context_window_size=0,
+            sample_names=["sample_1", "sample_2"],
+        )
+    )
+    example_set = small_model_example_factory.encode_inference_examples(
+        [FAKE_VARIANT_MULTI_SAMPLE_SNP], {}, sample_order
+    )
+    self.assertEqual(example_set.skipped_candidates, [])
+    self.assertEqual(
+        example_set.inference_examples[0],
+        expected_values[0]
+        + expected_values[1]
+        + expected_values[2]
+        + [1, 0, 0, 0, 0, 0, 0],
+    )
+
 
 if __name__ == "__main__":
   absltest.main()

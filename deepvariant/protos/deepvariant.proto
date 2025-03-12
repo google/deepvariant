@@ -285,6 +285,7 @@ message DeepVariantCall {
     int32 average_base_quality = 4;
     bool is_reverse_strand = 5;
     bool is_methylated = 6;
+    string sample_name = 7;
   }
   // A map from alt allele in Variant to ReadSupport structure. This structrue
   // is to replace SupportingReads but for back a backward compatibility old

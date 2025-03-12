@@ -147,6 +147,14 @@ def _filter_by_haplotype(
   return [r for r in read_infos if read_phases.get(r.read_name, 0) == haplotype]
 
 
+def _filter_by_sample(
+    read_infos: Sequence[deepvariant_pb2.DeepVariantCall.ReadSupport],
+    sample_name: str,
+) -> Sequence[deepvariant_pb2.DeepVariantCall.ReadSupport]:
+  """Filters the reads by sample."""
+  return [r for r in read_infos if r.sample_name == sample_name]
+
+
 def _get_context_allele_frequency_offsets(
     vaf_context_window_size: int,
 ) -> Sequence[int]:
@@ -200,6 +208,7 @@ class FeatureEncoder:
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
       alt_allele_indices: tuple[int, ...],
+      sample: str | None = None,
       haplotype: int | None = None,
       read_phases: dict[str, int] | None = None,
   ):
@@ -209,6 +218,7 @@ class FeatureEncoder:
       candidate: the candidate proto from which to extract the feature.
       alt_allele_indices: the indices of the alt alleles to consider when
         computing the feature values.
+      sample: (optional) the sample name to use for filtering reads.
       haplotype: (optional) the haplotype tag to use for filtering reads.
       read_phases: (optional)a dictionary of read names to haplotype phases.
     """
@@ -222,6 +232,12 @@ class FeatureEncoder:
     self.all_alt_read_infos = _get_alt_read_infos(
         candidate, tuple(range(len(candidate.variant.alternate_bases)))
     )
+    if sample:
+      self.ref_read_infos = _filter_by_sample(self.ref_read_infos, sample)
+      self.alt_read_infos = _filter_by_sample(self.alt_read_infos, sample)
+      self.all_alt_read_infos = _filter_by_sample(
+          self.all_alt_read_infos, sample
+      )
     if haplotype is not None and read_phases is not None:
       self.ref_read_infos = _filter_by_haplotype(
           self.ref_read_infos, read_phases, haplotype
@@ -533,12 +549,14 @@ class SmallModelExampleFactory:
   def __init__(
       self,
       vaf_context_window_size: int,
+      sample_names: Sequence[str],
       accept_snps: bool = True,
       accept_indels: bool = True,
       accept_multiallelics: bool = True,
       expand_by_haplotype: bool = False,
       model_features: Sequence[str] | None = None,
   ):
+    self.sample_names = sample_names
     self.accept_snps = accept_snps
     self.accept_indels = accept_indels
     self.accept_multiallelics = accept_multiallelics
@@ -547,12 +565,16 @@ class SmallModelExampleFactory:
     self.model_features = self._get_and_validate_model_features(model_features)
 
   def _get_and_validate_model_features(
-      self, model_features: Sequence[str] | None
+      self,
+      model_features: Sequence[str] | None,
   ) -> Sequence[str]:
     """Returns the model features for the small model."""
     all_features = list(
         self._encode_candidate_feature_dict(
-            FAKE_CANDIDATE, DEFAULT_ALT_ALLELE_INDICES
+            candidate=FAKE_CANDIDATE,
+            alt_allele_indices=DEFAULT_ALT_ALLELE_INDICES,
+            read_phases=None,
+            sample_order=list(range(len(self.sample_names))),
         ).keys()
     )
     if model_features:
@@ -582,15 +604,28 @@ class SmallModelExampleFactory:
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
       alt_allele_indices: tuple[int, ...],
-      read_phases: dict[str, int] | None = None,
+      read_phases: dict[str, int] | None,
+      sample_order: Sequence[int],
   ) -> dict[str, int]:
     """Encodes all model features for a given candidate into a key-value dict."""
-    feature_encoder = FeatureEncoder(candidate, alt_allele_indices)
     candidate_example = {}
+    feature_encoder = FeatureEncoder(candidate, alt_allele_indices, sample=None)
     candidate_example.update({
         feature.value: feature_encoder.encode_base_feature(feature)
         for feature in BaseFeature
     })
+    if len(self.sample_names) > 1:
+      for sample_index in sample_order:
+        sample_name = self.sample_names[sample_index]
+        sample_feature_encoder = FeatureEncoder(
+            candidate, alt_allele_indices, sample_name
+        )
+        candidate_example.update({
+            f'{sample_name}_{feature.value}': (
+                sample_feature_encoder.encode_base_feature(feature)
+            )
+            for feature in BaseFeature
+        })
     candidate_example.update({
         feature.value: feature_encoder.encode_variant_feature(feature)
         for feature in VariantFeature
@@ -601,23 +636,30 @@ class SmallModelExampleFactory:
         )
     )
     if self.expand_by_haplotype:
-      for haplotype in Haplotype:
-        haplotype_feature_encoder = FeatureEncoder(
-            candidate, alt_allele_indices, haplotype.value, read_phases
-        )
-        for feature in BaseFeature:
-          candidate_example.update({
-              f'{feature.value}_hp_{haplotype.value}': (
-                  haplotype_feature_encoder.encode_base_feature(feature)
-              )
-          })
+      for sample_index in sample_order:
+        sample_name = self.sample_names[sample_index]
+        for haplotype in Haplotype:
+          haplotype_feature_encoder = FeatureEncoder(
+              candidate,
+              alt_allele_indices,
+              sample_name,
+              haplotype.value,
+              read_phases,
+          )
+          for feature in BaseFeature:
+            candidate_example.update({
+                f'{sample_name}_{feature.value}_hp_{haplotype.value}': (
+                    haplotype_feature_encoder.encode_base_feature(feature)
+                )
+            })
     return candidate_example
 
   def _encode_model_features(
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
       alt_allele_indices: tuple[int, ...],
-      read_phases: dict[str, int],
+      read_phases: dict[str, int] | None,
+      sample_order: Sequence[int],
   ) -> Sequence[int]:
     """Encodes a candidate example into the selected model features.
 
@@ -625,14 +667,19 @@ class SmallModelExampleFactory:
       candidate: The candidate to be encoded.
       alt_allele_indices: The alt-allele indices to use for the candidate.
       read_phases: A dictionary mapping read names to haplotype tags.
+      sample_order: The order in which the samples are to be encoded.
 
     Returns:
       A feature vector.
     """
     encoded_candidate = self._encode_candidate_feature_dict(
-        candidate, alt_allele_indices, read_phases
+        candidate, alt_allele_indices, read_phases, sample_order
     )
-    return [encoded_candidate[feature] for feature in self.model_features]
+    return [
+        value
+        for feature, value in encoded_candidate.items()
+        if feature in self.model_features
+    ]
 
   def _encode_training_example(
       self,
@@ -640,6 +687,7 @@ class SmallModelExampleFactory:
       alt_allele_indices: tuple[int, ...],
       label: variant_labeler.VariantLabel,
       read_phases: dict[str, int],
+      sample_order: Sequence[int],
   ) -> tf.train.Example:
     """Encodes a candidate example."""
     feature_encoder = FeatureEncoder(candidate, alt_allele_indices)
@@ -649,7 +697,10 @@ class SmallModelExampleFactory:
                 FEATURES_ENCODED: tf.train.Feature(
                     int64_list=tf.train.Int64List(
                         value=self._encode_model_features(
-                            candidate, alt_allele_indices, read_phases
+                            candidate,
+                            alt_allele_indices,
+                            read_phases,
+                            sample_order,
                         )
                     )
                 ),
@@ -681,6 +732,7 @@ class SmallModelExampleFactory:
           tuple[deepvariant_pb2.DeepVariantCall, variant_labeler.VariantLabel]
       ],
       read_phases: dict[str, int],
+      sample_order: Sequence[int],
   ) -> Sequence[tf.train.Example]:
     """Generates examples from the given candidates for training.
 
@@ -688,6 +740,7 @@ class SmallModelExampleFactory:
       candidates_with_label: list of candidates with labels to be processed into
         examples.
       read_phases: A dictionary mapping read names to haplotype tags.
+      sample_order: The order in which the samples are to be encoded.
 
     Returns:
       A list of encoded candidate examples.
@@ -699,7 +752,7 @@ class SmallModelExampleFactory:
       alt_allele_indices_set = get_set_of_allele_indices(candidate)
       for alt_allele_indices in alt_allele_indices_set:
         candidate_example = self._encode_training_example(
-            candidate, alt_allele_indices, label, read_phases
+            candidate, alt_allele_indices, label, read_phases, sample_order
         )
         training_examples.append(candidate_example)
     return training_examples
@@ -708,12 +761,14 @@ class SmallModelExampleFactory:
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
       read_phases: dict[str, int],
+      sample_order: Sequence[int],
   ) -> InferenceExampleSet:
     """Generates examples from the given candidates for inference.
 
     Args:
       candidates: list of candidates to be processed into a summary.
       read_phases: A dictionary mapping read names to haplotype tags.
+      sample_order: The order in which the samples are to be encoded.
 
     Returns:
       A InferenceExampleSet containing:
@@ -734,7 +789,7 @@ class SmallModelExampleFactory:
             (candidate, alt_allele_indices)
         )
         candidate_example = self._encode_model_features(
-            candidate, alt_allele_indices, read_phases
+            candidate, alt_allele_indices, read_phases, sample_order
         )
         example_set.inference_examples.append(candidate_example)
     return example_set
