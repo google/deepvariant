@@ -43,9 +43,9 @@
 
 #include "deepvariant/channels/allele_frequency_channel.h"
 #include "deepvariant/channels/avg_base_quality_channel.h"
+#include "deepvariant/channels/base_6ma_channel.h"
 #include "deepvariant/channels/base_differs_from_ref_channel.h"
 #include "deepvariant/channels/base_methylation_channel.h"
-#include "deepvariant/channels/base_6ma_channel.h"
 #include "deepvariant/channels/base_quality_channel.h"
 #include "deepvariant/channels/blank_channel.h"
 #include "deepvariant/channels/channel.h"
