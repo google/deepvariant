@@ -342,6 +342,21 @@ def get_deepsomatic_ffpe_wgs_tumor_only_config(
   config.use_mixed_precision = True
 
 
+def get_deepsomatic_ffpe_wes_tumor_only_config(
+    config: ml_collections.ConfigDict,
+):
+  """Config parameters for FFPE_WES_TUMOR_ONLY training."""
+  get_wgs_config(config)
+  config.best_checkpoint_metric = 'tune/f1_homalt'
+  config.class_weights = '1,1,10'
+  config.num_epochs = 80
+  config.early_stopping_patience = 10
+  config.use_mixed_precision = True
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = '/path/to/warmstart/checkpoint'
+
+
 # =============#
 # Base Config #
 # =============#
@@ -453,6 +468,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_deepsomatic_ont_tumor_only_config(config)
   elif config_name == 'deepsomatic_ffpe_wgs_tumor_only':
     get_deepsomatic_ffpe_wgs_tumor_only_config(config)
+  elif config_name == 'deepsomatic_ffpe_wes_tumor_only':
+    get_deepsomatic_ffpe_wes_tumor_only_config(config)
   elif config_name == 'base':
     # Use the base config.
     pass
