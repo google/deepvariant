@@ -496,10 +496,6 @@ def bed_parser(filename, intersect_ranges=None, enable_logging=True):
     nucleus.genomics.v1.Range protobuf objects.
   """
   with bed.BedReader(filename, enable_logging) as fin:
-    if not fin.has_index():
-      logging.warning(
-          'BED file does not have a tabix index. Reading full bed file.'
-      )
     if intersect_ranges and fin.has_index():
       for region in intersect_ranges:
         for r in fin.query(region):
