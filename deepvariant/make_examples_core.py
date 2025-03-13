@@ -1301,24 +1301,24 @@ class OutputsWriter:
 class RegionProcessor:
   """Creates DeepVariant example protos for a single region on the genome.
 
-    This class helps us to run the very sensitive caller, pileup image creator,
-    and variant labeler operations on a single region in parallel across many
-    regions using the PoolExecutor API. In order to do this we need three
-    separate
-    key operations:
+  This class helps us to run the very sensitive caller, pileup image creator,
+  and variant labeler operations on a single region in parallel across many
+  regions using the PoolExecutor API. In order to do this we need three
+  separate
+  key operations:
 
-    (1) Collect all of the info needed to create our resources (e.g., ref
-    reader)
-        at construction. We cannot actually initialize those resources in the
-        constructor, though, since we actually want different resources in each
-        worker process/thread. I.e., we need lazy resource initialization.
-  c
-    (2) Actually initialize these resources *after* the worker has been forked
-        in our process pool. This gives us a fresh resource to use in each
-        separate process.
+  (1) Collect all of the info needed to create our resources (e.g., ref
+  reader)
+      at construction. We cannot actually initialize those resources in the
+      constructor, though, since we actually want different resources in each
+      worker process/thread. I.e., we need lazy resource initialization.
 
-    (3) Process the region to find candidate variants and process those into our
-        tf.Example protos.
+  (2) Actually initialize these resources *after* the worker has been forked
+      in our process pool. This gives us a fresh resource to use in each
+      separate process.
+
+  (3) Process the region to find candidate variants and process those into our
+      tf.Example protos.
   """
 
   def __init__(
