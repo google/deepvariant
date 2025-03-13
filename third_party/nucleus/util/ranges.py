@@ -544,7 +544,7 @@ def from_regions(regions, contig_map=None):
 # Cannot be at the top of the file because these parser functions need to be
 # defined before adding them to the dictionary.
 _REGION_FILE_READERS = {
-    bed_parser: frozenset(['.bed']),
+    bed_parser: frozenset(['.bed', '.bed.gz']),
     bedpe_parser: frozenset(['.bedpe']),
 }
 
