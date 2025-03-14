@@ -33,8 +33,10 @@ training and evaluating germline calling accuracy.
 """
 
 import itertools
+import os
 from typing import Callable, Dict, Tuple, Union
 
+from absl import logging
 import ml_collections
 import tensorflow as tf
 
@@ -190,7 +192,22 @@ def input_fn(
   is_training = mode in ['train', 'tune']
 
   # Get input shape from input path.
-  input_shape = dv_utils.get_shape_from_examples_path(path)
+  # First, try finding example_info.json in the same directory as the input
+  # path.
+  config_dir = os.path.dirname(path)
+  example_info_json = os.path.join(config_dir, 'example_info.json')
+  if tf.io.gfile.exists(example_info_json):
+    logging.info('Reading example_info.json: %s', example_info_json)
+    input_shape, _, _ = dv_utils.get_shape_and_channels_from_json(
+        example_info_json
+    )
+  else:
+    logging.info(
+        'example_info.json does not exist in the directory of %s. Reading the'
+        ' shape from the examples',
+        path,
+    )
+    input_shape = dv_utils.get_shape_from_examples_path(path)
 
   file_list = [
       tf.io.gfile.glob(sharded_file_utils.normalize_to_sharded_file_pattern(x))
