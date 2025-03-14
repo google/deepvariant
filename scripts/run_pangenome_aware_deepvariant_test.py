@@ -337,6 +337,63 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     )
     # pyformat: enable
 
+  @flagsaver.flagsaver
+  def test_gbz_shared_memory_name(self):
+    FLAGS.model_type = 'WGS'
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads = 'your_bam'
+    # Having --pangenome end with .gbz is important to test that the
+    # load_gbz_into_shared_memory command is generated correctly.
+    FLAGS.pangenome = 'your_pangenome_bam.gbz'
+    FLAGS.output_vcf = 'your_vcf'
+    FLAGS.num_shards = 64
+    FLAGS.gbz_shared_memory_name = 'NEW_SHARED_MEMORY_NAME'
+    FLAGS.disable_small_model = False
+    commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
+        '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
+    )
+    # Because --pangenome ends with .gbz, we expect a
+    # load_gbz_into_shared_memory command to be generated.
+    self.assertLen(commands, 4)
+    self.assertEqual(
+        commands[0][0],
+        (
+            'time /opt/deepvariant/bin/load_gbz_into_shared_memory'
+            ' --pangenome_gbz "your_pangenome_bam.gbz"'
+            ' --shared_memory_name "NEW_SHARED_MEMORY_NAME"'
+            ' --shared_memory_size_gb 12'
+            ' --num_shards "64"'
+        ),
+    )
+    # pyformat: disable
+    self.assertEqual(
+        commands[1][0],
+        (
+            'time seq 0 63 | parallel -q --halt 2 --line-buffer'
+            ' /opt/deepvariant/bin/make_examples_pangenome_aware_dv --mode'
+            ' calling --ref "your_ref" --reads "your_bam" --pangenome'
+            ' "your_pangenome_bam.gbz" --examples'
+            ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
+            ' --checkpoint "/opt/models/pangenome_aware_deepvariant/wgs"'
+            ' --call_small_model_examples'
+            ' --gbz_shared_memory_name "NEW_SHARED_MEMORY_NAME"'
+            ' --keep_legacy_allele_counter_behavior'
+            ' --keep_only_window_spanning_haplotypes'
+            ' --keep_supplementary_alignments'
+            ' --min_mapping_quality "0" --normalize_reads'
+            ' --sample_name_pangenome "hprc_v1.1"'
+            ' --small_model_indel_gq_threshold "30"'
+            ' --small_model_snp_gq_threshold "25"'
+            ' --small_model_vaf_context_window_size "51"'
+            ' --sort_by_haplotypes'
+            ' --trained_small_model_path "/opt/smallmodels/wgs"'
+            ' --trim_reads_for_pileup'
+            ' --use_loaded_gbz_shared_memory'
+            ' --task {}'
+        ),
+    )
+    # pyformat: enable
+
   @parameterized.parameters(
       ('chr1:20-30', '--regions "chr1:20-30"'),
       ('chr1:20-30 chr2:100-200', '--regions "chr1:20-30 chr2:100-200"'),

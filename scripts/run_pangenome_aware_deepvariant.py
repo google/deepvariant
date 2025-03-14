@@ -255,6 +255,17 @@ _REPORT_TITLE = flags.DEFINE_string(
     ),
 )
 
+# Optional flags that are used for loading GBZ into shared memory.
+_GBZ_SHARED_MEMORY_NAME = flags.DEFINE_string(
+    'gbz_shared_memory_name',
+    None,
+    (
+        'Optional. Name of the shared memory region to create. This flag will'
+        ' be used by load_gbz_into_shared_memory binary and'
+        ' make_examples_pangenome_aware_dv binary.'
+    ),
+)
+
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/pangenome_aware_deepvariant/wgs',
     'WES': '/opt/models/pangenome_aware_deepvariant/wes',
@@ -382,9 +393,9 @@ def _set_small_model_config(
 
 
 def load_gbz_into_shared_memory_command(
-    gbz,
-    gbz_shared_memory_name,
-    gbz_shared_memory_size_gb,
+    gbz: str,
+    gbz_shared_memory_name: str | None,
+    gbz_shared_memory_size_gb: int,
 ) -> tuple[str, Optional[str]]:
   """Returns a load_gbz_into_shared_memory (command, logfile) for subprocess.
 
@@ -398,9 +409,10 @@ def load_gbz_into_shared_memory_command(
   """
   command = ['time', '/opt/deepvariant/bin/load_gbz_into_shared_memory']
   command.extend(['--pangenome_gbz', '"{}"'.format(gbz)])
-  command.extend(
-      ['--shared_memory_name', '"{}"'.format(gbz_shared_memory_name)]
-  )
+  if gbz_shared_memory_name is not None:
+    command.extend(
+        ['--shared_memory_name', '"{}"'.format(gbz_shared_memory_name)]
+    )
   command.extend(['--shared_memory_size_gb', str(gbz_shared_memory_size_gb)])
   command.extend(['--num_shards', '"{}"'.format(_NUM_SHARDS.value)])
 
@@ -717,7 +729,7 @@ def create_all_commands_and_logfiles(
     commands.append(
         load_gbz_into_shared_memory_command(
             gbz=_PANGENOME.value,
-            gbz_shared_memory_name='GBZ_SHARED_MEMORY',
+            gbz_shared_memory_name=_GBZ_SHARED_MEMORY_NAME.value,
             # TODO: This might need to be a flag later on.
             gbz_shared_memory_size_gb=12,
         )
@@ -737,6 +749,7 @@ def create_all_commands_and_logfiles(
           regions=_REGIONS.value,
           sample_name_reads=_SAMPLE_NAME_READS.value,
           sample_name_pangenome=_SAMPLE_NAME_PANGENOME.value,
+          gbz_shared_memory_name=_GBZ_SHARED_MEMORY_NAME.value,
       )
   )
 
