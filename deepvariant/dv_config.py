@@ -450,6 +450,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_pangenome_wgs_config(config)
   elif config_name == 'deepsomatic_wgs':
     get_deepsomatic_wgs_config(config)
+  elif config_name == 'deepsomatic_hybrid':
+    get_deepsomatic_hybrid_config(config)
   elif config_name == 'deepsomatic_wgs_tumor_only':
     get_deepsomatic_wgs_tumor_only_config(config)
   elif config_name == 'deepsomatic_wes':
