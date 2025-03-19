@@ -825,6 +825,11 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
     LOG(FATAL)
         << "allele_counters collection does not contain target sample!";
   }
+  // Merge methylated supporting reads in the negative strand
+  // (Pacbio 5mC specific)
+  if (options_.enable_methylation_aware_phasing()) {
+    MergeMethylatedAlleleCounts(allele_counters_per_sample_);
+  }
   return AlleleCountsGenerator<DeepVariantCall>(&VariantCaller::CallVariant);
 }
 
@@ -864,9 +869,24 @@ std::optional<int> VariantCaller::CallVariantPosition(
       .create_complex_alleles = false,
       .prev_deletion_end = prev_deletion_end
     });
-  if (output_options.alt_alleles.empty() && !KeepReferenceSite()) {
+
+  bool has_methylation = false;
+  if (options_.enable_methylation_aware_phasing()) {
+    // Count methylated reads in reference sites
+    for (const auto& read_entry : target_sample_allele_count.read_alleles()) {
+      const Allele& allele = read_entry.second;
+      if (allele.is_methylated()) {
+        has_methylation = true;
+        break;
+      }
+    }
+  }
+
+  if (!KeepReferenceSite() && output_options.alt_alleles.empty() &&
+      !has_methylation) {
     return std::nullopt;
   }
+
   return target_sample_allele_count.position().position();
 }
 
@@ -895,7 +915,31 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
     });
   std::string ref_bases = output_options.ref_bases;
   bool complex_variant_created = output_options.complex_variant_created;
-  if (output_options.alt_alleles.empty() && !KeepReferenceSite()) {
+
+  // Determine if site is methylated based on read support
+  bool has_methylation = false;
+  bool ref_only_site = false;
+  int total_reads = target_sample_allele_count.ref_supporting_read_count();
+  if (output_options.alt_alleles.empty()) {
+    ref_only_site = true;
+    int methyl_reads = 0;
+    for (const auto& read_entry : target_sample_allele_count.read_alleles()) {
+      const Allele& allele = read_entry.second;
+      // Check if the allele is a reference base
+      if (allele.is_methylated()) {
+        methyl_reads++;
+      }
+    }
+
+    // Total reads is 0 for ref sites that are unmethylated
+    // Check for total_reads > 0 to avoid division by 0
+    if (total_reads > 0 &&
+        static_cast<double>(methyl_reads) / total_reads > 0) {
+      has_methylation = true;
+    }
+  }
+  if (output_options.alt_alleles.empty() && !KeepReferenceSite()
+      && !has_methylation) {
     return std::nullopt;
   }
 
@@ -944,6 +988,7 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
   for (const auto& elt : allele_map) {
     variant->add_alternate_bases(elt.second);
   }
+
   // If we don't have any alt_alleles, we are generating a reference site so
   // add in the kNoAltAllele.
   if (output_options.alt_alleles.empty()) {
@@ -1075,6 +1120,69 @@ void VariantCaller::AddAdjacentAlleleFractionsAtPosition(
     (*call->mutable_allele_frequency_at_position())
         [context_allele_count.position().position()] = vaf;
   }
+}
+
+// Helper function to combine the methylated reference sites and keep only the
+// positive strands.
+// For 5mC methylation, Pacbio marks only forward positions,
+// and the reverse is assumed.
+void VariantCaller::MergeMethylatedAlleleCounts(
+    const std::unordered_map<std::string, AlleleCounter*>& allele_counters)
+    const {
+  for (const auto& sample_entry : allele_counters) {
+    AlleleCounter* allele_counter = sample_entry.second;
+    auto& allele_counts = allele_counter->MutableCounts();
+
+    // Start at 1 since we are looking for the C allele preceding the G allele
+    // at position i-1
+    for (size_t i = 1; i < allele_counts.size(); ++i) {
+      auto& allele_count = allele_counts[i];
+      char ref_base = allele_count.ref_base()[0];
+
+      // Process only G reference sites.
+      if (ref_base == 'G' && IsReferenceSite(allele_count)) {
+        auto& prev_allele_count = allele_counts[i - 1];
+
+        // Ensure the preceding allele is a C and is at the genomic position
+        // preceding the current G allele.
+        if (prev_allele_count.ref_base()[0] != 'C' &&
+            prev_allele_count.position().position() !=
+                allele_count.position().position() - 1) continue;
+
+        // Track reads that were methylated in G.
+        std::vector<std::string> methylated_read_keys;
+
+        // Remove methylation from G but store affected reads.
+        for (auto& [read_key, allele] : *allele_count.mutable_read_alleles()) {
+          if (allele.is_methylated()) {
+            methylated_read_keys.push_back(read_key);  // Store the read key
+            allele.set_is_methylated(false);  // Remove methylation
+          }
+        }
+
+        // Transfer methylation to the same read keys in the C site.
+        for (const std::string& read_key : methylated_read_keys) {
+          auto it = prev_allele_count.mutable_read_alleles()->find(read_key);
+          if (it != prev_allele_count.mutable_read_alleles()->end()) {
+            it->second.set_is_methylated(true);  // Set methylation on same read
+          }
+        }
+      }
+    }
+  }
+}
+
+bool VariantCaller::IsReferenceSite(const AlleleCount& allele_count) const {
+  const std::string& ref_base = allele_count.ref_base();
+
+  for (const auto& sample_entry : allele_count.sample_alleles()) {
+    for (const auto& allele : sample_entry.second.alleles()) {
+      if (allele.bases() != ref_base) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 

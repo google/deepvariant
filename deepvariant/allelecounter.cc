@@ -269,7 +269,7 @@ bool IsMethylated(const Read& read, int offset,
   auto it = read.base_modifications().find(
       nucleus::k5mC);
   if (it == read.base_modifications().end()) {
-    return false;  // "Cm" modification not found
+    return false;  // "5mC" modification not found
   }
 
   // Get the vector of modification values.
@@ -497,7 +497,9 @@ void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
     // Reference alleles are created only when the track_ref_reads flag is set
     // and we know that this position contains a potential candidate for phasing
     // or if the allele is methylated.
-    if (to_add_i.type() != AlleleType::REFERENCE || to_add_i.is_methylated() ||
+    if (to_add_i.type() != AlleleType::REFERENCE ||
+        (to_add_i.is_methylated() &&
+         options_.enable_methylation_aware_phasing()) ||
         (options_.track_ref_reads() &&
          std::binary_search(candidate_positions_.begin(),
                             candidate_positions_.end(), to_add_i.position()))) {
@@ -894,8 +896,9 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
           double methylation_calling_threshold =
               options_.methylation_calling_threshold();
           bool is_methylated = false;
-          if (IsMethylated(read, i, options_.enable_methylation_calling(),
-                               methylation_calling_threshold)) {
+          if (IsMethylated(read, base_offset,
+                          options_.enable_methylation_calling(),
+                          methylation_calling_threshold)) {
             is_methylated = true;
           }
           if (IsValidRefOffset(ref_offset) &&

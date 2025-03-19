@@ -210,6 +210,9 @@ class DirectPhasing {
   // data structures.
   void AddCandidate(const DeepVariantCall& candidate);
 
+  // Methylation-aware phasing for REF sites.
+  void AddMethylatedRefCandidate(const DeepVariantCall& candidate);
+
   // Initializes all members of the class.
   void Clear();
 

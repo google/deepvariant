@@ -54,6 +54,7 @@
 #include "absl/types/span.h"
 #include "boost/graph/graphviz.hpp"
 #include "third_party/nucleus/core/statusor.h"
+#include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 
@@ -65,6 +66,8 @@ const int kMinRefAlleleDepth = 3;
 const int kMinAllelesToPhase = 2;
 constexpr absl::string_view kRef = "REF";
 const int kNumOfPhases = 2;
+const float kMinMethylationThreshold = 0.4;
+const float kMaxMethylationThreshold = 0.6;
 
 std::string ReadKey(const nucleus::genomics::v1::Read& read) {
   return absl::StrCat(read.fragment_name(), "/", read.read_number());
@@ -547,7 +550,88 @@ void DirectPhasing::UpdateReadToAllelesMap(const Vertex& v) {
   }
 }
 
+void DirectPhasing::AddMethylatedRefCandidate(
+    const DeepVariantCall& candidate) {
+  // Retrieve REF supporting reads.
+  const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& ref_reads =
+      candidate.ref_support_ext().read_infos();
+
+  google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport> methyl_reads;
+  google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport> unmethyl_reads;
+
+  // Extract MF from INFO fields.
+  float ref_methylation = 0.0;
+  if (candidate.variant().calls_size() > 0) {
+    auto mf_it = candidate.variant().calls(0).info().find("MF");
+    if (mf_it != candidate.variant().calls(0).info().end() &&
+        !mf_it->second.values().empty()) {
+      ref_methylation = mf_it->second.values(0).number_value();
+    }
+  }
+
+  // Keep only potentially heterozygous methylation sites.
+  if (ref_methylation <= kMinMethylationThreshold ||
+      ref_methylation >= kMaxMethylationThreshold) {
+    return;
+  }
+
+  // Separate methylated and unmethylated REF reads.
+  for (const auto& read : ref_reads) {
+    if (read.is_methylated()) {
+      *methyl_reads.Add() = read;
+    } else {
+      *unmethyl_reads.Add() = read;
+    }
+  }
+
+  std::vector<DeepVariantCall_ReadSupport> methyl_reads_vec(
+      methyl_reads.begin(), methyl_reads.end());
+  std::vector<DeepVariantCall_ReadSupport> unmethyl_reads_vec(
+      unmethyl_reads.begin(), unmethyl_reads.end());
+
+  std::sort(methyl_reads_vec.begin(), methyl_reads_vec.end(),
+            [](const DeepVariantCall_ReadSupport& a,
+               const DeepVariantCall_ReadSupport& b) {
+              return a.read_name() < b.read_name();
+            });
+
+  std::sort(unmethyl_reads_vec.begin(), unmethyl_reads_vec.end(),
+            [](const DeepVariantCall_ReadSupport& a,
+               const DeepVariantCall_ReadSupport& b) {
+              return a.read_name() < b.read_name();
+            });
+
+  // Add methylated REF reads.
+  // Represent methylation state as "M" (methylated) and "U" (unmethylated),
+  // analogous to how alleles are encoded.
+  if (!methyl_reads.empty()) {
+    UpdateReadToAllelesMap(AddVertex(candidate.variant().start(),
+                                     AlleleType::REFERENCE, "M",
+                                     methyl_reads));
+  }
+
+  // Add unmethylated REF reads.
+  if (!unmethyl_reads.empty()) {
+    UpdateReadToAllelesMap(AddVertex(candidate.variant().start(),
+                                     AlleleType::REFERENCE, "U",
+                                     unmethyl_reads));
+  }
+}
+
 void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
+  // Rreference sites are included as candidates in
+  // CallVariantPosition() only if they have methylated reads.
+  // This check for reference site (i.e., the alternate
+  // base is ".") helps identify positions where we need to perform phasing for
+  // reference sites with methylation-specific signals separately.
+  bool is_ref_site = candidate.variant().alternate_bases().size() == 1 &&
+                     candidate.variant().alternate_bases(0) == ".";
+
+  if (is_ref_site) {
+    AddMethylatedRefCandidate(candidate);
+    return;
+  }
+
   // Add REF if it has read support.
   const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& ref_reads =
       candidate.ref_support_ext().read_infos();
@@ -578,7 +662,7 @@ void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
   }
 }
 
-// Filters out all homozygious candidates and candidates containing indels.
+// Filters out all homozygous candidates and candidates containing indels.
 bool CandidateFilter(const DeepVariantCall& candidate, uint32_t* indel_end)  {
   // If there is only one allele and not enough support for the ref then
   // empirically we can consider this candidate homozygous.
@@ -612,9 +696,9 @@ void DirectPhasing::Clear() {
 }
 
 // Iterate through all candidates in the region. For each potentially
-// heterozygious SNP candidate create a graph vertex corresponding to each
+// heterozygous SNP candidate create a graph vertex corresponding to each
 // allele. Candidate is heterozygous if there is a ref allele, or there are
-// multiple distintive alt alleles.
+// multiple distinctive alt alleles.
 void DirectPhasing::Build(
     absl::Span<const DeepVariantCall> candidates,
     absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>

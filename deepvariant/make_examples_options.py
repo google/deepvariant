@@ -608,6 +608,14 @@ _METHYLATION_CALLING_THRESHOLD = flags.DEFINE_float(
         'This is used in methylation calling mode.'
     ),
 )
+_ENABLE_METHYLATION_AWARE_PHASING = flags.DEFINE_bool(
+    'enable_methylation_aware_phasing',
+    False,
+    (
+        'If True, then methylation aware phasing will be enabled. This mode'
+        ' uses methylation information to phase reads.'
+    ),
+)
 _PHASE_READS = flags.DEFINE_bool(
     'phase_reads',
     False,
@@ -858,6 +866,7 @@ def shared_flags_to_options(
       sample_mean_coverage_on_calling_regions=_SAMPLE_MEAN_COVERAGE_ON_CALLING_REGIONS.value,
       enable_methylation_calling=_ENABLE_METHYLATION_CALLING.value,
       methylation_calling_threshold=_METHYLATION_CALLING_THRESHOLD.value,
+      enable_methylation_aware_phasing=_ENABLE_METHYLATION_AWARE_PHASING.value,
   )
 
   if add_flags:
@@ -1002,6 +1011,10 @@ def shared_flags_to_options(
     if _METHYLATION_CALLING_THRESHOLD.value:
       options.methylation_calling_threshold = (
           _METHYLATION_CALLING_THRESHOLD.value
+      )
+    if _ENABLE_METHYLATION_AWARE_PHASING.value:
+      options.enable_methylation_aware_phasing = (
+          _ENABLE_METHYLATION_AWARE_PHASING.value
       )
 
     # DirectPhasing related flags.

@@ -54,6 +54,7 @@
 #include "absl/types/span.h"
 #include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/reference.h"
+#include "third_party/nucleus/io/sam_reader.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
@@ -128,6 +129,16 @@ class AlleleCounterTest : public ::testing::Test {
     // tensorflow/compiler/xla/ptr_util.h.
     return std::make_unique<AlleleCounter>(ref, range, std::vector<int>(),
                                            options_);
+  }
+
+  std::unique_ptr<AlleleCounter> MakeCounterWithCandidates(
+    const std::vector<int>& candidate_positions,
+    const AlleleCounterOptions& options) {
+    return std::make_unique<AlleleCounter>(
+        ref_.get(),
+        MakeRange(chr_, start_, end_),
+        candidate_positions,
+        options);
   }
 
   // Add reads to allele_count and check that the resulting AlleleCounts are
@@ -361,6 +372,55 @@ TEST_F(AlleleCounterTest, TestAddRead) {
                        expected);
     }
   }
+}
+
+TEST_F(AlleleCounterTest, TestAddMethylatedRead) {
+  // Set up AlleleCounter with methylation calling enabled
+  AlleleCounterOptions options;
+  options.mutable_read_requirements()->set_min_mapping_quality(10);
+  options.set_enable_methylation_calling(true);
+  options.set_methylation_calling_threshold(0.5);
+  options.set_track_ref_reads(true);
+
+  // By default, DV won't store supporting read alleles for ref sites.
+  // However, when track_ref_reads is true and a given position is a candidate,
+  // we will store the supporting read alleles for that positions.
+  // For this test, we will force these 5 ref sites to be candidates to
+  // test the methylation assignment of each of them.
+  // This logic will be needed for methylation-aware phasing.
+  std::vector<int> candidate_positions = {10, 11, 12, 13, 14};
+
+  auto allele_counter = MakeCounterWithCandidates(candidate_positions, options);
+
+  // Create a read of REF "TCCGT"
+  auto read = MakeRead(chr_, start_, seq_, {"5M"});
+
+  // Methylation values for each base
+  (*read.mutable_base_modifications())[nucleus::k5mC] = {0, 255, 0, 0, 0};
+
+  // Add the read to AlleleCounter
+  allele_counter->Add(read, "sample");
+
+  // Retrieve allele counts
+  const auto& allele_counts = allele_counter->Counts();
+
+  ASSERT_EQ(allele_counts.size(), 5) << "Expected 5 allele counts (TCCGT).";
+
+  // Verify methylation assignment
+  auto check_methylation = [&](int index, bool expected_methylation) {
+    ASSERT_FALSE(allele_counts[index].read_alleles().empty())
+        << "No reads assigned for position " << index;
+
+    auto it = allele_counts[index].read_alleles().begin();
+    EXPECT_EQ(it->second.is_methylated(), expected_methylation)
+        << "Mismatch at position " << index;
+  };
+
+  check_methylation(0, false);  // "T" should not be methylated
+  check_methylation(1, true);   // "C" should be methylated
+  check_methylation(2, false);  // "C" should not be methylated
+  check_methylation(3, false);  // "G" should not be methylated
+  check_methylation(4, false);  // "T" should not be methylated
 }
 
 TEST_F(AlleleCounterTest, TestAddSubstitutionRead) {

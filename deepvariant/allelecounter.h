@@ -352,6 +352,15 @@ class AlleleCounter {
   // to Add*() will fail.
   const std::vector<AlleleCount>& Counts() const { return counts_; }
 
+  // Gets the mutable vector of AlleleCounts over this counter's interval.
+  //
+  // This function returns a mutable vector of AlleleCount objects, one for each
+  // basepair in our interval, filled in according to the reads that have been
+  // added via calls to Add() routines.
+  std::vector<AlleleCount>& MutableCounts() {
+    return counts_;
+  }
+
   // This method is used by unit tests only.
   void SetCounts(const std::vector<AlleleCount>& counts) {
     counts_ = counts;

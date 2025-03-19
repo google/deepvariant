@@ -341,6 +341,10 @@ message AlleleCounterOptions {
   // Threshold for a base to be considered methylated.
   // This is used in methylation calling mode.
   double methylation_calling_threshold = 7;
+
+  // If True, methylation aware phasing is enabled.
+  // This mode uses methylation reference sites to phase reads.
+  bool enable_methylation_aware_phasing = 8;
 }
 
 // Variant call for a single site, in a pseudo-biallelic manner. This is an
@@ -389,7 +393,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 22
+// Next ID: 23
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -457,6 +461,8 @@ message VariantCallerOptions {
   string par_regions_bed = 20;
 
   bool create_complex_alleles = 21;
+
+  bool enable_methylation_aware_phasing = 22;
 }
 
 // Options to control how we label variant calls.
@@ -687,7 +693,7 @@ message SampleOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 91.
+// Next ID: 92.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -989,6 +995,8 @@ message MakeExamplesOptions {
   int32 non_uniform_downsampling_threshold = 89;
 
   bool output_debug_info = 90;
+
+  bool enable_methylation_aware_phasing = 91;
 
   reserved 66;
 }

@@ -214,6 +214,7 @@ def make_vc_options(
       haploid_contigs=haploid_contigs_str.split(','),
       par_regions_bed=flags_obj.par_regions_bed,
       create_complex_alleles=flags_obj.create_complex_alleles,
+      enable_methylation_aware_phasing=flags_obj.enable_methylation_aware_phasing,
   )
 
 
@@ -1578,6 +1579,9 @@ class RegionProcessor:
     )
     self.options.allele_counter_options.methylation_calling_threshold = (
         self.options.methylation_calling_threshold
+    )
+    self.options.allele_counter_options.enable_methylation_aware_phasing = (
+        self.options.enable_methylation_aware_phasing
     )
 
     self._channels_enum = pileup_image_native.PileupImageEncoderNative(

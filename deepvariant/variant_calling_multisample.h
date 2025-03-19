@@ -271,6 +271,18 @@ class VariantCaller {
           target_sample_allele_count_iterator,
       DeepVariantCall* call) const;
 
+  // Helper function to combine the methylated reference sites and keep only the
+  // positive strands.
+  // For 5mC methylation, Pacbio marks only forward positions,
+  // and the reverse is assumed.
+  void MergeMethylatedAlleleCounts(
+      const std::unordered_map<std::string, AlleleCounter*>& allele_counters)
+      const;
+
+  // Helper function to check if the allele is a reference site.
+  // for methylation-aware phasing.
+  bool IsReferenceSite(const AlleleCount& allele_count) const;
+
   // Computes and adds methylation fraction (MF) and methylation depth (MD)
   // to the INFO field of the variant
   void ComputeMethylationStats(
