@@ -47,6 +47,9 @@ Flags:
 --bin_version Version of DeepTrio model to use.
 --customized_model_child Path to checkpoint directory containing child model checkpoint.
 --customized_model_parent Path to checkpoint directory containing parent model checkpoint.
+--disable_small_model If true, do not use the small model for variant calling.
+--customized_small_model Path to checkpoint directory containing small model checkpoint.
+--customized_small_model_parent Path to checkpoint directory containing small model parent checkpoint.
 --regions Regions passed into both variant calling and hap.py.
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
@@ -75,6 +78,7 @@ Note: All paths to dataset must be of the form "gs://..."
 BUILD_DOCKER=false
 DRY_RUN=false
 SAVE_INTERMEDIATE_RESULTS=false
+DISABLE_SMALL_MODEL=""
 SKIP_HAPPY=false
 SKIP_HAPPY=false
 USE_CANDIDATE_PARTITION=false
@@ -88,6 +92,8 @@ CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL_CHILD=""
 CUSTOMIZED_MODEL_PARENT=""
+CUSTOMIZED_SMALL_MODEL=""
+CUSTOMIZED_SMALL_MODEL_PARENT=""
 DOCKER_SOURCE="google/deepvariant"
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
@@ -189,6 +195,26 @@ while (( "$#" )); do
       ;;
     --make_examples_extra_args)
       MAKE_EXAMPLES_ARGS="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --customized_small_model)
+      CUSTOMIZED_SMALL_MODEL="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --customized_small_model_parent)
+      CUSTOMIZED_SMALL_MODEL_PARENT="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --disable_small_model)
+      DISABLE_SMALL_MODEL="$2"
+      if [[ -n "${DISABLE_SMALL_MODEL}" ]] && [[ ${DISABLE_SMALL_MODEL} != "true" ]] && [[ ${DISABLE_SMALL_MODEL} != "false" ]]; then
+        echo "Error: --disable_small_model needs to have value (true|false), or empty." >&2
+        echo "$USAGE" >&2
+        exit 1
+      fi
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -459,6 +485,7 @@ echo "# Booleans; sorted alphabetically."
 echo "BUILD_DOCKER: ${BUILD_DOCKER}"
 echo "DRY_RUN: ${DRY_RUN}"
 echo "SAVE_INTERMEDIATE_RESULTS: ${SAVE_INTERMEDIATE_RESULTS}"
+echo "DISABLE_SMALL_MODEL: ${DISABLE_SMALL_MODEL}"
 echo "SKIP_HAPPY: ${SKIP_HAPPY}"
 echo "USE_CANDIDATE_PARTITION: ${USE_CANDIDATE_PARTITION}"
 echo "USE_GPU: ${USE_GPU}"
@@ -471,6 +498,8 @@ echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
 echo "CAPTURE_BED: ${CAPTURE_BED}"
 echo "CUSTOMIZED_MODEL_CHILD: ${CUSTOMIZED_MODEL_CHILD}"
 echo "CUSTOMIZED_MODEL_PARENT: ${CUSTOMIZED_MODEL_PARENT}"
+echo "CUSTOMIZED_SMALL_MODEL: ${CUSTOMIZED_SMALL_MODEL}"
+echo "CUSTOMIZED_SMALL_MODEL_PARENT: ${CUSTOMIZED_SMALL_MODEL_PARENT}"
 echo "DOCKER_SOURCE: ${DOCKER_SOURCE}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
 echo "MODEL_PRESET: ${MODEL_PRESET}"
@@ -705,6 +734,29 @@ function setup_args() {
   fi
   if [[ -z "${CUSTOMIZED_MODEL_CHILD}" ]] && [[ -z "${CUSTOMIZED_MODEL_PARENT}" ]]; then
     run echo "No custom model specified."
+  fi
+  if [[ -n "${CUSTOMIZED_SMALL_MODEL}" ]]; then
+    echo "Using customized small model"
+    run mkdir -p "${INPUT_DIR}/smallmodel"
+    run echo "Copy from gs:// path ${CUSTOMIZED_SMALL_MODEL} to ${INPUT_DIR}/smallmodel"
+    run gcloud storage cp -R "${CUSTOMIZED_SMALL_MODEL}"/'*' "${INPUT_DIR}"/smallmodel/
+    extra_args+=( --customized_small_model "/input/smallmodel")
+  fi
+  if [[ -n "${CUSTOMIZED_SMALL_MODEL_PARENT}" ]]; then
+    echo "Using customized small model for parent"
+    run mkdir -p "${INPUT_DIR}/smallmodel_parent"
+    run echo "Copy from gs:// path ${CUSTOMIZED_SMALL_MODEL_PARENT} to ${INPUT_DIR}/smallmodel_parent"
+    run gcloud storage cp -R "${CUSTOMIZED_SMALL_MODEL_PARENT}"/'*' "${INPUT_DIR}"/smallmodel_parent/
+    extra_args+=( --customized_small_model_parent "/input/smallmodel_parent")
+  fi
+  if [[ -n "${DISABLE_SMALL_MODEL}" ]]; then
+    if [[ "${DISABLE_SMALL_MODEL}" = true ]]; then
+      echo "Disabling small model"
+      extra_args+=( --disable_small_model )
+    else
+      echo "Enabling small model"
+      extra_args+=( --nodisable_small_model )
+    fi
   fi
   if [[ -n "${MAKE_EXAMPLES_ARGS}" ]]; then
     # In order to use proposed variants, we have to pass vcf_candidate_importer

@@ -40,7 +40,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Optional
+from typing import Any, Optional
 
 from absl import app
 from absl import flags
@@ -48,6 +48,7 @@ from absl import logging
 import tensorflow as tf
 
 FLAGS = flags.FLAGS
+
 
 # Required flags.
 _MODEL_TYPE = flags.DEFINE_enum(
@@ -162,6 +163,28 @@ _CUSTOMIZED_MODEL_PARENT = flags.DEFINE_string(
         'Optional. A path to a parent model checkpoint to load for the'
         ' `call_variants` step. If not set, the default for each --model_type'
         ' will be used'
+    ),
+)
+_DISABLE_SMALL_MODEL = flags.DEFINE_boolean(
+    'disable_small_model',
+    False,
+    'Optional. Disable the use of the small model to call variants during '
+    'the `make_examples` step.',
+)
+_CUSTOMIZED_SMALL_MODEL = flags.DEFINE_string(
+    'customized_small_model',
+    None,
+    (
+        'Optional. A path to a small model checkpoint to call variants during '
+        'the `make_examples` step.'
+    ),
+)
+_CUSTOMIZED_SMALL_MODEL_PARENT = flags.DEFINE_string(
+    'customized_small_model_parent',
+    None,
+    (
+        'Optional. A path to a small model checkpoint to call variants during '
+        'the `make_examples` step for parent.'
     ),
 )
 # Optional flags for make_examples.
@@ -308,6 +331,11 @@ MODEL_TYPE_MAP = {
     'ONT_parent': '/opt/models/deeptrio/ont/parent',
 }
 
+# TODO: Add WGS model
+# TODO: Add PACBIO model
+# TODO: Add ONT model
+SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {}
+
 # Current release version of DeepTrio.
 # Should be the same in dv_vcf_constants.py.
 DEEP_TRIO_VERSION = '1.8.0'
@@ -331,6 +359,7 @@ NO_VARIANT_TFRECORD_SUFFIX = 'tfrecord.gz'
 EXAMPLES_NAME_PATTERN = '{}_{}.{}'
 CALL_VARIANTS_OUTPUT_PATTERN = '{}_{}.{}'
 NO_VARIANT_TFRECORD_PATTERN = '{}_{}.{}'
+SMALL_MODEL_CVO_RECORDS_PATTERN = '{make_examples_common_prefix}_{sample}_call_variant_outputs.tfrecord@{shards}.gz'
 
 
 @enum.unique
@@ -452,6 +481,38 @@ def _update_kwargs_with_warning(kwargs, extra_args):
         )
     kwargs[k] = v
   return kwargs
+
+
+def _use_small_model() -> bool:
+  """Determines if the small model is enabled based on flags and model type."""
+  if _DISABLE_SMALL_MODEL.value:
+    return False
+  if _CUSTOMIZED_SMALL_MODEL.value and _CUSTOMIZED_SMALL_MODEL_PARENT.value:
+    return True
+  if _MODEL_TYPE.value in SMALL_MODEL_CONFIG_BY_MODEL_TYPE:
+    return True
+  return False
+
+
+def _set_small_model_config(
+    special_args: dict[str, Any],
+) -> None:
+  """Sets small model config parameters."""
+  if not _use_small_model():
+    return
+  special_args['call_small_model_examples'] = True
+  if _CUSTOMIZED_SMALL_MODEL.value and _CUSTOMIZED_SMALL_MODEL_PARENT.value:
+    special_args['trained_small_model_path'] = _CUSTOMIZED_SMALL_MODEL.value
+    special_args['trained_small_model_parent_path'] = (
+        _CUSTOMIZED_SMALL_MODEL_PARENT.value
+    )
+  elif _MODEL_TYPE.value in SMALL_MODEL_CONFIG_BY_MODEL_TYPE:
+    special_args['trained_small_model_path'] = SMALL_MODEL_CONFIG_BY_MODEL_TYPE[
+        f'{_MODEL_TYPE.value}_child'
+    ]
+    special_args['trained_small_model_parent_path'] = (
+        SMALL_MODEL_CONFIG_BY_MODEL_TYPE[f'{_MODEL_TYPE.value}_parent']
+    )
 
 
 def _make_examples_command(
@@ -605,6 +666,8 @@ def _make_examples_command(
   ):
     special_args['candidate_positions'] = candidate_positions_path
 
+  _set_small_model_config(special_args)
+
   if special_args:
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
@@ -658,6 +721,7 @@ def postprocess_variants_command(
     ref,
     infile,
     outfile,
+    small_model_cvo_records: str,
     sample,
     extra_args,
     nonvariant_site_tfrecord_path=None,
@@ -668,7 +732,13 @@ def postprocess_variants_command(
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
-  command.extend(['--cpus 0'])
+  # Use 1/3 of the available CPUs per postprocess_variants task.
+  num_cpus = _NUM_SHARDS.value // 3
+  command.extend([f'--cpus {num_cpus}'])
+  if _use_small_model():
+    command.extend(
+        ['--small_model_cvo_records', '"{}"'.format(small_model_cvo_records)]
+    )
   if nonvariant_site_tfrecord_path is not None:
     command.extend([
         '--nonvariant_site_tfrecord_path',
@@ -834,6 +904,13 @@ def generate_postprocess_variants_command(
           CALL_VARIANTS_OUTPUT_COMMON_SUFFIX,
       ),
       outfile=output_vcf,
+      small_model_cvo_records=SMALL_MODEL_CVO_RECORDS_PATTERN.format(
+          make_examples_common_prefix=examples_common_prefix(
+              intermediate_results_dir
+          ),
+          sample=sample,
+          shards=_NUM_SHARDS.value,
+      ),
       sample=sample,
       extra_args=extra_args,
       nonvariant_site_tfrecord_path=NO_VARIANT_TFRECORD_PATTERN.format(

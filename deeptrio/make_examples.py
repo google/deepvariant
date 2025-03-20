@@ -177,6 +177,16 @@ PROPOSED_VARIANTS_PARENT2_ = flags.DEFINE_string(
         '`vcf_candidate_importer` for the parent 2. The GTs will be ignored.'
     ),
 )
+_SMALL_MODEL_PATH_CHILD = flags.DEFINE_string(
+    'small_model_path_child',
+    '',
+    'Path to a small model checkpoint directory for child examples.',
+)
+_SMALL_MODEL_PATH_PARENT = flags.DEFINE_string(
+    'small_model_path_parent',
+    '',
+    'Path to a small model checkpoint directory for parent examples.',
+)
 # We are using this flag for determining intervals for both child and parent
 # models. In the future, we can consider extending into 3 samples.
 CANDIDATE_POSITIONS_ = flags.DEFINE_string(
@@ -224,6 +234,7 @@ def trio_samples_from_flags(add_flags=True, flags_obj=None):
       order=[0, 1, 2],
       pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT,
       skip_output_generation=_SKIP_PARENT_CALLING.value,
+      small_model_path=_SMALL_MODEL_PATH_PARENT.value,
   )
   child_options = deepvariant_pb2.SampleOptions(
       role='child',
@@ -233,6 +244,7 @@ def trio_samples_from_flags(add_flags=True, flags_obj=None):
       ),
       order=[0, 1, 2],
       pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_CHILD,
+      small_model_path=_SMALL_MODEL_PATH_CHILD.value,
   )
   parent2_options = deepvariant_pb2.SampleOptions(
       role='parent2',
@@ -244,6 +256,7 @@ def trio_samples_from_flags(add_flags=True, flags_obj=None):
       order=[2, 1, 0],
       pileup_height=dt_constants.PILEUP_DEFAULT_HEIGHT_PARENT,
       skip_output_generation=_SKIP_PARENT_CALLING.value,
+      small_model_path=_SMALL_MODEL_PATH_PARENT.value,
   )
 
   # If --sample_name_to_train is not set, train on the child.
