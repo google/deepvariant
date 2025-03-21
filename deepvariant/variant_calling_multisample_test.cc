@@ -630,6 +630,32 @@ TEST(VariantCallingTest,
   caller->Clear();
 }
 
+TEST(VariantCallingTest, TestExcludedMethylationContigs) {
+  VariantCallerOptions options = BasicOptions();
+  options.add_exclude_contigs_for_methylation_phasing("chrX");
+  options.add_exclude_contigs_for_methylation_phasing("chrY");
+  auto caller = std::make_unique<VariantCaller>(options);
+
+  // Expect TRUE for chromosomes X and Y
+  EXPECT_TRUE(caller->IsExcludedMethylationContig("chrX"));
+  EXPECT_TRUE(caller->IsExcludedMethylationContig("chrY"));
+
+  // Expect FALSE for autosomes
+  EXPECT_FALSE(caller->IsExcludedMethylationContig("1"));
+  EXPECT_FALSE(caller->IsExcludedMethylationContig("chr1"));
+  EXPECT_FALSE(caller->IsExcludedMethylationContig("22"));
+  EXPECT_FALSE(caller->IsExcludedMethylationContig("chr22"));
+
+  // Expect FALSE for mitochondrial DNA
+  EXPECT_FALSE(caller->IsExcludedMethylationContig("MT"));
+  EXPECT_FALSE(caller->IsExcludedMethylationContig("chrMT"));
+
+  // Edge cases
+  EXPECT_FALSE(caller->IsExcludedMethylationContig(""));
+  EXPECT_FALSE(caller->IsExcludedMethylationContig("chr"));
+  EXPECT_FALSE(caller->IsExcludedMethylationContig("chrXY"));
+}
+
 struct CreateComplexAllelesSupportTestData {
   absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
           read_to_alt_alleles;

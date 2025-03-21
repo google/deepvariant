@@ -283,6 +283,10 @@ class VariantCaller {
   // for methylation-aware phasing.
   bool IsReferenceSite(const AlleleCount& allele_count) const;
 
+  // Helper function to check if the chromosome should be excluded from
+  // methylation-aware phasing.
+  bool IsExcludedMethylationContig(const std::string& chrom) const;
+
   // Computes and adds methylation fraction (MF) and methylation depth (MD)
   // to the INFO field of the variant
   void ComputeMethylationStats(

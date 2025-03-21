@@ -600,6 +600,7 @@ _ENABLE_METHYLATION_CALLING = flags.DEFINE_bool(
         ' methylation calling threshold to determine if a base is methylated.'
     ),
 )
+
 _METHYLATION_CALLING_THRESHOLD = flags.DEFINE_float(
     'methylation_calling_threshold',
     0.5,
@@ -608,6 +609,7 @@ _METHYLATION_CALLING_THRESHOLD = flags.DEFINE_float(
         'This is used in methylation calling mode.'
     ),
 )
+
 _ENABLE_METHYLATION_AWARE_PHASING = flags.DEFINE_bool(
     'enable_methylation_aware_phasing',
     False,
@@ -616,6 +618,17 @@ _ENABLE_METHYLATION_AWARE_PHASING = flags.DEFINE_bool(
         ' uses methylation information to phase reads.'
     ),
 )
+
+_EXCLUDE_CONTIGS_FOR_METHYLATION_PHASING = flags.DEFINE_string(
+    'exclude_contigs_for_methylation_phasing',
+    'chrX chrY',
+    (
+        'List of chromosomes to exclude from methylation-aware'
+        ' phasing. For all listed chromosomes, methylation-aware phasing will'
+        ' be skipped. The list can be either comma- or space-separated.'
+    ),
+)
+
 _PHASE_READS = flags.DEFINE_bool(
     'phase_reads',
     False,
@@ -1016,6 +1029,11 @@ def shared_flags_to_options(
       options.enable_methylation_aware_phasing = (
           _ENABLE_METHYLATION_AWARE_PHASING.value
       )
+    if _EXCLUDE_CONTIGS_FOR_METHYLATION_PHASING.value:
+      contigs = _EXCLUDE_CONTIGS_FOR_METHYLATION_PHASING.value.replace(
+          ',', ' '
+      ).split()
+      options.exclude_contigs_for_methylation_phasing[:] = contigs
 
     # DirectPhasing related flags.
     if _PHASE_READS.value:

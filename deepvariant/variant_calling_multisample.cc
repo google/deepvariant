@@ -870,8 +870,15 @@ std::optional<int> VariantCaller::CallVariantPosition(
       .prev_deletion_end = prev_deletion_end
     });
 
+  // Include reference site as candidate for methylation-aware phasing if it is
+  // methylated.
+  // However, if the methylated reference site is in X or Y chromosome,
+  // we do not include it as a candidate.
   bool has_methylation = false;
-  if (options_.enable_methylation_aware_phasing()) {
+  std::string chrom = target_sample_allele_count.position().reference_name();
+  if (options_.enable_methylation_aware_phasing() &&
+      IsReferenceSite(target_sample_allele_count) &&
+      !IsExcludedMethylationContig(chrom)) {
     // Count methylated reads in reference sites
     for (const auto& read_entry : target_sample_allele_count.read_alleles()) {
       const Allele& allele = read_entry.second;
@@ -916,11 +923,15 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
   std::string ref_bases = output_options.ref_bases;
   bool complex_variant_created = output_options.complex_variant_created;
 
-  // Determine if site is methylated based on read support
+  // Determine if site is a methylated reference site based on read support
+  // Exclude methylated reference sites in X or Y chromosomes from being
+  // candidates for methylation-aware phasing.
   bool has_methylation = false;
   bool ref_only_site = false;
   int total_reads = target_sample_allele_count.ref_supporting_read_count();
-  if (output_options.alt_alleles.empty()) {
+  std::string chrom = target_sample_allele_count.position().reference_name();
+  if (output_options.alt_alleles.empty() &&
+      !IsExcludedMethylationContig(chrom)) {
     ref_only_site = true;
     int methyl_reads = 0;
     for (const auto& read_entry : target_sample_allele_count.read_alleles()) {
@@ -1185,6 +1196,16 @@ bool VariantCaller::IsReferenceSite(const AlleleCount& allele_count) const {
   return true;
 }
 
+// Helper function to check if the chromosome is X or Y to exclude from
+// methylation-aware phasing. Remove chr prefix if present.
+bool VariantCaller::IsExcludedMethylationContig(const std::string& chrom)
+    const {
+  // Check if this chromosome is in the excluded list
+  return std::find(options_.exclude_contigs_for_methylation_phasing().begin(),
+                   options_.exclude_contigs_for_methylation_phasing().end(),
+                   chrom) !=
+         options_.exclude_contigs_for_methylation_phasing().end();
+}
 
 // Helper function to compute both methylation fraction and methylation depth
 // Computes the methylation statistics for reference and alternate alleles.
