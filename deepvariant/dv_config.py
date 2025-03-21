@@ -213,8 +213,17 @@ def get_pangenome_wgs_config(config: ml_collections.ConfigDict):
 
 
 def get_deepsomatic_wgs_config(config: ml_collections.ConfigDict):
-  get_wgs_config(config)
+  """Config parameters for deepsomatic_wgs."""
+  config.adaptive_epsilon = True
   config.best_checkpoint_metric = 'tune/f1_homalt'
+  config.beta_1 = 0.9651804083266324
+  config.beta_2 = 0.9665259112630292
+  config.ema_momentum = 0.991463134331829
+  config.label_smoothing = 0.000001
+  config.early_stopping_patience = 100
+  config.optimizer = 'adam'
+  config.warmup_steps = 1000
+  config.weight_decay = 0.00004
   config.learning_rate = 0.00009483389877395854
   config.learning_rate_decay_rate = 0.5
   config.warmup_steps = 10000
