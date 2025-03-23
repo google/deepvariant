@@ -303,16 +303,14 @@ class VariantCaller {
 
   // Helper function to create a VariantCaller for testing.
   static std::unique_ptr<VariantCaller> MakeTestVariantCallerFromAlleleCounts(
-          VariantCallerOptions options,
-          const std::vector<AlleleCount>& allele_counts,
-          const std::string& sample_name) {
-      auto caller =
-          std::make_unique<VariantCaller>(options);
-      caller->target_sample_ = sample_name;
-      AlleleCounter* allele_counter =
-          AlleleCounter::InitFromAlleleCounts(allele_counts);
-      caller->allele_counters_per_sample_[sample_name] = allele_counter;
-      return caller;
+      VariantCallerOptions options, absl::Span<const AlleleCount> allele_counts,
+      const std::string& sample_name) {
+    auto caller = std::make_unique<VariantCaller>(options);
+    caller->target_sample_ = sample_name;
+    AlleleCounter* allele_counter =
+        AlleleCounter::InitFromAlleleCounts(allele_counts);
+    caller->allele_counters_per_sample_[sample_name] = allele_counter;
+    return caller;
   }
 
  private:
