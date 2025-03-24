@@ -93,7 +93,7 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
         classifier=self.mock_classifier,
         snp_gq_threshold=10,
         indel_gq_threshold=10,
-        batch_size=32,
+        batch_size=4,
     )
 
   def test_call_variants(self):
@@ -185,6 +185,36 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
     self.assertEqual(
         filtered_candidates, [FAKE_VARIANT_CALL_2, FAKE_VARIANT_CALL_DELETION]
     )
+
+  def test_call_variants_small_batch(self):
+    with mock.patch.object(
+        type(self.mock_classifier),
+        "__call__",
+        lambda self, x, training: [
+            (0.0, 0.999, 0.0),
+            (0.0, 0.0, 0.1),
+        ],
+    ):
+      call_variant_outputs, filtered_candidates = (
+          self.variant_caller.call_variants(
+              candidates_with_alt_allele_indices=[
+                  (
+                      FAKE_VARIANT_CALL_1,
+                      make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+                  ),
+                  (
+                      FAKE_VARIANT_CALL_2,
+                      make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+                  ),
+              ],
+              examples=[
+                  tf.train.Example(),
+                  tf.train.Example(),
+              ],
+          )
+      )
+    self.assertLen(call_variant_outputs, 1)
+    self.assertLen(filtered_candidates, 1)
 
 
 if __name__ == "__main__":

@@ -134,9 +134,11 @@ class SmallModelVariantCaller:
     """Classifies the given example."""
     predictions = []
     for i in range(0, len(examples), self.batch_size):
-      predictions.extend(
-          self.classifier.predict_on_batch(examples[i : i + self.batch_size])
-      )
+      batch = examples[i : i + self.batch_size]
+      if len(batch) < self.batch_size:
+        predictions.extend(self.classifier(batch, training=False))
+      else:
+        predictions.extend(self.classifier.predict_on_batch(batch))
     return predictions
 
   def call_variants(
