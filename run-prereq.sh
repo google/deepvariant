@@ -255,23 +255,21 @@ note_build_stage "Install TensorRT"
 # 'dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory'
 # It's unclear whether we need this or not. Setting up to get rid of the errors.
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
-  pip3 install "${PIP_ARGS[@]}" nvidia-tensorrt
+  pip3 install "${PIP_ARGS[@]}" tensorrt==8.5.3.1
   echo "For debugging:"
-  pip3 show nvidia-tensorrt
+  pip3 show tensorrt
   TENSORRT_PATH=$(python3 -c 'import tensorrt; print(tensorrt.__path__[0])')
-  # In v8.6.1, the libs got moved to tensorrt_libs:
-  # https://docs.nvidia.com/deeplearning/tensorrt/release-notes/index.html#rel-8-6-1
-  sudo ln -sf "${TENSORRT_PATH}_libs/libnvinfer.so.8" "${TENSORRT_PATH}_libs/libnvinfer.so.7"
-  sudo ln -sf "${TENSORRT_PATH}_libs/libnvinfer_plugin.so.8" "${TENSORRT_PATH}_libs/libnvinfer_plugin.so.7"
-  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}:${TENSORRT_PATH}_libs"
+  sudo ln -sf "${TENSORRT_PATH}/libnvinfer.so.8" "${TENSORRT_PATH}/libnvinfer.so.7"
+  sudo ln -sf "${TENSORRT_PATH}/libnvinfer_plugin.so.8" "${TENSORRT_PATH}/libnvinfer_plugin.so.7"
+  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}:${TENSORRT_PATH}"
   sudo ldconfig
   # Just in case this still doesn't work, we link them.
   # This is a workaround that we might want to get rid of, if we can make sure
   # setting LD_LIBRARY_PATH and `sudo ldconfig`` works.
   if [[ ! -e /usr/local/nvidia/lib ]]; then
     sudo mkdir -p /usr/local/nvidia/lib
-    sudo ln -sf "${TENSORRT_PATH}_libs/libnvinfer.so.7" /usr/local/nvidia/lib/libnvinfer.so.7
-    sudo ln -sf "${TENSORRT_PATH}_libs/libnvinfer_plugin.so.7" /usr/local/nvidia/lib/libnvinfer_plugin.so.7
+    sudo ln -sf "${TENSORRT_PATH}/libnvinfer.so.7" /usr/local/nvidia/lib/libnvinfer.so.7
+    sudo ln -sf "${TENSORRT_PATH}/libnvinfer_plugin.so.7" /usr/local/nvidia/lib/libnvinfer_plugin.so.7
   fi
 fi
 
