@@ -498,6 +498,25 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "methylation_aware_phasing",
+    srcs = ["methylation_aware_phasing.cc"],
+    hdrs = ["methylation_aware_phasing.h"],
+    deps = ["@com_google_absl//absl/log"],
+)
+
+cc_test(
+    name = "methylation_aware_phasing_test",
+    size = "small",
+    srcs = ["methylation_aware_phasing_test.cc"],
+    deps = [
+        ":methylation_aware_phasing",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
 py_library(
     name = "make_examples_core",
     srcs = ["make_examples_core.py"],
