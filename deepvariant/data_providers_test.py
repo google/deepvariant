@@ -26,9 +26,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Tests for learning.genomics.deepvariant.data_provider."""
-
-
 from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf
