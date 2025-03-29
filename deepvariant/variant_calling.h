@@ -183,11 +183,11 @@ class VariantCaller {
       nucleus::VcfReader* vcf_reader_ptr) const;
 
   std::vector<DeepVariantCall> CallsFromVariantsInRegion(
-      const std::vector<AlleleCount>& allele_counts,
+      absl::Span<const AlleleCount> allele_counts,
       absl::Span<const nucleus::genomics::v1::Variant> variants_in_region)
       const;
 
-    // Helper function to compute the methylation fraction for a given allele.
+  // Helper function to compute the methylation fraction for a given allele.
   void ComputeMethylationStats(
     const AlleleCount& allele_count,
     const AlleleMap& allele_map,

@@ -492,7 +492,7 @@ std::vector<int> VariantCaller::CallPositionsFromVcf(
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromVariantsInRegion(
-    const std::vector<AlleleCount>& allele_counts,
+    absl::Span<const AlleleCount> allele_counts,
     absl::Span<const Variant> variants_in_region) const {
   std::vector<DeepVariantCall> calls;
   // For each variant in the region, loop through AlleleCounts to find a match
