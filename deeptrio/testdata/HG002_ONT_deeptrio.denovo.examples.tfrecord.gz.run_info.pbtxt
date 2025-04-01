@@ -3537,6 +3537,15 @@ options {
       phase_reads_region_padding_pct: 20
       small_model_vaf_context_window_size: 51
       haploid_contigs: ""
+      exclude_contigs_for_methylation_phasing: "c"
+      exclude_contigs_for_methylation_phasing: "h"
+      exclude_contigs_for_methylation_phasing: "r"
+      exclude_contigs_for_methylation_phasing: "X"
+      exclude_contigs_for_methylation_phasing: " "
+      exclude_contigs_for_methylation_phasing: "c"
+      exclude_contigs_for_methylation_phasing: "h"
+      exclude_contigs_for_methylation_phasing: "r"
+      exclude_contigs_for_methylation_phasing: "Y"
     }
     pileup_height: 100
     order: 0
@@ -3565,6 +3574,15 @@ options {
       phase_reads_region_padding_pct: 20
       small_model_vaf_context_window_size: 51
       haploid_contigs: ""
+      exclude_contigs_for_methylation_phasing: "c"
+      exclude_contigs_for_methylation_phasing: "h"
+      exclude_contigs_for_methylation_phasing: "r"
+      exclude_contigs_for_methylation_phasing: "X"
+      exclude_contigs_for_methylation_phasing: " "
+      exclude_contigs_for_methylation_phasing: "c"
+      exclude_contigs_for_methylation_phasing: "h"
+      exclude_contigs_for_methylation_phasing: "r"
+      exclude_contigs_for_methylation_phasing: "Y"
     }
     pileup_height: 100
     order: 0
@@ -3592,6 +3610,15 @@ options {
       phase_reads_region_padding_pct: 20
       small_model_vaf_context_window_size: 51
       haploid_contigs: ""
+      exclude_contigs_for_methylation_phasing: "c"
+      exclude_contigs_for_methylation_phasing: "h"
+      exclude_contigs_for_methylation_phasing: "r"
+      exclude_contigs_for_methylation_phasing: "X"
+      exclude_contigs_for_methylation_phasing: " "
+      exclude_contigs_for_methylation_phasing: "c"
+      exclude_contigs_for_methylation_phasing: "h"
+      exclude_contigs_for_methylation_phasing: "r"
+      exclude_contigs_for_methylation_phasing: "Y"
     }
     pileup_height: 100
     order: 2
@@ -3613,8 +3640,12 @@ options {
   exclude_variants_af_threshold: 0.05000000074505806
   small_model_inference_batch_size: 128
   small_model_vaf_context_window_size: 51
+  output_phase_info: true
   methylation_calling_threshold: 0.5
   small_model_call_multiallelics: true
+  output_debug_info: true
+  exclude_contigs_for_methylation_phasing: "chrX"
+  exclude_contigs_for_methylation_phasing: "chrY"
 }
 labeling_metrics {
   n_truth_variant_sites: 40
@@ -3632,13 +3663,13 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 12
-  cpu_frequency_mhz: 2868.6891250000003
-  total_memory_mb: 128668
-  wall_time_seconds: 13.379624128341675
-  cpu_user_time_seconds: 19.780977
-  cpu_system_time_seconds: 1.039625
-  memory_peak_rss_mb: 1232
+  physical_core_count: 32
+  cpu_frequency_mhz: 2449.9940000000033
+  total_memory_mb: 120736
+  wall_time_seconds: 15.469123601913452
+  cpu_user_time_seconds: 17.95973
+  cpu_system_time_seconds: 1.131296
+  memory_peak_rss_mb: 1230
   write_bytes: 8929280
 }
 stats {
