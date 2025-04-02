@@ -308,6 +308,16 @@ def resolve_sam_aux_fields(
       )
       aux_fields.update(['MM', 'ML', 'MN'])
 
+  if (
+      flags_obj.enable_methylation_calling
+      or flags_obj.enable_methylation_aware_phasing
+  ):
+    logging.info(
+        'Parsing MM, ML, and MN AUX tags because --enable_methylation_calling'
+        ' is set.'
+    )
+    aux_fields.update(['MM', 'ML', 'MN'])
+
   return list(aux_fields)
 
 
@@ -1558,13 +1568,13 @@ class RegionProcessor:
       self.exclude_variants_vcf_reader = vcf.VcfReader(
           self.options.exclude_variants_vcf_filename
       )
-    initialize_raligner = (
+    initialize_realigner = (
         self.options.realigner_enabled
         or self.options.pic_options.alt_aligned_pileup != 'none'
         or self.options.allele_counter_options.track_ref_reads
     )
 
-    if initialize_raligner:
+    if initialize_realigner:
       main_sample = self.samples[self.options.main_sample_index]
       input_bam_header = sam.SamReader(
           main_sample.options.reads_filenames[0]

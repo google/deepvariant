@@ -429,7 +429,9 @@ _AUX_FIELD_CHANNEL_DESCRIPTION = """
     HP is parsed if --phase_reads=False and --sort_by_haplotypes, --reverse_haplotypes, or --hp_tag_for_assembly_polishing are set.
     HP is parsed if --phase_reads=False and the 'haplotype' channel is requested.
     OQ is parsed if --use_original_quality_scores is set.
-    MM, ML, MN are parsed if the "base_methylation" channel is requested.
+    MM, ML, MN are parsed if the "base_methylation" channel is requested or
+    if --enable_methylation_calling or if --enable_methylation_aware_phasing
+    is set.
 """
 
 _PARSE_SAM_AUX_FIELDS = flags.DEFINE_bool(
