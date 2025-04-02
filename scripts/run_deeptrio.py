@@ -502,17 +502,17 @@ def _set_small_model_config(
     return
   special_args['call_small_model_examples'] = True
   if _CUSTOMIZED_SMALL_MODEL.value and _CUSTOMIZED_SMALL_MODEL_PARENT.value:
-    special_args['trained_small_model_path'] = _CUSTOMIZED_SMALL_MODEL.value
-    special_args['trained_small_model_parent_path'] = (
+    special_args['small_model_path_child'] = _CUSTOMIZED_SMALL_MODEL.value
+    special_args['small_model_path_parent'] = (
         _CUSTOMIZED_SMALL_MODEL_PARENT.value
     )
   elif _MODEL_TYPE.value in SMALL_MODEL_CONFIG_BY_MODEL_TYPE:
-    special_args['trained_small_model_path'] = SMALL_MODEL_CONFIG_BY_MODEL_TYPE[
+    special_args['small_model_path_child'] = SMALL_MODEL_CONFIG_BY_MODEL_TYPE[
         f'{_MODEL_TYPE.value}_child'
     ]
-    special_args['trained_small_model_parent_path'] = (
-        SMALL_MODEL_CONFIG_BY_MODEL_TYPE[f'{_MODEL_TYPE.value}_parent']
-    )
+    special_args['small_model_path_parent'] = SMALL_MODEL_CONFIG_BY_MODEL_TYPE[
+        f'{_MODEL_TYPE.value}_parent'
+    ]
 
 
 def _make_examples_command(

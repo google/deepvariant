@@ -855,8 +855,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' --sample_name_parent1 "your_sample_parent1" --sample_name_parent2'
         ' "your_sample_parent2" --call_small_model_examples'
         ' --pileup_image_height_child "60" --pileup_image_height_parent "40"'
-        ' --trained_small_model_parent_path "path/to/smallmodel/parent"'
-        ' --trained_small_model_path "path/to/smallmodel/child" --task {}',
+        ' --small_model_path_child "path/to/smallmodel/child"'
+        ' --small_model_path_parent "path/to/smallmodel/parent" --task {}',
     )
     self.assertEqual(
         postprocess_commands[0],
