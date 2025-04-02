@@ -34,6 +34,9 @@
 
 #include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
+
 namespace learning {
 namespace genomics {
 namespace deepvariant {
@@ -52,6 +55,22 @@ bool IsDifferentiallyMethylated(
 double WilcoxonRankSumTest(
     const std::vector<double>& hap1_methyl,
     const std::vector<double>& hap2_methyl);
+
+
+// Performs iterative methylation-aware phasing on a set of reads.
+//
+// This function assigns haplotype phases to unphased reads based on their
+// methylation profiles at informative CpG sites. It uses already-phased reads
+// from direct phasing to define the haplotype-specific methylation signatures,
+// identifies differentially methylated sites, and votes for each unphased
+// read's haplotype assignment by comparing its methylation levels to those
+// signatures.
+std::vector<int> PerformMethylationAwarePhasing(
+  const std::vector<nucleus::genomics::v1::Read>&
+    reads_to_phase,
+  const std::vector<int>& initial_read_phases,
+  const std::vector<DeepVariantCall>& methylated_ref_sites,
+  int max_iter);
 
 }  // namespace deepvariant
 }  // namespace genomics

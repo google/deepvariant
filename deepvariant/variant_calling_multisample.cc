@@ -1161,21 +1161,24 @@ void VariantCaller::MergeMethylatedAlleleCounts(
                 allele_count.position().position() - 1) continue;
 
         // Track reads that were methylated in G.
-        std::vector<std::string> methylated_read_keys;
+        std::vector<std::pair<std::string, float>> methylated_reads;
 
         // Remove methylation from G but store affected reads.
         for (auto& [read_key, allele] : *allele_count.mutable_read_alleles()) {
           if (allele.is_methylated()) {
-            methylated_read_keys.push_back(read_key);  // Store the read key
+            int32_t methylation_level = allele.methylation_level();
+            methylated_reads.emplace_back(read_key, methylation_level);
             allele.set_is_methylated(false);  // Remove methylation
+            allele.set_methylation_level(0);
           }
         }
 
         // Transfer methylation to the same read keys in the C site.
-        for (const std::string& read_key : methylated_read_keys) {
+        for (const auto& [read_key, methylation_level] : methylated_reads) {
           auto it = prev_allele_count.mutable_read_alleles()->find(read_key);
           if (it != prev_allele_count.mutable_read_alleles()->end()) {
             it->second.set_is_methylated(true);  // Set methylation on same read
+            it->second.set_methylation_level(methylation_level);
           }
         }
       }

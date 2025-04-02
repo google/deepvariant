@@ -254,39 +254,46 @@ int AlleleIndex(absl::Span<const AlleleCount> allele_counts, int64_t pos) {
   return std::distance(allele_counts.begin(), idx);
 }
 
+// Returns true if the methylation probability at the given offset is above the
+// threshold for methylation calling.
 bool IsMethylated(const Read& read, int offset,
-                  bool enable_methylation_calling,
-                  double methylation_calling_threshold) {
+  bool enable_methylation_calling,
+  double methylation_calling_threshold) {
   // Check for presence of base modifications. Handle the case where it's
   // missing.
   if (read.base_modifications().empty() || !enable_methylation_calling) {
-    return false;
+  return false;
+  }
+
+  float methyl_prob =
+      static_cast<float>(GetMethylationLevel(read, offset)) / 255.0;
+  if (methyl_prob < 0.0) return false;
+
+  return methyl_prob > methylation_calling_threshold;
+}
+
+// Returns the methylation level [0, 255] at the given offset for 5mC.
+// Returns -1 if base_modification is missing or offset is invalid.
+int32_t GetMethylationLevel(const Read& read, int offset) {
+  if (read.base_modifications().empty()) {
+    return -1;
+  }
+
+  // TODO: Handle the case where there are multiple base
+  // modifications. Currently, we're only parsing 5mC modifications.
+  auto it = read.base_modifications().find(nucleus::k5mC);
+  if (it == read.base_modifications().end()) {
+    return -1;  // 5mC not found
   }
 
   // Check if the offset is valid within the base modifications data.
-  // TODO: Handle the case where there are multiple base
-  // modifications. Currently, we're only parsing 5mC modifications.
-  auto it = read.base_modifications().find(
-      nucleus::k5mC);
-  if (it == read.base_modifications().end()) {
-    return false;  // "5mC" modification not found
-  }
-
-  // Get the vector of modification values.
   const auto& modifications = it->second;
   if (offset < 0 || offset >= modifications.size()) {
-    return false;  // Offset out of bounds
+    return -1;
   }
 
-  // Convert methylation values to the methylation probability.
-  // Methylation values range from 0 to 255 inclusive.
-  double methylation_probability =
-      static_cast<double>(unsigned(modifications[offset])) / 255.0;
-
-  if (methylation_probability > methylation_calling_threshold) {
-    return true;
-  }
-  return false;
+  return static_cast<int32_t>(
+      static_cast<unsigned char>(modifications[offset]));
 }
 
 void AlleleCounter::Init() {
@@ -509,7 +516,8 @@ void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
       const Allele allele = MakeAllele(
           to_add_i.bases(), to_add_i.type(), 1, to_add_i.is_low_quality(),
           to_add_i.mapping_quality(), to_add_i.avg_base_quality(),
-          to_add_i.is_reverse_strand(), to_add_i.is_methylated());
+          to_add_i.is_reverse_strand(), to_add_i.is_methylated(),
+          to_add_i.methylation_level());
 
       // Naively, there should never be multiple counts for the same read key.
       // We detect such a situation here but only write out a warning. It would
@@ -896,10 +904,15 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
           double methylation_calling_threshold =
               options_.methylation_calling_threshold();
           bool is_methylated = false;
+          int32_t methylation_level = 0;
+          // Store methylation probability for each read allele.
+          // This is used for methylation-aware phasing.
           if (IsMethylated(read, base_offset,
                           options_.enable_methylation_calling(),
                           methylation_calling_threshold)) {
             is_methylated = true;
+            methylation_level =
+                GetMethylationLevel(read, base_offset);
           }
           if (IsValidRefOffset(ref_offset) &&
               CanBasesBeUsed(read, base_offset, 1, options_,
@@ -913,7 +926,8 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
                 type, is_low_quality_read_allele,
                 read.alignment().mapping_quality(),
                 read.aligned_quality(base_offset),
-                read.alignment().position().reverse_strand(), is_methylated);
+                read.alignment().position().reverse_strand(), is_methylated,
+                methylation_level);
           }
         }
         read_offset += op_len;

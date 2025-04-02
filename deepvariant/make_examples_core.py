@@ -62,6 +62,7 @@ from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.python import direct_phasing
 from deepvariant.python import make_examples_native as make_examples_native_module
+from deepvariant.python import methylation_aware_phasing
 from deepvariant.python import pileup_image_native
 from deepvariant.realigner import realigner as realigner_module
 from deepvariant.small_model import inference as small_model_inference
@@ -1528,6 +1529,26 @@ class RegionProcessor:
         )
     return readers
 
+  def _is_methylated_reference_site(
+      self, candidate: deepvariant_pb2.DeepVariantCall
+  ) -> bool:
+    """Checks if the candidate is a methylated reference site.
+
+    Any reference site that were included as candidate has been checked for
+    methylation, hence it's sufficient to only check that it is a reference
+    site.
+
+    Args:
+      candidate: A DeepVariantCall proto.
+
+    Returns:
+      True if the candidate is a methylated reference site.
+    """
+    return (
+        len(candidate.variant.alternate_bases) == 1
+        and candidate.variant.alternate_bases[0] == '.'
+    )
+
   def _initialize(self):
     """Initialize the resources needed for this work in the current env."""
     if self.initialized:
@@ -2632,6 +2653,23 @@ class RegionProcessor:
           right_padding=right_padding,
       )
 
+      # If methylation-aware phasing is enabled, filter for methylated reference
+      # sites and SNP candidates.
+      # SNP candidates will be phased using direct phasing.
+      # Methylated reference sites will be phased using methylation-aware
+      # phasing after direct phasing.
+      snp_candidates = []
+      methylated_ref_sites = []
+      if self.options.enable_methylation_aware_phasing:
+        for candidate in candidates[role]:
+          if self._is_methylated_reference_site(candidate):
+            methylated_ref_sites.append(candidate)
+          else:
+            snp_candidates.append(candidate)
+
+        # Only use SNP candidates for direct phasing
+        candidates[role] = snp_candidates
+
       if self.options.phase_reads and not sample.options.skip_phasing:
         if padded_region is not None:
           reads_to_phase = list(
@@ -2656,13 +2694,27 @@ class RegionProcessor:
           read_phases = self.direct_phasing_cpp.phase(
               candidates[role], reads_to_phase
           )
-          # Assign phase tag to reads.
+
+          # If methylation-aware phasing is enabled, run it on unphased reads.
+          if (
+              self.options.enable_methylation_aware_phasing
+              and methylated_ref_sites
+          ):
+            # Perform methylation-aware phasing on unphased reads from direct
+            # phasing.
+            read_phases = methylation_aware_phasing.phase(
+                reads_to_phase, read_phases, methylated_ref_sites
+            )
+
+          # Assign phase tag to reads after direct phasing and/or
+          # methylation-aware phasing.
           read_id_to_phase = {}
           for read_phase, read in zip(read_phases, reads_to_phase):
             # Remove existing values
             del read.info['HP'].values[:]
             read_key = read.fragment_name + '/' + str(read.read_number)
             read_id_to_phase[read_key] = read_phase
+
             if self.options.pic_options.reverse_haplotypes:
               if read_phase in [1, 2]:
                 read_phase = 1 + (read_phase % 2)

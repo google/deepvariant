@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google LLC.
+ * Copyright 2025 Google LLC.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,37 +29,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Misc. utilities used throughout DeepVariant
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_UTILS_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_UTILS_H_
+#include "pybind11/cast.h"
+#if true  // Trick to stop tooling from moving the #include around.
+#include <pybind11/pybind11.h>
+#endif
 
-#include <string>
+#include <pybind11/stl.h>
 
-#include "deepvariant/protos/deepvariant.pb.h"
-#include "absl/strings/string_view.h"
-#include "third_party/nucleus/protos/variants.pb.h"
+#include "deepvariant/methylation_aware_phasing.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
+#include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
+#include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
+#include "pybind11_protobuf/native_proto_caster.h"
 
-namespace learning {
-namespace genomics {
-namespace deepvariant {
+namespace py = pybind11;
 
-using std::string;
+PYBIND11_MODULE(methylation_aware_phasing, m) {
+  pybind11_protobuf::ImportNativeProtoCasters();
+  using namespace ::learning::genomics::deepvariant;  // NOLINT
 
-// Creates an allele with the provided bases, type, and count.
-Allele MakeAllele(absl::string_view bases, AlleleType type, int count,
-                  bool is_low_quality = false, int mapping_quality = 0,
-                  int avg_base_quality = 0, bool is_reverse_strand = false,
-                  bool is_methylated = false,
-                  int methylation_level = 0);
-
-// First simplifies ref and alt by removing the common suffix, and the returns
-// simplified_ref->simplified_alt.
-string SimplifyRefAlt(absl::string_view ref, absl::string_view alt);
-
-AlleleType AlleleTypeFromAlt(absl::string_view ref, absl::string_view alt);
-
-}  // namespace deepvariant
-}  // namespace genomics
-}  // namespace learning
-
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_UTILS_H_
+  m.def("phase",
+        &PerformMethylationAwarePhasing,
+        py::arg("reads_to_phase"),
+        py::arg("initial_read_phases"),
+        py::arg("methylated_ref_sites"),
+        py::arg("max_iter") = 10);
+}

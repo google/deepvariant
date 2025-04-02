@@ -42,6 +42,7 @@ friend class test_case_name##_##test_name##_Test
 
 #include <stdbool.h>
 
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -98,6 +99,10 @@ bool IsMethylated(const nucleus::genomics::v1::Read& read, int offset,
                   bool enable_methylation_calling,
                   double methylation_calling_threshold);
 
+// Extract the methylation level of a site at the given offset of the read.
+int32_t GetMethylationLevel(const nucleus::genomics::v1::Read& read,
+                                int offset);
+
 // Represents an Allele observed in a read at a specific position in our
 // interval. Supports the concept that the site should be skipped but still
 // needs to be represented in a data processing chain. ReadAlleles marked as
@@ -117,7 +122,7 @@ class ReadAllele {
   ReadAllele(int position, absl::string_view bases, const AlleleType& type,
              bool is_low_quality = false, uint8_t mapping_quality = 0,
              uint8_t avg_base_quality = 0, bool is_reverse_strand = false,
-             bool is_methylated = false)
+             bool is_methylated = false, uint8_t methylation_level = 0)
       : position_(position),
         bases_(bases),
         type_(type),
@@ -125,7 +130,8 @@ class ReadAllele {
         mapping_quality_(mapping_quality),
         avg_base_quality_(avg_base_quality),
         is_reverse_strand_(is_reverse_strand),
-        is_methylated_(is_methylated){}
+        is_methylated_(is_methylated),
+        methylation_level_(methylation_level) {}
 
   // Gets the position of this ReadAllele. Can be < 0 or >= IntervalLength(),
   // indicating that the ReadAllele refers to a position outside of the
@@ -151,6 +157,8 @@ class ReadAllele {
 
   bool is_methylated() const { return is_methylated_; }
 
+  float methylation_level() const { return methylation_level_; }
+
  private:
   static constexpr int kInvalidPosition = -1;
 
@@ -162,6 +170,7 @@ class ReadAllele {
   uint8_t avg_base_quality_ = 0;
   bool is_reverse_strand_ = false;
   bool is_methylated_ = false;
+  uint8_t methylation_level_ = 0;
 };
 
 // Workhorse class to compute AlleleCounts over an interval on the genome.

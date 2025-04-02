@@ -36,7 +36,10 @@
 #include <cstddef>
 #include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "boost/math/distributions/normal.hpp"
+#include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 
 namespace learning {
 namespace genomics {
@@ -123,6 +126,48 @@ double WilcoxonRankSumTest(const std::vector<double>& hap1_methyl,
 
   return p_value;
 }
+
+// Performs iterative methylation-aware phasing on a set of reads.
+//
+// This function assigns haplotype phases to unphased reads based on their
+// methylation profiles at informative CpG sites. It uses already-phased reads
+// from direct phasing to define the haplotype-specific methylation signatures,
+// identifies differentially methylated sites, and votes for each unphased
+// read's haplotype assignment by comparing its methylation levels to those
+// signatures.
+//
+// The phasing is done iteratively. In each iteration:
+//   1. Reads phased to haplotype 1 and 2 are used to identify informative
+//      CpG sites.
+//   2. Unphased reads are assigned to the haplotype with more similar
+//      methylation patterns.
+//   3. The loop terminates when either convergence is reached (no new reads
+//      were phased), or a maximum number of iterations is exceeded.
+//
+// Args:
+//   reads_to_phase: Vector of all reads in the region, including phased and
+//                   unphased.
+//   initial_read_phases: Vector of phase assignments for each read
+//                        (0 = unphased).
+//   methylated_ref_sites: List of candidate CpG sites used for
+//                        methylation-aware phasing.
+//   max_iter: Maximum number of phasing iterations to perform.
+//
+// Returns:
+//   A vector of integer phase calls (0, 1, or 2) for each read, same size and
+//   order as reads_to_phase.
+std::vector<int> PerformMethylationAwarePhasing(
+  const std::vector<nucleus::genomics::v1::Read>&
+    reads_to_phase,
+  const std::vector<int>& initial_read_phases,
+  const std::vector<DeepVariantCall>& methylated_ref_sites,
+  int max_iter) {
+  std::vector<int> current_phases = initial_read_phases;
+
+  // TODO: Implement iterative methylation-aware phasing.
+  return initial_read_phases;
+}
+
 
 }  // namespace deepvariant
 }  // namespace genomics

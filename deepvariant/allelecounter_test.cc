@@ -374,6 +374,98 @@ TEST_F(AlleleCounterTest, TestAddRead) {
   }
 }
 
+TEST_F(AlleleCounterTest, IsMethylatedReturnsTrueAboveThreshold) {
+  Read read;
+  std::vector<uint8_t> mod_values = {0, 255};  // Index 1 is fully methylated
+  (*read.mutable_base_modifications())[nucleus::k5mC].assign(mod_values.begin(),
+                                                             mod_values.end());
+
+  // Should return true since methylation prob = 255/255 = 1.0 > 0.5
+  EXPECT_TRUE(IsMethylated(read, 1, /*enable_methylation_calling=*/true,
+                            /*methylation_calling_threshold=*/0.5));
+}
+
+TEST_F(AlleleCounterTest, IsMethylatedReturnsFalseBelowThreshold) {
+  Read read;
+  std::vector<uint8_t> mod_values = {0, 100};  // prob = 100/255 ≈ 0.392
+  (*read.mutable_base_modifications())[nucleus::k5mC].assign(mod_values.begin(),
+                                                             mod_values.end());
+
+  // Should return false since 100/255 < 0.5
+  EXPECT_FALSE(IsMethylated(read, 1, /*enable_methylation_calling=*/true,
+                            /*methylation_calling_threshold=*/0.5));
+}
+
+TEST_F(AlleleCounterTest, IsMethylatedReturnsFalseWhenDisabled) {
+  Read read;
+  std::vector<uint8_t> mod_values = {0, 255};
+  (*read.mutable_base_modifications())[nucleus::k5mC].assign(mod_values.begin(),
+                                                             mod_values.end());
+
+  // Feature disabled
+  EXPECT_FALSE(IsMethylated(read, 1, /*enable_methylation_calling=*/false,
+                            /*methylation_calling_threshold=*/0.5));
+}
+
+TEST_F(AlleleCounterTest, IsMethylatedReturnsFalseIf5mCMissing) {
+  Read read;
+  // Has base modifications but not 5mC
+  std::vector<uint8_t> mod_values = {255};
+  (*read.mutable_base_modifications())["non_5mC_mod"].assign(mod_values.begin(),
+                                                             mod_values.end());
+
+  EXPECT_FALSE(IsMethylated(read, 0, /*enable_methylation_calling=*/true,
+                            /*methylation_calling_threshold=*/0.5));
+}
+
+TEST_F(AlleleCounterTest, IsMethylatedReturnsFalseIfOffsetInvalid) {
+  Read read;
+  std::vector<uint8_t> mod_values = {255};  // Only index 0 valid
+  (*read.mutable_base_modifications())[nucleus::k5mC].assign(mod_values.begin(),
+                                                             mod_values.end());
+
+  EXPECT_FALSE(IsMethylated(read, -1, /*enable_methylation_calling=*/true,
+                            /*methylation_calling_threshold=*/0.5));
+  EXPECT_FALSE(IsMethylated(read, 1, /*enable_methylation_calling=*/true,
+                            /*methylation_calling_threshold=*/0.5));
+}
+
+TEST_F(AlleleCounterTest, GetMethylationLevelReturnsCorrectValues) {
+  Read read;
+  std::vector<uint8_t> mod_values = {static_cast<uint8_t>(42),
+                                     static_cast<uint8_t>(128),
+                                     static_cast<uint8_t>(255)};
+  (*read.mutable_base_modifications())[nucleus::k5mC].assign(mod_values.begin(),
+                                                             mod_values.end());
+  EXPECT_EQ(GetMethylationLevel(read, 0), 42);
+  EXPECT_EQ(GetMethylationLevel(read, 1), 128);
+  EXPECT_EQ(GetMethylationLevel(read, 2), 255);
+}
+
+TEST_F(AlleleCounterTest,
+       GetMethylationLevelReturnsMinusOneIfModificationsMissing) {
+  Read read;  // No base_modifications at all
+  EXPECT_EQ(GetMethylationLevel(read, 0), -1);
+}
+
+TEST_F(AlleleCounterTest, GetMethylationLevelReturnsMinusOneIf5mCMissing) {
+  Read read;
+  std::vector<uint8_t> mod_values = {static_cast<uint8_t>(255)};
+  (*read.mutable_base_modifications())["other_mod"].assign(mod_values.begin(),
+                                                           mod_values.end());
+  EXPECT_EQ(GetMethylationLevel(read, 0), -1);
+}
+
+TEST_F(AlleleCounterTest,
+       GetMethylationLevelReturnsMinusOneIfIndexOutOfBounds) {
+  Read read;
+  std::vector<uint8_t> mod_values = {static_cast<uint8_t>(42)};
+  (*read.mutable_base_modifications())[nucleus::k5mC].assign(mod_values.begin(),
+                                                             mod_values.end());
+  EXPECT_EQ(GetMethylationLevel(read, -1), -1);
+  EXPECT_EQ(GetMethylationLevel(read, 1), -1);
+}
+
 TEST_F(AlleleCounterTest, TestAddMethylatedRead) {
   // Set up AlleleCounter with methylation calling enabled
   AlleleCounterOptions options;
@@ -396,7 +488,9 @@ TEST_F(AlleleCounterTest, TestAddMethylatedRead) {
   auto read = MakeRead(chr_, start_, seq_, {"5M"});
 
   // Methylation values for each base
-  (*read.mutable_base_modifications())[nucleus::k5mC] = {0, 255, 0, 0, 0};
+  std::vector<uint8_t> mod_values = {0, 255, 0, 0, 0};
+  (*read.mutable_base_modifications())[nucleus::k5mC].assign(mod_values.begin(),
+                                                             mod_values.end());
 
   // Add the read to AlleleCounter
   allele_counter->Add(read, "sample");
