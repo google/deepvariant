@@ -117,11 +117,6 @@ TEST(DirectPhasingTest, TestAlleleTypeFromCandidateOneBaseSubstitution) {
             AlleleTypeFromCandidate("A", MakeCandidate(100, 101)));
 }
 
-struct TestNumOfSubstitutionAllelesTestCase {
-  DeepVariantCall candidate;
-  int expected_allele_depth;
-};
-
 TEST(DirectPhasingTest, TestNumOfSubstitutionAllelesMultipleSubAlleles) {
   EXPECT_EQ(2,
     NumOfSubstitutionAlleles(MakeCandidate(100, 101, {
@@ -221,14 +216,6 @@ TEST(DirectPhasingTest, ReadSupportFromProtoLQReads) {
   EXPECT_THAT(direct_phasing.ReadSupportFromProto(read_support_proto),
               UnorderedElementsAreArray(expected_read_support_infos));
 }
-
-struct ReadFields {
-  std::string read_name;
-  std::string chr;
-  int position;
-  std::string bases;
-  std::vector<std::string> cigar;
-};
 
 // Creates test reads.
 // Only read names are used in tests. All other read fields do not affect the

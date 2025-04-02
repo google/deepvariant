@@ -52,8 +52,6 @@ namespace deepvariant {
 
 using std::string;
 
-constexpr int NUM_CHANNELS = 6;
-constexpr int NUM_SEQ_TYPE = PileupImageOptions::SequencingType_ARRAYSIZE;
 constexpr unsigned char kChannelValue255 = 255;
 constexpr unsigned char kChannelValue200 = 200;
 // Different ways alt aligned reads can be expressed.
