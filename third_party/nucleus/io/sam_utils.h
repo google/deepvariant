@@ -78,6 +78,9 @@ extern const char kSMTag[];
 extern const char kSNTag[];
 extern const char kSOTag[];
 extern const char kVNTag[];
+extern const char kBCTag[];
+extern const char kCMTag[];
+extern const char kpbTag[];
 
 // Array mapping CigarUnit_Operation enum to htslib BAM constants.
 extern const int kProtoToHtslibCigar[];

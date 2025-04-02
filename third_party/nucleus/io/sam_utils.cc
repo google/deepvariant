@@ -62,6 +62,9 @@ const char kSMTag[] = "SM:";
 const char kSNTag[] = "SN:";
 const char kSOTag[] = "SO:";
 const char kVNTag[] = "VN:";
+const char kBCTag[] = "BC:";
+const char kCMTag[] = "CM:";
+const char kpbTag[] = "pb:";
 
 const int kProtoToHtslibCigar[] = {
     // genomics::v1::CigarUnit::OPERATION_UNSPECIFIED,

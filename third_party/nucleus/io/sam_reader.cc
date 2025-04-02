@@ -132,6 +132,8 @@ void AddHeaderLineToHeader(const string& line, SamHeader& header) {
       }
     } else if (tag == kSamHeaderTag) {
       // Skip this since it's the header line token.
+    } else if (tag == kpbTag) {
+      // Skip this since it is a PacBio Header Tag.
     } else {
       LOG(WARNING) << "Unknown tag " << tag
                    << " in header line, ignoring: " << line;
@@ -175,6 +177,9 @@ void AddReadGroupToHeader(const string& line,
       readgroup->set_platform_unit(value);
     } else if (tag == kSMTag) {
       readgroup->set_sample_id(value);
+    } else if (tag == kBCTag || tag == kCMTag) {
+      // Known flags that we don't need to do anything on.
+      continue;
     } else {
       LOG(WARNING) << "Unknown tag " << tag
                    << " in RG line, ignoring: " << line;
