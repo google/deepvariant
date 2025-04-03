@@ -266,6 +266,12 @@ _GBZ_SHARED_MEMORY_NAME = flags.DEFINE_string(
     ),
 )
 
+_GBZ_SHARED_MEMORY_SIZE_GB = flags.DEFINE_integer(
+    'gbz_shared_memory_size_gb',
+    12,
+    'Optional. Size of the shared memory region to create.',
+)
+
 MODEL_TYPE_MAP = {
     'WGS': '/opt/models/pangenome_aware_deepvariant/wgs',
     'WES': '/opt/models/pangenome_aware_deepvariant/wes',
@@ -730,8 +736,7 @@ def create_all_commands_and_logfiles(
         load_gbz_into_shared_memory_command(
             gbz=_PANGENOME.value,
             gbz_shared_memory_name=_GBZ_SHARED_MEMORY_NAME.value,
-            # TODO: This might need to be a flag later on.
-            gbz_shared_memory_size_gb=12,
+            gbz_shared_memory_size_gb=_GBZ_SHARED_MEMORY_SIZE_GB.value,
         )
     )
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
