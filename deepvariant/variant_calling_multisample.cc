@@ -259,59 +259,54 @@ bool VariantCaller::AlleleFilter(
 namespace {
   // Helper function to generate a map from read id to a vector of alt alleles
   // that are supported by each read.
-  absl::flat_hash_map<
-      std::string, std::vector<AlleleAtPosition>> CreateCombinedAllelesSupport(
-        const std::vector<AlleleCount>& allele_counts_context,
-        absl::string_view del_allele_ref_bases,
-        int del_start,
-        int del_len
-      ) {
-    absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
-        read_to_alt_alleles;
-    int found_alt_allele_overlapped_by_deletion = 0;
-    bool overlapping_del_found = false;
-    // Iterating over all positions starting at the del_start.
-    for (const auto& allele_count : allele_counts_context) {
-      int allele_pos = allele_count.position().position();
-      if (allele_pos < del_start) {
+absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
+CreateCombinedAllelesSupport(
+    absl::Span<const AlleleCount> allele_counts_context,
+    absl::string_view del_allele_ref_bases, int del_start, int del_len) {
+  absl::flat_hash_map<std::string, std::vector<AlleleAtPosition>>
+      read_to_alt_alleles;
+  int found_alt_allele_overlapped_by_deletion = 0;
+  bool overlapping_del_found = false;
+  // Iterating over all positions starting at the del_start.
+  for (const auto& allele_count : allele_counts_context) {
+    int allele_pos = allele_count.position().position();
+    if (allele_pos < del_start) {
+      continue;
+    }
+    if (allele_pos >= del_start + del_len) {
+      break;
+    }
+    for (const auto& [read_id, read_allele] : allele_count.read_alleles()) {
+      // Skip alleles for the deletion itself.
+      if (allele_pos == del_start &&
+          read_allele.type() == AlleleType::DELETION &&
+          read_allele.bases().size() == del_len) {
         continue;
       }
-      if (allele_pos >= del_start + del_len) {
+      // We cannot create complex variant if there are other deletions
+      // overlapping our deletion.
+      if (read_allele.type() == AlleleType::DELETION) {
+        found_alt_allele_overlapped_by_deletion = 0;
+        overlapping_del_found = true;
         break;
       }
-      for (const auto& [read_id, read_allele] :
-            allele_count.read_alleles()) {
-        // Skip alleles for the deletion itself.
-        if (allele_pos == del_start &&
-            read_allele.type() == AlleleType::DELETION &&
-            read_allele.bases().size() == del_len) {
-          continue;
-        }
-        // We cannot create complex variant if there are other deletions
-        // overlapping our deletion.
-        if (read_allele.type() == AlleleType::DELETION) {
-          found_alt_allele_overlapped_by_deletion = 0;
-          overlapping_del_found = true;
-          break;
-        }
-        // We are only interested in cases where there is alt allele that
-        // starts after the deletion start and ends before the deletion
-        // end.
-        if (allele_pos >= del_start &&
-            read_allele.type() != AlleleType::REFERENCE) {
-          found_alt_allele_overlapped_by_deletion++;
-        }
-        read_to_alt_alleles[read_id].push_back(
-            {.alt_bases = read_allele.bases(),
-              .type = read_allele.type(),
-              .position = allele_pos});
-      }  // for (read_id, read_allele)
-    }  // for (allele_counts_context)
-    if (found_alt_allele_overlapped_by_deletion < 1 || overlapping_del_found) {
-      read_to_alt_alleles.clear();
-    }
-    return read_to_alt_alleles;
+      // We are only interested in cases where there is alt allele that
+      // starts after the deletion start and ends before the deletion
+      // end.
+      if (allele_pos >= del_start &&
+          read_allele.type() != AlleleType::REFERENCE) {
+        found_alt_allele_overlapped_by_deletion++;
+      }
+      read_to_alt_alleles[read_id].push_back({.alt_bases = read_allele.bases(),
+                                              .type = read_allele.type(),
+                                              .position = allele_pos});
+    }  // for (read_id, read_allele)
+  }  // for (allele_counts_context)
+  if (found_alt_allele_overlapped_by_deletion < 1 || overlapping_del_found) {
+    read_to_alt_alleles.clear();
   }
+  return read_to_alt_alleles;
+}
 }  // namespace
 
 
