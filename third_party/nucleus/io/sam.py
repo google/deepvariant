@@ -118,9 +118,12 @@ significantly improves file access simplicity and safety.)
 
 For more information about CRAM, see:
 * The `samtools` documentation at http://www.htslib.org/doc/samtools.html
-* The "Global Options" section of the samtools docs at http://www.htslib.org/doc/samtools.html#GLOBAL_OPTIONS
-* How reference sequences are encoded in CRAM at http://www.htslib.org/doc/samtools.html#REFERENCE_SEQUENCES
-* Finally, benchmarking of different CRAM options http://www.htslib.org/benchmarks/CRAM.html
+* The "Global Options" section of the samtools docs at
+http://www.htslib.org/doc/samtools.html#GLOBAL_OPTIONS
+* How reference sequences are encoded in CRAM at
+http://www.htslib.org/doc/samtools.html#REFERENCE_SEQUENCES
+* Finally, benchmarking of different CRAM options
+http://www.htslib.org/benchmarks/CRAM.html
 """
 # pylint: enable=line-too-long
 
@@ -146,16 +149,18 @@ class NativeSamReader(genomics_reader.GenomicsReader):
   on the filename's extensions.
   """
 
-  def __init__(self,
-               input_path,
-               ref_path=None,
-               read_requirements=None,
-               parse_aux_fields=False,
-               hts_block_size=None,
-               downsample_fraction=None,
-               random_seed=None,
-               use_original_base_quality_scores=False,
-               aux_fields_to_keep=None):
+  def __init__(
+      self,
+      input_path,
+      ref_path=None,
+      read_requirements=None,
+      parse_aux_fields=False,
+      hts_block_size=None,
+      downsample_fraction=None,
+      random_seed=None,
+      use_original_base_quality_scores=False,
+      aux_fields_to_keep=None,
+  ):
     """Initializes a NativeSamReader.
 
     Args:
@@ -199,15 +204,18 @@ class NativeSamReader(genomics_reader.GenomicsReader):
       # Delayed loading of tfbam_lib.
       try:
         from tfbam_lib import tfbam_reader  # pylint: disable=g-import-not-at-top
+
         self._reader = tfbam_reader.make_sam_reader(
             input_path,
             read_requirements=read_requirements,
             unused_block_size=hts_block_size,
             downsample_fraction=downsample_fraction,
-            random_seed=random_seed)
+            random_seed=random_seed,
+        )
       except ImportError:
         raise ImportError(
-            'tfbam_lib module not found, cannot read .tfbam files.')
+            'tfbam_lib module not found, cannot read .tfbam files.'
+        )
     else:
       aux_field_handling = reads_pb2.SamReaderOptions.SKIP_AUX_FIELDS
       if parse_aux_fields:
@@ -219,7 +227,8 @@ class NativeSamReader(genomics_reader.GenomicsReader):
         if not 0.0 < downsample_fraction <= 1.0:
           raise ValueError(
               'downsample_fraction must be in the interval (0.0, 1.0]',
-              downsample_fraction)
+              downsample_fraction,
+          )
 
       if random_seed is None:
         # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
@@ -235,7 +244,8 @@ class NativeSamReader(genomics_reader.GenomicsReader):
               hts_block_size=(hts_block_size or 0),
               downsample_fraction=downsample_fraction,
               random_seed=random_seed,
-              use_original_base_quality_scores=use_original_base_quality_scores)
+              use_original_base_quality_scores=use_original_base_quality_scores,
+          ),
       )
 
       self.header = self._reader.header
@@ -257,28 +267,32 @@ class NativeSamReader(genomics_reader.GenomicsReader):
 class SamReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading Read protos from SAM/BAM/CRAM or TFRecord files."""
 
-  def _native_reader(self,
-                     input_path,
-                     ref_name='',
-                     context=1000,
-                     chrom_prefix='',
-                     shared_memory_name='GBZ_SHARED_MEMORY',
-                     create_shared_memory=False,
-                     use_loaded_shared_memory=False,
-                     shared_memory_size_gb=12,
-                     num_processes=0,
-                     **kwargs):
+  def _native_reader(
+      self,
+      input_path,
+      ref_name='',
+      context=1000,
+      chrom_prefix='',
+      shared_memory_name='GBZ_SHARED_MEMORY',
+      create_shared_memory=False,
+      use_loaded_shared_memory=False,
+      shared_memory_size_gb=12,
+      num_processes=0,
+      **kwargs
+  ):
     if input_path.endswith('.gbz'):
       print('gbzReader python')
-      return gbz_reader.GbzReader(input_path,
-                                  ref_name,
-                                  context,
-                                  chrom_prefix,
-                                  shared_memory_name,
-                                  create_shared_memory,
-                                  use_loaded_shared_memory,
-                                  shared_memory_size_gb,
-                                  num_processes)
+      return gbz_reader.GbzReader(
+          input_path,
+          ref_name,
+          context,
+          chrom_prefix,
+          shared_memory_name,
+          create_shared_memory,
+          use_loaded_shared_memory,
+          shared_memory_size_gb,
+          num_processes,
+      )
 
     return NativeSamReader(input_path, **kwargs)
 
@@ -307,11 +321,17 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
     super(NativeSamWriter, self).__init__()
     self._writer = sam_writer.SamWriter.to_file(
         output_path,
-        ref_path.encode('utf8') if ref_path is not None else '', embed_ref,
-        header)
+        ref_path.encode('utf8') if ref_path is not None else '',
+        embed_ref,
+        header,
+    )
 
   def write(self, proto):
     self._writer.write(proto)
+
+  def close(self):
+    # Pass exit when closing.
+    self._writer.__exit__(None, None, None)
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
@@ -359,4 +379,5 @@ class InMemorySamReader(object):
     """
     # TODO: Add a faster query version for sorted reads.
     return (
-        read for read in self.reads if utils.read_overlaps_region(read, region))
+        read for read in self.reads if utils.read_overlaps_region(read, region)
+    )

@@ -1181,13 +1181,25 @@ class OutputsWriter:
       )
 
     if options.read_phases_output:
-      self._add_writer(
-          'read_phases', epath.Path(options.read_phases_output).open('w')
-      )
-      writer = self._writers['read_phases']
-      if writer is not None:
-        writer.__enter__()
-        writer.write('\t'.join(READ_PHASES_OUTPUT_COLUMNS) + '\n')
+      if options.read_phases_output.endswith('.tsv'):
+        self._add_writer(
+            'read_phases', epath.Path(options.read_phases_output).open('w')
+        )
+        writer = self._writers['read_phases']
+        if writer is not None:
+          writer.__enter__()
+          writer.write('\t'.join(READ_PHASES_OUTPUT_COLUMNS) + '\n')
+      elif options.read_phases_output.endswith('.bam'):
+        input_bam_header = sam.SamReader(
+            options.sample_options[0].reads_filenames[0]
+        ).header
+        self._add_writer(
+            'read_phases',
+            sam.SamWriter(options.read_phases_output, header=input_bam_header),
+        )
+        writer = self._writers['read_phases']
+        if writer is not None:
+          writer.__enter__()
 
     if options.output_sitelist:
       sitelist_fname = options.examples_filename + '.sitelist.tsv'
@@ -1261,10 +1273,14 @@ class OutputsWriter:
     writer.write('\t'.join(columns) + '\n')
 
   def write_read_phase(self, read, phase, region_n):
+    """Writes a read phase to a TSV or BAM file."""
     writer = self._writers['read_phases']
     if writer is not None:
-      read_key = read.fragment_name + '/' + str(read.read_number)
-      writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
+      if isinstance(writer, epath.Path):
+        read_key = read.fragment_name + '/' + str(read.read_number)
+        writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
+      else:
+        writer.write(read)
 
   def _add_writer(self, name: str, writer: tf_record.TFRecordWriter):
     if name not in self._writers:

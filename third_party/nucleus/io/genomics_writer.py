@@ -125,9 +125,9 @@ class TFRecordWriter(GenomicsWriter):
         useful for file types that have logical headers where some operations
         depend on that header information (e.g. VCF using its headers to
         determine type information of annotation fields).
-      compression_type:  Either 'ZLIB', 'GZIP', '' (uncompressed), or
-        None.  If None, __init__ will guess the compression type based on
-        the input_path's suffix.
+      compression_type:  Either 'ZLIB', 'GZIP', '' (uncompressed), or None.  If
+        None, __init__ will guess the compression type based on the input_path's
+        suffix.
 
     Raises:
       IOError:  if there was any problem opening output_path for writing.
@@ -139,7 +139,8 @@ class TFRecordWriter(GenomicsWriter):
       compression_type = 'GZIP' if output_path.endswith('.gz') else ''
 
     self._writer = tfrecord_writer.TFRecordWriter.from_file(
-        output_path, compression_type)
+        output_path, compression_type
+    )
     if self._writer is None:
       raise IOError(errno.EIO, 'Error opening %s for writing' % output_path)
 
@@ -180,8 +181,9 @@ class DispatchingGenomicsWriter(GenomicsWriter):
       self._writer = TFRecordWriter(output_path, header=self.header)
     else:
       self._writer = self._native_writer(output_path, **kwargs)
-    logging.info('Writing %s with %s',
-                 output_path, self._writer.__class__.__name__)
+    logging.info(
+        'Writing %s with %s', output_path, self._writer.__class__.__name__
+    )
     self._post_init_hook()
 
   @abc.abstractmethod
@@ -201,6 +203,9 @@ class DispatchingGenomicsWriter(GenomicsWriter):
 
   def write_somatic(self, proto):
     self._writer.write_somatic(proto)
+
+  def close(self):
+    self._writer.close()
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)

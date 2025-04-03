@@ -658,9 +658,10 @@ _OUTPUT_LOCAL_READ_PHASING = flags.DEFINE_string(
     'output_local_read_phasing',
     None,
     (
-        '[optional] For debugging only. Output filename for a TSV file '
-        'containing read phases. If examples are sharded, this should be '
-        'sharded into the same number of shards as the examples.'
+        '[optional] For debugging only. If filename ends in .tsv, output a'
+        ' TSV containing read phases. Alternatively, if filename ends in .bam,'
+        ' output a phased BAM. If examples are sharded, this should be sharded'
+        ' into the same number of shards as the examples.'
     ),
 )
 _DISCARD_NON_DNA_REGIONS = flags.DEFINE_bool(
