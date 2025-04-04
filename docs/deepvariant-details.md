@@ -147,9 +147,14 @@ outputs a gVCF file which merges the VCF with the non-variant sites.
 
 Because `postprocess_variants` combines and sorts the output of `call_variants`,
 it needs to see all of the outputs from `call_variants` for a single sample to
-merge into a final VCF. `postprocess_variants` is single-threaded and needs a
-non-trivial amount of memory to run (20-30 GB), so it is best run on a
-single/dual core machine with sufficient memory.
+merge into a final VCF. `postprocess_variants` is multi-threaded and may require
+2GB-3GB per-core depending on the number of variants from `call_variants` stage.
+It takes more memory if gVCF generation is turned on. However, you can disable
+parallelization by setting `--cpus=0` in which case the total required memory
+would be 20GB-50GB. One thing to note is that the memory footprint of
+`postprocess_variants` is tunable with the `--num_partitions` flag. If
+`--num_partitions` > `--num_cpus`, the total memory decreases. E.g. running 64
+partitions over 32 cpus uses ~50% of the memory at a given time.
 
 ## Updates on DeepVariant since precisionFDA truth challenge and bioRxiv preprint
 
