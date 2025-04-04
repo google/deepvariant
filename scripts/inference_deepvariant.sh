@@ -636,7 +636,7 @@ function get_docker_image() {
      docker_args+=( --shm-size 12gb)
   fi
   if [[ ! -z "${SHM_SIZE}" ]]; then
-    docker_args+=( --shm-size "${SHM_SIZE}")
+    docker_args+=( --shm-size "${SHM_SIZE}gb")
   fi
 }
 
@@ -733,6 +733,12 @@ function setup_args() {
   # If you're running an older version (before 1.2) that doesn't have this flag,
   # you'll need to comment out this line.
   extra_args+=( --runtime_report )
+  if [[ "${MAIN_BINARY_NAME}" = "run_pangenome_aware_deepvariant" ]] && \
+     [[ ! -z "${SHM_SIZE}" ]] && \
+     [[ "${PANGENOME}" == *.gbz ]]; then
+    echo "Set --gbz_shared_memory_size_gb to ${SHM_SIZE} for pangenome-aware-deepvariant with gbz pangenome."
+    extra_args+=( --gbz_shared_memory_size_gb "${SHM_SIZE}")
+  fi
 }
 
 function run_deepvariant_with_docker() {
