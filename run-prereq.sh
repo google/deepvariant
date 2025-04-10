@@ -112,7 +112,7 @@ pip3 install "${PIP_ARGS[@]}" contextlib2
 pip3 install "${PIP_ARGS[@]}" etils typing_extensions importlib_resources
 pip3 install "${PIP_ARGS[@]}" 'enum34==1.1.8'
 pip3 install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
-pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.0.2'
+pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.1.0'
 pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
 pip3 install "${PIP_ARGS[@]}" ml_collections
 pip3 install "${PIP_ARGS[@]}" --ignore-installed PyYAML
