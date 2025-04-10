@@ -34,12 +34,14 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_VARIANT_CALLING_MULTISAMPLE_H_
 
-#include <functional>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
@@ -51,7 +53,6 @@
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
-#include "third_party/nucleus/util/utils.h"
 
 namespace nucleus {
 class VcfReader;
@@ -371,6 +372,26 @@ class VariantCaller {
   std::unordered_map<std::string, AlleleCounter*> allele_counters_per_sample_;
   // Name of the target sample for multi-allelic variant calling.
   std::string target_sample_;
+
+  // Helper functions for methylation-aware phasing methylation merging
+  // (PacBio only).
+  // Returns true if the previous site is immediately before the current site.
+  bool IsAdjacent(const AlleleCount& prev, const AlleleCount& curr) const;
+
+  // Returns true if the site has a C reference or any C alternate allele.
+  bool HasCRefOrAlt(const AlleleCount& allele_count) const;
+
+  // Extracts and clears methylation from G alleles. Returns (read_key, level)
+  // pairs.
+  std::vector<std::tuple<std::string, int32_t, bool>>
+  ExtractAndClearGSiteMethylation(AlleleCount& g_site) const;
+
+  // Transfers methylation to the corresponding read’s C allele at the
+  // previous site.
+  void TransferMethylationToPrevC(
+      AlleleCount& prev_allele_count,
+      const std::vector<std::tuple<std::string, int32_t, bool>>&
+          methylated_reads) const;
 
   FRIEND_TEST(VariantCallingTest, TestMultiAlleleWithDeletion);
   FRIEND_TEST(ComplexVariantTest, ComplexVariantTestCases);

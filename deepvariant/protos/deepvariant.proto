@@ -396,7 +396,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 24
+// Next ID: 25
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -468,6 +468,8 @@ message VariantCallerOptions {
   bool enable_methylation_aware_phasing = 22;
 
   repeated string exclude_contigs_for_methylation_phasing = 23;
+
+  bool enable_methylation_calling = 24;
 }
 
 // Options to control how we label variant calls.

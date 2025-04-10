@@ -217,6 +217,7 @@ def make_vc_options(
       create_complex_alleles=flags_obj.create_complex_alleles,
       enable_methylation_aware_phasing=flags_obj.enable_methylation_aware_phasing,
       exclude_contigs_for_methylation_phasing=flags_obj.exclude_contigs_for_methylation_phasing,
+      enable_methylation_calling=flags_obj.enable_methylation_calling,
   )
 
 

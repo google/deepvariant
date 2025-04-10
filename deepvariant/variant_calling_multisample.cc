@@ -822,7 +822,8 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
   }
   // Merge methylated supporting reads in the negative strand
   // (Pacbio 5mC specific)
-  if (options_.enable_methylation_aware_phasing()) {
+  if (options_.enable_methylation_calling() ||
+      options_.enable_methylation_aware_phasing()) {
     MergeMethylatedAlleleCounts(allele_counters_per_sample_);
   }
   return AlleleCountsGenerator<DeepVariantCall>(&VariantCaller::CallVariant);
@@ -1128,10 +1129,24 @@ void VariantCaller::AddAdjacentAlleleFractionsAtPosition(
   }
 }
 
-// Helper function to combine the methylated reference sites and keep only the
-// positive strands.
-// For 5mC methylation, Pacbio marks only forward positions,
-// and the reverse is assumed.
+// Merges methylation information from G reference sites to preceding C sites.
+//
+// In PacBio sequencing, 5mC methylation is typically observed on the forward
+// strand as methylated G positions. Biologically, however, methylation is
+// interpreted as occurring on the preceding C base (i.e., CpG sites). This
+// function scans allele counts across samples to find G reference sites with
+// methylated reads, and transfers the methylation signal to the adjacent
+// preceding C site (either reference or alt).
+//
+// For each G site with methylated reads:
+// - It checks if the immediately preceding site is a C (ref or alt).
+// - If found, and if the same read is present at the C site, the methylation
+//   (level and flag) is transferred from the G to the C.
+// - The G site has its methylation info cleared.
+//
+// Args:
+//   allele_counters: A map from sample name to the corresponding AlleleCounter.
+//                    These contain allele-level support information for reads.
 void VariantCaller::MergeMethylatedAlleleCounts(
     const std::unordered_map<std::string, AlleleCounter*>& allele_counters)
     const {
@@ -1139,43 +1154,131 @@ void VariantCaller::MergeMethylatedAlleleCounts(
     AlleleCounter* allele_counter = sample_entry.second;
     auto& allele_counts = allele_counter->MutableCounts();
 
-    // Start at 1 since we are looking for the C allele preceding the G allele
-    // at position i-1
     for (size_t i = 1; i < allele_counts.size(); ++i) {
       auto& allele_count = allele_counts[i];
-      char ref_base = allele_count.ref_base()[0];
+      if (allele_count.ref_base()[0] != 'G') continue;
 
-      // Process only G reference sites.
-      if (ref_base == 'G' && IsReferenceSite(allele_count)) {
-        auto& prev_allele_count = allele_counts[i - 1];
+      auto& prev_allele_count = allele_counts[i - 1];
 
-        // Ensure the preceding allele is a C and is at the genomic position
-        // preceding the current G allele.
-        if (prev_allele_count.ref_base()[0] != 'C' &&
-            prev_allele_count.position().position() !=
-                allele_count.position().position() - 1) continue;
+      if (!IsAdjacent(prev_allele_count, allele_count)) continue;
+      if (!HasCRefOrAlt(prev_allele_count)) continue;
 
-        // Track reads that were methylated in G.
-        std::vector<std::pair<std::string, float>> methylated_reads;
+      auto methylated_reads = ExtractAndClearGSiteMethylation(allele_count);
 
-        // Remove methylation from G but store affected reads.
-        for (auto& [read_key, allele] : *allele_count.mutable_read_alleles()) {
-          if (allele.is_methylated()) {
-            int32_t methylation_level = allele.methylation_level();
-            methylated_reads.emplace_back(read_key, methylation_level);
-            allele.set_is_methylated(false);  // Remove methylation
-            allele.set_methylation_level(0);
-          }
-        }
+      TransferMethylationToPrevC(prev_allele_count, methylated_reads);
+    }
+  }
+}
 
-        // Transfer methylation to the same read keys in the C site.
-        for (const auto& [read_key, methylation_level] : methylated_reads) {
-          auto it = prev_allele_count.mutable_read_alleles()->find(read_key);
-          if (it != prev_allele_count.mutable_read_alleles()->end()) {
-            it->second.set_is_methylated(true);  // Set methylation on same read
-            it->second.set_methylation_level(methylation_level);
-          }
-        }
+// Returns true if the previous site is immediately before the current site in
+// the genome.
+//
+// Args:
+//   prev: The AlleleCount object for the previous site.
+//   curr: The AlleleCount object for the current site.
+//
+// Returns:
+//   True if the previous site is immediately before the current site,
+//   otherwise returns false.
+bool VariantCaller::IsAdjacent(const AlleleCount& prev,
+                               const AlleleCount& curr) const {
+  return prev.position().position() == curr.position().position() - 1;
+}
+
+// Checks if the given site has a C reference base or a C alternative allele.
+//
+// Args:
+//   allele_count: The AlleleCount object for the site being evaluated.
+//
+// Returns:
+//   True if the site has a C reference base or any alternate allele with
+//   base 'C', otherwise returns false.
+bool VariantCaller::HasCRefOrAlt(const AlleleCount& allele_count) const {
+  if (allele_count.ref_base()[0] == 'C') return true;
+  for (const auto& sample_alleles : allele_count.sample_alleles()) {
+    for (const auto& alt : sample_alleles.second.alleles()) {
+      if (alt.bases().length() == 1 && alt.bases()[0] == 'C') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Extracts and clears methylation information from a G reference site.
+//
+// This function scans the alleles in the given `g_site` (typically a G
+// reference site)
+// and identifies reads that are both methylated and support a G allele.
+// For each such read, it collects the read name, the methylation level, and the
+// original `is_methylated` boolean flag into a tuple.
+//
+// It then clears the methylation flags and levels on those alleles in-place
+// (i.e., sets `is_methylated = false` and `methylation_level = 0`), so that
+// methylation can be transferred downstream to the correct C site.
+//
+// Args:
+//   g_site: The AlleleCount object corresponding to the G reference base.
+//
+// Returns:
+//   A vector of (read_key, methylation_level, is_methylated) tuples for each
+//   read
+//   with G base methylation.
+std::vector<std::tuple<std::string, int32_t, bool>>
+VariantCaller::ExtractAndClearGSiteMethylation(AlleleCount& g_site) const {
+  std::vector<std::tuple<std::string, int32_t, bool>> methylated_reads;
+
+  for (auto& [read_key, allele] : *g_site.mutable_read_alleles()) {
+    const bool has_methylation = allele.methylation_level() > 0;
+
+    if (has_methylation && allele.bases() == "G") {
+      methylated_reads.emplace_back(
+          read_key,
+          allele.methylation_level(),
+          allele.is_methylated()
+      );
+
+      // Clear both fields on the G site
+      allele.set_is_methylated(false);
+      allele.set_methylation_level(0);
+    }
+  }
+
+  return methylated_reads;
+}
+
+// Transfers methylation marks from a G reference site to a preceding C site
+// (either reference or alt) within the same sample's AlleleCount data.
+//
+// The function expects:
+// - A G reference site (`g_site`) where some alleles are marked as methylated.
+// - A preceding site (`prev_site`) one base before the G site, with a
+//   reference or alt allele of 'C'.
+// - A list of (read_key, methylation_level) pairs for reads supporting the
+//   methylated G.
+//
+// For each read in the list, if the read also supports a 'C' allele (ref or
+// alt) at `prev_site`, the function sets `is_methylated = true` and copies
+// the methylation level.
+//
+// Args:
+//   prev_site: The AlleleCount for the base immediately before the G site.
+//   methylated_reads: A list of (read_key, methylation_level) pairs extracted
+//   from the G site.  The third element of the tuple is a boolean indicating
+//   whether the read was marked as methylated.
+void VariantCaller::TransferMethylationToPrevC(
+    AlleleCount& prev_allele_count,
+    const std::vector<std::tuple<std::string, int32_t, bool>>& methylated_reads)
+        const {
+  for (const auto& [read_key, methylation_level, was_methylated] :
+       methylated_reads) {
+    auto it = prev_allele_count.mutable_read_alleles()->find(read_key);
+    if (it != prev_allele_count.mutable_read_alleles()->end()) {
+      auto& prev_allele = it->second;
+
+      if (prev_allele.bases() == "C") {
+        prev_allele.set_is_methylated(was_methylated);
+        prev_allele.set_methylation_level(methylation_level);
       }
     }
   }

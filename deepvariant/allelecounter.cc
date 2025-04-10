@@ -505,11 +505,11 @@ void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
     // and we know that this position contains a potential candidate for phasing
     // or if the allele is methylated.
     if (to_add_i.type() != AlleleType::REFERENCE ||
-        (to_add_i.is_methylated() &&
-         options_.enable_methylation_aware_phasing()) ||
-        (options_.track_ref_reads() &&
-         std::binary_search(candidate_positions_.begin(),
-                            candidate_positions_.end(), to_add_i.position()))) {
+      (options_.enable_methylation_aware_phasing() ||
+        options_.enable_methylation_calling()) ||
+      (options_.track_ref_reads() &&
+     std::binary_search(candidate_positions_.begin(),
+                        candidate_positions_.end(), to_add_i.position()))) {
       auto* read_alleles = allele_count.mutable_read_alleles();
       auto* sample_alleles = allele_count.mutable_sample_alleles();
       const string key = ReadKey(read);
