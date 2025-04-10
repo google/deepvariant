@@ -273,23 +273,22 @@ bool IsMethylated(const Read& read, int offset,
 }
 
 // Returns the methylation level [0, 255] at the given offset for 5mC.
-// Returns -1 if base_modification is missing or offset is invalid.
 int32_t GetMethylationLevel(const Read& read, int offset) {
   if (read.base_modifications().empty()) {
-    return -1;
+    return 0;
   }
 
   // TODO: Handle the case where there are multiple base
   // modifications. Currently, we're only parsing 5mC modifications.
   auto it = read.base_modifications().find(nucleus::k5mC);
   if (it == read.base_modifications().end()) {
-    return -1;  // 5mC not found
+    return 0;  // 5mC not found
   }
 
   // Check if the offset is valid within the base modifications data.
   const auto& modifications = it->second;
   if (offset < 0 || offset >= modifications.size()) {
-    return -1;
+    return 0;
   }
 
   return static_cast<int32_t>(
@@ -904,15 +903,13 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
           double methylation_calling_threshold =
               options_.methylation_calling_threshold();
           bool is_methylated = false;
-          int32_t methylation_level = 0;
+          int32_t methylation_level = GetMethylationLevel(read, base_offset);
           // Store methylation probability for each read allele.
           // This is used for methylation-aware phasing.
           if (IsMethylated(read, base_offset,
                           options_.enable_methylation_calling(),
                           methylation_calling_threshold)) {
             is_methylated = true;
-            methylation_level =
-                GetMethylationLevel(read, base_offset);
           }
           if (IsValidRefOffset(ref_offset) &&
               CanBasesBeUsed(read, base_offset, 1, options_,

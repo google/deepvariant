@@ -31,9 +31,11 @@
 
 #include "deepvariant/methylation_aware_phasing.h"
 
+#include <string>
 #include <vector>
 
 #include "tensorflow/core/platform/test.h"
+#include "third_party/nucleus/protos/variants.pb.h"
 
 namespace learning {
 namespace genomics {
@@ -96,8 +98,109 @@ TEST(MethylationAwarePhasingTest, WilcoxonRankSumGroupAssignmentMatters) {
   EXPECT_LT(p_val, 0.05);
 }
 
+TEST(MethylationAwarePhasingTest, GetMethylationLevelAtSiteReturnsNormalized) {
+  DeepVariantCall_ReadSupport support;
+  support.set_methylation_level(128);
+  EXPECT_NEAR(GetMethylationLevelAtSite(support), 128.0 / 255.0, 1e-6);
+}
 
+TEST(MethylationAwarePhasingTest, GetMethylationLevelAtSiteReturnsMinusOne) {
+  DeepVariantCall_ReadSupport support;
+  support.set_methylation_level(0);
+  EXPECT_EQ(GetMethylationLevelAtSite(support), -1.0);
+}
+
+TEST(MethylationAwarePhasingTest, ReadKeyMatchesExpectedFormat) {
+  nucleus::genomics::v1::Read read;
+  read.set_fragment_name("frag");
+  read.set_read_number(1);
+  EXPECT_EQ(ReadKeyForMethylationAwarePhasing(read), "frag/1");
+}
+
+TEST(MethylationAwarePhasingTest, ExtractReadsByPhaseReturnsCorrectSubset) {
+  std::vector<DeepVariantCall_ReadSupport> reads(3);
+  reads[0].set_read_name("a");
+  reads[1].set_read_name("b");
+  reads[2].set_read_name("c");
+  std::vector<int> phases = {0, 2, 2};
+
+  auto result = ExtractReadsByPhase(reads, phases, 2);
+  ASSERT_EQ(result.size(), 2);
+  EXPECT_EQ(result[0]->read_name(), "b");
+  EXPECT_EQ(result[1]->read_name(), "c");
+}
+
+TEST(MethylationAwarePhasingTest, IdentifyInformativeSitesDetectsSignal) {
+  DeepVariantCall call;
+  call.mutable_variant()->set_start(100);
+  auto* ext = call.mutable_ref_support_ext();
+
+  std::vector<const DeepVariantCall_ReadSupport*> hap1_reads, hap2_reads;
+
+  // Add 3 low-methylation reads to hap1
+  for (int i = 0; i < 3; ++i) {
+    auto* r = ext->add_read_infos();
+    r->set_read_name("hap1_" + std::to_string(i));
+    r->set_methylation_level(25);  // ~0.1
+    hap1_reads.push_back(r);
+  }
+
+  // Add 3 high-methylation reads to hap2
+  for (int i = 0; i < 3; ++i) {
+    auto* r = ext->add_read_infos();
+    r->set_read_name("hap2_" + std::to_string(i));
+    r->set_methylation_level(230);  // ~0.9
+    hap2_reads.push_back(r);
+  }
+
+  auto result = IdentifyInformativeSites({call}, hap1_reads, hap2_reads);
+  ASSERT_EQ(result.size(), 1);
+  EXPECT_EQ(result[0].variant().start(), 100);
+}
+
+TEST(MethylationAwarePhasingTest, HaplotypeVoteWithMethylationVotesCorrectly) {
+  std::vector<DeepVariantCall> informative_calls;
+
+  for (int i = 0; i < 3; ++i) {
+    DeepVariantCall call;
+    call.mutable_variant()->set_start(1000 + i);
+    auto* ext = call.mutable_ref_support_ext();
+
+    auto* hap1 = ext->add_read_infos();
+    hap1->set_read_name("hap1");
+    hap1->set_methylation_level(25);  // ~0.1
+
+    auto* hap2 = ext->add_read_infos();
+    hap2->set_read_name("hap2");
+    hap2->set_methylation_level(230);  // ~0.9
+
+    auto* unphased = ext->add_read_infos();
+    unphased->set_read_name("unphased");
+    unphased->set_methylation_level(240);  // closer to hap2
+
+    informative_calls.push_back(call);
+  }
+
+  std::vector<const DeepVariantCall_ReadSupport*> hap1_reads;
+  std::vector<const DeepVariantCall_ReadSupport*> hap2_reads;
+
+  for (const auto& call : informative_calls) {
+    for (const auto& r : call.ref_support_ext().read_infos()) {
+      if (r.read_name() == "hap1") hap1_reads.push_back(&r);
+      if (r.read_name() == "hap2") hap2_reads.push_back(&r);
+    }
+  }
+
+  // Pick unphased read from the first call to test
+  const auto& unphased_read =
+      informative_calls[0].ref_support_ext().read_infos(2);
+
+  int vote = HaplotypeVoteWithMethylation(
+    unphased_read, informative_calls, hap1_reads, hap2_reads);
+  EXPECT_EQ(vote, 2);  // Should assign to hap2
+}
 
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
+

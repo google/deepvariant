@@ -1082,6 +1082,8 @@ void VariantCaller::AddSupportingReads(
         read_info->set_average_base_quality(allele.avg_base_quality());
         read_info->set_is_reverse_strand(allele.is_reverse_strand());
         read_info->set_sample_name(sample_name);
+        read_info->set_is_methylated(allele.is_methylated());
+        read_info->set_methylation_level(allele.methylation_level());
       } else {
         call->add_ref_support(read_name);
         DeepVariantCall_SupportingReadsExt& support_infos =
@@ -1096,6 +1098,8 @@ void VariantCaller::AddSupportingReads(
         read_info->set_average_base_quality(allele.avg_base_quality());
         read_info->set_is_reverse_strand(allele.is_reverse_strand());
         read_info->set_sample_name(sample_name);
+        read_info->set_is_methylated(allele.is_methylated());
+        read_info->set_methylation_level(allele.methylation_level());
       }
     }
   }

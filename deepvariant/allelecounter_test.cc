@@ -443,27 +443,27 @@ TEST_F(AlleleCounterTest, GetMethylationLevelReturnsCorrectValues) {
 }
 
 TEST_F(AlleleCounterTest,
-       GetMethylationLevelReturnsMinusOneIfModificationsMissing) {
+       GetMethylationLevelReturnsZeroIfModificationsMissing) {
   Read read;  // No base_modifications at all
-  EXPECT_EQ(GetMethylationLevel(read, 0), -1);
+  EXPECT_EQ(GetMethylationLevel(read, 0), 0);
 }
 
-TEST_F(AlleleCounterTest, GetMethylationLevelReturnsMinusOneIf5mCMissing) {
+TEST_F(AlleleCounterTest, GetMethylationLevelReturnsZeroOneIf5mCMissing) {
   Read read;
   std::vector<uint8_t> mod_values = {static_cast<uint8_t>(255)};
   (*read.mutable_base_modifications())["other_mod"].assign(mod_values.begin(),
                                                            mod_values.end());
-  EXPECT_EQ(GetMethylationLevel(read, 0), -1);
+  EXPECT_EQ(GetMethylationLevel(read, 0), 0);
 }
 
 TEST_F(AlleleCounterTest,
-       GetMethylationLevelReturnsMinusOneIfIndexOutOfBounds) {
+       GetMethylationLevelReturnsZeroIfIndexOutOfBounds) {
   Read read;
   std::vector<uint8_t> mod_values = {static_cast<uint8_t>(42)};
   (*read.mutable_base_modifications())[nucleus::k5mC].assign(mod_values.begin(),
                                                              mod_values.end());
-  EXPECT_EQ(GetMethylationLevel(read, -1), -1);
-  EXPECT_EQ(GetMethylationLevel(read, 1), -1);
+  EXPECT_EQ(GetMethylationLevel(read, -1), 0);
+  EXPECT_EQ(GetMethylationLevel(read, 1), 0);
 }
 
 TEST_F(AlleleCounterTest, TestAddMethylatedRead) {

@@ -32,6 +32,7 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_METHYLATION_AWARE_PHASING_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_METHYLATION_AWARE_PHASING_H_
 
+#include <string>
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
@@ -55,6 +56,44 @@ bool IsDifferentiallyMethylated(
 double WilcoxonRankSumTest(
     const std::vector<double>& hap1_methyl,
     const std::vector<double>& hap2_methyl);
+
+// Votes on the haplotype assignment for an unphased read using methylation
+// similarity.
+//
+// For each informative site, compares the read's methylation level to the
+// average levels for hap1 and hap2, and tallies votes. The read is assigned
+// to the haplotype with the majority of votes (minimum 3 votes required).
+//
+// Returns:
+//   1 = Haplotype 1
+//   2 = Haplotype 2
+//   0 = Cannot assign
+int HaplotypeVoteWithMethylation(
+  const DeepVariantCall_ReadSupport& unphased_read,
+  const std::vector<DeepVariantCall>& informative_calls,
+  const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
+  const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads);
+
+// Returns methylation level as a float between 0 and 1, or -1 if no
+// methylation level is present (methylation_level == 0).
+double GetMethylationLevelAtSite(const DeepVariantCall_ReadSupport& read);
+
+// Identifies methylated reference sites that show differential methylation
+// between haplotype 1 and haplotype 2 read sets.
+std::vector<DeepVariantCall> IdentifyInformativeSites(
+    const std::vector<DeepVariantCall>& methylated_calls,
+    const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
+    const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads);
+
+// Returns a unique key identifying a read based on its fragment name and
+// read number.
+std::string ReadKeyForMethylationAwarePhasing(
+    const nucleus::genomics::v1::Read& read);
+
+// Extracts reads assigned to a specific haplotype phase (0, 1, or 2).
+std::vector<const DeepVariantCall_ReadSupport*> ExtractReadsByPhase(
+    const std::vector<DeepVariantCall_ReadSupport>& reads,
+    const std::vector<int>& phases, int target_phase);
 
 
 // Performs iterative methylation-aware phasing on a set of reads.

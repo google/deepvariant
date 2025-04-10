@@ -616,10 +616,12 @@ _ENABLE_METHYLATION_AWARE_PHASING = flags.DEFINE_bool(
     'enable_methylation_aware_phasing',
     False,
     (
-        'If True, then methylation aware phasing will be enabled. This mode'
-        ' uses methylation information to phase reads.'
+        '[Experimental] If True, enables methylation-aware phasing. '
+        'This mode uses methylation information to phase reads. '
+        'Note: This feature is experimental and may change in future versions.'
     ),
 )
+
 
 _EXCLUDE_CONTIGS_FOR_METHYLATION_PHASING = flags.DEFINE_string(
     'exclude_contigs_for_methylation_phasing',
