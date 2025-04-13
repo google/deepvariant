@@ -32,6 +32,7 @@
 #ifndef THIRD_PARTY_NUCLEUS_IO_SAM_UTILS_H_
 #define THIRD_PARTY_NUCLEUS_IO_SAM_UTILS_H_
 
+#include <cstdint>
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 
@@ -88,6 +89,8 @@ extern const int kProtoToHtslibCigar[];
 // Array mapping htslib BAM constants (in comment) to proto CigarUnit enum
 // values.
 extern const genomics::v1::CigarUnit_Operation kHtslibCigarToProto[];
+
+int HtslibAuxSize(uint8_t type);
 
 }  // namespace nucleus
 

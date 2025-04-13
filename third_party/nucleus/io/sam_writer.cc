@@ -45,6 +45,7 @@
 #include "absl/strings/string_view.h"
 #include "htslib/cram.h"
 #include "htslib/hts_endian.h"
+#include "third_party/nucleus/core/statusor.h"
 #include "third_party/nucleus/io/hts_path.h"
 #include "third_party/nucleus/io/sam_utils.h"
 #include "third_party/nucleus/platform/types.h"
@@ -65,15 +66,17 @@ namespace {
 
 // Helper class to calculate byte representation (specified in SAM format) of
 // the auxiliary info field of a Read message.
-// Note that only string, int, and double fields are currently supported.
+// Note that only string, int, and float fields are currently supported.
 class AuxBuilder {
  public:
   // Type tags:
+  // Array
+  const char kBTag = 'B';
   // Null terminated string.
   const char kZTag = 'Z';
   // Signed int32.
   const char kiTag = 'i';
-  // Null terminated string.
+  // 4-byte float.
   const char kfTag = 'f';
 
   AuxBuilder(const Read& read) : read_(read) {}
@@ -103,11 +106,71 @@ class AuxBuilder {
     CHECK(has_num_bytes_);
     uint8_t* data_array_ptr = data;
     for (const auto& entry : read_.info()) {
-      if (entry.second.values_size() != 1) {
-        // TODO: Support writing byte-array field.
-        LOG(WARNING) << "SamWriter currently doesn't support writing info "
-                        "fields of size "
-                     << entry.second.values_size();
+      /* Handle Array Fields */
+      if (entry.second.values_size() == 0) {
+        continue;
+      } else if (entry.second.values_size() > 1) {
+        // Only proceed if we know the type for the array.
+        if (read_.info_field_type().find(entry.first) !=
+            read_.info_field_type().end()) {
+            uint8_t sub_type = read_.info_field_type().at(entry.first)[0];
+            // Encode the tag name.
+            memcpy(data_array_ptr, entry.first.data(), 2);
+            data_array_ptr += 2;
+            // Record the array specifier 'B'
+            memcpy(data_array_ptr, &kBTag, 1);
+            data_array_ptr += 1;
+            // Encode the field type.
+            memcpy(data_array_ptr, &sub_type, 1);
+            data_array_ptr += 1;
+            // Encode the total number of elements.
+            uint32_t count = entry.second.values_size();
+            memcpy(data_array_ptr, &count, 4);
+            data_array_ptr += 4;
+            switch (sub_type) {
+              case 'C':
+              case 'c': {
+                // Write as a 'C' (unsigned 8-bit integer).
+                // memcpy(data_array_ptr, &kCTag, 1);
+                for (const auto& v : entry.second.values()) {
+                  uint8_t vu = static_cast<uint8_t>(v.int_value());
+                  memcpy(data_array_ptr, &vu, 1);
+                  data_array_ptr += 1;
+                }
+                break;
+              }
+              case 'S':
+              case 's': {
+                // Write as a 'S' (signed 16-bit integer).
+                for (const auto& v : entry.second.values()) {
+                  // int16_t vs = static_cast<int16_t>(v.int_value());
+                  // memcpy(data_array_ptr, &vs, 2);
+                  int16_t vs = static_cast<int16_t>(v.int_value());
+                  i16_to_le(vs, data_array_ptr);
+                  data_array_ptr += 2;
+                }
+                break;
+              }
+              case 'I':
+              case 'i': {
+                // Write as a 'i' (signed 32-bit integer).
+                for (const auto& v : entry.second.values()) {
+                  int32_t vs = static_cast<int32_t>(v.int_value());
+                  i32_to_le(vs, data_array_ptr);
+                  data_array_ptr += 4;
+                }
+                break;
+              }
+              case 'f': {
+                // Write as a 'f' (4-byte float).
+                for (const auto& v : entry.second.values()) {
+                  float_to_le(v.number_value(), data_array_ptr);
+                  data_array_ptr += 4;
+                }
+                break;
+              }
+            }
+          }
         continue;
       }
       const Value& v = entry.second.values(0);
@@ -140,7 +203,7 @@ class AuxBuilder {
         case Value::kNumberValue: {
           // Write as a 'f' (4-byte float).
           memcpy(data_array_ptr, &kfTag, 1);
-          double_to_le(v.number_value(), data_array_ptr + 1);
+          float_to_le(v.number_value(), data_array_ptr + 1);
           data_array_ptr += 5;
           break;
         }
@@ -160,11 +223,27 @@ class AuxBuilder {
         return ::nucleus::Unknown(absl::StrCat(
             "info key should be of two characters: ", entry.first));
       }
-      if (entry.second.values_size() != 1) {
-        // TODO: Support writing byte-array field.
-        LOG(WARNING) << "SamWriter currently doesn't support writing info "
-                        "fields of size "
-                     << entry.second.values_size();
+      if (entry.second.values_size() == 0) {
+        continue;
+      } else if (entry.second.values_size() > 1) {
+        string tag_name = entry.first;
+        if (read.info_field_type().find(tag_name) !=
+          read.info_field_type().end()) {
+            uint8_t sub_type = read.info_field_type().at(tag_name)[0];
+            const uint8_t size = nucleus::HtslibAuxSize(sub_type);
+            // 2-character TAG
+            // 1-character Array specifier
+            // 1-character type
+            // 4-byte count
+            num_bytes +=8;
+            if (size < 0) {
+              return ::nucleus::Unknown(absl::StrCat(
+                  "info value type should be one of [A, c, C, s, S, i, I, f]: ",
+                  tag_name));
+            }
+            // n_elements * size
+            num_bytes += (entry.second.values_size() * size);
+          }
         continue;
       }
       const Value& v = entry.second.values(0);
@@ -186,7 +265,7 @@ class AuxBuilder {
           num_bytes += entry.second.values(0).string_value().size() + 1;
           break;
         case Value::kNumberValue:
-          // double to 4-byte float
+          // Single precision float.
           num_bytes += 4;
           break;
         default:

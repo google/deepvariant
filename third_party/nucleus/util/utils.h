@@ -271,11 +271,20 @@ void SetInfoField(const string& key, const std::vector<Value> values,
   }
 }
 
+// Used to keep track of byte array types in bam files.
+template <typename ListValueInfoProto, typename Value>
+void SetInfoFieldType(const string& key, const Value type,
+                  ListValueInfoProto* proto) {
+  (*proto->mutable_info_field_type())[key] = type;
+}
+
 template <typename ListValueInfoProto, typename Value>
 void SetInfoField(const string& key, const Value value,
                   ListValueInfoProto* proto) {
   SetInfoField(key, std::vector<Value>{value}, proto);
 }
+
+
 
 // Given a ListValue proto, this function makes it easy to get the a vector of
 // the number values or string values from that proto, in order. The function is

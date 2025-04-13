@@ -231,6 +231,10 @@ message Read {
 
   // A map of base modifications.
   map<string, bytes> base_modifications = 18;
+
+  // A map of auxiliary field value types. This is only set for byte-array
+  // fields currently.
+  map<string, bytes> info_field_type = 19;
 }
 
 // The SamHeader message represents the metadata present in the header of a

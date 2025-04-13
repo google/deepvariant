@@ -267,13 +267,6 @@ TEST_P(SamBamWriterTest, WriteAndThenRead) {
       SamReader::FromFile(GetTestData(GetParam()), options).ValueOrDie());
   std::vector<Read> reads = as_vector(reader->Iterate());
   ASSERT_THAT(reader->Close(), IsOK());
-  // Clear out byte-array fields before writing. We support reading byte-array
-  // fields but do not yet support writing out byte-array fields (internal).
-  for (nucleus::genomics::v1::Read& r : reads) {
-    r.mutable_info()->erase("ZP");
-    r.mutable_info()->erase("ZC");
-    r.mutable_info()->erase("ZM");
-  }
   const string actual_filename = MakeTempFile(GetParam());
   std::unique_ptr<SamWriter> writer = std::move(
       SamWriter::ToFile(actual_filename, reader->Header()).ValueOrDie());
@@ -317,13 +310,6 @@ TEST_P(CramWriterTest, WriteAndThenRead) {
           .ValueOrDie());
   std::vector<Read> reads = as_vector(reader->Iterate());
   ASSERT_THAT(reader->Close(), IsOK());
-  // Clear out byte-array fields before writing. We support reading byte-array
-  // fields but do not yet support writing out byte-array fields (internal).
-  for (nucleus::genomics::v1::Read& r : reads) {
-    r.mutable_info()->erase("ZP");
-    r.mutable_info()->erase("ZC");
-    r.mutable_info()->erase("ZM");
-  }
   const string output_filename = MakeTempFile(filename);
   // Writing requires |ref_path| regardless becauses Reads proto doesn't have
   // embedded refs.

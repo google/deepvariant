@@ -251,28 +251,6 @@ bool ReadSatisfiesRequirements(
 //
 // -----------------------------------------------------------------------------
 
-// Gets the size in bytes for a SAM/BAM aux tag based on their declared type.
-//
-// Based on code from htslib/sam.c which isn't exported from htslib. Returns
-// a value < 0 if type isn't one of the expected types from htslib.
-static inline int HtslibAuxSize(uint8_t type) {
-  switch (type) {
-    case 'A':
-    case 'c':
-    case 'C':
-      return 1;
-    case 's':
-    case 'S':
-      return 2;
-    case 'f':
-    case 'i':
-    case 'I':
-      return 4;
-    default:
-      return -1;  // -1 indicates error here.
-  }
-}
-
 // Returns true if query starts with the first prefix_len letters of prefix.
 static inline bool StartsWith(const string& query, const char prefix[],
                               int prefix_len) {
@@ -351,7 +329,7 @@ static inline bool StartsWith(const string& query, const char prefix[],
       case 's':
       case 'I':
       case 'i': {
-        const int size = HtslibAuxSize(type);
+        const int size = nucleus::HtslibAuxSize(type);
         if (size < 0 || end - s < size)
           return ::nucleus::DataLoss("Malformed tag " + tag);
         errno = 0;
@@ -403,7 +381,10 @@ static inline bool StartsWith(const string& query, const char prefix[],
             }
             s += element_size;
           }
-          if (include_tag) SetInfoField(tag, all_values, read_message);
+          if (include_tag) {
+            SetInfoField(tag, all_values, read_message);
+            SetInfoFieldType(tag, sub_type, read_message);
+          }
         } else if (sub_type == 'C') {
           std::vector<uint8_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -415,6 +396,7 @@ static inline bool StartsWith(const string& query, const char prefix[],
           }
           if (include_tag && n_elements > 0) {
             SetInfoField(tag, all_values, read_message);
+            SetInfoFieldType(tag, sub_type, read_message);
           }
         } else if (sub_type == 's') {
           std::vector<int16_t> all_values;
@@ -425,7 +407,10 @@ static inline bool StartsWith(const string& query, const char prefix[],
             }
             s += element_size;
           }
-          if (include_tag) SetInfoField(tag, all_values, read_message);
+          if (include_tag) {
+            SetInfoField(tag, all_values, read_message);
+            SetInfoFieldType(tag, sub_type, read_message);
+          }
         } else if (sub_type == 'S') {
           std::vector<uint16_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -435,7 +420,10 @@ static inline bool StartsWith(const string& query, const char prefix[],
             }
             s += element_size;
           }
-          if (include_tag) SetInfoField(tag, all_values, read_message);
+          if (include_tag) {
+            SetInfoField(tag, all_values, read_message);
+            SetInfoFieldType(tag, sub_type, read_message);
+          }
         } else if (sub_type == 'i') {
           std::vector<int32_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -445,7 +433,10 @@ static inline bool StartsWith(const string& query, const char prefix[],
             }
             s += element_size;
           }
-          if (include_tag) SetInfoField(tag, all_values, read_message);
+          if (include_tag) {
+            SetInfoField(tag, all_values, read_message);
+            SetInfoFieldType(tag, sub_type, read_message);
+          }
         } else if (sub_type == 'I') {
           std::vector<uint32_t> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -455,7 +446,10 @@ static inline bool StartsWith(const string& query, const char prefix[],
             }
             s += element_size;
           }
-          if (include_tag) SetInfoField(tag, all_values, read_message);
+          if (include_tag) {
+            SetInfoField(tag, all_values, read_message);
+            SetInfoFieldType(tag, sub_type, read_message);
+          }
         } else if (sub_type == 'f') {
           std::vector<float> all_values;
           for (int i = 0; i < n_elements; i++) {
@@ -465,7 +459,10 @@ static inline bool StartsWith(const string& query, const char prefix[],
             }
             s += element_size;
           }
-          if (include_tag) SetInfoField(tag, all_values, read_message);
+          if (include_tag) {
+            SetInfoField(tag, all_values, read_message);
+            SetInfoFieldType(tag, sub_type, read_message);
+          }
         } else {
           return ::nucleus::DataLoss("Unknown subtype " +
                                      std::to_string(sub_type));

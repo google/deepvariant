@@ -30,6 +30,7 @@
  */
 
 #include "third_party/nucleus/io/sam_utils.h"
+#include <cstdint>
 
 #include "htslib/sam.h"
 
@@ -113,5 +114,28 @@ const genomics::v1::CigarUnit_Operation kHtslibCigarToProto[] = {
     // #define BAM_CBACK       9
     genomics::v1::CigarUnit::OPERATION_UNSPECIFIED,
 };
+
+// Gets the size in bytes for a SAM/BAM aux tag based on their declared type.
+//
+// Based on code from htslib/sam.c which isn't exported from htslib. Returns
+// a value < 0 if type isn't one of the expected types from htslib.
+int HtslibAuxSize(uint8_t type) {
+    switch (type) {
+      case 'A':
+      case 'c':
+      case 'C':
+        return 1;
+      case 's':
+      case 'S':
+        return 2;
+      case 'f':
+      case 'i':
+      case 'I':
+        return 4;
+      default:
+        return -1;  // -1 indicates error here.
+    }
+  }
+
 
 }  // namespace nucleus
