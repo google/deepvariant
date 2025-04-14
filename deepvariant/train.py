@@ -317,6 +317,8 @@ def train(config: ml_collections.ConfigDict):
   def distributed_train_step(iterator, num_steps):
     def run_train_step(inputs):
       model_input, labels, sample_weight, variant_type = inputs
+      sample_weight = tf.cast(sample_weight, tf.float32)
+      variant_type = tf.cast(variant_type, tf.float32)
       model_input = dv_utils.preprocess_images(
           model_input,
           channel_indices,
@@ -372,6 +374,8 @@ def train(config: ml_collections.ConfigDict):
     def run_tune_step(tune_inputs):
       """Single non-distributed tune step."""
       model_input, labels, sample_weight, variant_type = tune_inputs
+      sample_weight = tf.cast(sample_weight, tf.float32)
+      variant_type = tf.cast(variant_type, tf.float32)
       model_input = dv_utils.preprocess_images(
           model_input,
           channel_indices,

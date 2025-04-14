@@ -106,7 +106,7 @@ def create_parse_example_fn(
   # e.g. 1,1,10 or 1,1,1
   if config.class_weights:
     class_weights = tf.constant(
-        list(map(float, config.class_weights.split(','))), dtype=tf.float32
+        list(map(float, config.class_weights.split(','))), dtype=tf.float16
     )
 
   def parse_example(
@@ -129,17 +129,14 @@ def create_parse_example_fn(
     if config.denovo_enabled and result['denovo_label'][0] == 1:
       # If the example is denovo then set the denovo example weights for this.
       result['sample_weight'] = tf.constant(
-          config.denovo_weight, dtype=tf.float32
+          config.denovo_weight, dtype=tf.float16
       )
     elif 'label' in result and config.class_weights:
       result['sample_weight'] = tf.squeeze(
-          tf.cast(
-              tf.gather(class_weights, tf.cast(result['label'], tf.int32)),
-              tf.float32,
-          )
+          tf.gather(class_weights, result['label'])
       )
     else:
-      result['sample_weight'] = tf.constant(1.0, dtype=tf.float32)
+      result['sample_weight'] = tf.constant(1, dtype=tf.int8)
 
     if 'label' in result:
       result['label'] = tf.cast(result['label'], dtype=tf.int8)
