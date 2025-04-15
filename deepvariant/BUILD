@@ -527,6 +527,7 @@ cc_test(
     deps = [
         ":methylation_aware_phasing",
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
