@@ -24,11 +24,12 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 85m58.66s
-call_variants                    | 313m49.80s
-postprocess_variants (with gVCF) | 7m52.00s
-vcf_stats_report (optional)      | 5m48.88s
-total                            | 423m6.93s (7h3m6.93s)
+load_gbz_into_shared_memory      | 1m7.55s
+make_examples                    | 87m35.17s
+call_variants                    | 164m22.18s
+postprocess_variants (with gVCF) | 7m26.23s
+vcf_stats_report (optional)      | 5m46.89s
+total                            | 274m16.04s (4h34m16.04s)
 
 ### Accuracy
 
@@ -37,8 +38,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502338   | 2163     | 1511     | 0.995713      | 0.997122         | 0.996417        |
-| SNP   | 3320044  | 7452     | 4735     | 0.99776       | 0.998577         | 0.998168        |
+| INDEL | 502338   | 2163     | 1490     | 0.995713      | 0.997162         | 0.996437        |
+| SNP   | 3320042  | 7454     | 4722     | 0.99776       | 0.998581         | 0.99817         |
 
 ## WES (Illumina)
 
@@ -49,11 +50,12 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 5m4.22s
-call_variants                    | 1m50.67s
+load_gbz_into_shared_memory      | 1m7.74s
+make_examples                    | 4m57.53s
+call_variants                    | 1m5.01s
 postprocess_variants (with gVCF) | 0m38.74s
 vcf_stats_report (optional)      | 0m4.91s
-total                            | 10m20.44s
+total                            | 9m24.55s
 
 ### Accuracy
 
@@ -62,7 +64,7 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 1020     | 31       | 15       | 0.970504      | 0.985782         | 0.978083        |
+| INDEL | 1023     | 28       | 16       | 0.973359      | 0.984906         | 0.979098        |
 | SNP   | 25006    | 273      | 54       | 0.989201      | 0.997845         | 0.993504        |
 
 ## How to reproduce the metrics on this page
