@@ -3557,7 +3557,6 @@ options {
   exclude_variants_af_threshold: 0.05000000074505806
   small_model_inference_batch_size: 128
   small_model_vaf_context_window_size: 51
-  output_phase_info: true
   methylation_calling_threshold: 0.5
   small_model_call_multiallelics: true
   output_debug_info: true
@@ -3581,12 +3580,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 32
-  cpu_frequency_mhz: 2449.9940000000033
-  total_memory_mb: 120736
-  wall_time_seconds: 0.9380357265472412
-  cpu_user_time_seconds: 3.623148
-  cpu_system_time_seconds: 2.840833
-  memory_peak_rss_mb: 580
+  cpu_frequency_mhz: 2449.996000000002
+  total_memory_mb: 120735
+  wall_time_seconds: 0.9715347290039062
+  cpu_user_time_seconds: 4.605238
+  cpu_system_time_seconds: 6.343819
+  memory_peak_rss_mb: 690
+  read_bytes: 4096
   write_bytes: 274432
 }
 stats {

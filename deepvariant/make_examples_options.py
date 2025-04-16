@@ -772,7 +772,7 @@ _EXCLUDE_VARIANTS_AF_THRESHOLD = flags.DEFINE_float(
 
 _OUTPUT_PHASE_INFO = flags.DEFINE_bool(
     'output_phase_info',
-    True,
+    False,
     'If True, output phase information to the candidates.',
 )
 
