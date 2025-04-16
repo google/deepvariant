@@ -989,7 +989,6 @@ class RegionProcessorTest(parameterized.TestCase):
         reads_filenames=main_sample.options.reads_filenames,
     )
     mock_rr.assert_called_once_with(reads=[], region=self.region)
-    main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
     mock_cir.assert_called_once_with(self.region, None)
 
   def test_on_demand_initialization_not_called_if_initialized(self):
@@ -1152,7 +1151,6 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.realigner.realign_reads.assert_called_once_with(
         [], self.region
     )
-    main_sample.in_memory_sam_reader.replace_reads.assert_called_once_with([])
 
   def test_call_small_model_examples(self):
     self.processor.options.mode = deepvariant_pb2.MakeExamplesOptions.CALLING

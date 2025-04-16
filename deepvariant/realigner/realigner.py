@@ -809,6 +809,9 @@ class Realigner(object):
         ORDER AS BEFORE.
     """
 
+    if not reads:
+      return [], []
+
     # Split reads containing SKIP operations.
     if self.config.split_skip_reads:
       reads = split_reads(reads)

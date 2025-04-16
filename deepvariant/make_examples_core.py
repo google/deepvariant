@@ -2049,6 +2049,13 @@ class RegionProcessor:
       return True
     return False
 
+  def can_realign(self, sample: sample_lib.Sample) -> bool:
+    """Returns True if the sample can be realigned."""
+    return (
+        sample.in_memory_sam_reader is not None
+        and sample.options.role != 'pangenome'
+    )
+
   def process(
       self, region: range_pb2.Range, region_n: Optional[int] = None
   ) -> Tuple[
@@ -2088,8 +2095,10 @@ class RegionProcessor:
     before_get_reads = time.time()
     runtimes['num reads'] = 0
     # Collect reads from multiple BAMs. Each BAM contains a sample.
+    sample_reads_list_to_realign = []
     sample_reads_list = []
     for sample in self.samples:
+      # We don't align Pangenome reads.
       if sample.in_memory_sam_reader is not None:
         # Realigner is called outside region_reads_norealign()
         sample_reads = self.region_reads_norealign(
@@ -2098,19 +2107,38 @@ class RegionProcessor:
             reads_filenames=sample.options.reads_filenames,
         )
         runtimes['num reads'] += len(sample_reads)
-        sample_reads_list.append(sample_reads)
+        if self.can_realign(sample):
+          sample_reads_list_to_realign.append(sample_reads)
+          sample_reads_list.append([])
+        else:
+          sample_reads_list.append(sample_reads)
+          sample_reads_list_to_realign.append([])
       else:
+        sample_reads_list_to_realign.append([])
         sample_reads_list.append([])
+
+    assert (
+        len(sample_reads_list_to_realign)
+        == len(sample_reads_list)
+        == len(self.samples)
+    )
     if self.options.joint_realignment:
-      sample_reads_list = self.realign_reads_joint_multisample(
-          sample_reads_list, region
+      sample_reads_list_to_realign = self.realign_reads_joint_multisample(
+          sample_reads_list_to_realign, region
       )
     else:
-      sample_reads_list = self.realign_reads_per_sample_multisample(
-          sample_reads_list, region
+      sample_reads_list_to_realign = self.realign_reads_per_sample_multisample(
+          sample_reads_list_to_realign, region
       )
     for sample_index, sample in enumerate(self.samples):
-      sample.in_memory_sam_reader.replace_reads(sample_reads_list[sample_index])
+      if sample_reads_list_to_realign[sample_index]:
+        sample.in_memory_sam_reader.replace_reads(
+            sample_reads_list_to_realign[sample_index]
+        )
+      elif sample_reads_list[sample_index]:
+        sample.in_memory_sam_reader.replace_reads(
+            sample_reads_list[sample_index]
+        )
 
     runtimes['get reads'] = trim_runtime(time.time() - before_get_reads)
     before_find_candidates = time.time()
