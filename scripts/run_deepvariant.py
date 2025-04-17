@@ -293,20 +293,20 @@ class SmallModelConfig:
 SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
     ModelType.WGS: SmallModelConfig(
         small_model_checkpoint='/opt/smallmodels/wgs',
-        snp_gq_threshold=25,
-        indel_gq_threshold=30,
+        snp_gq_threshold=20,
+        indel_gq_threshold=28,
         vaf_context_window=51,
     ),
     ModelType.PACBIO: SmallModelConfig(
         small_model_checkpoint='/opt/smallmodels/pacbio',
-        snp_gq_threshold=25,
-        indel_gq_threshold=30,
+        snp_gq_threshold=15,
+        indel_gq_threshold=16,
         vaf_context_window=51,
     ),
     ModelType.ONT_R104: SmallModelConfig(
         small_model_checkpoint='/opt/smallmodels/ont_r104',
-        snp_gq_threshold=20,
-        indel_gq_threshold=25,
+        snp_gq_threshold=9,
+        indel_gq_threshold=17,
         vaf_context_window=51,
     ),
 }
