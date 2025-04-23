@@ -266,9 +266,23 @@ https://github.com/google/deepvariant/issues/691#issuecomment-2014404465
 
 ## How are `AD` and `DP` values calculated?
 
+* `AD` = Allelic Depth
+* `DP` = Read Depth
+
+These tags are present in the output VCF and are calculated by counting the
+number of reads that support a given allele (for `AD`) or the total depth
+(for `DP`).
+
+However, the reported values you see for `AD` and `DP` may differ from what you
+observe in IGV or from another variant caller. There are three reasons why the
+values may differ:
+
+__DeepVariant limits the number of reads per partition__
+
 In order to efficiently perform variant calling, DeepVariant partitions the
 genome into chunks (set by `--partition_size`), and will read in a max number of
-reads into each partition (set by `--max_reads_per_partition`). By default,
+reads into each partition (set by `--max_reads_per_partition`). These options
+ differ across models, but for short-read models such as WGS and WES,
 `--partition_size` is set to 1000 and `--max_reads_per_partition` is set to
 1500. The `AD` and `DP` values are based on the read depths constrained by
 `--max_reads_per_partition`.
@@ -279,6 +293,22 @@ calculate the true `AD` and `DP` values at high-depth regions, you can set
 `--max_reads_per_partition=0` to calculate `AD` and `DP` using all reads. In
 practice, capping reads per partition reduces runtimes with little/no impact on
 accuracy.
+
+__DeepVariant filters reads with low mapping quality__
+
+DeepVariant applies a mapping quality filter with the `--min_mapping_quality`
+flag. The mapping quality filter varies by model type, but for short-read
+models (WGS, WES), it is set to filter reads with a mapping quality below 5.
+This can reduce `AD` and `DP` values from reads that are not considered to be
+high quality enough for use with DeepVariant's algorithm.
+
+We advise against modifying this flag unless you have a model trained with
+low-mapping-quality reads.
+
+__The realigner may add or remove `AD` and `DP`__
+
+DeepVariant applies a realignment step to short-read models (_e.g._ WGS, WES)
+that can remove or add read support for a variant.
 
 ## Missing variant calls near the edge of a contig
 
