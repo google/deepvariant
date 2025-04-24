@@ -48,7 +48,7 @@ Flags:
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
---model_preset Preset case study to run: WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES, FFPE_WGS_TUMOR_ONLY, FFPE_WES_TUMOR_ONLY, WGS_TUMOR_ONLY, PACBIO_TUMOR_ONLY, ONT_TUMOR_ONLY.
+--model_preset Preset case study to run: WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES, FFPE_WGS_TUMOR_ONLY, FFPE_WES_TUMOR_ONLY, WGS_TUMOR_ONLY, WES_TUMOR_ONLY, PACBIO_TUMOR_ONLY, ONT_TUMOR_ONLY.
 --pon_filtering Path to PON (panel of normal) VCF. If set, pass --pon_filtering to postprocess_variants.
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
@@ -58,7 +58,7 @@ Flags:
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
 
 If model_preset is not specified, the below flags are required:
---model_type Type of DeepSomatic model to run (WGS,WES,PACBIO,ONT,FFPE_WGS,FFPE_WES,FFPE_WGS_TUMOR_ONLY,FFPE_WES_TUMOR_ONLY,WGS_TUMOR_ONLY,PACBIO_TUMOR_ONLY,ONT_TUMOR_ONLY)
+--model_type Type of DeepSomatic model to run (WGS,WES,PACBIO,ONT,FFPE_WGS,FFPE_WES,FFPE_WGS_TUMOR_ONLY,FFPE_WES_TUMOR_ONLY,WGS_TUMOR_ONLY,WES_TUMOR_ONLY,PACBIO_TUMOR_ONLY,ONT_TUMOR_ONLY)
 --ref Path to GCP bucket containing ref file (.fa)
 --bam_normal Path to GCP bucket containing BAM_NORMAL
 --bam_tumor Path to GCP bucket containing BAM_TUMOR
@@ -317,21 +317,11 @@ declare -a sompy_args
 declare -a docker_args
 
 if [[ "${MODEL_PRESET}" = "WGS" ]]; then
-  # Only set to default if MODEL_TYPE is not set.
-  # This will allow MODEL_TYPE to be set to WGS_TUMOR_ONLY, and allow usage of
-  # the tumor-only model
-  if [[ -z "${MODEL_TYPE}" ]]; then
-    MODEL_TYPE="WGS"
-  fi
+  MODEL_TYPE="WGS"
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  # Only use the default if BAM_NORMAL is unset.
-  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
-  # tumor-only model
-  if [[ "${BAM_NORMAL+set}" != set ]]; then
-    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_N_1.bwa.dedup.bam"
-  fi
+  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_N_1.bwa.dedup.bam"
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_T_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
@@ -345,21 +335,21 @@ elif [[ "${MODEL_PRESET}" = "WGS_TUMOR_ONLY" ]]; then
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 elif [[ "${MODEL_PRESET}" = "WES" ]]; then
-  # Only set to default if MODEL_TYPE is not set.
-  # This will allow MODEL_TYPE to be set to WES_TUMOR_ONLY, and allow usage of
-  # the tumor-only model
-  if [[ -z "${MODEL_TYPE}" ]]; then
-    MODEL_TYPE="WES"
-  fi
+   MODEL_TYPE="WES"
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  # Only use the default if BAM_NORMAL is unset.
-  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
-  # tumor-only model
-  if [[ "${BAM_NORMAL+set}" != set ]]; then
-    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/WES_IL_N_1.bwa.dedup.bam"
-  fi
+  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/WES_IL_N_1.bwa.dedup.bam"
+  BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/WES_IL_T_1.bwa.dedup.bam}"
+  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
+  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
+  CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/seqc2_hg38.exome_regions.bed}"
+elif [[ "${MODEL_PRESET}" = "WES_TUMOR_ONLY" ]]; then
+  MODEL_TYPE="WES_TUMOR_ONLY"
+  BASE="${HOME}/deepsomatic-case-studies"
+  REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
+  # Unset BAM_NORMAL, since it's not used in tumor-only model.
+  BAM_NORMAL=""
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/WES_IL_T_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
@@ -392,23 +382,11 @@ elif [[ "${MODEL_PRESET}" = "PACBIO_TUMOR_ONLY" ]]; then
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
 elif [[ "${MODEL_PRESET}" = "ONT" ]]; then
-  # Only set to default if MODEL_TYPE is not set.
-  # This will allow MODEL_TYPE to be set to WES_TUMOR_ONLY, and allow usage of
-  # the tumor-only model
-  if [[ -z "${MODEL_TYPE}" ]]; then
-    MODEL_TYPE="ONT"
-  fi
+  MODEL_TYPE="ONT"
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  # Only use the default if BAM_NORMAL is unset.
-  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
-  # tumor-only model
-  # TODO: Update to a path in gs://deepvariant.
-  if [[ "${BAM_NORMAL+set}" != set ]]; then
-    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Normal_ONT.GRCh38.sorted.bam"
-  fi
-
+  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Normal_ONT.GRCh38.sorted.bam"
   SAMPLE_NAME_NORMAL="1395_normal_ont"
   SAMPLE_NAME_TUMOR="1395_tumor_ont"
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Tumor_ONT.50x.GRCh38.sorted.bam}"
@@ -431,13 +409,7 @@ elif [[ "${MODEL_PRESET}" = "FFPE_WGS" ]]; then
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  # Only use the default if BAM_NORMAL is unset.
-  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
-  # tumor-only model
-  # TODO: Update to a path in gs://deepvariant.
-  if [[ "${BAM_NORMAL+set}" != set ]]; then
-    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wgs-case-study/FFG_IL_N_6h.bwa.dedup.bam"
-  fi
+  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wgs-case-study/FFG_IL_N_6h.bwa.dedup.bam"
 
   SAMPLE_NAME_NORMAL="1395_normal_ffpe_wgs"
   SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wgs"
@@ -450,13 +422,7 @@ elif [[ "${MODEL_PRESET}" = "FFPE_WES" ]]; then
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  # Only use the default if BAM_NORMAL is unset.
-  # This will allow BAM_NORMAL to be set to an empty string, in order to enable
-  # tumor-only model
-  # TODO: Update to a path in gs://deepvariant.
-  if [[ "${BAM_NORMAL+set}" != set ]]; then
-    BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wes-case-study/FFX_IL_N_6h_2.bwa.dedup.bam"
-  fi
+  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wes-case-study/FFX_IL_N_6h_2.bwa.dedup.bam"
 
   SAMPLE_NAME_NORMAL="1395_normal_ffpe_wes"
   SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wes"
@@ -492,7 +458,7 @@ elif [[ "${MODEL_PRESET}" = "FFPE_WES_TUMOR_ONLY" ]]; then
 
 else
   if [[ -n "${MODEL_PRESET}" ]]; then
-    echo "Error: --model_preset must be one of WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES, FFPE_WGS_TUMOR_ONLY, FFPE_WES_TUMOR_ONLY, WGS_TUMOR_ONLY, PACBIO_TUMOR_ONLY, ONT_TUMOR_ONLY." >&2
+    echo "Error: --model_preset must be one of WGS, WES, PACBIO, ONT, FFPE_WGS, FFPE_WES, FFPE_WGS_TUMOR_ONLY, FFPE_WES_TUMOR_ONLY, WGS_TUMOR_ONLY, WES_TUMOR_ONLY, PACBIO_TUMOR_ONLY, ONT_TUMOR_ONLY." >&2
     exit 1
   fi
 fi

@@ -63,6 +63,7 @@ _MODEL_TYPE = flags.DEFINE_enum(
         'FFPE_WGS_TUMOR_ONLY',
         'FFPE_WES_TUMOR_ONLY',
         'WGS_TUMOR_ONLY',
+        'WES_TUMOR_ONLY',
         'PACBIO_TUMOR_ONLY',
         'ONT_TUMOR_ONLY',
     ],
@@ -284,6 +285,7 @@ MODEL_TYPE_MAP = {
     'FFPE_WGS_TUMOR_ONLY': '/opt/models/deepsomatic/ffpe_wgs_tumor_only',
     'FFPE_WES_TUMOR_ONLY': '/opt/models/deepsomatic/ffpe_wes_tumor_only',
     'WGS_TUMOR_ONLY': '/opt/models/deepsomatic/wgs_tumor_only',
+    'WES_TUMOR_ONLY': '/opt/models/deepsomatic/wes_tumor_only',
     'PACBIO_TUMOR_ONLY': '/opt/models/deepsomatic/pacbio_tumor_only',
     'ONT_TUMOR_ONLY': '/opt/models/deepsomatic/ont_tumor_only',
 }
@@ -478,6 +480,17 @@ def make_examples_somatic_command(
     special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
     special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  elif _MODEL_TYPE.value == 'WES_TUMOR_ONLY':
+    # Specific flags that are not default can be added here.
+    special_args = {}
+    special_args['vsc_min_fraction_indels'] = 0.07
+    special_args['vsc_min_fraction_snps'] = 0.05
+    special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5
+    special_args['vsc_max_fraction_snps_for_non_target_sample'] = 0.5
+    special_args['population_vcfs'] = (
+        '/opt/models/deepsomatic/pons/AF_ilmn_PON_DeepVariant.GRCh38.AF0.05.vcf.gz'
+    )
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
   elif _MODEL_TYPE.value == 'FFPE_WGS':
     # Specific flags that are not default can be added here.
     special_args = {}
@@ -515,7 +528,7 @@ def make_examples_somatic_command(
     special_args['parse_sam_aux_fields'] = True
     special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
-    special_args['pileup_image_width'] = 99
+    special_args['pileup_image_width'] = 147
     special_args['realign_reads'] = False
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
@@ -533,7 +546,7 @@ def make_examples_somatic_command(
     special_args['parse_sam_aux_fields'] = True
     special_args['partition_size'] = 25000
     special_args['phase_reads'] = True
-    special_args['pileup_image_width'] = 99
+    special_args['pileup_image_width'] = 147
     special_args['realign_reads'] = False
     special_args['sort_by_haplotypes'] = True
     special_args['track_ref_reads'] = True
