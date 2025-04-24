@@ -81,7 +81,7 @@ SKIP_SOMPY=false
 # Strings; sorted alphabetically.
 unset BAM_NORMAL
 BAM_TUMOR=""
-BIN_VERSION="1.8.0"
+BIN_VERSION="1.9.0"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
