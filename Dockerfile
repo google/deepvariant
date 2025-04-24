@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
-ARG VERSION=1.9.0-rc0
+ARG VERSION=1.9.0
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
 FROM condaforge/miniforge3:24.9.2-0 as conda_setup

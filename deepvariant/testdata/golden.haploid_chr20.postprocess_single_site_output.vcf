@@ -16,7 +16,7 @@
 ##FORMAT=<ID=MD,Number=R,Type=Integer,Description="Methylation depth for each of the reference and alternate allele">
 ##FORMAT=<ID=MT,Number=1,Type=String,Description="Methylation type: 0/0=Unmethylated, 0/1=Heterozygous, 1/1=Methylated">
 ##FORMAT=<ID=MED_DP,Number=1,Type=Integer,Description="Median DP observed within the GVCF block rounded to the nearest integer.">
-##DeepVariant_version=1.8.0
+##DeepVariant_version=1.9.0
 ##contig=<ID=chr20,length=63025520>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12878
 chr20	10000117	.	C	T	1.2	RefCall	.	GT:GQ:DP:AD:VAF:PL	./.:6:55:25,30:0.545455:0,97,5

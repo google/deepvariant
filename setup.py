@@ -78,7 +78,7 @@ class BuildProtoCommand(Command):
 
 setup(
     name='deepvariant-python-only-pip',
-    version='1.9.0-rc0',
+    version='1.9.0',
     packages=find_packages(),
     install_requires=[],
     cmdclass={
