@@ -342,6 +342,9 @@ def window_selector_config(flags_obj):
   keep_legacy_behavior = False
   if 'keep_legacy_allele_counter_behavior' in flags_obj:
     keep_legacy_behavior = flags_obj.keep_legacy_allele_counter_behavior
+  enable_strict_insertion_filter = False
+  if 'enable_strict_insertion_filter' in flags_obj:
+    enable_strict_insertion_filter = flags_obj.enable_strict_insertion_filter
   ws_config = realigner_pb2.WindowSelectorOptions(
       min_mapq=flags_obj.ws_min_mapq,
       min_base_quality=flags_obj.ws_min_base_quality,
@@ -352,6 +355,7 @@ def window_selector_config(flags_obj):
       keep_legacy_behavior=keep_legacy_behavior,
       realign_all=flags_obj.realign_all,
       min_allele_support=_MIN_ALLELE_SUPPORT,
+      enable_strict_insertion_filter=enable_strict_insertion_filter,
   )
 
   return ws_config

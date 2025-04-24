@@ -91,7 +91,7 @@ message WindowSelectorModel {
 }
 
 // Config parameters for "window selector (ws)" phase.
-// Next ID: 12.
+// Next ID: 13.
 message WindowSelectorOptions {
   // Minimum number of supporting reads to call a reference position for
   // local assembly.
@@ -141,6 +141,8 @@ message WindowSelectorOptions {
   bool realign_all = 10;
 
   int32 min_allele_support = 11;
+
+  bool enable_strict_insertion_filter = 12;
 }
 
 // Config parameters for "de-Bruijn graph (dbg)" phase.

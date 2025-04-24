@@ -593,6 +593,13 @@ _KEEP_LEGACY_ALLELE_COUNTER_BEHAVIOR = flags.DEFINE_bool(
         'We do not recommend setting this flag to True.'
     ),
 )
+_ENABLE_STRICT_INSERTION_FILTER = flags.DEFINE_bool(
+    'enable_strict_insertion_filter',
+    False,
+    'If True, add stricter filter for insertion in window selector.'
+    ' (experimental)',
+)
+
 
 _ENABLE_METHYLATION_CALLING = flags.DEFINE_bool(
     'enable_methylation_calling',

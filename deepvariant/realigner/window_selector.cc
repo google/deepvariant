@@ -72,6 +72,12 @@ bool AlleleFilter(
   if (allele.count() < config.min_allele_support()) {
     return false;
   }
+  if (config.enable_strict_insertion_filter()) {
+    if (allele.type() == AlleleType::INSERTION &&
+        allele.bases().length() <= 2) {
+      return static_cast<float>(allele.count()) / total_count >= 0.08;
+    }
+  }
   return true;
 }
 
