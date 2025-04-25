@@ -61,6 +61,15 @@ class RunDeeptrioTest(parameterized.TestCase):
         self.assertEqual(mock_stdout.getvalue(), expected_stdout)
     return commands, postprocess_cmds, report_commands
 
+  def _get_small_model_cvo_records_path(self, model_type, sample):
+    if model_type == 'WES':
+      return ''
+    return (
+        ' --small_model_cvo_records'
+        ' "/tmp/deeptrio_tmp_output/make_examples_{}_call_variant_outputs.tfrecord@64.gz"'
+        .format(sample)
+    )
+
   @parameterized.parameters('WGS', 'WES', 'PACBIO')
   @flagsaver.flagsaver
   def test_call_variants_postprocess_variants_commands(self, model_type):
@@ -121,15 +130,14 @@ class RunDeeptrioTest(parameterized.TestCase):
     self.assertEqual(
         postprocess_cmds[0],
         (
-            'time /opt/deepvariant/bin/postprocess_variants '
-            '--ref "your_ref" '
-            '--infile '
-            '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
-            '--outfile "your_vcf_child" '
-            '--cpus 21 '
-            '--nonvariant_site_tfrecord_path '
-            '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
-            '--gvcf_outfile "your_gvcf_child"'
+            'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
+            ' --infile'
+            ' "/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz"'
+            ' --outfile "your_vcf_child" --cpus 21'
+            + self._get_small_model_cvo_records_path(model_type, 'child')
+            + ' --nonvariant_site_tfrecord_path'
+            ' "/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz"'
+            ' --gvcf_outfile "your_gvcf_child"'
         ),
     )
     self.assertEqual(
@@ -139,7 +147,8 @@ class RunDeeptrioTest(parameterized.TestCase):
             ' --infile'
             ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
             ' --outfile "your_vcf_parent1" --cpus 21'
-            ' --nonvariant_site_tfrecord_path'
+            + self._get_small_model_cvo_records_path(model_type, 'parent1')
+            + ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz"'
             ' --gvcf_outfile "your_gvcf_parent1"'
         ),
@@ -151,7 +160,8 @@ class RunDeeptrioTest(parameterized.TestCase):
             ' --infile'
             ' "/tmp/deeptrio_tmp_output/call_variants_output_parent2.tfrecord.gz"'
             ' --outfile "your_vcf_parent2" --cpus 21'
-            ' --nonvariant_site_tfrecord_path'
+            + self._get_small_model_cvo_records_path(model_type, 'parent2')
+            + ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_parent2.tfrecord@64.gz"'
             ' --gvcf_outfile "your_gvcf_parent2"'
         ),
@@ -222,8 +232,9 @@ class RunDeeptrioTest(parameterized.TestCase):
             '--infile '
             '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
             '--outfile "your_vcf_child" '
-            '--cpus 21 '
-            '--nonvariant_site_tfrecord_path '
+            '--cpus 21'
+            + self._get_small_model_cvo_records_path(model_type, 'child')
+            + ' --nonvariant_site_tfrecord_path '
             '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
             '--gvcf_outfile "your_gvcf_child"'
         ),
@@ -235,7 +246,8 @@ class RunDeeptrioTest(parameterized.TestCase):
             ' --infile'
             ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
             ' --outfile "your_vcf_parent1" --cpus 21'
-            ' --nonvariant_site_tfrecord_path'
+            + self._get_small_model_cvo_records_path(model_type, 'parent1')
+            + ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz"'
             ' --gvcf_outfile "your_gvcf_parent1"'
         ),
@@ -256,7 +268,11 @@ class RunDeeptrioTest(parameterized.TestCase):
           False,
           '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--pileup_image_height_child "60" '
-          + '--pileup_image_height_parent "40" ',
+          + '--pileup_image_height_parent "40" '
+          + '--small_model_indel_gq_threshold "29" --small_model_path_child'
+          ' "/opt/smallmodels/deeptrio/wgs/child" --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/wgs/parent"'
+          ' --small_model_snp_gq_threshold "15" --track_ref_reads ',
       ),
       (
           'WES',
@@ -270,7 +286,7 @@ class RunDeeptrioTest(parameterized.TestCase):
           # Currently, there is no way to disable it.
           'PACBIO',
           True,
-          '--alt_aligned_pileup "diff_channels" '
+          '--alt_aligned_pileup "diff_channels" --call_small_model_examples '
           + '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
           + '--discard_non_dna_regions '
@@ -280,7 +296,12 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
           + '--pileup_image_height_child "60" '
           + '--pileup_image_height_parent "40" --pileup_image_width "199" '
-          + '--norealign_reads --sort_by_haplotypes '
+          + '--norealign_reads '
+          + '--small_model_indel_gq_threshold "25" --small_model_path_child'
+          ' "/opt/smallmodels/deeptrio/pacbio/child" --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/pacbio/parent"'
+          ' --small_model_snp_gq_threshold "20"'
+          + ' --sort_by_haplotypes '
           + '--track_ref_reads --trim_reads_for_pileup '
           + '--vsc_min_fraction_indels "0.12" ',
       ),
@@ -291,7 +312,11 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
           + '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--pileup_image_height_child "60" --pileup_image_height_parent'
-          ' "40" ',
+          ' "40" '
+          + '--small_model_indel_gq_threshold "29" --small_model_path_child'
+          ' "/opt/smallmodels/deeptrio/wgs/child" --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/wgs/parent"'
+          ' --small_model_snp_gq_threshold "15" --track_ref_reads ',
       ),
       (
           'WES',
@@ -327,6 +352,9 @@ class RunDeeptrioTest(parameterized.TestCase):
       use_candidate_partition = True
     make_examples_command_index = 1 if use_candidate_partition else 0
     commands, _, _ = self._create_all_commands_and_check_stdout()
+    call_small_model_examples = (
+        '--call_small_model_examples ' if model_type == 'WGS' else ''
+    )
     self.assertEqual(
         commands[make_examples_command_index],
         'time seq 0 63 | parallel -q --halt 2 --line-buffer'
@@ -336,8 +364,8 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" --checkpoint'
         ' "/opt/models/deeptrio/%s/child" --sample_name "your_sample_child"'
         ' --sample_name_parent1 "your_sample_parent1" --sample_name_parent2'
-        ' "your_sample_parent2" %s--task {}'
-        % (model_type.lower(), extra_args_plus_gvcf),
+        ' "your_sample_parent2" %s%s--task {}'
+        % (model_type.lower(), call_small_model_examples, extra_args_plus_gvcf),
     )
 
   @parameterized.parameters((
@@ -357,6 +385,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--sample_name_parent1 "your_sample_parent1" '
       + '--sample_name_parent2 "your_sample_parent2" '
       + '--alt_aligned_pileup "diff_channels" '
+      + '--call_small_model_examples '
       + '--candidate_positions '
       + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
       + '--discard_non_dna_regions '
@@ -364,10 +393,15 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--max_reads_for_dynamic_bases_per_region "200" '
       + '--min_mapping_quality "1" '
       + '--parse_sam_aux_fields --partition_size "10000" --phase_reads '
-      + '--pileup_image_height_child'
-      ' "60" --pileup_image_height_parent "40" --pileup_image_width'
-      ' "199" '
-      + '--norealign_reads --sort_by_haplotypes '
+      + '--pileup_image_height_child "60" '
+      + '--pileup_image_height_parent "40" '
+      + '--pileup_image_width "199" '
+      + '--norealign_reads '
+      + '--small_model_indel_gq_threshold "25" '
+      + '--small_model_path_child "/opt/smallmodels/deeptrio/pacbio/child" '
+      + '--small_model_path_parent "/opt/smallmodels/deeptrio/pacbio/parent" '
+      + '--small_model_snp_gq_threshold "20" '
+      + '--sort_by_haplotypes '
       + '--track_ref_reads --trim_reads_for_pileup '
       + '--vsc_min_fraction_indels "0.12" '
       + '--task {}',
@@ -386,6 +420,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--sample_name_parent1 "your_sample_parent1" '
       + '--sample_name_parent2 "your_sample_parent2" '
       + '--alt_aligned_pileup "diff_channels" '
+      + '--call_small_model_examples '
       + '--candidate_positions '
       + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
       + '--discard_non_dna_regions '
@@ -395,7 +430,12 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
       + '--pileup_image_height_child "60" '
       + '--pileup_image_height_parent "40" --pileup_image_width "199" '
-      + '--norealign_reads --sort_by_haplotypes '
+      + '--norealign_reads '
+      + '--small_model_indel_gq_threshold "25" '
+      + '--small_model_path_child "/opt/smallmodels/deeptrio/pacbio/child" '
+      + '--small_model_path_parent "/opt/smallmodels/deeptrio/pacbio/parent" '
+      + '--small_model_snp_gq_threshold "20" '
+      + '--sort_by_haplotypes '
       + '--track_ref_reads --trim_reads_for_pileup '
       + '--vsc_min_fraction_indels "0.12" '
       + '--task {}',
@@ -429,7 +469,11 @@ class RunDeeptrioTest(parameterized.TestCase):
           'WGS',
           '--gvcf "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz" '
           + '--pileup_image_height_child "60" '
-          + '--pileup_image_height_parent "40" ',
+          + '--pileup_image_height_parent "40" '
+          + '--small_model_indel_gq_threshold "29" --small_model_path_child'
+          ' "/opt/smallmodels/deeptrio/wgs/child" --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/wgs/parent"'
+          ' --small_model_snp_gq_threshold "15" --track_ref_reads ',
       ),
       (
           'WES',
@@ -440,6 +484,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       (
           'PACBIO',
           '--alt_aligned_pileup "diff_channels" '
+          + '--call_small_model_examples '
           + '--candidate_positions '
           + '"/tmp/deeptrio_tmp_output/candidate_positions@64" '
           + '--discard_non_dna_regions '
@@ -448,8 +493,13 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--min_mapping_quality "1" '
           + '--parse_sam_aux_fields --partition_size "25000" --phase_reads '
           + '--pileup_image_height_child "60" '
-          + '--pileup_image_height_parent "40" --pileup_image_width "199" '
-          + '--norealign_reads --sort_by_haplotypes '
+          + '--pileup_image_height_parent "40" --pileup_image_width "199"'
+          ' --norealign_reads '
+          + '--small_model_indel_gq_threshold "25" --small_model_path_child'
+          ' "/opt/smallmodels/deeptrio/pacbio/child" --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/pacbio/parent"'
+          ' --small_model_snp_gq_threshold "20" '
+          + '--sort_by_haplotypes '
           + '--track_ref_reads --trim_reads_for_pileup '
           + '--vsc_min_fraction_indels "0.12" ',
       ),
@@ -474,6 +524,9 @@ class RunDeeptrioTest(parameterized.TestCase):
     if model_type == 'PACBIO':
       use_candidate_partition = True
     make_examples_command_index = 1 if use_candidate_partition else 0
+    call_small_model_examples = (
+        '--call_small_model_examples ' if model_type == 'WGS' else ''
+    )
     self.assertEqual(
         commands[make_examples_command_index],
         'time seq 0 63 | parallel -q --halt 2 --line-buffer'
@@ -483,15 +536,15 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/deeptrio/%s/child"'
         ' --sample_name "your_sample_child" --sample_name_parent1'
-        ' "your_sample_parent1" %s--task {}'
-        % (model_type.lower(), extra_args_plus_gvcf),
+        ' "your_sample_parent1" %s%s--task {}'
+        % (model_type.lower(), call_small_model_examples, extra_args_plus_gvcf),
     )
 
   @parameterized.parameters(
       (
           None,
           (
-              '--alt_aligned_pileup "diff_channels"'
+              '--alt_aligned_pileup "diff_channels" --call_small_model_examples'
               ' --candidate_positions'
               ' "/tmp/deeptrio_tmp_output/candidate_positions@64"'
               ' --discard_non_dna_regions --gvcf'
@@ -501,7 +554,12 @@ class RunDeeptrioTest(parameterized.TestCase):
               ' --partition_size "10000" --phase_reads'
               ' --pileup_image_height_child "60" --pileup_image_height_parent'
               ' "40" --pileup_image_width "199" --norealign_reads'
-              ' --sort_by_haplotypes --track_ref_reads --trim_reads_for_pileup'
+              ' --small_model_indel_gq_threshold "25" --small_model_path_child'
+              ' "/opt/smallmodels/deeptrio/pacbio/child"'
+              ' --small_model_path_parent'
+              ' "/opt/smallmodels/deeptrio/pacbio/parent"'
+              ' --small_model_snp_gq_threshold "20" --sort_by_haplotypes'
+              ' --track_ref_reads --trim_reads_for_pileup'
               ' --vsc_min_fraction_indels "0.12" '
           ),
           None,
@@ -509,7 +567,7 @@ class RunDeeptrioTest(parameterized.TestCase):
       (
           'alt_aligned_pileup="rows",vsc_min_fraction_indels=0.03',
           (
-              '--alt_aligned_pileup "rows"'
+              '--alt_aligned_pileup "rows" --call_small_model_examples'
               ' --candidate_positions'
               ' "/tmp/deeptrio_tmp_output/candidate_positions@64"'
               ' --discard_non_dna_regions --gvcf'
@@ -519,7 +577,12 @@ class RunDeeptrioTest(parameterized.TestCase):
               ' --partition_size "10000" --phase_reads'
               ' --pileup_image_height_child "60" --pileup_image_height_parent'
               ' "40" --pileup_image_width "199" --norealign_reads'
-              ' --sort_by_haplotypes --track_ref_reads --trim_reads_for_pileup'
+              ' --small_model_indel_gq_threshold "25" --small_model_path_child'
+              ' "/opt/smallmodels/deeptrio/pacbio/child"'
+              ' --small_model_path_parent'
+              ' "/opt/smallmodels/deeptrio/pacbio/parent"'
+              ' --small_model_snp_gq_threshold "20" --sort_by_haplotypes'
+              ' --track_ref_reads --trim_reads_for_pileup'
               ' --vsc_min_fraction_indels "0.03" '
           ),
           # Because PacBio uses candidate_sweep, make_examples got run twice.
@@ -620,7 +683,12 @@ class RunDeeptrioTest(parameterized.TestCase):
         '--sample_name "your_sample_child" '
         '--sample_name_parent1 "your_sample_parent1" '
         '--sample_name_parent2 "your_sample_parent2" '
+        '--call_small_model_examples '
         '%s '
+        '--small_model_indel_gq_threshold "29" --small_model_path_child'
+        ' "/opt/smallmodels/deeptrio/wgs/child" --small_model_path_parent'
+        ' "/opt/smallmodels/deeptrio/wgs/parent"'
+        ' --small_model_snp_gq_threshold "15" --track_ref_reads '
         '--task {}' % expected_args,
     )
 
@@ -722,28 +790,25 @@ class RunDeeptrioTest(parameterized.TestCase):
 
     self.assertEqual(
         commands_post_process[0],
-        'time /opt/deepvariant/bin/postprocess_variants '
-        '--ref "your_ref" '
-        '--infile '
-        '"/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz" '
-        '--outfile "your_vcf_child" '
-        '--cpus 21 '
-        '--nonvariant_site_tfrecord_path '
-        '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
-        '--gvcf_outfile "your_gvcf_child" '
-        '%s' % expected_args,
+        'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
+        ' --infile'
+        ' "/tmp/deeptrio_tmp_output/call_variants_output_child.tfrecord.gz"'
+        ' --outfile "your_vcf_child" --cpus 21 --small_model_cvo_records'
+        ' "/tmp/deeptrio_tmp_output/make_examples_child_call_variant_outputs.tfrecord@64.gz"'
+        ' --nonvariant_site_tfrecord_path'
+        ' "/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" --gvcf_outfile'
+        ' "your_gvcf_child" %s' % expected_args,
     )
     self.assertEqual(
         commands_post_process[1],
-        'time /opt/deepvariant/bin/postprocess_variants '
-        '--ref "your_ref" '
-        '--infile '
-        '"/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz" '
-        '--outfile "your_vcf_parent1" '
-        '--cpus 21 '
-        '--nonvariant_site_tfrecord_path '
-        '"/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz" '
-        '--gvcf_outfile "your_gvcf_parent1"',
+        'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
+        ' --infile'
+        ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
+        ' --outfile "your_vcf_parent1" --cpus 21 --small_model_cvo_records'
+        ' "/tmp/deeptrio_tmp_output/make_examples_parent1_call_variant_outputs.tfrecord@64.gz"'
+        ' --nonvariant_site_tfrecord_path'
+        ' "/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz" --gvcf_outfile'
+        ' "your_gvcf_parent1"',
     )
 
   def test_all_report_commands(self):
@@ -837,6 +902,9 @@ class RunDeeptrioTest(parameterized.TestCase):
     FLAGS.output_vcf_child = 'your_vcf_child'
     FLAGS.output_vcf_parent1 = 'your_vcf_parent1'
     FLAGS.output_vcf_parent2 = 'your_vcf_parent2'
+    FLAGS.output_gvcf_child = 'your_gvcf_child'
+    FLAGS.output_gvcf_parent1 = 'your_gvcf_parent1'
+    FLAGS.output_gvcf_parent2 = 'your_gvcf_parent2'
     FLAGS.num_shards = 64
     FLAGS.customized_small_model = 'path/to/smallmodel/child'
     FLAGS.customized_small_model_parent = 'path/to/smallmodel/parent'
@@ -853,10 +921,12 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" --checkpoint'
         ' "/opt/models/deeptrio/wgs/child" --sample_name "your_sample_child"'
         ' --sample_name_parent1 "your_sample_parent1" --sample_name_parent2'
-        ' "your_sample_parent2" --call_small_model_examples'
+        ' "your_sample_parent2" --call_small_model_examples --gvcf'
+        ' "/tmp/deeptrio_tmp_output/gvcf.tfrecord@64.gz"'
         ' --pileup_image_height_child "60" --pileup_image_height_parent "40"'
         ' --small_model_path_child "path/to/smallmodel/child"'
-        ' --small_model_path_parent "path/to/smallmodel/parent" --task {}',
+        ' --small_model_path_parent "path/to/smallmodel/parent"'
+        ' --track_ref_reads --task {}',
     )
     self.assertEqual(
         postprocess_commands[0],
@@ -866,31 +936,30 @@ class RunDeeptrioTest(parameterized.TestCase):
         ' --outfile "your_vcf_child" --cpus 21 --small_model_cvo_records'
         ' "/tmp/deeptrio_tmp_output/make_examples_child_call_variant_outputs.tfrecord@64.gz"'
         ' --nonvariant_site_tfrecord_path'
-        ' "/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz"',
+        ' "/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" --gvcf_outfile'
+        ' "your_gvcf_child"',
     )
     self.assertEqual(
         postprocess_commands[1],
-        (
-            'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
-            ' --infile'
-            ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
-            ' --outfile "your_vcf_parent1" --cpus 21 --small_model_cvo_records'
-            ' "/tmp/deeptrio_tmp_output/make_examples_parent1_call_variant_outputs.tfrecord@64.gz"'
-            ' --nonvariant_site_tfrecord_path'
-            ' "/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz"'
-        ),
+        'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
+        ' --infile'
+        ' "/tmp/deeptrio_tmp_output/call_variants_output_parent1.tfrecord.gz"'
+        ' --outfile "your_vcf_parent1" --cpus 21 --small_model_cvo_records'
+        ' "/tmp/deeptrio_tmp_output/make_examples_parent1_call_variant_outputs.tfrecord@64.gz"'
+        ' --nonvariant_site_tfrecord_path'
+        ' "/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz" --gvcf_outfile'
+        ' "your_gvcf_parent1"',
     )
     self.assertEqual(
         postprocess_commands[2],
-        (
-            'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
-            ' --infile'
-            ' "/tmp/deeptrio_tmp_output/call_variants_output_parent2.tfrecord.gz"'
-            ' --outfile "your_vcf_parent2" --cpus 21 --small_model_cvo_records'
-            ' "/tmp/deeptrio_tmp_output/make_examples_parent2_call_variant_outputs.tfrecord@64.gz"'
-            ' --nonvariant_site_tfrecord_path'
-            ' "/tmp/deeptrio_tmp_output/gvcf_parent2.tfrecord@64.gz"'
-        ),
+        'time /opt/deepvariant/bin/postprocess_variants --ref "your_ref"'
+        ' --infile'
+        ' "/tmp/deeptrio_tmp_output/call_variants_output_parent2.tfrecord.gz"'
+        ' --outfile "your_vcf_parent2" --cpus 21 --small_model_cvo_records'
+        ' "/tmp/deeptrio_tmp_output/make_examples_parent2_call_variant_outputs.tfrecord@64.gz"'
+        ' --nonvariant_site_tfrecord_path'
+        ' "/tmp/deeptrio_tmp_output/gvcf_parent2.tfrecord@64.gz" --gvcf_outfile'
+        ' "your_gvcf_parent2"',
     )
 
 

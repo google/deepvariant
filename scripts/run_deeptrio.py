@@ -34,6 +34,7 @@ If you want to access more flags that are available in `make_examples`,
 using the binaries in the Docker image.
 """
 
+import dataclasses
 import enum
 import os
 import re
@@ -292,7 +293,6 @@ _USE_CANDIDATE_PARTITION = flags.DEFINE_boolean(
     ),
 )
 
-
 # Optional flags for postprocess_variants.
 _OUTPUT_GVCF_CHILD = flags.DEFINE_string(
     'output_gvcf_child',
@@ -331,10 +331,35 @@ MODEL_TYPE_MAP = {
     'ONT_parent': '/opt/models/deeptrio/ont/parent',
 }
 
-# TODO: Add WGS model
-# TODO: Add PACBIO model
-# TODO: Add ONT model
-SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {}
+
+@dataclasses.dataclass
+class SmallModelConfig:
+  small_model_path_child: str
+  small_model_path_parent: str
+  indel_gq_threshold: int
+  snp_gq_threshold: int
+
+
+SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
+    'WGS': SmallModelConfig(
+        small_model_path_child='/opt/smallmodels/deeptrio/wgs/child',
+        small_model_path_parent='/opt/smallmodels/deeptrio/wgs/parent',
+        indel_gq_threshold=29,
+        snp_gq_threshold=15,
+    ),
+    'PACBIO': SmallModelConfig(
+        small_model_path_child='/opt/smallmodels/deeptrio/pacbio/child',
+        small_model_path_parent='/opt/smallmodels/deeptrio/pacbio/parent',
+        indel_gq_threshold=25,
+        snp_gq_threshold=20,
+    ),
+    'ONT': SmallModelConfig(
+        small_model_path_child='/opt/smallmodels/deeptrio/ont/child',
+        small_model_path_parent='/opt/smallmodels/deeptrio/ont/parent',
+        indel_gq_threshold=10,
+        snp_gq_threshold=15,
+    ),
+}
 
 # Current release version of DeepTrio.
 # Should be the same in dv_vcf_constants.py.
@@ -501,18 +526,18 @@ def _set_small_model_config(
   if not _use_small_model():
     return
   special_args['call_small_model_examples'] = True
+  special_args['track_ref_reads'] = True
   if _CUSTOMIZED_SMALL_MODEL.value and _CUSTOMIZED_SMALL_MODEL_PARENT.value:
     special_args['small_model_path_child'] = _CUSTOMIZED_SMALL_MODEL.value
     special_args['small_model_path_parent'] = (
         _CUSTOMIZED_SMALL_MODEL_PARENT.value
     )
   elif _MODEL_TYPE.value in SMALL_MODEL_CONFIG_BY_MODEL_TYPE:
-    special_args['small_model_path_child'] = SMALL_MODEL_CONFIG_BY_MODEL_TYPE[
-        f'{_MODEL_TYPE.value}_child'
-    ]
-    special_args['small_model_path_parent'] = SMALL_MODEL_CONFIG_BY_MODEL_TYPE[
-        f'{_MODEL_TYPE.value}_parent'
-    ]
+    config = SMALL_MODEL_CONFIG_BY_MODEL_TYPE[_MODEL_TYPE.value]
+    special_args['small_model_path_child'] = config.small_model_path_child
+    special_args['small_model_path_parent'] = config.small_model_path_parent
+    special_args['small_model_snp_gq_threshold'] = config.snp_gq_threshold
+    special_args['small_model_indel_gq_threshold'] = config.indel_gq_threshold
 
 
 def _make_examples_command(
@@ -744,7 +769,6 @@ def postprocess_variants_command(
         '--nonvariant_site_tfrecord_path',
         '"{}"'.format(nonvariant_site_tfrecord_path),
     ])
-  if gvcf_outfile is not None:
     command.extend(['--gvcf_outfile', '"{}"'.format(gvcf_outfile)])
   # Extend the command with all items in extra_args.
   command = _extend_command_by_args_dict(
