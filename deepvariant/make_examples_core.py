@@ -1966,8 +1966,8 @@ class RegionProcessor:
       for _, sam_reader in enumerate(sample.sam_readers):
         reads = itertools.chain(reads, sam_reader.query(region))
       try:
-        sample.in_memory_sam_reader.replace_reads(reads)
-        sample.reads = sample.in_memory_sam_reader.query(region)
+        sample.in_memory_sam_reader.replace_reads(reads)  # pytype: disable=attribute-error
+        sample.reads = sample.in_memory_sam_reader.query(region)  # pytype: disable=attribute-error
         max_bases_to_cover = 0
         if self.options.max_reads_for_dynamic_bases_per_region > 0:
           max_bases_to_cover = (
@@ -2025,7 +2025,7 @@ class RegionProcessor:
     # TODO: For phasing we calculate candidates for all samples.
     # If it is done here then we can reuse these results for phasing thus
     # saving runtime.
-    candidate_positions = main_sample.variant_caller.get_candidate_positions(
+    candidate_positions = main_sample.variant_caller.get_candidate_positions(  # pytype: disable=attribute-error
         allele_counters=allele_counters, sample_name=main_sample.options.name
     )
     for pos in candidate_positions:
@@ -2132,7 +2132,7 @@ class RegionProcessor:
       )
     for sample_index, sample in enumerate(self.samples):
       if sample_reads_list_to_realign[sample_index]:
-        sample.in_memory_sam_reader.replace_reads(
+        sample.in_memory_sam_reader.replace_reads(  # pytype: disable=attribute-error
             sample_reads_list_to_realign[sample_index]
         )
       elif sample_reads_list[sample_index]:
@@ -3272,7 +3272,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
         )
         candidates_for_pileup_images = candidates_not_called_by_small_model
 
-      region_example_shape = region_processor.writes_examples_in_region(
+      region_example_shape = region_processor.writes_examples_in_region(  # pytype: disable=wrong-arg-types
           candidates_for_pileup_images,
           region,
           sample.options.order,
