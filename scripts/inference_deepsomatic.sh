@@ -321,7 +321,7 @@ if [[ "${MODEL_PRESET}" = "WGS" ]]; then
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_N_1.bwa.dedup.bam"
+  BAM_NORMAL="${BAM_NORMAL:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_N_1.bwa.dedup.bam}"
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wgs-case-study/S1395_WGS_NS_T_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
@@ -339,7 +339,7 @@ elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/WES_IL_N_1.bwa.dedup.bam"
+  BAM_NORMAL="${BAM_NORMAL:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/WES_IL_N_1.bwa.dedup.bam}"
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-wes-case-study/WES_IL_T_1.bwa.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/high-confidence_sINDEL_sSNV_in_HC_regions_v1.2.1.merged.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/deepsomatic-case-studies/SEQC2-S1395-truth/High-Confidence_Regions_v1.2.bed}"
@@ -386,7 +386,7 @@ elif [[ "${MODEL_PRESET}" = "ONT" ]]; then
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Normal_ONT.GRCh38.sorted.bam"
+  BAM_NORMAL="${BAM_NORMAL:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Normal_ONT.GRCh38.sorted.bam}"
   SAMPLE_NAME_NORMAL="1395_normal_ont"
   SAMPLE_NAME_TUMOR="1395_tumor_ont"
   BAM_TUMOR="${BAM_TUMOR:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ont-case-study/1395_Tumor_ONT.50x.GRCh38.sorted.bam}"
@@ -409,7 +409,7 @@ elif [[ "${MODEL_PRESET}" = "FFPE_WGS" ]]; then
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wgs-case-study/FFG_IL_N_6h.bwa.dedup.bam"
+  BAM_NORMAL="${BAM_NORMAL:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wgs-case-study/FFG_IL_N_6h.bwa.dedup.bam}"
 
   SAMPLE_NAME_NORMAL="1395_normal_ffpe_wgs"
   SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wgs"
@@ -422,7 +422,7 @@ elif [[ "${MODEL_PRESET}" = "FFPE_WES" ]]; then
   BASE="${HOME}/deepsomatic-case-studies"
 
   REF="${REF:=${GCS_DATA_DIR}/deepsomatic-case-studies/GRCh38_no_alt_analysis_set.fasta}"
-  BAM_NORMAL="${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wes-case-study/FFX_IL_N_6h_2.bwa.dedup.bam"
+  BAM_NORMAL="${BAM_NORMAL:=${GCS_DATA_DIR}/deepsomatic-case-studies/deepsomatic-ffpe-wes-case-study/FFX_IL_N_6h_2.bwa.dedup.bam}"
 
   SAMPLE_NAME_NORMAL="1395_normal_ffpe_wes"
   SAMPLE_NAME_TUMOR="1395_tumor_ffpe_wes"
