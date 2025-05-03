@@ -24,12 +24,12 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-load_gbz_into_shared_memory      | 1m7.55s
-make_examples                    | 87m35.17s
-call_variants                    | 164m22.18s
-postprocess_variants (with gVCF) | 7m26.23s
-vcf_stats_report (optional)      | 5m46.89s
-total                            | 274m16.04s (4h34m16.04s)
+load_gbz_into_shared_memory      | 1m7.93s
+make_examples                    | 87m52.14s
+call_variants                    | 162m1.43s
+postprocess_variants (with gVCF) | 7m21.50s
+vcf_stats_report (optional)      | 5m47.01s
+total                            | 272m26.51s (4h32m26.51s)
 
 ### Accuracy
 
@@ -38,8 +38,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502338   | 2163     | 1490     | 0.995713      | 0.997162         | 0.996437        |
-| SNP   | 3320042  | 7454     | 4722     | 0.99776       | 0.998581         | 0.99817         |
+| INDEL | 502333   | 2168     | 1499     | 0.995703      | 0.997145         | 0.996423        |
+| SNP   | 3320003  | 7492     | 5039     | 0.997748      | 0.998485         | 0.998117        |
 
 ## WES (Illumina)
 
@@ -50,12 +50,12 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-load_gbz_into_shared_memory      | 1m7.74s
-make_examples                    | 4m57.53s
-call_variants                    | 1m5.01s
-postprocess_variants (with gVCF) | 0m38.74s
-vcf_stats_report (optional)      | 0m4.91s
-total                            | 9m24.55s
+load_gbz_into_shared_memory      | 1m7.89s
+make_examples                    | 4m50.06s
+call_variants                    | 1m3.99s
+postprocess_variants (with gVCF) | 0m40.71s
+vcf_stats_report (optional)      | 0m5.01s
+total                            | 9m16.39s
 
 ### Accuracy
 
