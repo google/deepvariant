@@ -21,15 +21,15 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 172m53.87s
-call_variants: HG002             | 269m26.55s
-call_variants: HG003             | 268m2.29s
-call_variants: HG004             | 270m22.72s
-postprocess_variants (parallel)  | 34m12.36s; 35m4.75s; 35m8.14s
-vcf_stats_report(optional):HG002 | 6m36.58s
-vcf_stats_report(optional):HG003 | 6m39.92s
-vcf_stats_report(optional):HG003 | 6m40.64s
-total                            | 1028m3.08s (17h08m3.08s)
+make_examples                    | 165m54.08s
+call_variants: HG002             | 20m18.91s
+call_variants: HG003             | 22m15.00s
+call_variants: HG004             | 22m5.79s
+postprocess_variants (parallel)  | 8m10.50s; 8m43.17s; 8m57.01s
+vcf_stats_report(optional):HG002 | 6m21.21s
+vcf_stats_report(optional):HG003 | 6m26.73s
+vcf_stats_report(optional):HG003 | 6m44.50s
+total                            | 251m16.71s (4h11m16.71s)
 
 ### Accuracy
 
@@ -40,28 +40,27 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11208    | 48       | 13       | 0.995736      | 0.998884         | 0.997308        |
-| SNP   | 71088    | 245      | 41       | 0.996565      | 0.999424         | 0.997993        |
-
+| INDEL | 11208    | 48       | 13       | 0.995736      | 0.998885         | 0.997308        |
+| SNP   | 71087    | 246      | 37       | 0.996551      | 0.99948          | 0.998014        |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10578    | 50       | 24       | 0.995295      | 0.99783          | 0.996561        |
-| SNP   | 69977    | 189      | 64       | 0.997306      | 0.999087         | 0.998196        |
+| INDEL | 10576    | 52       | 23       | 0.995107      | 0.997919         | 0.996511        |
+| SNP   | 69976    | 190      | 55       | 0.997292      | 0.999215         | 0.998253        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10949    | 51       | 23       | 0.995364      | 0.997993         | 0.996676        |
-| SNP   | 71445    | 214      | 48       | 0.997014      | 0.999329         | 0.99817         |
+| INDEL | 10950    | 50       | 24       | 0.995455      | 0.997906         | 0.996679        |
+| SNP   | 71445    | 214      | 49       | 0.997014      | 0.999315         | 0.998163        |
 
 * See VCF stats report (for all chromosomes)
-  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.8.0/WGS/HG002.output.visual_report.html)
-  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.8.0/WGS/HG003.output.visual_report.html)
-  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.8.0/WGS/HG004.output.visual_report.html)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/WGS/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/WGS/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/WGS/HG004.output.visual_report.html)
 
 ## PacBio (HiFi)
 
@@ -75,20 +74,20 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 16m48.88s+288m15.08s
-call_variants: HG002             | 279m5.76s
-call_variants: HG003             | 274m47.90s
-call_variants: HG004             | 283m37.89s
-postprocess_variants (parallel)  | 44m12.28s; 51m39.02s; 51m52.66s
-vcf_stats_report(optional):HG002 | 6m49.94s
-vcf_stats_report(optional):HG003 | 6m53.24s
-vcf_stats_report(optional):HG003 | 7m19.57s
-total                            | 1206m35.85s (20h6m35.85s)
+make_examples                    | 17m30.42s+193m24.96s
+call_variants: HG002             | 30m38.57s
+call_variants: HG003             | 37m37.90s
+call_variants: HG004             | 37m19.25s
+postprocess_variants (parallel)  | 7m59.43s; 8m29.13s; 8m34.95s
+vcf_stats_report(optional):HG002 | 6m56.97s
+vcf_stats_report(optional):HG003 | 7m7.86s
+vcf_stats_report(optional):HG003 | 7m25.53s
+total                            | 337m10.65s (5h37m10.65s)
 
 * See VCF stats report (for all chromosomes)
-  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.8.0/PACBIO/HG002.output.visual_report.html)
-  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.8.0/PACBIO/HG003.output.visual_report.html)
-  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.8.0/PACBIO/HG004.output.visual_report.html)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/PACBIO/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/PACBIO/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/PACBIO/HG004.output.visual_report.html)
 
 ### Accuracy
 
@@ -99,22 +98,22 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11213    | 43       | 84       | 0.99618       | 0.992863         | 0.994519        |
-| SNP   | 71305    | 28       | 21       | 0.999607      | 0.999706         | 0.999657        |
+| INDEL | 11214    | 42       | 78       | 0.996269      | 0.993369         | 0.994817        |
+| SNP   | 71310    | 23       | 18       | 0.999678      | 0.999748         | 0.999713        |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10577    | 51       | 77       | 0.995201      | 0.993089         | 0.994144        |
-| SNP   | 70143    | 23       | 35       | 0.999672      | 0.999502         | 0.999587        |
+| INDEL | 10575    | 53       | 71       | 0.995013      | 0.993623         | 0.994317        |
+| SNP   | 70149    | 17       | 32       | 0.999758      | 0.999544         | 0.999651        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10954    | 46       | 70       | 0.995818      | 0.993931         | 0.994874        |
-| SNP   | 71617    | 42       | 22       | 0.999414      | 0.999693         | 0.999554        |
+| INDEL | 10952    | 48       | 61       | 0.995636      | 0.994709         | 0.995172        |
+| SNP   | 71622    | 37       | 18       | 0.999484      | 0.999749         | 0.999616        |
 
 ## Whole Exome Sequencing (Illumina)
 
@@ -125,15 +124,15 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Wall time (minutes)
 -------------------------------- | --------------
-make_examples                    | 7m11.47s
-call_variants: HG002             | 3m49.25s
-call_variants: HG003             | 3m53.32s
-call_variants: HG004             | 3m52.68s
-postprocess_variants (parallel)  | 0m40.52s; 0m42.09s; 0m42.30s
-vcf_stats_report(optional):HG002 | 0m5.65s
-vcf_stats_report(optional):HG003 | 0m5.69s
-vcf_stats_report(optional):HG003 | 0m7.15s
-total                            | 20m6.26s
+make_examples                    | 7m14.46s
+call_variants: HG002             | 2m15.37s
+call_variants: HG003             | 2m16.46s
+call_variants: HG004             | 2m16.73s
+postprocess_variants (parallel)  | 0m9.33s; 0m9.38s; 0m9.59s
+vcf_stats_report(optional):HG002 | 0m5.66s
+vcf_stats_report(optional):HG003 | 0m5.81s
+vcf_stats_report(optional):HG003 | 0m5.85s
+total                            | 14m23.67s
 
 ### Accuracy
 
@@ -163,9 +162,9 @@ truth), which was held out while training.
 | SNP   | 676      | 3        | 0        | 0.995582      | 1.0              | 0.997786        |
 
 * See VCF stats report (for all chromosomes)
-  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.8.0/WES/HG002.output.visual_report.html)
-  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.8.0/WES/HG003.output.visual_report.html)
-  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.8.0/WES/HG004.output.visual_report.html)
+  - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/WES/HG002.output.visual_report.html)
+  - [HG003](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/WES/HG003.output.visual_report.html)
+  - [HG004](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/WES/HG004.output.visual_report.html)
 
 ## How to reproduce the metrics on this page
 
