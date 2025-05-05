@@ -223,7 +223,15 @@ _REALIGN_READS = flags.DEFINE_bool(
     True,
     (
         'If True, locally realign reads before calling variants. '
-        'Reads longer than 500 bp are never realigned.'
+        'Reads longer than max_read_length_to_realign bp are never realigned.'
+    ),
+)
+_MAX_READ_LENGTH_TO_REALIGN = flags.DEFINE_integer(
+    'max_read_length_to_realign',
+    500,
+    (
+        'The maximum length of a read to realign. Reads longer than this length'
+        ' are never realigned.'
     ),
 )
 _TRIM_READS_FOR_PILUP = flags.DEFINE_bool(
@@ -231,7 +239,6 @@ _TRIM_READS_FOR_PILUP = flags.DEFINE_bool(
     False,
     (
         'If True, trim reads that are used to build a pileup image. '
-        'Reads longer than 500 bp are not trimmed.'
         'This flag will be set to True if --alt_aligned_pileup is not none.'
     ),
 )
@@ -1166,6 +1173,7 @@ def shared_flags_to_options(
     )
 
     options.realigner_enabled = _REALIGN_READS.value
+    options.max_read_length_to_realign = _MAX_READ_LENGTH_TO_REALIGN.value
     options.trim_reads_for_pileup = _TRIM_READS_FOR_PILUP.value
     if _ALT_ALIGNED_PILEUP.value and not options.trim_reads_for_pileup:
       logging.warning(

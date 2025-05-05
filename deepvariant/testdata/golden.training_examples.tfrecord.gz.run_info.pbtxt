@@ -3562,6 +3562,7 @@ options {
   output_debug_info: true
   exclude_contigs_for_methylation_phasing: "chrX"
   exclude_contigs_for_methylation_phasing: "chrY"
+  max_read_length_to_realign: 500
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3579,13 +3580,13 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 32
-  cpu_frequency_mhz: 2449.996000000002
-  total_memory_mb: 120735
-  wall_time_seconds: 1.0389978885650635
-  cpu_user_time_seconds: 4.370696
-  cpu_system_time_seconds: 5.780676
-  memory_peak_rss_mb: 670
+  physical_core_count: 6
+  cpu_frequency_mhz: 2093.91275
+  total_memory_mb: 63894
+  wall_time_seconds: 0.8855278491973877
+  cpu_user_time_seconds: 4.111328
+  cpu_system_time_seconds: 5.692298
+  memory_peak_rss_mb: 667
   write_bytes: 274432
 }
 stats {

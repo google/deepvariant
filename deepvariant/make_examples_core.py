@@ -2316,31 +2316,33 @@ class RegionProcessor:
     Returns:
       genomics.deepvariant.core.genomics.Read: realigned reads
     """
-    if self.options.realigner_enabled:
-      max_read_length_to_realign = 500
-      if max_read_length_to_realign > 0:
-        long_reads = [
-            read
-            for read in reads
-            if len(read.aligned_sequence) > max_read_length_to_realign
-        ]
+    if not self.options.realigner_enabled:
+      return reads
 
-        short_reads = [
-            read
-            for read in reads
-            if len(read.aligned_sequence) <= max_read_length_to_realign
-        ]
-
-        _, realigned_short_reads = self.realigner.realign_reads(
-            short_reads, region
-        )
-
-        # Long reads will be listed before short reads when both are present.
-        # Examples with only short or only long reads will be unaffected.
-        return long_reads + realigned_short_reads
-
+    max_read_length_to_realign = self.options.max_read_length_to_realign
+    if max_read_length_to_realign == 0:
+      logging.log_first_n(
+          logging.INFO,
+          'max_read_length_to_realign=0. Realigning reads of all lengths.',
+          1,
+      )
       _, reads = self.realigner.realign_reads(reads, region)
-    return reads
+      return reads
+
+    long_reads = [
+        read
+        for read in reads
+        if len(read.aligned_sequence) > max_read_length_to_realign
+    ]
+    short_reads = [
+        read
+        for read in reads
+        if len(read.aligned_sequence) <= max_read_length_to_realign
+    ]
+    _, realigned_short_reads = self.realigner.realign_reads(short_reads, region)
+    # Long reads will be listed before short reads when both are present.
+    # Examples with only short or only long reads will be unaffected.
+    return long_reads + realigned_short_reads
 
   def realign_reads_per_sample_multisample(
       self,
