@@ -6,7 +6,7 @@ variety of read and variant information and written out as image-like tensors.
 These images are fed to a convolutional neural network (CNN) for classification.
 
 This approach achieves state-of-the-art accuracy. In an effort to speed up
-DeepVariant, version `1.8.0` introduces a second, light-weight multilayer
+DeepVariant, we introduced a second, light-weight multilayer
 perceptron (MLP) that provides an initial genotype classification for all
 biallelic variants before pileup images are generated.
 
@@ -29,12 +29,12 @@ The small model is called during the `make_examples` step, after candidate
 sweeping but before pileup image generation. This way we avoid generating pileup
 images for candidates we have already classified. If the small model
 classification is accepted, `make_examples` writes them to disk as
-[CallVariantsOutput](https://github.com/google/deepvariant/blob/r1.8/deepvariant/protos/deepvariant.proto#L328-L333)
+[CallVariantsOutput](https://github.com/google/deepvariant/blob/r1.9/deepvariant/protos/deepvariant.proto#L328-L333)
 protos, which are then consumed by `postprocess_variants` alongside the CVOs
 from `call_variants`.
 
 <figure class="image">
-  <img src="images/small_model_1.8.0_architecture.png" alt="Small model architecture diagram">
+  <img src="images/small_model_architecture.png" alt="Small model architecture diagram">
   <figcaption><b>Fig 1:</b> The small model is invoked during make_examples before pileup image generation, writing CVO protos that are consumed by postprocess_variants.</figcaption>
 </figure>
 
@@ -69,7 +69,7 @@ has learned to be less confident in these regions.
 ## Accuracy numbers
 
 <figure class="image">
-  <img src="images/small_model_1.8.0_accuracy.png" alt="Accuracy numbers by sequencing platform for HG003">
+  <img src="images/small_model_accuracy.png" alt="Accuracy numbers by sequencing platform for HG003">
   <figcaption><b>Fig 2:</b> Accuracy numbers by sequencing platform for HG003.</figcaption>
 </figure>
 
@@ -79,7 +79,7 @@ As stated previously, the main motivation of the small model is to reduce
 runtime while minimizing degradation in accuracy.
 
 <figure class="image">
-  <img src="images/small_model_1.8.0_runtime.png" alt="Runtime by sequencing platform.">
+  <img src="images/small_model_runtime.png" alt="Runtime by sequencing platform.">
   <figcaption><b>Fig 3:</b> Runtime by sequencing platform</figcaption>
 </figure>
 
@@ -103,8 +103,8 @@ and more candidates are classified by the CNN. This is shown clearly in Figure
 5.
 
 <figure class="image">
-  <img src="images/small_model_1.8.0_calls_by_gq.png" alt="Number of Calls made by the Small Model by GQ threshold.">
-  <img src="images/small_model_1.8.0_runtime_per_gq.png" alt="Runtime by GQ threshold.">
+  <img src="images/small_model_calls_by_gq.png" alt="Number of Calls made by the Small Model by GQ threshold.">
+  <img src="images/small_model_runtime_per_gq.png" alt="Runtime by GQ threshold.">
   <figcaption><b>Fig 4:</b> The number of variants called by which model (top) and the resulting total runtime (bottom) by GQ threshold for PacBio HG003.</figcaption>
 </figure>
 
@@ -125,6 +125,6 @@ The behavior of the small model is fully customizable:
 
 ## What about multi-allelic variants?
 
-The small model in `1.8.0` release does not consider multi-allelic variants, due
+The small model does not consider multi-allelic variants, due
 to the inherent complexity of classifying these sites. This may change in the
 future.
