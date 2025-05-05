@@ -912,6 +912,7 @@ message MakeExamplesOptions {
   int32 phase_max_candidates = 53;
 
   string read_phases_output = 55;
+  string phasing_error_stats_output = 74;
 
   bool discard_non_dna_regions = 56;
 

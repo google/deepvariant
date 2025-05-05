@@ -435,6 +435,7 @@ _KEEP_SECONDARY_ALIGNMENTS = flags.DEFINE_bool(
 _AUX_FIELD_CHANNEL_DESCRIPTION = """
     HP is parsed if --phase_reads=False and --sort_by_haplotypes, --reverse_haplotypes, or --hp_tag_for_assembly_polishing are set.
     HP is parsed if --phase_reads=False and the 'haplotype' channel is requested.
+    HP is parsed if --output_phasing_error_stats is set.
     OQ is parsed if --use_original_quality_scores is set.
     MM, ML, MN are parsed if the "base_methylation" channel is requested or
     if --enable_methylation_calling or if --enable_methylation_aware_phasing
@@ -678,6 +679,15 @@ _OUTPUT_LOCAL_READ_PHASING = flags.DEFINE_string(
         ' TSV containing read phases. Alternatively, if filename ends in .bam,'
         ' output a phased BAM. If examples are sharded, this should be sharded'
         ' into the same number of shards as the examples.'
+    ),
+)
+_OUTPUT_PHASING_ERROR_STATS = flags.DEFINE_string(
+    'output_phasing_error_stats',
+    None,
+    (
+        '[optional] For debugging only. If filename ends in .tsv, output a'
+        ' TSV containing phasing error stats. If examples are sharded, this'
+        ' should be sharded into the same number of shards as the examples.'
     ),
 )
 _DISCARD_NON_DNA_REGIONS = flags.DEFINE_bool(
@@ -1094,6 +1104,7 @@ def shared_flags_to_options(
         gvcf,
         runtime_by_region,
         read_phases_output,
+        phasing_error_stats_output,
     ) = sharded_file_utils.resolve_filespecs(
         _TASK.value,
         _EXAMPLES.value or '',
@@ -1101,6 +1112,7 @@ def shared_flags_to_options(
         _GVCF.value or '',
         _RUNTIME_BY_REGION.value or '',
         _OUTPUT_LOCAL_READ_PHASING.value or '',
+        _OUTPUT_PHASING_ERROR_STATS.value or '',
     )
     options.examples_filename = examples
     options.candidates_filename = candidates
@@ -1110,6 +1122,7 @@ def shared_flags_to_options(
     options.num_shards = num_shards
     options.runtime_by_region = runtime_by_region
     options.read_phases_output = read_phases_output
+    options.phasing_error_stats_output = phasing_error_stats_output
 
     if _PARSE_SAM_AUX_FIELDS.value:
       logging.warning(

@@ -105,6 +105,14 @@ RUNTIME_BY_REGION_COLUMNS = (
 # For --read_phases_output, these columns will be written out in this order.
 READ_PHASES_OUTPUT_COLUMNS = ('fragment_name', 'phase', 'region_order')
 
+PHASING_ERROR_STATS_OUTPUT_COLUMNS = (
+    'region',
+    'num_reads_phase_1',
+    'num_reads_phase_2',
+    'num_reads_phase_0',
+    'num_phase_errors',
+)
+
 # The name used for a sample if one is not specified or present in the reads.
 _UNKNOWN_SAMPLE = 'UNKNOWN'
 
@@ -279,6 +287,12 @@ def resolve_sam_aux_fields(
 
   # If the user is not phasing reads natively, but wants to sort by existing HP
   # haplotype tag, then add HP to aux fields to parse.
+  if flags_obj.output_phasing_error_stats:
+    logging.info(
+        'Parsing HP AUX tag because --output_phasing_error_stats is set.'
+    )
+    aux_fields.add('HP')
+
   if not flags_obj.phase_reads:
     if (
         flags_obj.sort_by_haplotypes
@@ -1129,6 +1143,7 @@ class OutputsWriter:
         'sitelist',
         'small_model_examples',
         'call_variant_outputs',
+        'phasing_error_stats',
     ]
     self._writers = {k: None for k in outputs}
     self.examples_filename = None
@@ -1180,6 +1195,16 @@ class OutputsWriter:
               self._add_suffix(self.examples_filename, 'call_variant_outputs')
           ),
       )
+
+    if options.phasing_error_stats_output:
+      self._add_writer(
+          'phasing_error_stats',
+          epath.Path(options.phasing_error_stats_output).open('w'),
+      )
+      writer = self._writers['phasing_error_stats']
+      if writer is not None:
+        writer.__enter__()
+        writer.write('\t'.join(PHASING_ERROR_STATS_OUTPUT_COLUMNS) + '\n')
 
     if options.read_phases_output:
       if options.read_phases_output.endswith('.tsv'):
@@ -1277,11 +1302,16 @@ class OutputsWriter:
     """Writes a read phase to a TSV or BAM file."""
     writer = self._writers['read_phases']
     if writer is not None:
-      if isinstance(writer, epath.Path):
-        read_key = read.fragment_name + '/' + str(read.read_number)
-        writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
-      else:
-        writer.write(read)
+      read_key = read.fragment_name + '/' + str(read.read_number)
+      writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
+
+  def write_phasing_error_stats(self, stats_dict: Dict[str, Any]):
+    columns = [
+        str(stats_dict.get(k, 'NA')) for k in PHASING_ERROR_STATS_OUTPUT_COLUMNS
+    ]
+    writer = self._writers['phasing_error_stats']
+    if writer is not None:
+      writer.write('\t'.join(columns) + '\n')
 
   def _add_writer(self, name: str, writer: tf_record.TFRecordWriter):
     if name not in self._writers:
@@ -2724,9 +2754,17 @@ class RegionProcessor:
           )
         else:
           reads_to_phase = list(sample.in_memory_sam_reader.query(region))
-        for read in reads_to_phase:
-          # Remove existing values
-          del read.info['HP'].values[:]
+
+        # We need to delete phasing tag here if phasing cannot be done for the
+        # region we don't want to use the existing phasing if it exists in the
+        # current region. The only exception is if options
+        # phasing_error_stats_output is true, in which case we want to keep the
+        # existing phasing so that we can calculate phasing error stats.
+        if not self.options.phasing_error_stats_output:
+          for read in reads_to_phase:
+            # Remove existing values
+            del read.info['HP'].values[:]
+
         # Skip phasing if number of candidates is over the phase_max_candidates.
         if (
             self.options.phase_max_candidates
@@ -2756,7 +2794,37 @@ class RegionProcessor:
           # Assign phase tag to reads after direct phasing and/or
           # methylation-aware phasing.
           read_id_to_phase = {}
+          phase_error_stats = {}
+
+          if self.options.phasing_error_stats_output:
+            phase_error_stats['region'] = '%s:%d-%d' % (
+                region.reference_name,
+                region.start,
+                region.end,
+            )
+          phase_error_stats['num_phase_errors'] = 0
+          phase_error_stats['num_reads_phase_0'] = 0
+          phase_error_stats['num_reads_phase_1'] = 0
+          phase_error_stats['num_reads_phase_2'] = 0
           for read_phase, read in zip(read_phases, reads_to_phase):
+            # Calculate phasing stats.
+            if self.options.phasing_error_stats_output:
+              original_phase = 0
+              if 'HP' in read.info and read.info['HP'].values:
+                original_phase = read.info['HP'].values[0].int_value
+              if (
+                  original_phase != read_phase
+                  and read_phase != 0
+                  and original_phase != 0
+              ):
+                phase_error_stats['num_phase_errors'] += 1
+              if read_phase == 0:
+                phase_error_stats['num_reads_phase_0'] += 1
+              elif read_phase == 1:
+                phase_error_stats['num_reads_phase_1'] += 1
+              elif read_phase == 2:
+                phase_error_stats['num_reads_phase_2'] += 1
+
             # Remove existing values
             del read.info['HP'].values[:]
             read_key = read.fragment_name + '/' + str(read.read_number)
@@ -2777,6 +2845,22 @@ class RegionProcessor:
           # specified by the flag --realigner_diagnostics, if phase_reads is
           # set to True.
           # TODO: Extend the logic to work for multi-sample cases.
+
+          if self.options.phasing_error_stats_output:
+            if (
+                phase_error_stats['num_phase_errors']
+                > (
+                    phase_error_stats['num_reads_phase_1']
+                    + phase_error_stats['num_reads_phase_2']
+                )
+                / 2
+            ):
+              phase_error_stats['num_phase_errors'] = (
+                  phase_error_stats['num_reads_phase_1']
+                  + phase_error_stats['num_reads_phase_2']
+                  - phase_error_stats['num_phase_errors']
+              )
+            self.writers_dict[role].write_phasing_error_stats(phase_error_stats)
       if (
           self.options.phase_reads
           and self.options.realigner_options.diagnostics.output_root
