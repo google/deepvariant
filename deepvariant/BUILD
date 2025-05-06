@@ -1045,11 +1045,22 @@ py_test(
 )
 
 cc_library(
+    name = "sampling_util",
+    hdrs = ["sampling_util.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "pileup_image_native",
     srcs = ["pileup_image_native.cc"],
     hdrs = ["pileup_image_native.h"],
     deps = [
         ":pileup_channel_lib",
+        ":sampling_util",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
@@ -1057,6 +1068,7 @@ cc_library(
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",

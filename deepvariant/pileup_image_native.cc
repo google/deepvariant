@@ -43,6 +43,8 @@
 
 #include "deepvariant/pileup_channel_lib.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/sampling_util.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -52,7 +54,6 @@
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "third_party/nucleus/util/proto_ptr.h"
 
 using nucleus::genomics::v1::Read;
 using std::vector;
@@ -131,6 +132,71 @@ vector<DeepVariantChannelEnum> PileupImageEncoderNative::AllChannelsEnum(
   return channels_list;
 }
 
+std::vector<int> DownsampleReadIndices(
+    const std::vector<const ::nucleus::genomics::v1::Read*>& reads,
+    int max_reads, std::mt19937_64 gen) {
+  // TODO: Use the sampling util function instead.
+  std::vector<int> read_indices(reads.size());
+  std::iota(read_indices.begin(), read_indices.end(), 0);
+  if (reads.size() > max_reads) {
+    // Shuffle the indices instead of the reads, so that we won't change the
+    // order of the reads list.
+    std::shuffle(read_indices.begin(), read_indices.end(), gen);
+  }
+  return read_indices;
+}
+
+// Returns a vector of vectors, where each inner vector represents a partition
+// of read indices supporting a single allele. The last partition is for reads
+// supporting the reference allele.
+std::vector<std::vector<int>> GetReadIndicesAllelePartition(
+    const DeepVariantCall& dv_call,
+    const std::vector<const ::nucleus::genomics::v1::Read*>& reads) {
+  // Map read names to their indices in the reads vector. This is used to
+  // convert the read names in the DeepVariantCall proto to read indices.
+  absl::flat_hash_map<string, int> read_name_to_index_map;
+  for (int i = 0; i < reads.size(); ++i) {
+    std::string key = (reads[i]->fragment_name() + "/" +
+                       std::to_string(reads[i]->read_number()));
+    read_name_to_index_map[key] = i;
+  }
+
+  // Create a partition element for each allele.
+  std::vector<std::vector<int>> read_index_partition_by_allele;
+  for (const auto& [allele, supporting_reads] : dv_call.allele_support()) {
+    std::vector<int> read_indices_supporting_allele;
+    for (const std::string& read_name : supporting_reads.read_names()) {
+      auto it = read_name_to_index_map.find(read_name);
+      if (it != read_name_to_index_map.end()) {
+        read_indices_supporting_allele.push_back(it->second);
+        // Remove the read name from the map, so after this section we will only
+        // have the reads that don't support any allele.
+        read_name_to_index_map.erase(it);
+      }
+    }
+    read_index_partition_by_allele.push_back(read_indices_supporting_allele);
+  }
+
+  // Ref support info is not always available, so we assume that reads that do
+  // not support any allele support the ref.
+  std::vector<int> read_indices_supporting_ref;
+  for (const auto& [_, index] : read_name_to_index_map) {
+    read_indices_supporting_ref.push_back(index);
+  }
+  read_index_partition_by_allele.push_back(read_indices_supporting_ref);
+  return read_index_partition_by_allele;
+}
+
+absl::StatusOr<std::vector<int>> DownsampleReadIndicesWithMinsPerAllele(
+    const std::vector<const ::nucleus::genomics::v1::Read*>& reads,
+    int max_reads, const DeepVariantCall& dv_call, int min_per_allele,
+    std::mt19937_64 gen) {
+  std::vector<std::vector<int>> allele_to_read_indices_map =
+      GetReadIndicesAllelePartition(dv_call, reads);
+  return sampling::SampleWithPartitionMins(allele_to_read_indices_map,
+                                           max_reads, min_per_allele, gen);
+}
+
 std::vector<std::unique_ptr<ImageRow>>
 PileupImageEncoderNative::BuildPileupForOneSample(
     const DeepVariantCall& dv_call, const string& ref_bases,
@@ -160,14 +226,23 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     rows.push_back(EncodeReference(ref_bases));
   }
 
-  // Create vector of read indices.
-  std::vector<int> read_indices(reads.size());
-  std::iota(read_indices.begin(), read_indices.end(), 0);
-  if (reads.size() > max_reads) {
-    // Shuffle the indices instead of the reads, so that we won't change the
-    // order of the reads list.
-    std::shuffle(read_indices.begin(), read_indices.end(),
-                 std::mt19937_64(options_.random_seed()));
+  // Create a downsampled vector of read indices.
+  std::vector<int> sampled_indices;
+  auto gen = std::mt19937_64(options_.random_seed());
+  if (sample_options.use_non_uniform_downsampling()) {
+    // Sampling with thresholds may fail if the threshold is too high, so we
+    // fall back to uniform sampling if that happens.
+    auto status_or_sampled_indices = DownsampleReadIndicesWithMinsPerAllele(
+        reads, max_reads, dv_call,
+        sample_options.non_uniform_downsampling_threshold(), gen);
+    if (!status_or_sampled_indices.ok()) {
+      LOG(WARNING) << "Failed to downsample reads with thresholds: "
+                   << status_or_sampled_indices.status();
+    }
+    sampled_indices = status_or_sampled_indices.value_or(
+        DownsampleReadIndices(reads, max_reads, gen));
+  } else {
+    sampled_indices = DownsampleReadIndices(reads, max_reads, gen);
   }
 
   // We add a row for each read in order, down-sampling if the number of
@@ -176,7 +251,7 @@ PileupImageEncoderNative::BuildPileupForOneSample(
   //   <hap_index, original read_alignment_positionm, read, image_row>
   std::vector<std::tuple<int, int, const Read*, std::unique_ptr<ImageRow>>>
       pileup_of_reads;
-  for (int index : read_indices) {
+  for (int index : sampled_indices) {
     if (pileup_of_reads.size() >= max_reads) {
       break;
     }
