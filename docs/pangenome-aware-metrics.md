@@ -70,7 +70,7 @@ held out while training.
 ## How to reproduce the metrics on this page
 
 For simplicity and consistency, we report runtime with a
-[CPU instance with 96 CPUs](https://github.com/google/deepvariant/blob/r1.8/docs/deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform)
+[CPU instance with 96 CPUs](https://github.com/google/deepvariant/blob/r1.9/docs/deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform)
 This is NOT the fastest or cheapest configuration.
 
 Use `gcloud compute ssh` to log in to the newly created instance.
@@ -79,7 +79,7 @@ Download and run any of the following case study scripts:
 
 ```
 # Get the script.
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.8/scripts/inference_deepvariant.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.9/scripts/inference_deepvariant.sh
 
 # WGS-PANGENOME
 bash inference_deepvariant.sh --model_preset WGS_PANGENOME

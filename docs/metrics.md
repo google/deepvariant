@@ -37,7 +37,7 @@ held out while training.
 | INDEL | 501527   | 2974     | 1262     | 0.994105      | 0.997591         | 0.995845        |
 | SNP   | 3306720  | 20776    | 4900     | 0.993756      | 0.998521         | 0.996133        |
 
-[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.8.0/WGS/deepvariant.output.visual_report.html)
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/WGS/deepvariant.output.visual_report.html)
 
 ## WES (Illumina)
 
@@ -64,13 +64,13 @@ held out while training.
 | INDEL | 1024     | 27       | 8        | 0.97431       | 0.992417         | 0.98328         |
 | SNP   | 24983    | 296      | 60       | 0.988291      | 0.997604         | 0.992926        |
 
-[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.8.0/WES/deepvariant.output.visual_report.html)
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/WES/deepvariant.output.visual_report.html)
 
 ## PacBio (HiFi)
 
-### Updated dataset in release 1.8.0
+### Updated dataset
 
-In release 1.8.0, we have updated the PacBio test data from HG003 Sequel-II to
+We have updated the PacBio test data from HG003 Sequel-II to
 latest Revio with SPRQ chemistry data to showcase performance on the updated
 platform and chemistry. The numbers reported here are generated using the bam
 that can be found in:
@@ -108,7 +108,7 @@ to run DeepVariant once.
 | SNP   | 3321474  | 6021     | 3903     | 0.998191      | 0.998828         | 0.998509        |
 
 
-[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.8.0/PACBIO/deepvariant.output.visual_report.html)
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/PACBIO/deepvariant.output.visual_report.html)
 
 ## ONT_R104
 
@@ -136,7 +136,7 @@ truth), which was held out while training.
 | SNP   | 3319370  | 8125     | 2954     | 0.997558      | 0.999111         | 0.998334        |
 
 
-[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.8.0/ONT_R104/deepvariant.output.visual_report.html)
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/ONT_R104/deepvariant.output.visual_report.html)
 
 ## Hybrid (Illumina + PacBio HiFi)
 
@@ -150,7 +150,7 @@ Stage                            | Time (minutes)
 make_examples                    | 61m42.28s
 call_variants                    | 65m45.17s
 postprocess_variants (with gVCF) | 3m42.80s
-vcf_stats_report (optional)      | 5m11.89s (optional)
+vcf_stats_report (optional)      | 5m11.9s (optional)
 total                            | 154m56.26s (2h34m56.26s)
 
 ### Accuracy
@@ -163,7 +163,7 @@ out while training the hybrid model.
 | INDEL | 503160   | 1341     | 2243     | 0.997342      | 0.99577          | 0.996555        |
 | SNP   | 3323907  | 3588     | 1981     | 0.998922      | 0.999405         | 0.999163        |
 
-[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.8.0/HYBRID/deepvariant.output.visual_report.html)
+[See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/HYBRID/deepvariant.output.visual_report.html)
 
 ## Inspect outputs that produced the metrics above
 
@@ -188,7 +188,7 @@ Download and run any of the following case study scripts:
 
 ```
 # Get the script.
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.8/scripts/inference_deepvariant.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.9/scripts/inference_deepvariant.sh
 
 # WGS
 bash inference_deepvariant.sh --model_preset WGS
