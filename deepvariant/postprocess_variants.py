@@ -193,7 +193,7 @@ _HAPLOID_CONTIGS = flags.DEFINE_string(
 _CPUS = flags.DEFINE_integer(
     'cpus',
     multiprocessing.cpu_count(),
-    'Number of worker processes to use. Set --cpus=0 to disable parallel'
+    'Number of worker processes to use. Set --cpus < 2 to disable parallel'
     ' processing.',
     short_name='j',
     required=False,
@@ -201,9 +201,9 @@ _CPUS = flags.DEFINE_integer(
 _NUM_PARTITIONS = flags.DEFINE_integer(
     'num_partitions',
     0,
-    'Number of partitions to use for parallel or sequential processing. Use'
-    ' --cpus=0 and --num_partitions > 1 for sequential processing. Set'
-    ' --num_partitions > --cpus to trade runtime for lower memory usage.',
+    'Number of partitions to use for parallel or sequential processing. --Set'
+    ' --num_partitions > --cpus to trade runtime for lower memory usage. Set'
+    ' --num_partitions < 2 and --cpus < 2 to disable partitioning.',
     required=False,
 )
 _PAR_REGIONS = flags.DEFINE_string(
@@ -1638,13 +1638,12 @@ def main(argv=()):
           ),
           errors.CommandLineError,
       )
-    if _CPUS.value == 1 and _NUM_PARTITIONS.value < 1:
-      errors.log_and_raise(
-          (
-              'When using sequential processing (--cpus=1), --num_partitions'
-              ' must be greater than 1.'
-          ),
-          errors.CommandLineError,
+
+    if _NUM_PARTITIONS.value > 0 and _NUM_PARTITIONS.value < _CPUS.value:
+      logging.warning(
+          '--num_partitions is less than --cpus. Setting --num_partitions to'
+          ' --cpus=%s',
+          _CPUS.value,
       )
 
     proto_utils.uses_fast_cpp_protos_or_die()
@@ -1696,7 +1695,23 @@ def main(argv=()):
       )
 
     is_empty = get_first_cvo_record(all_cvo_paths) is None
-    if _CPUS.value > 1 or _NUM_PARTITIONS.value > 1:
+    # Run sequentially in the absence of multiple CPUs or partitions.
+    if _CPUS.value < 1 and _NUM_PARTITIONS.value < 1:
+      logging.info(
+          'Running postprocess_variants without parallelism or partitions.'
+      )
+      run_postprocess_variants_on_region(
+          _OUTFILE.value,
+          _GVCF_OUTFILE.value,
+          [],
+          contigs,
+          all_cvo_paths,
+          header,
+          is_empty,
+          sample_name,
+      )
+    else:
+      # Otherwise run over multiple partitions, in parallel if cpus > 1.
       calling_regions = calling_regions_utils.build_calling_regions(
           contigs=contigs,
           regions_to_include=calling_regions_utils.parse_regions_flag(
@@ -1705,9 +1720,7 @@ def main(argv=()):
           regions_to_exclude=[],
           ref_n_regions=[],
       )
-      num_partitions = _NUM_PARTITIONS.value
-      if not num_partitions:
-        num_partitions = _CPUS.value
+      num_partitions = max(_NUM_PARTITIONS.value, _CPUS.value)
       partitions = calling_regions_utils.partition_calling_regions(
           calling_regions, num_partitions=num_partitions
       )
@@ -1719,7 +1732,12 @@ def main(argv=()):
       ]
 
       if _CPUS.value > 1:
-        # Run postprocess_variants on each partition in parallel.
+        logging.info(
+            'Running postprocess_variants with parallelism using %s CPUs over'
+            ' %s partitions.',
+            _CPUS.value,
+            num_partitions,
+        )
         async_results = []
         with multiprocessing.Pool(_CPUS.value) as pool:
           for task_id in range(num_partitions):
@@ -1741,7 +1759,10 @@ def main(argv=()):
           pool.close()
           pool.join()
       else:
-        # Run postprocess_variants on each partition sequentially.
+        logging.info(
+            'Running postprocess_variants sequentially over %s partitions.',
+            num_partitions,
+        )
         for task_id in range(num_partitions):
           run_postprocess_variants_on_region(
               temp_vcf_files[task_id].name,
@@ -1761,17 +1782,6 @@ def main(argv=()):
         temp_vcf_file.close()
       for temp_gvcf_file in temp_gvcf_files:
         temp_gvcf_file.close()
-    else:
-      run_postprocess_variants_on_region(
-          _OUTFILE.value,
-          _GVCF_OUTFILE.value,
-          [],
-          contigs,
-          all_cvo_paths,
-          header,
-          is_empty,
-          sample_name,
-      )
 
     start_time = time.time()
     use_csi = _decide_to_use_csi(contigs)
