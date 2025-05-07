@@ -78,6 +78,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --small_model_snp_gq_threshold "25"'
         ' --small_model_vaf_context_window_size "51"'
         ' --sort_by_haplotypes'
+        ' --track_ref_reads'
         ' --trained_small_model_path "/opt/smallmodels/wgs"'
         ' --trim_reads_for_pileup'
         ' --task {}'
@@ -169,6 +170,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --small_model_snp_gq_threshold "25"'
         ' --small_model_vaf_context_window_size "51"'
         ' --sort_by_haplotypes'
+        ' --track_ref_reads'
         ' --trained_small_model_path "/opt/smallmodels/wgs"'
         ' --trim_reads_for_pileup --task {}' % extra_sample_name_flag,
     )
@@ -207,6 +209,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --small_model_snp_gq_threshold "25"'
           + ' --small_model_vaf_context_window_size "51"'
           + ' --sort_by_haplotypes'
+          + ' --track_ref_reads'
           + ' --trained_small_model_path "/opt/smallmodels/wgs"'
           + ' --trim_reads_for_pileup',
       ),
@@ -221,6 +224,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --small_model_snp_gq_threshold "25"'
           + ' --small_model_vaf_context_window_size "51"'
           + ' --sort_by_haplotypes'
+          + ' --track_ref_reads'
           + ' --trained_small_model_path "/opt/smallmodels/wgs"'
           + ' --trim_reads_for_pileup',
       ),
@@ -235,6 +239,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --small_model_snp_gq_threshold "25"'
           + ' --small_model_vaf_context_window_size "51"'
           + ' --sort_by_haplotypes'
+          + ' --track_ref_reads'
           + ' --trained_small_model_path "/opt/smallmodels/wgs"'
           + ' --trim_reads_for_pileup',
       ),
@@ -250,6 +255,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
           + ' --small_model_snp_gq_threshold "25"'
           + ' --small_model_vaf_context_window_size "51"'
           + ' --sort_by_haplotypes'
+          + ' --track_ref_reads'
           + ' --trained_small_model_path "/opt/smallmodels/wgs"'
           + ' --trim_reads_for_pileup'
           + ' --use_ref_for_cram',
@@ -328,6 +334,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
             ' --small_model_snp_gq_threshold "25"'
             ' --small_model_vaf_context_window_size "51"'
             ' --sort_by_haplotypes'
+            ' --track_ref_reads'
             ' --trained_small_model_path "/opt/smallmodels/wgs"'
             ' --trim_reads_for_pileup'
             ' --task {}'
@@ -384,6 +391,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
             ' --small_model_snp_gq_threshold "25"'
             ' --small_model_vaf_context_window_size "51"'
             ' --sort_by_haplotypes'
+            ' --track_ref_reads'
             ' --trained_small_model_path "/opt/smallmodels/wgs"'
             ' --trim_reads_for_pileup'
             ' --use_loaded_gbz_shared_memory'
@@ -434,6 +442,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --small_model_snp_gq_threshold "25"'
         ' --small_model_vaf_context_window_size "51"'
         ' --sort_by_haplotypes'
+        ' --track_ref_reads'
         ' --trained_small_model_path "/opt/smallmodels/wgs"'
         ' --trim_reads_for_pileup'
         ' --task {}'
