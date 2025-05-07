@@ -207,16 +207,12 @@ bool IsAllelesTheSame(const Allele& allele1, const Allele& allele2) {
 }
 
 bool VariantCaller::AlleleFilter(
-    const Allele& allele, const AlleleCount& target_sample_allele_count,
-    absl::Span<const AlleleCount> all_samples_allele_counts,
-    absl::Span<const Allele> non_target_sample_alleles) const {
-  const int target_samples_total_count =
-      TotalAlleleCounts(target_sample_allele_count);
-  const int all_samples_total_count =
-      TotalAlleleCounts(all_samples_allele_counts);
-  const std::vector<Allele> all_sample_alleles =
-      SumAlleleCounts(all_samples_allele_counts);
-
+    const Allele& allele,
+    absl::Span<const Allele> non_target_sample_alleles,
+    const int target_samples_total_count,
+    const int all_samples_total_count,
+    absl::Span<const Allele> all_sample_alleles
+    ) const {
   bool skip_high_af_allele_for_non_target = false;
   // Having a double for-loop seems inefficient. Can be room for improvement.
   for (const auto& non_target_sample_allele : non_target_sample_alleles) {
@@ -567,11 +563,19 @@ SelectAltAllelesResult VariantCaller::SelectAltAlleles(
   const std::vector<Allele> non_target_sample_alleles =
       SumAlleleCounts(non_target_allele_counts);
 
+  const int target_samples_total_count =
+      TotalAlleleCounts(target_sample_allele_count);
+  const int all_samples_total_count =
+      TotalAlleleCounts(all_samples_allele_counts);
+
   std::vector<Allele> alt_alleles;
   for (const auto& allele : target_sample_alleles) {
     if (AlleleFilter(
-            allele, target_sample_allele_count, all_samples_allele_counts,
-            non_target_sample_alleles)) {
+            allele,
+            non_target_sample_alleles,
+            target_samples_total_count,
+            all_samples_total_count,
+            all_sample_alleles)) {
       alt_alleles.push_back(allele);
     }
   }  // for (alleles in target samples)

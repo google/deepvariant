@@ -205,9 +205,11 @@ class VariantCaller {
   // passes all the thresholds, the function returns true. Otherwise, it is
   // rejected and the function returns false.
   bool AlleleFilter(const Allele& allele,
-                    const AlleleCount& target_sample_allele_count,
-                    absl::Span<const AlleleCount> all_samples_allele_counts,
-                    absl::Span<const Allele> non_target_sample_alleles) const;
+                    absl::Span<const Allele> non_target_sample_alleles,
+                    int target_samples_total_count,
+                    int all_samples_total_count,
+                    absl::Span<const Allele> all_sample_alleles
+                   ) const;
   // High-level API for calling variants in a region.
   //
   // Generate DeepVariantCall candidates for each position of the window.
@@ -221,7 +223,7 @@ class VariantCaller {
   // Logic is implemented in AlleleFilter() function.
   std::vector<DeepVariantCall> CallsFromAlleleCounts(
       const std::unordered_map<std::string, AlleleCounter*>&
-          allele_counts_wrapper,
+          allele_counters,
       const std::string& target_sample);
 
   // High-level API for calculating potential variant position in a region.
