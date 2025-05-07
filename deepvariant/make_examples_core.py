@@ -371,7 +371,7 @@ def log_summary_stats(
       'n_candidates': 'candidate variants found',
       'n_examples': 'examples written',
   }
-  if options.phase_reads:
+  if options.output_phase_info:
     stat_to_description['n_phased_candidates'] = 'candidate variants phased'
   if options.write_small_model_examples:
     stat_to_description['n_small_model_examples'] = (
@@ -2113,7 +2113,7 @@ class RegionProcessor:
       3. runtimes: A dict of runtimes in seconds keyed by stage.
       4. read_phases_by_sample: A dict keyed by sample role, each a dict of
       read_name & read_number to read_phase.
-      5. phased_reads_count: The number of reads that were phased.
+      5. phased_candidates_count: The number of candidates that were phased.
     """
     runtimes = {}
 
@@ -2190,7 +2190,7 @@ class RegionProcessor:
           candidates_by_sample,
           gvcfs_by_sample,
           read_phases_by_sample,
-          phased_reads_count,
+          phased_candidates_count,
       ) = self.candidates_in_region(
           region=region, region_n=region_n, padded_region=region_expanded
       )
@@ -2200,7 +2200,7 @@ class RegionProcessor:
           candidates_by_sample,
           gvcfs_by_sample,
           read_phases_by_sample,
-          phased_reads_count,
+          phased_candidates_count,
       ) = self.candidates_in_region(region=region, region_n=region_n)
 
     for sample in self.samples:
@@ -2259,7 +2259,7 @@ class RegionProcessor:
         gvcfs_by_sample,
         runtimes,
         read_phases_by_sample,
-        phased_reads_count,
+        phased_candidates_count,
     )
 
   def region_reads_norealign(
@@ -2599,8 +2599,8 @@ class RegionProcessor:
       item is a dict keyed by the read name and number, where the value is the
       phase/HP tag of the
       read.
-      The fourth value, phased_reads_count, is the number of reads that were
-      phased.
+      The fourth value, phased_candidates_count, is the number of candidates
+      that were phased.
     """
     for sample in self.samples:
       sample.reads = sample.in_memory_sam_reader.query(region)
@@ -2707,7 +2707,7 @@ class RegionProcessor:
     candidates = {}
     gvcfs = {}
     read_phases_by_sample = {}
-    phased_reads_count = 0
+    phased_candidates_count = 0
     left_padding = 0
     right_padding = 0
     if padded_region is not None:
@@ -2838,7 +2838,7 @@ class RegionProcessor:
             if writer and self.options.read_phases_output:
               writer.write_read_phase(read, read_phase, region_n)
           if self.options.output_phase_info:
-            phased_reads_count = self.add_phasing_to_candidate(
+            phased_candidates_count = self.add_phasing_to_candidate(
                 candidates[role], read_id_to_phase
             )
           # This logic below will write out the DOT files under the directory
@@ -2873,7 +2873,7 @@ class RegionProcessor:
             candidates[role], region
         )
 
-    return candidates, gvcfs, read_phases_by_sample, phased_reads_count
+    return candidates, gvcfs, read_phases_by_sample, phased_candidates_count
 
   def get_channels(self) -> List[int]:
     # All the example would have the same list of channels.
@@ -3319,7 +3319,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
         gvcfs_by_sample,
         runtimes,
         read_phases_by_sample,
-        phased_reads_count,
+        phased_candidates_count,
     ) = region_processor.process(region, region_n)
     for sample in samples_that_need_writers:
       role = sample.options.role
@@ -3373,7 +3373,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
 
       n_stats['n_candidates'] += len(candidates_by_sample[role])
       n_stats['n_regions'] += 1
-      n_stats['n_phased_candidates'] += phased_reads_count
+      n_stats['n_phased_candidates'] += phased_candidates_count
 
       before_write_outputs = time.time()
       writer.write_candidates(*candidates_by_sample[role])
