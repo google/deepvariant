@@ -1389,6 +1389,35 @@ class RegionProcessorTest(parameterized.TestCase):
         expected_log_message,
     )
 
+  @parameterized.parameters(
+      dict(output_format='tsv'),
+      dict(output_format='bam'),
+  )
+  @flagsaver.flagsaver
+  def test_output_local_read_phasing(self, output_format):
+    FLAGS.mode = 'calling'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.regions = 'chr20:10006000-10007612'
+    FLAGS.examples = self.create_tempfile('examples.tfrecord.gz').full_path
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.output_local_read_phasing = self.create_tempfile(
+        'read_phasing.{}'.format(output_format)
+    ).full_path
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+
+    if output_format == 'tsv':
+      # Check that tsv file exists
+      with open(FLAGS.output_local_read_phasing, 'r') as f:
+        read_phasing = f.readlines()
+      self.assertNotEmpty(read_phasing)
+    elif output_format == 'bam':
+      # Check that bam file exists
+      with open(FLAGS.output_local_read_phasing, 'rb') as f:
+        read_phasing = f.read()
+      self.assertNotEmpty(read_phasing)
+
 
 if __name__ == '__main__':
   absltest.main()

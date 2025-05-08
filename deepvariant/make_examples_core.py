@@ -29,6 +29,7 @@
 """Core functionality for step one of DeepVariant: Making examples."""
 
 import collections
+import io
 import itertools
 import json
 import math
@@ -1226,6 +1227,11 @@ class OutputsWriter:
         writer = self._writers['read_phases']
         if writer is not None:
           writer.__enter__()
+      else:
+        raise ValueError(
+            'Unsupported file extension: %s. Must be either .tsv or .bam.\n'
+            % options.read_phases_output
+        )
 
     if options.output_sitelist:
       sitelist_fname = options.examples_filename + '.sitelist.tsv'
@@ -1302,8 +1308,11 @@ class OutputsWriter:
     """Writes a read phase to a TSV or BAM file."""
     writer = self._writers['read_phases']
     if writer is not None:
-      read_key = read.fragment_name + '/' + str(read.read_number)
-      writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
+      if isinstance(writer, io.TextIOWrapper):
+        read_key = read.fragment_name + '/' + str(read.read_number)
+        writer.write('\t'.join([read_key, str(phase), str(region_n)]) + '\n')
+      else:
+        writer.write(read)
 
   def write_phasing_error_stats(self, stats_dict: Dict[str, Any]):
     columns = [
