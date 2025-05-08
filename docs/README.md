@@ -9,7 +9,6 @@
 *   [DeepVariant exome case study](deepvariant-exome-case-study.md)
 *   [DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md)
 *   [DeepVariant ONT R10.4 simplex case study](deepvariant-ont-r104-simplex-case-study.md)
-    [DeepVariant ONT R10.4 duplex case study](deepvariant-ont-r104-duplex-case-study.md)
 *   [DeepVariant hybrid (PacBio and Illumina) case study](deepvariant-hybrid-case-study.md)
 *   [DeepVariant Complete Genomics T7 case study](deepvariant-complete-t7-case-study.md)
 *   [DeepVariant Complete Genomics G400 case study](deepvariant-complete-g400-case-study.md)
