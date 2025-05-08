@@ -360,9 +360,7 @@ nucleus::genomics::v1::Read GbzReader::MakeRead(
   read.set_number_reads(2);
   read.set_proper_placement(true);
 
-  for (size_t i = 0; i < bases.length(); ++i) {
-    read.add_aligned_quality(30);
-  }
+  read.set_aligned_quality(std::string(static_cast<char>(30), bases.length()));
 
   genomics::v1::LinearAlignment& aln = *read.mutable_alignment();
   aln.set_mapping_quality(90);

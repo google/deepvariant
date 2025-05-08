@@ -475,7 +475,6 @@ class PileupImageEncoderTest(parameterized.TestCase):
             alternate_bases=['C'],
         )
     )
-
     read_requirements = reads_pb2.ReadRequirements(
         min_base_quality=min_base_qual,
         min_mapping_quality=min_mapping_qual,
@@ -483,7 +482,7 @@ class PileupImageEncoderTest(parameterized.TestCase):
     )
     pie = _make_encoder(read_requirements=read_requirements)
 
-    for base_qual in range(min_base_qual + 5):
+    for base_qual in range(1, min_base_qual + 5):
       quals = [base_qual - 1, min_base_qual, base_qual + 1]
       read = test_utils.make_read(
           'AAA', start=1, cigar='3M', quals=quals, mapq=min_mapping_qual

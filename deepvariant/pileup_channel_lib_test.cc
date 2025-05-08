@@ -295,7 +295,7 @@ TEST(AvgBaseQualityTest, BasicCase) {
   AvgBaseQualityChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"10M"});
   for (size_t i = 0; i < read.aligned_sequence().size(); ++i) {
-    read.set_aligned_quality(i, i + 1);
+    read.mutable_aligned_quality()->at(i) = i + 1;
   }
   std::uint8_t rmp = channel.AvgBaseQuality(read);
   EXPECT_EQ(rmp, 5);
@@ -306,7 +306,7 @@ TEST(AvgBaseQualityTest, BaseQualityTooHigh) {
   AvgBaseQualityChannel channel(/*width=*/100, options);
   Read read = nucleus::MakeRead("chr1", 1, "AAAAATTTTT", {"10M"});
   for (size_t i = 0; i < read.aligned_sequence().size(); ++i) {
-    read.set_aligned_quality(i, 100);
+    read.mutable_aligned_quality()->at(i) = 100;
   }
   EXPECT_DEATH(channel.AvgBaseQuality(read),
                "Encountered base quality outside of bounds");
@@ -516,7 +516,7 @@ TEST_P(GetChannelDataTest, ReadData) {
   read.set_fragment_length(MaxFragmentLength);
   const int base_quality = 33;
   for (size_t i = 0; i < read.aligned_sequence().size(); ++i) {
-    read.set_aligned_quality(i, base_quality);
+    read.mutable_aligned_quality()->at(i) = base_quality;
   }
 
   DeepVariantCall dv_call = DeepVariantCall::default_instance();
@@ -665,7 +665,7 @@ TEST(GetRefChannelDataTest, ReadData) {
   Read ref_read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTTAT", {"11M"});
   const int base_quality = 33;
   for (size_t i = 0; i < ref_read.aligned_sequence().size(); ++i) {
-    ref_read.set_aligned_quality(i, base_quality);
+    ref_read.mutable_aligned_quality()->at(i) = base_quality;
   }
   std::vector<std::vector<unsigned char>> ref_data =
       std::vector<std::vector<unsigned char>>(channel_enums.size());

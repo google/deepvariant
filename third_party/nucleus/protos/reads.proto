@@ -218,7 +218,7 @@ message Read {
   // chimeric alignment, or if the read was trimmed. When this occurs, the CIGAR
   // for this read will begin/end with a hard clip operator that will indicate
   // the length of the excised sequence.
-  repeated int32 aligned_quality = 15;
+  bytes aligned_quality = 15;
 
   // The mapping of the primary alignment of the
   // `(readNumber+1)%numberReads` read in the fragment. It replaces

@@ -135,9 +135,7 @@ Read MakeRead(const string& chr,
   read.set_number_reads(2);
   read.set_proper_placement(true);
 
-  for (size_t i = 0; i < bases.length(); ++i) {
-    read.add_aligned_quality(30);
-  }
+  read.mutable_aligned_quality()->assign(bases.length(), 30);
 
   LinearAlignment& aln = *read.mutable_alignment();
   aln.set_mapping_quality(90);

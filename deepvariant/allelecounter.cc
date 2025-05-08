@@ -203,14 +203,14 @@ int TotalAlleleCounts(absl::Span<const AlleleCount> allele_counts,
 // the quality threshold to be used for generating alleles for our counts.
 bool CanBasesBeUsed(const nucleus::genomics::v1::Read& read, int offset,
                     int len, const AlleleCounterOptions& options,
-                    bool& is_low_quality) {
-  CHECK_LE(offset + len, read.aligned_quality_size());
+                  bool& is_low_quality) {
+  CHECK_LE(offset + len, read.aligned_quality().size());
 
   const int min_base_quality = options.read_requirements().min_base_quality();
   int indel_base_quality = 0;
   for (int i = 0; i < len; i++) {
-    indel_base_quality += read.aligned_quality(offset + i);
-    if (read.aligned_quality(offset + i) < min_base_quality &&
+    indel_base_quality += read.aligned_quality()[offset + i];
+    if (read.aligned_quality()[offset + i] < min_base_quality &&
         options.keep_legacy_behavior()) {
       return false;
     }
@@ -232,10 +232,10 @@ int GetAvgBaseQuality(const nucleus::genomics::v1::Read& read,
                       CigarUnit cigar_op, int offset, int len) {
   int indel_base_quality = 0;
   if (cigar_op.operation() == CigarUnit::DELETE) {
-    return read.aligned_quality(std::max(0, offset - 1));
+    return read.aligned_quality()[std::max(0, offset - 1)];
   }
   for (int i = 0; i < len; i++) {
-    indel_base_quality += read.aligned_quality(offset + i);
+    indel_base_quality += read.aligned_quality()[offset + i];
   }
   return indel_base_quality / std::max(1, len);
 }
@@ -850,7 +850,7 @@ void AlleleCounter::NormalizeAndAdd(
 
   const LinearAlignment& aln = read.alignment();
   std::vector<ReadAllele> to_add;
-  to_add.reserve(read.aligned_quality_size());
+  to_add.reserve(read.aligned_quality().size());
   int interval_offset = aln.position().position() - ReadsInterval().start();
   const string_view read_seq(read.aligned_sequence());
   // Copy input cigar into the local variable since it can be modified.
@@ -876,7 +876,7 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
 
   const LinearAlignment& aln = read.alignment();
   std::vector<ReadAllele> to_add;
-  to_add.reserve(read.aligned_quality_size());
+  to_add.reserve(read.aligned_quality().size());
   int read_offset = 0;
   int ref_interval_offset =
       aln.position().position() + read_shift - ReadsInterval().start();
@@ -922,7 +922,7 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
                 interval_offset + i, string(read_seq.substr(base_offset, 1)),
                 type, is_low_quality_read_allele,
                 read.alignment().mapping_quality(),
-                read.aligned_quality(base_offset),
+                read.aligned_quality()[base_offset],
                 read.alignment().position().reverse_strand(), is_methylated,
                 methylation_level);
           }

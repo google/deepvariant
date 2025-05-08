@@ -603,7 +603,7 @@ def copy_read(read, part):
   # Note: If long reads will be used here, convert
   # to approach used for read trimming.
   new_read.alignment.Clear()
-  new_read.aligned_quality[:] = []
+  new_read.aligned_quality = bytes()
   new_read.aligned_sequence = ''
   new_read.alignment.position.reference_name = (
       read.alignment.position.reference_name
@@ -655,9 +655,7 @@ def split_reads(reads):
         new_read.aligned_sequence = read.aligned_sequence[
             read_start:read_offset
         ]
-        new_read.aligned_quality.extend(
-            read.aligned_quality[read_start:read_offset]
-        )
+        new_read.aligned_quality = read.aligned_quality[read_start:read_offset]
         if len(new_read.aligned_sequence) >= _MIN_SPLIT_LEN:
           read_split.append(new_read)
         if not on_last_operation:
@@ -1040,8 +1038,8 @@ def trim_read(read, region):
   new_read.aligned_sequence = read.aligned_sequence[
       read_trim : read_trim + new_read_length
   ]
-  # Set aligned_quality, a repeated integer:
-  new_read.aligned_quality[:] = read.aligned_quality[
+  # Set aligned_quality, a string:
+  new_read.aligned_quality = read.aligned_quality[
       read_trim : read_trim + new_read_length
   ]
 

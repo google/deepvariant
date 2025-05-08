@@ -137,7 +137,7 @@ bool Channels::CalculateChannels(
 
         size_t col = ref_i - image_start_pos;
         if (read_base && 0 <= col && col < ref_bases.size()) {
-          int base_quality = read.aligned_quality(read_i);
+          uint8_t base_quality = read.aligned_quality()[read_i];
           // Bail out if we found this read had a low-quality base at the
           // call site.
           if (ref_i == dv_call.variant().start() &&

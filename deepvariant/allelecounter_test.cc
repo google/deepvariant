@@ -866,7 +866,7 @@ TEST_F(AlleleCounterTest, TestLowMapqReadsAreIgnored) {
 }
 
 TEST_F(AlleleCounterTest, TestMinBaseQualSNP) {
-  for (const int bad_pos : {0, 1, 2, 3, 4}) {
+  for (const uint8_t bad_pos : {0, 1, 2, 3, 4}) {
     auto read = MakeRead(chr_, start_, "TCCGT", {"5M"});
     std::vector<std::vector<Allele>> expected = {
         {MakeAllele("T", AlleleType::REFERENCE, 1)},
@@ -875,7 +875,7 @@ TEST_F(AlleleCounterTest, TestMinBaseQualSNP) {
         {MakeAllele("G", AlleleType::REFERENCE, 1)},
         {MakeAllele("T", AlleleType::REFERENCE, 1)},
     };
-    read.set_aligned_quality(bad_pos, min_base_quality() - 1);
+    read.mutable_aligned_quality()->at(bad_pos) = min_base_quality() - 1;
     expected[bad_pos].clear();
     AddAndCheckReads(read, expected);
   }
@@ -897,9 +897,9 @@ TEST_F(AlleleCounterTest, TestMinBaseQualInsertion) {
   for (const int bad_pos : {1, 2, 3}) {
     auto read = MakeRead(chr_, start_, "TAAAC", {"1M", "3I", "1M"});
     for (int i = 0; i < read.aligned_sequence().size(); i++) {
-      read.set_aligned_quality(i, min_base_quality() + 1);
+      read.mutable_aligned_quality()->at(i) = min_base_quality() + 1;
     }
-    read.set_aligned_quality(bad_pos, min_base_quality() - 3);
+    read.mutable_aligned_quality()->at(bad_pos) = min_base_quality() - 3;
     AddAndCheckReads(read, expected);
   }
 }
@@ -920,9 +920,9 @@ TEST_F(AlleleCounterTest, TestMinBaseQualIndelBadInitialBase) {
   // The insertion has a bad base, but the C anchor is good so instead of the
   // Cxxx allele we see C as a match.
   for (int i = 0; i < read.aligned_sequence().size(); i++) {
-    read.set_aligned_quality(i, min_base_quality() + 1);
+    read.mutable_aligned_quality()->at(i) = min_base_quality() + 1;
   }
-  read.set_aligned_quality(3, min_base_quality() - 4);
+  read.mutable_aligned_quality()->at(3) = min_base_quality() - 4;
   AddAndCheckReads(read, {
                              {MakeAllele("T", AlleleType::REFERENCE, 1)},
                              {},
@@ -933,7 +933,7 @@ TEST_F(AlleleCounterTest, TestMinBaseQualIndelBadInitialBase) {
 
   // This case has both the insertion and the anchor base being bad, so there's
   // no count anywhere.
-  read.set_aligned_quality(1, min_base_quality() - 1);
+  read.mutable_aligned_quality()->at(1) = min_base_quality() - 1;
   AddAndCheckReads(read, {
                              {MakeAllele("T", AlleleType::REFERENCE, 1)},
                              {},
@@ -945,7 +945,7 @@ TEST_F(AlleleCounterTest, TestMinBaseQualIndelBadInitialBase) {
   // Interestingly, if the previous base is bad but the insertion is good we
   // get the same alleles as in the all good bases case since representing the
   // insertion requires us to encode the anchor base.
-  read.set_aligned_quality(3, min_base_quality() + 1);
+  read.mutable_aligned_quality()->at(3) = min_base_quality() + 1;
   AddAndCheckReads(read, {
                              {MakeAllele("T", AlleleType::REFERENCE, 1)},
                              {MakeAllele("CAAA", AlleleType::INSERTION, 1)},

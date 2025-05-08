@@ -515,7 +515,7 @@ uint16_t GetReadFlag(const Read& read) {
   // Each base is represented using 4 bit, so one byte can represent 2 bases.
   const size_t encoded_base_bytes = (read.aligned_sequence().size() + 1) >> 1;
   // Each qual is 1 byte.
-  const size_t aligned_quality_bytes = read.aligned_quality_size();
+  const size_t aligned_quality_bytes = read.aligned_quality().size();
   // Use a helper class to calculate the number of bytes of all auxiliary info.
   AuxBuilder auxBuilder(read);
 

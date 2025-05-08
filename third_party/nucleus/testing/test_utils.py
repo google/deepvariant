@@ -60,12 +60,12 @@ def genomics_testdata(path, datadir=DATADIR):
   """Gets the path to a testdata file in genomics at relative path.
 
   Args:
-    path: A path to a testdata file *relative* to the genomics root
-      directory. For example, if you have a test file in
+    path: A path to a testdata file *relative* to the genomics root directory.
+      For example, if you have a test file in
       "datadir/nucleus/testdata/foo.txt", path should be
       "nucleus/testdata/foo.txt" to get a path to it.
-    datadir: The path of the genomics root directory *relative* to
-      the testing source directory.
+    datadir: The path of the genomics root directory *relative* to the testing
+      source directory.
 
   Returns:
     The absolute path to a testdata file.
@@ -92,8 +92,8 @@ def genomics_core_testdata(filename):
   Args:
     filename: The name of a testdata file in the core genomics testdata
       directory. For example, if you have a test file in
-      "third_party/nucleus/util/testdata/foo.txt", filename should be
-      "foo.txt" to get a path to it.
+      "third_party/nucleus/util/testdata/foo.txt", filename should be "foo.txt"
+      to get a path to it.
 
   Returns:
     The absolute path to a testdata file.
@@ -136,18 +136,20 @@ def set_list_values(list_value, values):
   # list_value.values.extend(vals)
 
 
-def make_variant(chrom='chr1',
-                 start=10,
-                 alleles=None,
-                 end=None,
-                 filters=None,
-                 qual=None,
-                 gt=None,
-                 gq=None,
-                 sample_name=None,
-                 gls=None,
-                 is_phased=None,
-                 ad=None):
+def make_variant(
+    chrom='chr1',
+    start=10,
+    alleles=None,
+    end=None,
+    filters=None,
+    qual=None,
+    gt=None,
+    gq=None,
+    sample_name=None,
+    gls=None,
+    is_phased=None,
+    ad=None,
+):
   """Creates a new Variant proto from args.
 
   Args:
@@ -191,21 +193,24 @@ def make_variant(chrom='chr1',
       sample_names=None if sample_name is None else [sample_name],
       glss=None if gls is None else [gls],
       is_phased=None if is_phased is None else [is_phased],
-      ad=None if ad is None else [ad])
+      ad=None if ad is None else [ad],
+  )
 
 
-def make_variant_multiple_calls(chrom='chr1',
-                                start=10,
-                                alleles=None,
-                                end=None,
-                                filters=None,
-                                qual=None,
-                                gts=None,
-                                gqs=None,
-                                sample_names=None,
-                                glss=None,
-                                is_phased=None,
-                                ad=None):
+def make_variant_multiple_calls(
+    chrom='chr1',
+    start=10,
+    alleles=None,
+    end=None,
+    filters=None,
+    qual=None,
+    gts=None,
+    gqs=None,
+    sample_names=None,
+    glss=None,
+    is_phased=None,
+    ad=None,
+):
   """Creates a new Variant proto from args that contains multi-sample calls.
 
   Args:
@@ -213,7 +218,7 @@ def make_variant_multiple_calls(chrom='chr1',
     start: int. The starting position of this variant.
     alleles: list of str with at least one element. alleles[0] is the reference
       bases and alleles[1:] will be set to alternate_bases of variant. If None,
-        defaults to ['A', 'C'].
+      defaults to ['A', 'C'].
     end: int or None. If not None, the variant's end will be set to this value.
       If None, will be set to the start + len(reference_bases).
     filters: str, list of str, or None. Sets the filters field of the variant to
@@ -280,14 +285,16 @@ def make_variant_multiple_calls(chrom='chr1',
   return variant
 
 
-def make_read(bases,
-              start,
-              quals=None,
-              cigar=None,
-              mapq=50,
-              chrom='chr1',
-              name=None,
-              fragment_length=None):
+def make_read(
+    bases,
+    start,
+    quals=None,
+    cigar=None,
+    mapq=50,
+    chrom='chr1',
+    name=None,
+    fragment_length=None,
+):
   """Makes a nucleus.genomics.v1.Read for testing."""
   if quals and len(bases) != len(quals):
     raise ValueError('Incompatable bases and quals', bases, quals)
@@ -297,14 +304,18 @@ def make_read(bases,
       read_number=1,
       number_reads=2,
       aligned_sequence=bases,
-      aligned_quality=quals,
+      aligned_quality=bytes(quals) if quals else None,
       fragment_length=fragment_length,
       alignment=reads_pb2.LinearAlignment(
           position=position_pb2.Position(reference_name=chrom, position=start),
           mapping_quality=mapq,
-          cigar=_cigar.to_cigar_units(cigar) if cigar else []))
+          cigar=_cigar.to_cigar_units(cigar) if cigar else [],
+      ),
+  )
   make_read.counter += 1
   return read
+
+
 make_read.counter = 0
 
 
@@ -362,8 +373,11 @@ def assert_not_called_workaround(mock):
     AssertionError: mock has been called.
   """
   if mock.call_count != 0:
-    raise AssertionError("Expected no calls to '{}' but was called {} times"
-                         .format(mock.name, mock.call_count))
+    raise AssertionError(
+        "Expected no calls to '{}' but was called {} times".format(
+            mock.name, mock.call_count
+        )
+    )
 
 
 # TODO: remove and replace uses when bug is fixed in mock.
@@ -382,4 +396,6 @@ def assert_called_once_workaround(mock):
   if mock.call_count != 1:
     raise AssertionError(
         "Expected exactly one call to '{}' but was called {} times".format(
-            mock.name, mock.call_count))
+            mock.name, mock.call_count
+        )
+    )

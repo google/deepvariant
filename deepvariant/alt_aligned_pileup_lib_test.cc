@@ -89,9 +89,9 @@ Read MakeRead(int64_t ref_start, const std::string& bases,
               const std::string& read_name = "test_read") {
   Read read =
       nucleus::MakeRead("chr1", ref_start, bases, cigar, read_name);
-  read.mutable_aligned_quality()->Clear();
-  for (const auto& quality : aligned_quality) {
-    read.mutable_aligned_quality()->Add(quality);
+  read.mutable_aligned_quality()->reserve(bases.size());
+  for (int i = 0; i < bases.size(); ++i) {
+    read.mutable_aligned_quality()->at(i) = aligned_quality[i];
   }
   return read;
 }
@@ -102,12 +102,10 @@ Read MakeRead(
     const std::string& read_name = "test_read") {
   Read read =
       nucleus::MakeRead("chr1", ref_start, bases, cigar, read_name);
-  read.mutable_aligned_quality()->Clear();
   // Set aligned quality to 60 for all bases.
-  const std::vector<int> aligned_quality(bases.size(), 60);
-  for (const auto& quality : aligned_quality) {
-    read.mutable_aligned_quality()->Add(quality);
-  }
+  const std::vector<char> aligned_quality(bases.size(), 60);
+  read.mutable_aligned_quality()->assign(aligned_quality.begin(),
+                                         aligned_quality.end());
   return read;
 }
 

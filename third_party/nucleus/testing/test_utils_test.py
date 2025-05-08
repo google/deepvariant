@@ -42,7 +42,7 @@ class TestUtilsTests(absltest.TestCase):
 
   def test_make_read(self):
     bases = 'ACG'
-    quals = [30, 40, 50]
+    quals = bytes([30, 40, 50])
     cigar = '3M'
     mapq = 42
     chrom = 'chr10'
@@ -55,14 +55,20 @@ class TestUtilsTests(absltest.TestCase):
         mapq=mapq,
         chrom=chrom,
         start=start,
-        name=name)
+        name=name,
+    )
 
     self.assertEqual(read.aligned_sequence, bases)
     self.assertEqual(read.aligned_quality, quals)
-    self.assertEqual(list(read.alignment.cigar), [
-        cigar_pb2.CigarUnit(
-            operation_length=3, operation=cigar_pb2.CigarUnit.ALIGNMENT_MATCH)
-    ])
+    self.assertEqual(
+        list(read.alignment.cigar),
+        [
+            cigar_pb2.CigarUnit(
+                operation_length=3,
+                operation=cigar_pb2.CigarUnit.ALIGNMENT_MATCH,
+            )
+        ],
+    )
     self.assertEqual(read.alignment.mapping_quality, mapq)
     self.assertEqual(read.alignment.position.reference_name, chrom)
     self.assertEqual(read.alignment.position.position, start)

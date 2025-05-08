@@ -731,11 +731,10 @@ std::map<string, string> ParseBaseModifications(
     auto info_it = info.find(kOQ);
     if (info_it != read_message->info().end() &&
         !info_it->second.values().empty()) {
-      RepeatedField<int32>* quality = read_message->mutable_aligned_quality();
-      quality->Reserve(c->l_qseq);
+      string* quality = read_message->mutable_aligned_quality();
       const auto& oq_tag_value = *(info_it->second.values().begin());
       for (char c : oq_tag_value.string_value()) {
-        quality->Add(reinterpret_cast<int>(c - 33));
+        quality->push_back(static_cast<char>(c - 33));
       }
       return ::nucleus::Status();
     }
@@ -743,12 +742,9 @@ std::map<string, string> ParseBaseModifications(
     if (c->l_qseq) {
       uint8_t* quals = bam_get_qual(b);
       if (quals[0] != 0xff) {  // Not missing
-        // TODO: Is there a more efficient way to do this?
-        RepeatedField<int32>* quality = read_message->mutable_aligned_quality();
-        quality->Reserve(c->l_qseq);
-        for (int i = 0; i < c->l_qseq; ++i) {
-          quality->Add(quals[i]);
-        }
+        string* quality = read_message->mutable_aligned_quality();
+        quality->reserve(c->l_qseq);
+        quality->assign(reinterpret_cast<char*>(quals), c->l_qseq);
         return ::nucleus::Status();
       }
     }

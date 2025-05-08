@@ -111,10 +111,10 @@ TEST(SamReaderTest, TestAlignedQualityOQ) {
   std::vector<Read> golden;
   for (const auto& record : reads) {
     Read golden_read;
-    auto aq = golden_read.mutable_aligned_quality();
     // Golden set is created by copying aligned_quality from test_oq.sam
     // And then overwriting all scores with 'C'-33
-    aq->CopyFrom(record.aligned_quality());
+    auto aq = golden_read.mutable_aligned_quality();
+    *aq = record.aligned_quality();
 
     for (auto& base_quality : *aq) {
       // Score encoding described here
@@ -123,7 +123,6 @@ TEST(SamReaderTest, TestAlignedQualityOQ) {
     }
     golden.push_back(golden_read);
   }
-
   EXPECT_THAT(reads, Pointwise(Partially(EqualsProto()), golden));
 }
 

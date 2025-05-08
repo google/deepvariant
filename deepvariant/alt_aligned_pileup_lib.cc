@@ -212,14 +212,9 @@ Read TrimRead(const Read& read, const Range& region) {
   // Set aligned_quality, a repeated integer:
   CHECK(read_trim >= 0 &&
         read_trim + new_read_length <= read.aligned_quality().size());
-  int64_t pos = 0;
-  for (const auto& quality : read.aligned_quality()) {
-    if (pos >= read_trim) {
-      new_read.mutable_aligned_quality()->Add(quality);
-    }
-    if (pos == read_trim + new_read_length - 1) break;
-    pos++;
-  }
+  new_read.set_aligned_quality(
+    read.aligned_quality().substr(read_trim, new_read_length));
+  CHECK(new_read.aligned_quality().size() == new_read_length);
   return new_read;
 }
 
