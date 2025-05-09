@@ -120,6 +120,7 @@ ExamplesGenerator::ExamplesGenerator(
           {"base_channels", AltAlignedPileup::kBaseChannels},
           {"diff_channels", AltAlignedPileup::kDiffChannels},
           {"rows", AltAlignedPileup::kRows},
+          {"single_row", AltAlignedPileup::kSingleRow},
       });
   auto it =
       alt_aligned_pileup_map.find(options_.pic_options().alt_aligned_pileup());
@@ -337,6 +338,16 @@ bool HasAtLeastOneNonSingleBaseAllele(const Variant& variant) {
   return false;
 }
 
+// Returns the index of the longer alt (if more than one).
+int GetLongestAltCombinationIndex(
+    absl::Span<const std::string> alt_combination) {
+  if (alt_combination.size() == 2 &&
+      alt_combination[1].size() > alt_combination[0].size()) {
+    return 1;
+  }
+  return 0;
+}
+
 void UpdateStats(enum EncodedVariantType variant_type,
                  const VariantLabel* label, int label_value,
                  std::unordered_map<std::string, int>& stats) {
@@ -400,21 +411,26 @@ std::string ExamplesGenerator::EncodeExample(
     const Variant& variant, absl::Span<const std::string> alt_combination,
     std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
     const std::unique_ptr<VariantLabel>& label) const {
-  // if AltAlignedPileup::kRows is set then number of
-  // rows equals: (image.size + alt_image_1.size + alt_image_2.size) or
-  //   image.size * 3.
+  // 1 row: ref (no alt)
+  image_shape[0] = image.size();
+  std::vector<int> alt_image_row_indices = {};
   if (alt_aligned_pileup_ == AltAlignedPileup::kRows) {
-    // Width of pileup for AltAlignedPileup::kRows
+    // 3 rows: ref, alt1, alt2
     image_shape[0] = image.size() * 3;
-  } else {
-    image_shape[0] = image.size();  // Number of rows.
+    alt_image_row_indices = {0, 1};
+  } else if (alt_aligned_pileup_ == AltAlignedPileup::kSingleRow) {
+    // 2 rows: ref, alt1 or alt2 (whichever is longest)
+    image_shape[0] = image.size() * 2;
+    alt_image_row_indices = {GetLongestAltCombinationIndex(alt_combination)};
   }
   image_shape[1] = image[0]->Width();              // Width of the pileup.
   image_shape[2] = options_.pic_options().channels().size();  // Num channels.
 
   std::vector<unsigned char> data(
       image_shape[0] * image_shape[1] * image_shape[2], 0);
-  FillPileupArray(image, alt_image, alt_aligned_pileup_, &data, data.size());
+
+  FillPileupArray(image, alt_image, alt_aligned_pileup_, &data, data.size(), 0,
+                  alt_image_row_indices);
 
   // Encode alt allele indices.
   absl::flat_hash_set<int> alt_indices_set;

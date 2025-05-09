@@ -60,6 +60,8 @@ StreamExamples::StreamExamples(
                        options_.pic_options().channels().size();
   if (alt_aligned_pileup_ == AltAlignedPileup::kRows) {
     pileup_image_size_ *= 3;
+  } else if (alt_aligned_pileup_ == AltAlignedPileup::kSingleRow) {
+    pileup_image_size_ *= 2;
   }
   absl::string_view shm_prefix = options.shm_prefix();
   // Name of the shared memory buffer.

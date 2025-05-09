@@ -253,11 +253,12 @@ _WRITE_RUN_INFO = flags.DEFINE_bool(
 _ALT_ALIGNED_PILEUP = flags.DEFINE_enum(
     'alt_aligned_pileup',
     'none',
-    ['none', 'base_channels', 'diff_channels', 'rows'],
+    ['none', 'base_channels', 'diff_channels', 'rows', 'single_row'],
     (
         'Include alignments of reads against each candidate alternate allele in'
         ' the pileup image. "none" turns this feature off. The default is'
-        ' "none".Options: "none", "base_channels","diff_channels", "rows"'
+        ' "none". Options: "none", "base_channels", "diff_channels", "rows",'
+        ' and "single_row".'
     ),
 )
 _TYPES_TO_ALT_ALIGN = flags.DEFINE_enum(

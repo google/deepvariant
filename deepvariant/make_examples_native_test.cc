@@ -31,7 +31,9 @@
 
 #include "deepvariant/make_examples_native.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -918,6 +920,33 @@ TEST(FillPileupArray, TestCases) {
       13, 23, 33, 43, 53, 63, 73, 63 - 5, 63 + 5,
   };
 
+  std::vector<unsigned char> expected_alt_aligned_first_row = {
+      11 - 5, 1, 1,      1, 1,      61 - 5, 1, 11 - 5, 1, 1,      1, 1,
+      61 - 5, 1, 11 - 5, 1, 1,      1,      1, 61 - 5, 1, 11 - 5, 1, 1,
+      1,      1, 61 - 5, 1, 11 - 5, 1,      1, 1,      1, 61 - 5, 1,
+
+      12 - 5, 1, 1,      1, 1,      62 - 5, 1, 12 - 5, 1, 1,      1, 1,
+      62 - 5, 1, 12 - 5, 1, 1,      1,      1, 62 - 5, 1, 12 - 5, 1, 1,
+      1,      1, 62 - 5, 1, 12 - 5, 1,      1, 1,      1, 62 - 5, 1,
+
+      13 - 5, 1, 1,      1, 1,      63 - 5, 1, 13 - 5, 1, 1,      1, 1,
+      63 - 5, 1, 13 - 5, 1, 1,      1,      1, 63 - 5, 1, 13 - 5, 1, 1,
+      1,      1, 63 - 5, 1, 13 - 5, 1,      1, 1,      1, 63 - 5, 1,
+  };
+  std::vector<unsigned char> expected_alt_aligned_second_row = {
+      11 + 5, 1, 1,      1, 1,      61 + 5, 1, 11 + 5, 1, 1,      1, 1,
+      61 + 5, 1, 11 + 5, 1, 1,      1,      1, 61 + 5, 1, 11 + 5, 1, 1,
+      1,      1, 61 + 5, 1, 11 + 5, 1,      1, 1,      1, 61 + 5, 1,
+
+      12 + 5, 1, 1,      1, 1,      62 + 5, 1, 12 + 5, 1, 1,      1, 1,
+      62 + 5, 1, 12 + 5, 1, 1,      1,      1, 62 + 5, 1, 12 + 5, 1, 1,
+      1,      1, 62 + 5, 1, 12 + 5, 1,      1, 1,      1, 62 + 5, 1,
+
+      13 + 5, 1, 1,      1, 1,      63 + 5, 1, 13 + 5, 1, 1,      1, 1,
+      63 + 5, 1, 13 + 5, 1, 1,      1,      1, 63 + 5, 1, 13 + 5, 1, 1,
+      1,      1, 63 + 5, 1, 13 + 5, 1,      1, 1,      1, 63 + 5, 1,
+  };
+
   // alt_aligned_pileup = none
   int size = input.size() * width * num_channels;
   std::vector<unsigned char> pileup_image(size, 0);
@@ -948,6 +977,57 @@ TEST(FillPileupArray, TestCases) {
   FillPileupArray(input, alt_rows, AltAlignedPileup::kBaseChannels,
                   &pileup_image, size);
   EXPECT_THAT(pileup_image, UnorderedElementsAreArray(expected_alt_align_base));
+
+  // alt_aligned_pileup = rows
+  pileup_image.clear();
+  // Because of kRows, 3x the height.
+  size = input.size() * 3 * width * num_channels;
+  pileup_image.resize(size, 0);
+  FillPileupArray(input, alt_rows, AltAlignedPileup::kRows, &pileup_image, size,
+                  0, {0, 1});
+  std::vector<unsigned char> expected_alt_aliged_pileup_rows;
+  std::copy(expected_alt_align_none.begin(), expected_alt_align_none.end(),
+            std::back_inserter(expected_alt_aliged_pileup_rows));
+  std::copy(expected_alt_aligned_first_row.begin(),
+            expected_alt_aligned_first_row.end(),
+            std::back_inserter(expected_alt_aliged_pileup_rows));
+  std::copy(expected_alt_aligned_second_row.begin(),
+            expected_alt_aligned_second_row.end(),
+            std::back_inserter(expected_alt_aliged_pileup_rows));
+  EXPECT_THAT(pileup_image,
+              UnorderedElementsAreArray(expected_alt_aliged_pileup_rows));
+
+  // alt_aligned_pileup = single_row, alt_image_index = 0
+  pileup_image.clear();
+  // Because of kSingleRow, 2x the height.
+  size = input.size() * 2 * width * num_channels;
+  pileup_image.resize(size, 0);
+  FillPileupArray(input, alt_rows, AltAlignedPileup::kSingleRow, &pileup_image,
+                  size, 0, {0});
+  std::vector<unsigned char> expected_alt_aliged_pileup_single_row_first;
+  std::copy(expected_alt_align_none.begin(), expected_alt_align_none.end(),
+            std::back_inserter(expected_alt_aliged_pileup_single_row_first));
+  std::copy(expected_alt_aligned_first_row.begin(),
+            expected_alt_aligned_first_row.end(),
+            std::back_inserter(expected_alt_aliged_pileup_single_row_first));
+  EXPECT_THAT(pileup_image, UnorderedElementsAreArray(
+                                expected_alt_aliged_pileup_single_row_first));
+
+  // alt_aligned_pileup = single_row, alt_image_index = 1
+  pileup_image.clear();
+  // Because of kSingleRow, 2x the height.
+  size = input.size() * 2 * width * num_channels;
+  pileup_image.resize(size, 0);
+  FillPileupArray(input, alt_rows, AltAlignedPileup::kSingleRow, &pileup_image,
+                  size, 0, {1});
+  std::vector<unsigned char> expected_alt_aliged_pileup_single_row_second;
+  std::copy(expected_alt_align_none.begin(), expected_alt_align_none.end(),
+            std::back_inserter(expected_alt_aliged_pileup_single_row_second));
+  std::copy(expected_alt_aligned_second_row.begin(),
+            expected_alt_aligned_second_row.end(),
+            std::back_inserter(expected_alt_aliged_pileup_single_row_second));
+  EXPECT_THAT(pileup_image, UnorderedElementsAreArray(
+                                expected_alt_aliged_pileup_single_row_second));
 }
 
 }  // namespace deepvariant
