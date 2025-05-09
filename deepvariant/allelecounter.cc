@@ -782,8 +782,12 @@ bool AlleleCounter::NormalizeCigar(
   if (norm_cigar.empty()) {
     return is_modified;
   }
-  int iteration = 0;  // while loop will run up to 10 times.
-  while (iteration++ < 10) {
+  // The loop is needed to rerun the process after each shit of the indel. This
+  // is needed because shift of an indel may uncover new indels to the left
+  // which can be shifted as well.
+  int iteration = 0;  // while loop will run up to 100,000,000 times to be safe
+  // from possible infinite loop.
+  while (iteration++ < 100000000) {
     int read_offset = 0;
     int cur_interval_offset = interval_offset + read_shift;
     // Iterate cigar operations and shift indels if possible
@@ -829,6 +833,7 @@ bool AlleleCounter::NormalizeCigar(
     if (is_merged) {
       is_modified = true;
     }
+    // Only break the loop if not shift was made and no merging was done.
     if (!is_shifted && !is_merged) {
       break;
     }
