@@ -45,7 +45,8 @@ blaze run -c opt //learning/genomics/deepvariant/opensource_only/tools:preproces
 """
 
 import collections
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 from absl import app
 from absl import flags
 from absl import logging

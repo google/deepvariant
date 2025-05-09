@@ -27,8 +27,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Module for calling variants on examples using a trained keras model."""
+from collections.abc import Sequence
 import os
-from typing import Sequence
 import numpy as np
 # pylint: disable=g-import-not-at-top
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"

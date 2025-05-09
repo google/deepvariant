@@ -28,10 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Module for generating small model examples."""
 
+from collections.abc import Sequence
 import dataclasses
 import enum
 import itertools
-from typing import Sequence
 
 import tensorflow as tf
 
