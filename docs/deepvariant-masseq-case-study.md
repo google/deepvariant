@@ -78,7 +78,7 @@ The command below will run the DeepVariant MAS-Seq model and produce an output
 VCF.
 
 ```bash
-BIN_VERSION="1.8.0"
+BIN_VERSION="1.9.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \

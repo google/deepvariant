@@ -4,9 +4,9 @@ In this case study we describe applying DeepVariant to PacBio HiFi reads to call
 variants. We will call small variants from a publicly available whole genome
 HiFi dataset from PacBio.
 
-### Updated dataset in release 1.8.0
+### Updated dataset
 
-In release 1.8.0, we have updated the PacBio test data from HG003 Sequel-II to
+We have updated the PacBio test data from HG003 Sequel-II to
 latest Revio with SPRQ chemistry data to showcase performance on the updated
 platform and chemistry. The full bam data is available [here](https://downloads.pacbcloud.com/public/revio/2024Q4/WGS/GIAB_trio/HG003/analysis/GRCh38.m84039_241002_000337_s3.hifi_reads.bc2020.bam).
 
@@ -69,7 +69,7 @@ mkdir -p "${OUTPUT_DIR}/${INTERMEDIATE_DIRECTORY}"
 We will run DeepVariant from docker using the `run_deepvariant` script.
 
 ```bash
-BIN_VERSION="1.8.0"
+BIN_VERSION="1.9.0"
 
 sudo docker run \
   -v "${INPUT_DIR}":"${INPUT_DIR}" \
@@ -147,8 +147,8 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10543        85        22403        74      11375     40     29       0.992002          0.993290        0.507744         0.992646                     NaN                     NaN                   1.748961                   2.138647
-INDEL   PASS        10628     10543        85        22403        74      11375     40     29       0.992002          0.993290        0.507744         0.992646                     NaN                     NaN                   1.748961                   2.138647
-  SNP    ALL        70166     70101        65       105602        71      35342     12     12       0.999074          0.998989        0.334672         0.999032                2.296566                1.713281                   1.883951                   1.503192
-  SNP   PASS        70166     70101        65       105602        71      35342     12     12       0.999074          0.998989        0.334672         0.999032                2.296566                1.713281                   1.883951                   1.503192
+INDEL    ALL        10628     10555        73        22529        70      11492     37     27       0.993131          0.993658        0.510098         0.993394                     NaN                     NaN                   1.748961                   2.177492
+INDEL   PASS        10628     10555        73        22529        70      11492     37     27       0.993131          0.993658        0.510098         0.993394                     NaN                     NaN                   1.748961                   2.177492
+  SNP    ALL        70166     70107        59       102385        69      32116      8     10       0.999159          0.999018        0.313679         0.999089                2.296566                1.729639                   1.883951                   1.438846
+  SNP   PASS        70166     70107        59       102385        69      32116      8     10       0.999159          0.999018        0.313679         0.999089                2.296566                1.729639                   1.883951                   1.438846
 ```
