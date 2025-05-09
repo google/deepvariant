@@ -86,7 +86,7 @@ machine.
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="pangenome_aware_deepvariant-1.8.0"
+BIN_VERSION="pangenome_aware_deepvariant-1.9.0"
 
 sudo docker pull google/deepvariant:"${BIN_VERSION}"
 
@@ -159,8 +159,8 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL           29        29         0           41         0         11      0      0        1.00000               1.0        0.268293         1.000000                     NaN                     NaN                   3.000000                   2.727273
-INDEL   PASS           29        29         0           41         0         11      0      0        1.00000               1.0        0.268293         1.000000                     NaN                     NaN                   3.000000                   2.727273
-  SNP    ALL          685       683         2          704         0         21      0      0        0.99708               1.0        0.029830         0.998538                 3.28125                3.266667                   1.795918                   1.838710
-  SNP   PASS          685       683         2          704         0         21      0      0        0.99708               1.0        0.029830         0.998538                 3.28125                3.266667                   1.795918                   1.838710
+INDEL    ALL           29        29         0           44         0         14      0      0        1.00000               1.0        0.318182         1.000000                     NaN                     NaN                   3.000000                   3.000000
+INDEL   PASS           29        29         0           44         0         14      0      0        1.00000               1.0        0.318182         1.000000                     NaN                     NaN                   3.000000                   3.000000
+  SNP    ALL          685       683         2          703         0         20      0      0        0.99708               1.0        0.028450         0.998538                 3.28125                3.260606                   1.795918                   1.834677
+  SNP   PASS          685       683         2          703         0         20      0      0        0.99708               1.0        0.028450         0.998538                 3.28125                3.260606                   1.795918                   1.834677
 ```
