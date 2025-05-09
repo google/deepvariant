@@ -70,7 +70,7 @@ curl ${HTTPDIR}/idt_capture_novogene.grch38.bed > input/idt_capture_novogene.grc
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.8.0"
+BIN_VERSION="1.9.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -138,10 +138,10 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL         1051      1020        31         1466         7        417      6      0       0.970504          0.993327        0.284447         0.981783                     NaN                     NaN                   1.747283                   1.878486
-INDEL   PASS         1051      1020        31         1466         7        417      6      0       0.970504          0.993327        0.284447         0.981783                     NaN                     NaN                   1.747283                   1.878486
-  SNP    ALL        25279     24984       295        27711        60       2665     36      4       0.988330          0.997604        0.096171         0.992946                2.854703                2.761569                   1.623027                   1.627764
-  SNP   PASS        25279     24984       295        27711        60       2665     36      4       0.988330          0.997604        0.096171         0.992946                2.854703                2.761569                   1.623027                   1.627764
+INDEL    ALL         1051      1024        27         1485         8        430      5      2       0.974310          0.992417        0.289562         0.983280                     NaN                     NaN                   1.747283                   1.796935
+INDEL   PASS         1051      1024        27         1485         8        430      5      2       0.974310          0.992417        0.289562         0.983280                     NaN                     NaN                   1.747283                   1.796935
+  SNP    ALL        25279     24983       296        27709        60       2665     36      4       0.988291          0.997604        0.096178         0.992926                2.854703                2.761297                   1.623027                   1.628821
+  SNP   PASS        25279     24983       296        27709        60       2665     36      4       0.988291          0.997604        0.096178         0.992926                2.854703                2.761297                   1.623027                   1.628821
 ```
 
 [case study on whole genome sequencing data]: deepvariant-case-study.md

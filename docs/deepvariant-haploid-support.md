@@ -54,6 +54,6 @@ excluded in haploid regions. The likelihood vector becomes: `L={L[(REF, REF), 0,
 L(ALT1, ALT1)]}`. Then we normalize the likelihood vector and assign the
 genotype based on the adjusted values from the vector.
 
-In DeepVariant r1.8, we added extra logic in the `make_examples` stage to adjust
+We have added extra logic in the `make_examples` stage to adjust
 for reference blocks as well. See the discussion in
 https://github.com/google/deepvariant/issues/811.

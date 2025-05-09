@@ -54,7 +54,7 @@ On a CPU-only machine:
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.8.0"
+BIN_VERSION="1.9.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -105,15 +105,15 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        11256     11131       125        20893        32       9306     26      4       0.988895          0.997238        0.445412         0.993049                     NaN                     NaN                   1.561710                   2.036244
-INDEL   PASS        11256     11131       125        20893        32       9306     26      4       0.988895          0.997238        0.445412         0.993049                     NaN                     NaN                   1.561710                   2.036244
-  SNP    ALL        71333     70954       379        85828        50      14776     28      6       0.994687          0.999296        0.172158         0.996986                2.314904                2.095278                   1.715978                   1.741515
-  SNP   PASS        71333     70954       379        85828        50      14776     28      6       0.994687          0.999296        0.172158         0.996986                2.314904                2.095278                   1.715978                   1.741515
+INDEL    ALL        11256     11129       127        20905        30       9322     25      4       0.988717          0.997410        0.445922         0.993045                     NaN                     NaN                   1.561710                   2.053139
+INDEL   PASS        11256     11129       127        20905        30       9322     25      4       0.988717          0.997410        0.445922         0.993045                     NaN                     NaN                   1.561710                   2.053139
+  SNP    ALL        71333     70954       379        85776        52      14722     28      8       0.994687          0.999268        0.171633         0.996972                2.314904                2.098765                   1.715978                   1.753260
+  SNP   PASS        71333     70954       379        85776        52      14722     28      8       0.994687          0.999268        0.171633         0.996972                2.314904                2.098765                   1.715978                   1.753260
 ```
 
 To summarize:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11131    | 125      | 32       | 0.988895      | 0.997238         | 0.993049        |
-| SNP   | 70954    | 379      | 50       | 0.994687      | 0.999296         | 0.996986        |
+| INDEL | 11129    | 127      | 30       | 0.988717      | 0.997410         | 0.993045        |
+| SNP   | 70954    | 379      | 52       | 0.994687      | 0.999268         | 0.996972        |
