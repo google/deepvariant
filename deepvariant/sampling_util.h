@@ -32,6 +32,8 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_SAMPLING_UTIL_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_SAMPLING_UTIL_H_
 
+#include <cstddef>
+#include <functional>
 #include <random>
 #include <vector>
 
@@ -41,25 +43,44 @@
 
 namespace learning::genomics::deepvariant::sampling {
 
-//// Attempts to sample sample_size elements from the population without
-/// replacement. If sample_size is larger than the population, the
-/// entire population is returned. Sampling is done in place, as a prefix of the
-/// population vector.
+namespace internal {
+
+//// Implementation of InPlaceReservoirSample, exposing the input randomness.
+// `index_provider` is a function that takes an index into the population vector
+// and returns the index of the element that should be swapped with the element
+// at that index.
 template <typename T>
-int InPlaceReservoirSample(std::vector<T>& population, int sample_size,
-                           std::mt19937_64& gen) {
+int InPlaceReservoirSampleImpl(int sample_size,
+                               std::function<size_t(size_t)> index_provider,
+                               std::vector<T>& population) {
   // If the vector is already smaller than the sample size, return the size.
   if (population.size() < sample_size) {
     return population.size();
   }
-  for (int index = sample_size; index < population.size(); ++index) {
-    std::uniform_int_distribution<> dist(0, index);
-    int random_index = dist(gen);
-    if (random_index < sample_size) {
-      std::swap(population[random_index], population[index]);
+  for (size_t index = sample_size; index < population.size(); ++index) {
+    size_t swap_index = index_provider(index);
+    if (swap_index < sample_size) {
+      std::swap(population[swap_index], population[index]);
     }
   }
   return sample_size;
+}
+
+}  // namespace internal
+
+//// Attempts to sample sample_size elements from the population without
+/// replacement. If sample_size is larger than the population, the
+/// entire population is returned. Sampling is done in place, as a prefix of the
+/// population vector, and each possible sample is chosen uniformly at random.
+template <typename T>
+int InPlaceReservoirSample(int sample_size, std::mt19937_64& gen,
+                           std::vector<T>& population) {
+  auto uniform_index_dist = [&gen](size_t max) {
+    auto dist = std::uniform_int_distribution<size_t>(0, max);
+    return dist(gen);
+  };
+  return internal::InPlaceReservoirSampleImpl(sample_size, uniform_index_dist,
+                                              population);
 }
 
 //// Samples from a family of vectors, where each vector represents a partition.
@@ -86,7 +107,7 @@ absl::StatusOr<std::vector<T>> SampleWithPartitionMins(
   // First get min_per_partition from each partition.
   for (auto& partition_elements : partition) {
     int index =
-        InPlaceReservoirSample(partition_elements, min_per_partition, gen);
+        InPlaceReservoirSample(min_per_partition, gen, partition_elements);
     sampled.insert(sampled.end(), partition_elements.begin(),
                    partition_elements.begin() + index);
     unsampled.insert(unsampled.end(), partition_elements.begin() + index,
@@ -102,7 +123,7 @@ absl::StatusOr<std::vector<T>> SampleWithPartitionMins(
         "Threshold of ", min_per_partition,
         " per partition results in more than sample_size elements."));
   }
-  int index = InPlaceReservoirSample(unsampled, remaining_to_sample, gen);
+  int index = InPlaceReservoirSample(remaining_to_sample, gen, unsampled);
   sampled.insert(sampled.end(), unsampled.begin(), unsampled.begin() + index);
   return sampled;
 }
