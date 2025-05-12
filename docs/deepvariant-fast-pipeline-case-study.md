@@ -48,13 +48,13 @@ Please refer to the following documentation for more details.
 [Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 
 For this case study we used the
-[script](https://github.com/google/deepvariant/blob/r1.8.0/scripts/install_nvidia_docker.sh)
+[script](https://github.com/google/deepvariant/blob/r1.9/scripts/install_nvidia_docker.sh)
 that automates the CUDA and container tools kit installation.
 
 Please note that the script takes about 30 minutes to run.
 
 ```bash
-wget https://raw.githubusercontent.com/google/deepvariant/refs/heads/r1.8.0/scripts/install_nvidia_docker.sh
+wget https://raw.githubusercontent.com/google/deepvariant/refs/heads/r1.9/scripts/install_nvidia_docker.sh
 chmod +x install_nvidia_docker.sh
 ./install_nvidia_docker.sh
 ```
@@ -64,7 +64,7 @@ chmod +x install_nvidia_docker.sh
 ### Get DeepVariant Docker image
 
 ```bash
-BIN_VERSION="1.8.0"
+BIN_VERSION="1.9.0"
 sudo docker pull google/deepvariant:"${BIN_VERSION}-gpu"
 ```
 
@@ -217,9 +217,9 @@ variants.gvcf.chr20.vcf
 With the same settings the pipeline takes approximately 10 minutes.
 
 ```
-real    8m15.252s
-user    0m0.007s
-sys     0m0.035s
+real    12m45.795s
+user    0m0.018s
+sys     0m0.038s
 ```
 
 ## Benchmark output
@@ -256,8 +256,8 @@ time sudo docker run \
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10543        85        22403        74      11375     40     29       0.992002          0.993290        0.507744         0.992646                     NaN                     NaN                   1.748961                   2.138647
-INDEL   PASS        10628     10543        85        22403        74      11375     40     29       0.992002          0.993290        0.507744         0.992646                     NaN                     NaN                   1.748961                   2.138647
-  SNP    ALL        70166     70101        65       105602        71      35342     12     12       0.999074          0.998989        0.334672         0.999032                2.296566                1.713281                   1.883951                   1.503192
-  SNP   PASS        70166     70101        65       105602        71      35342     12     12       0.999074          0.998989        0.334672         0.999032                2.296566                1.713281                   1.883951                   1.503192
+INDEL    ALL        10628     10553        75        22560        72      11522     37     28       0.992943          0.993477        0.510727         0.993210                     NaN                     NaN                   1.748961                   2.180292
+INDEL   PASS        10628     10553        75        22560        72      11522     37     28       0.992943          0.993477        0.510727         0.993210                     NaN                     NaN                   1.748961                   2.180292
+  SNP    ALL        70166     70106        60       102415        69      32148      9      9       0.999145          0.999018        0.313899         0.999081                2.296566                 1.72911                   1.883951                   1.442237
+  SNP   PASS        70166     70106        60       102415        69      32148      9      9       0.999145          0.999018        0.313899         0.999081                2.296566                 1.72911                   1.883951                   1.442237
 ```

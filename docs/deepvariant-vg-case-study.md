@@ -172,7 +172,6 @@ Get the same reference we used for
 
 ```bash
 FTPDIR=ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids
-
 curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz | gunzip > ${DATA_DIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 samtools faidx ${DATA_DIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 ```
@@ -184,7 +183,7 @@ And then, run DeepVariant.
 [DeepVariant Case Study](deepvariant-case-study.md).)
 
 ```bash
-BIN_VERSION="1.8.0"
+BIN_VERSION="1.9.0"
 
 sudo docker pull google/deepvariant:"${BIN_VERSION}"
 
@@ -204,9 +203,9 @@ time sudo docker run \
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 59m19.845s
-call_variants                    | 49m41.643s
-postprocess_variants (with gVCF) | 7m46.195s
+make_examples                    | 81m11.112s
+call_variants                    | 38m27.228s
+postprocess_variants (with gVCF) | 9m13.565s
 
 
 ### Run hap.py
@@ -244,16 +243,16 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL       504501    502210      2291       954974      1522     429900    956    362       0.995459          0.997101        0.450169         0.996279                     NaN                     NaN                   1.489759                   1.942299
-INDEL   PASS       504501    502210      2291       954974      1522     429900    956    362       0.995459          0.997101        0.450169         0.996279                     NaN                     NaN                   1.489759                   1.942299
-  SNP    ALL      3327496   3316336     11160      3823082      4229     500683   1696    356       0.996646          0.998727        0.130963         0.997686                2.102576                1.990152                   1.535137                   1.449299
-  SNP   PASS      3327496   3316336     11160      3823082      4229     500683   1696    356       0.996646          0.998727        0.130963         0.997686                2.102576                1.990152                   1.535137                   1.449299
+INDEL    ALL       504501    502342      2159       956579      1444     431515    881    290       0.995721           0.99725        0.451102         0.996485                     NaN                     NaN                   1.489759                   1.924206
+INDEL   PASS       504501    502342      2159       956579      1444     431515    881    290       0.995721           0.99725        0.451102         0.996485                     NaN                     NaN                   1.489759                   1.924206
+  SNP    ALL      3327496   3319188      8308      4031912      5621     705300   1705    469       0.997503           0.99831        0.174929         0.997907                2.102576                1.889869                   1.535137                   1.312185
+  SNP   PASS      3327496   3319188      8308      4031912      5621     705300   1705    469       0.997503           0.99831        0.174929         0.997907                2.102576                1.889869                   1.535137                   1.312185
 ```
 
 This can be compared with
-https://github.com/google/deepvariant/blob/r1.8/docs/metrics.md#accuracy.
+https://github.com/google/deepvariant/blob/r1.9/docs/metrics.md#accuracy.
 
 Which shows that `vg giraffe` improves F1:
 
-- Indel F1: 0.995945 --> 0.996279
-- SNP F1: 0.996213 --> 0.997686
+- Indel F1: 0.995845 --> 0.996485
+- SNP F1: 0.996133 --> 0.997907
