@@ -534,7 +534,7 @@ sudo docker run --gpus 1 \
   --disable_small_model
 ```
 
-Starting in v1.8.0, by default we use a small model to classify some
+We use a small model to classify some
 candidates. In this example, we set `--disable_small_model` so
 that small model is disabled. This allows us to run all examples
 through the model we just trained.
