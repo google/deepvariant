@@ -49,6 +49,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
@@ -144,6 +145,81 @@ std::vector<int> DownsampleReadIndices(
     std::shuffle(read_indices.begin(), read_indices.end(), gen);
   }
   return read_indices;
+}
+
+AltAlignedPileup GetAltAlignedPileup(std::string alt_aligned_pileup_name) {
+  if (alt_aligned_pileup_name == "none") {
+    return AltAlignedPileup::kNone;
+  } else if (alt_aligned_pileup_name == "base_channels") {
+    return AltAlignedPileup::kBaseChannels;
+  } else if (alt_aligned_pileup_name == "diff_channels") {
+    return AltAlignedPileup::kDiffChannels;
+  } else if (alt_aligned_pileup_name == "rows") {
+    return AltAlignedPileup::kRows;
+  } else if (alt_aligned_pileup_name == "single_row") {
+    return AltAlignedPileup::kSingleRow;
+  }
+  LOG(FATAL) << "Unknown value is specified for alt_aligned_pileup";
+  return AltAlignedPileup::kNone;
+}
+
+AltAlignedPileup GetSampleAltAlignedPileup(
+    AltAlignedPileup global_alt_aligned_pileup,
+    std::string sample_alt_aligned_pileup_name) {
+  if (!sample_alt_aligned_pileup_name.empty()) {
+    return GetAltAlignedPileup(sample_alt_aligned_pileup_name);
+  } else {
+    return global_alt_aligned_pileup;
+  }
+}
+
+std::vector<int> GetAltImageRowIndices(
+    AltAlignedPileup alt_aligned_pileup,
+    absl::Span<const std::string> alt_combination) {
+  switch (alt_aligned_pileup) {
+    case AltAlignedPileup::kRows:
+      return {0, 1};
+    case AltAlignedPileup::kSingleRow:
+      // If there are 2 alt combinations, return the index of the longer one.
+      if (alt_combination.size() == 2 &&
+          alt_combination[1].size() > alt_combination[0].size()) {
+        return {1};
+      }
+      return {0};
+    default:
+      return {};
+  }
+}
+
+std::vector<int> GetSampleAltImageRowIndices(
+    AltAlignedPileup global_alt_aligned_pileup,
+    std::string sample_alt_aligned_pileup_name,
+    absl::Span<const std::string> alt_combination) {
+  AltAlignedPileup sample_alt_aligned_pileup = GetSampleAltAlignedPileup(
+      global_alt_aligned_pileup, sample_alt_aligned_pileup_name);
+  return GetAltImageRowIndices(sample_alt_aligned_pileup, alt_combination);
+}
+
+int CalculatePileupImageHeight(const MakeExamplesOptions& options) {
+  int pileup_image_height = 0;
+  AltAlignedPileup global_alt_aligned_pileup =
+      GetAltAlignedPileup(options.pic_options().alt_aligned_pileup());
+  AltAlignedPileup sample_alt_aligned_pileup;
+  int num_rows_for_sample;
+  for (const auto& sample_options : options.sample_options()) {
+    sample_alt_aligned_pileup = GetSampleAltAlignedPileup(
+        global_alt_aligned_pileup, sample_options.alt_aligned_pileup());
+    // Calculate the number of rows for the sample.
+    if (sample_alt_aligned_pileup == AltAlignedPileup::kRows) {
+      num_rows_for_sample = 3;
+    } else if (sample_alt_aligned_pileup == AltAlignedPileup::kSingleRow) {
+      num_rows_for_sample = 2;
+    } else {
+      num_rows_for_sample = 1;
+    }
+    pileup_image_height += sample_options.pileup_height() * num_rows_for_sample;
+  }
+  return pileup_image_height;
 }
 
 // Returns a vector of vectors, where each inner vector represents a partition

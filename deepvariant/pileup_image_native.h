@@ -92,6 +92,28 @@ struct ImageRow {
   }
 };
 
+// Gets the `AltAlignedPileup` enum for the corresponding string name.
+AltAlignedPileup GetAltAlignedPileup(std::string alt_aligned_pileup_name);
+
+// Returns the alt_aligned_pileup setting for a specific sample. If the setting
+// for the sample is empty, the global setting is used.
+AltAlignedPileup GetSampleAltAlignedPileup(
+    AltAlignedPileup global_alt_aligned_pileup,
+    std::string sample_alt_aligned_pileup_name);
+
+// Returns the alt_image row indices to use in the pileup image for a specific
+// sample. If the sample specifies its own `alt_aligned_pileup` setting,
+// that one is used instead of the global setting.
+std::vector<int> GetSampleAltImageRowIndices(
+    AltAlignedPileup global_alt_aligned_pileup,
+    std::string sample_alt_aligned_pileup_name,
+    absl::Span<const std::string> alt_combination);
+
+// Calculates the total height of the pileup image across all samples, given
+// the global `alt_aligned_pileup` and each sample's `alt_aligned_pileup`
+// setting.
+int CalculatePileupImageHeight(const MakeExamplesOptions& options);
+
 class PileupImageEncoderNative {
  public:
   // All channel enums that will be processed by this PileupImageEncoder
@@ -177,11 +199,12 @@ class PileupImageEncoderNative {
 // * --alt_aligned_pileup=base_channels Add channel 0 (bases ATCG) of both alts
 // as channels.
 // * --alt_aligned_pileup=rows alt aligned data is stored as extra rows.
+// * --alt_aligned_pileup=single_row alt aligned data is stored as a single row.
 //
 // TODO: Consolidate streaming examples and normal examples so
 // that we don't need to use the template anymore.
 template <class T>
-void FillPileupArray(
+int FillPileupArray(
     absl::Span<const std::unique_ptr<ImageRow>> image,
     absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_image,
     AltAlignedPileup alt_aligned_representation, T* pileup_array,
@@ -274,6 +297,33 @@ void FillPileupArray(
       }
     }
   }
+  return buffer_pos;
+}
+
+// Fills the pileup array for each sample given the sample image rows,
+// alt image rows, and the alt aligned pileup options per sample.
+template <class T>
+int FillPileupArrayBySample(
+    const std::vector<std::vector<std::unique_ptr<ImageRow>>>& image_per_sample,
+    const std::vector<std::vector<std::vector<std::unique_ptr<ImageRow>>>>&
+        alt_image_per_sample,
+    const MakeExamplesOptions& options,
+    absl::Span<const std::string> alt_combination, T* pileup_array,
+    int buffer_size, int buffer_pos = 0) {
+  AltAlignedPileup alt_aligned_pileup =
+      GetAltAlignedPileup(options.pic_options().alt_aligned_pileup());
+  for (int sample_index = 0; sample_index < options.sample_options().size();
+       ++sample_index) {
+    auto sample_options = options.sample_options(sample_index);
+    std::vector<int> sample_alt_image_row_indices = GetSampleAltImageRowIndices(
+        alt_aligned_pileup, sample_options.alt_aligned_pileup(),
+        alt_combination);
+    buffer_pos = FillPileupArray(image_per_sample[sample_index],
+                                 alt_image_per_sample[sample_index],
+                                 alt_aligned_pileup, pileup_array, buffer_size,
+                                 buffer_pos, sample_alt_image_row_indices);
+  }
+  return buffer_pos;
 }
 
 }  // namespace deepvariant

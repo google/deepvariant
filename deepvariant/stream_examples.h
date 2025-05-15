@@ -56,9 +56,11 @@ class StreamExamples {
 
   // Writes examples to shared memory buffer.
   void StreamExample(
-      absl::Span<const std::unique_ptr<ImageRow>> ref_rows,
-      absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_images,
+      std::vector<std::vector<std::unique_ptr<ImageRow>>>& image_per_sample,
+      std::vector<std::vector<std::vector<std::unique_ptr<ImageRow>>>>&
+          alt_image_per_sample,
       const AltAlignedPileup& alt_aligned_pileup,
+      absl::Span<const std::string> alt_combination,
       absl::string_view alt_indices_encoded, absl::string_view variant_encoded);
 
   void StartStreaming();

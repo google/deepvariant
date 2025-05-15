@@ -32,7 +32,7 @@ This file is for very general constants in the code that end up needing to be
 accessed in a variety of places, often in live code as well as throughout the
 code in tests.
 """
-
+import enum
 from deepvariant.protos import deepvariant_pb2
 
 # Default width [in basepairs] for our DeepVariant data tensor.
@@ -114,6 +114,20 @@ ALT_ALIGNED_PILEUP_CHANNELS = [
     'diff_channels_alternate_allele_1',
     'diff_channels_alternate_allele_2',
 ]
+
+
+class SampleAltAlignedPileupOption(enum.Enum):
+  """Enum for sample-specific alt aligned pileup options.
+
+  Note: Only row-alterting options can be configured per sample. Column-altering
+  options (such as base_channels and diff_channels) will always be applied to
+  all samples.
+  """
+
+  NONE = 'none'
+  SINGLE_ROW = 'single_row'
+  ROWS = 'rows'
+
 
 # Create list of channels that can be used with --channel_list by removing
 # channels specified using --alt_aligned_pileup.

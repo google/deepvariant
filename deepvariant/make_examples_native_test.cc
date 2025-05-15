@@ -31,16 +31,13 @@
 
 #include "deepvariant/make_examples_native.h"
 
-#include <algorithm>
 #include <cstdint>
-#include <iterator>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "deepvariant/pileup_image_native.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/testing_utils.h"
 #include <gmock/gmock.h>
@@ -549,8 +546,8 @@ INSTANTIATE_TEST_SUITE_P(
 struct CreateHaplotypeTestData {
   Variant variant;
   std::string alt;
-  int64_t expeted_ref_start;
-  int64_t expeted_ref_end;
+  int64_t expected_ref_start;
+  int64_t expected_ref_end;
   std::string expected_haplotype;
 };
 
@@ -580,8 +577,8 @@ TEST_P(CreateHaplotypeTest, CreateHaplotypeTestCases) {
   std::string haplotype = ExamplesGeneratorPeer::CallCreateHaplotype(
       generator, param.variant, param.alt, &ref_start_out, &ref_end_out);
   EXPECT_EQ(haplotype, param.expected_haplotype);
-  EXPECT_EQ(ref_start_out, param.expeted_ref_start);
-  EXPECT_EQ(ref_end_out, param.expeted_ref_end);
+  EXPECT_EQ(ref_start_out, param.expected_ref_start);
+  EXPECT_EQ(ref_end_out, param.expected_ref_end);
 };
 
 INSTANTIATE_TEST_SUITE_P(
@@ -590,32 +587,32 @@ INSTANTIATE_TEST_SUITE_P(
         {// Variant is in the middle of reference.
          .variant = MakeVariant("G", {"T"}, 10),
          .alt = "T",
-         .expeted_ref_start = 0,
-         .expeted_ref_end = 21,
+         .expected_ref_start = 0,
+         .expected_ref_end = 21,
          .expected_haplotype = "AGTGGGGGGGTGATGGGGGTG"},
         {// Variant is at the start of the reference.
          .variant = MakeVariant("A", {"T"}, 0),
          .alt = "T",
-         .expeted_ref_start = 0,
-         .expeted_ref_end = 11,
+         .expected_ref_start = 0,
+         .expected_ref_end = 11,
          .expected_haplotype = "TGTGGGGGGGG"},
         {// Variant is at the end of the reference.
          .variant = MakeVariant("T", {"A"}, 19),
          .alt = "A",
-         .expeted_ref_start = 9,
-         .expeted_ref_end = 21,
+         .expected_ref_start = 9,
+         .expected_ref_end = 21,
          .expected_haplotype = "GGGATGGGGGAG"},
         {// Variant exceeds half of the window.
          .variant = MakeVariant("A", {"ATATATATATAT"}, 10),
          .alt = "ATATATATATAT",
-         .expeted_ref_start = 0,
-         .expeted_ref_end = 21,
+         .expected_ref_start = 0,
+         .expected_ref_end = 21,
          .expected_haplotype = "AGTGGGGGGGATATATATATATGATGGGGGTG"},
         {// Variant is DEL.
          .variant = MakeVariant("GAT", {"G"}, 10),
          .alt = "G",
-         .expeted_ref_start = 0,
-         .expeted_ref_end = 21,
+         .expected_ref_start = 0,
+         .expected_ref_end = 21,
          .expected_haplotype = "AGTGGGGGGGGTGGGGGTG"},
     })));
 
@@ -783,253 +780,6 @@ TEST(ExamplesGenerator, NeedAlignmentAltAlignedNone) {
   EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("A", {"C", "AT"}, 10)));
 }
-
-TEST(FillPileupArray, TestCases) {
-  int num_channels = 7;
-  int width = 5;
-  std::vector<std::unique_ptr<ImageRow>> input;
-  input.emplace_back(MakeImageRow({{11, 11, 11, 11, 11},
-                                   {21, 21, 21, 21, 21},
-                                   {31, 31, 31, 31, 31},
-                                   {41, 41, 41, 41, 41},
-                                   {51, 51, 51, 51, 51},
-                                   {61, 61, 61, 61, 61},
-                                   {71, 71, 71, 71, 71}},
-                                  width, num_channels));
-  input.emplace_back(MakeImageRow({{12, 12, 12, 12, 12},
-                                   {22, 22, 22, 22, 22},
-                                   {32, 32, 32, 32, 32},
-                                   {42, 42, 42, 42, 42},
-                                   {52, 52, 52, 52, 52},
-                                   {62, 62, 62, 62, 62},
-                                   {72, 72, 72, 72, 72}},
-                                  width, num_channels));
-  input.emplace_back(MakeImageRow({{13, 13, 13, 13, 13},
-                                   {23, 23, 23, 23, 23},
-                                   {33, 33, 33, 33, 33},
-                                   {43, 43, 43, 43, 43},
-                                   {53, 53, 53, 53, 53},
-                                   {63, 63, 63, 63, 63},
-                                   {73, 73, 73, 73, 73}},
-                                  width, num_channels));
-  // In order to distinguish channel 8 and 9 "-5" is added to channel 8 and
-  // "+5" is added to channel 9.
-  std::vector<std::vector<std::unique_ptr<ImageRow>>> alt_rows(2);
-  alt_rows[0].emplace_back(
-      MakeImageRow({{11 - 5, 11 - 5, 11 - 5, 11 - 5, 11 - 5},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {61 - 5, 61 - 5, 61 - 5, 61 - 5, 61 - 5},
-                    {1, 1, 1, 1, 1}},
-                   width, num_channels));
-  alt_rows[0].emplace_back(
-      MakeImageRow({{12 - 5, 12 - 5, 12 - 5, 12 - 5, 12 - 5},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {62 - 5, 62 - 5, 62 - 5, 62 - 5, 62 - 5},
-                    {1, 1, 1, 1, 1}},
-                   width, num_channels));
-  alt_rows[0].emplace_back(
-      MakeImageRow({{13 - 5, 13 - 5, 13 - 5, 13 - 5, 13 - 5},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {63 - 5, 63 - 5, 63 - 5, 63 - 5, 63 - 5},
-                    {1, 1, 1, 1, 1}},
-                   width, num_channels));
-  std::vector<std::unique_ptr<ImageRow>> alt_rows_2;
-  alt_rows[1].emplace_back(
-      MakeImageRow({{11 + 5, 11 + 5, 11 + 5, 11 + 5, 11 + 5},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {61 + 5, 61 + 5, 61 + 5, 61 + 5, 61 + 5},
-                    {1, 1, 1, 1, 1}},
-                   width, num_channels));
-  alt_rows[1].emplace_back(
-      MakeImageRow({{12 + 5, 12 + 5, 12 + 5, 12 + 5, 12 + 5},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {62 + 5, 62 + 5, 62 + 5, 62 + 5, 62 + 5},
-                    {1, 1, 1, 1, 1}},
-                   width, num_channels));
-  alt_rows[1].emplace_back(
-      MakeImageRow({{13 + 5, 13 + 5, 13 + 5, 13 + 5, 13 + 5},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 1},
-                    {63 + 5, 63 + 5, 63 + 5, 63 + 5, 63 + 5},
-                    {1, 1, 1, 1, 1}},
-                   width, num_channels));
-
-  std::vector<unsigned char> expected_alt_align_none = {
-      11, 21, 31, 41, 51, 61, 71, 11, 21, 31, 41, 51, 61, 71, 11, 21, 31, 41,
-      51, 61, 71, 11, 21, 31, 41, 51, 61, 71, 11, 21, 31, 41, 51, 61, 71,
-
-      12, 22, 32, 42, 52, 62, 72, 12, 22, 32, 42, 52, 62, 72, 12, 22, 32, 42,
-      52, 62, 72, 12, 22, 32, 42, 52, 62, 72, 12, 22, 32, 42, 52, 62, 72,
-
-      13, 23, 33, 43, 53, 63, 73, 13, 23, 33, 43, 53, 63, 73, 13, 23, 33, 43,
-      53, 63, 73, 13, 23, 33, 43, 53, 63, 73, 13, 23, 33, 43, 53, 63, 73,
-  };
-  std::vector<unsigned char> expected_alt_align_base = {
-      11, 21, 31, 41, 51, 61, 71, 11 - 5, 11 + 5,
-      11, 21, 31, 41, 51, 61, 71, 11 - 5, 11 + 5,
-      11, 21, 31, 41, 51, 61, 71, 11 - 5, 11 + 5,
-      11, 21, 31, 41, 51, 61, 71, 11 - 5, 11 + 5,
-      11, 21, 31, 41, 51, 61, 71, 11 - 5, 11 + 5,
-
-      12, 22, 32, 42, 52, 62, 72, 12 - 5, 12 + 5,
-      12, 22, 32, 42, 52, 62, 72, 12 - 5, 12 + 5,
-      12, 22, 32, 42, 52, 62, 72, 12 - 5, 12 + 5,
-      12, 22, 32, 42, 52, 62, 72, 12 - 5, 12 + 5,
-      12, 22, 32, 42, 52, 62, 72, 12 - 5, 12 + 5,
-
-      13, 23, 33, 43, 53, 63, 73, 13 - 5, 13 + 5,
-      13, 23, 33, 43, 53, 63, 73, 13 - 5, 13 + 5,
-      13, 23, 33, 43, 53, 63, 73, 13 - 5, 13 + 5,
-      13, 23, 33, 43, 53, 63, 73, 13 - 5, 13 + 5,
-      13, 23, 33, 43, 53, 63, 73, 13 - 5, 13 + 5,
-  };
-  std::vector<unsigned char> expected_alt_align_diff = {
-      11, 21, 31, 41, 51, 61, 71, 61 - 5, 61 + 5,
-      11, 21, 31, 41, 51, 61, 71, 61 - 5, 61 + 5,
-      11, 21, 31, 41, 51, 61, 71, 61 - 5, 61 + 5,
-      11, 21, 31, 41, 51, 61, 71, 61 - 5, 61 + 5,
-      11, 21, 31, 41, 51, 61, 71, 61 - 5, 61 + 5,
-
-      12, 22, 32, 42, 52, 62, 72, 62 - 5, 62 + 5,
-      12, 22, 32, 42, 52, 62, 72, 62 - 5, 62 + 5,
-      12, 22, 32, 42, 52, 62, 72, 62 - 5, 62 + 5,
-      12, 22, 32, 42, 52, 62, 72, 62 - 5, 62 + 5,
-      12, 22, 32, 42, 52, 62, 72, 62 - 5, 62 + 5,
-
-      13, 23, 33, 43, 53, 63, 73, 63 - 5, 63 + 5,
-      13, 23, 33, 43, 53, 63, 73, 63 - 5, 63 + 5,
-      13, 23, 33, 43, 53, 63, 73, 63 - 5, 63 + 5,
-      13, 23, 33, 43, 53, 63, 73, 63 - 5, 63 + 5,
-      13, 23, 33, 43, 53, 63, 73, 63 - 5, 63 + 5,
-  };
-
-  std::vector<unsigned char> expected_alt_aligned_first_row = {
-      11 - 5, 1, 1,      1, 1,      61 - 5, 1, 11 - 5, 1, 1,      1, 1,
-      61 - 5, 1, 11 - 5, 1, 1,      1,      1, 61 - 5, 1, 11 - 5, 1, 1,
-      1,      1, 61 - 5, 1, 11 - 5, 1,      1, 1,      1, 61 - 5, 1,
-
-      12 - 5, 1, 1,      1, 1,      62 - 5, 1, 12 - 5, 1, 1,      1, 1,
-      62 - 5, 1, 12 - 5, 1, 1,      1,      1, 62 - 5, 1, 12 - 5, 1, 1,
-      1,      1, 62 - 5, 1, 12 - 5, 1,      1, 1,      1, 62 - 5, 1,
-
-      13 - 5, 1, 1,      1, 1,      63 - 5, 1, 13 - 5, 1, 1,      1, 1,
-      63 - 5, 1, 13 - 5, 1, 1,      1,      1, 63 - 5, 1, 13 - 5, 1, 1,
-      1,      1, 63 - 5, 1, 13 - 5, 1,      1, 1,      1, 63 - 5, 1,
-  };
-  std::vector<unsigned char> expected_alt_aligned_second_row = {
-      11 + 5, 1, 1,      1, 1,      61 + 5, 1, 11 + 5, 1, 1,      1, 1,
-      61 + 5, 1, 11 + 5, 1, 1,      1,      1, 61 + 5, 1, 11 + 5, 1, 1,
-      1,      1, 61 + 5, 1, 11 + 5, 1,      1, 1,      1, 61 + 5, 1,
-
-      12 + 5, 1, 1,      1, 1,      62 + 5, 1, 12 + 5, 1, 1,      1, 1,
-      62 + 5, 1, 12 + 5, 1, 1,      1,      1, 62 + 5, 1, 12 + 5, 1, 1,
-      1,      1, 62 + 5, 1, 12 + 5, 1,      1, 1,      1, 62 + 5, 1,
-
-      13 + 5, 1, 1,      1, 1,      63 + 5, 1, 13 + 5, 1, 1,      1, 1,
-      63 + 5, 1, 13 + 5, 1, 1,      1,      1, 63 + 5, 1, 13 + 5, 1, 1,
-      1,      1, 63 + 5, 1, 13 + 5, 1,      1, 1,      1, 63 + 5, 1,
-  };
-
-  // alt_aligned_pileup = none
-  int size = input.size() * width * num_channels;
-  std::vector<unsigned char> pileup_image(size, 0);
-  FillPileupArray(input, {}, AltAlignedPileup::kNone, &pileup_image, size);
-  EXPECT_THAT(pileup_image, testing::ElementsAreArray(expected_alt_align_none));
-
-  pileup_image.clear();
-  size = input.size() * width * num_channels;
-  pileup_image.resize(size, 0);
-  FillPileupArray(input, alt_rows, AltAlignedPileup::kNone,
-                  &pileup_image, size);
-  EXPECT_THAT(pileup_image, UnorderedElementsAreArray(expected_alt_align_none));
-
-  // alt_aligned_pileup = diff_channels
-  pileup_image.clear();
-  // Because of diff_channels, add two channels.
-  size = input.size() * width * (num_channels+2);
-  pileup_image.resize(size, 0);
-  FillPileupArray(input, alt_rows, AltAlignedPileup::kDiffChannels,
-                  &pileup_image, size);
-  EXPECT_THAT(pileup_image, UnorderedElementsAreArray(expected_alt_align_diff));
-
-  // alt_aligned_pileup = base_channels
-  pileup_image.clear();
-  // Because of base_channels, add two channels.
-  size = input.size() * width * (num_channels+2);
-  pileup_image.resize(size, 0);
-  FillPileupArray(input, alt_rows, AltAlignedPileup::kBaseChannels,
-                  &pileup_image, size);
-  EXPECT_THAT(pileup_image, UnorderedElementsAreArray(expected_alt_align_base));
-
-  // alt_aligned_pileup = rows
-  pileup_image.clear();
-  // Because of kRows, 3x the height.
-  size = input.size() * 3 * width * num_channels;
-  pileup_image.resize(size, 0);
-  FillPileupArray(input, alt_rows, AltAlignedPileup::kRows, &pileup_image, size,
-                  0, {0, 1});
-  std::vector<unsigned char> expected_alt_aliged_pileup_rows;
-  std::copy(expected_alt_align_none.begin(), expected_alt_align_none.end(),
-            std::back_inserter(expected_alt_aliged_pileup_rows));
-  std::copy(expected_alt_aligned_first_row.begin(),
-            expected_alt_aligned_first_row.end(),
-            std::back_inserter(expected_alt_aliged_pileup_rows));
-  std::copy(expected_alt_aligned_second_row.begin(),
-            expected_alt_aligned_second_row.end(),
-            std::back_inserter(expected_alt_aliged_pileup_rows));
-  EXPECT_THAT(pileup_image,
-              UnorderedElementsAreArray(expected_alt_aliged_pileup_rows));
-
-  // alt_aligned_pileup = single_row, alt_image_index = 0
-  pileup_image.clear();
-  // Because of kSingleRow, 2x the height.
-  size = input.size() * 2 * width * num_channels;
-  pileup_image.resize(size, 0);
-  FillPileupArray(input, alt_rows, AltAlignedPileup::kSingleRow, &pileup_image,
-                  size, 0, {0});
-  std::vector<unsigned char> expected_alt_aliged_pileup_single_row_first;
-  std::copy(expected_alt_align_none.begin(), expected_alt_align_none.end(),
-            std::back_inserter(expected_alt_aliged_pileup_single_row_first));
-  std::copy(expected_alt_aligned_first_row.begin(),
-            expected_alt_aligned_first_row.end(),
-            std::back_inserter(expected_alt_aliged_pileup_single_row_first));
-  EXPECT_THAT(pileup_image, UnorderedElementsAreArray(
-                                expected_alt_aliged_pileup_single_row_first));
-
-  // alt_aligned_pileup = single_row, alt_image_index = 1
-  pileup_image.clear();
-  // Because of kSingleRow, 2x the height.
-  size = input.size() * 2 * width * num_channels;
-  pileup_image.resize(size, 0);
-  FillPileupArray(input, alt_rows, AltAlignedPileup::kSingleRow, &pileup_image,
-                  size, 0, {1});
-  std::vector<unsigned char> expected_alt_aliged_pileup_single_row_second;
-  std::copy(expected_alt_align_none.begin(), expected_alt_align_none.end(),
-            std::back_inserter(expected_alt_aliged_pileup_single_row_second));
-  std::copy(expected_alt_aligned_second_row.begin(),
-            expected_alt_aligned_second_row.end(),
-            std::back_inserter(expected_alt_aliged_pileup_single_row_second));
-  EXPECT_THAT(pileup_image, UnorderedElementsAreArray(
-                                expected_alt_aliged_pileup_single_row_second));
-}
-
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

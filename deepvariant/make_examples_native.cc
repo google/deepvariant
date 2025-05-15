@@ -114,21 +114,10 @@ ExamplesGenerator::ExamplesGenerator(
     }
   }
   half_width_ = (options_.pic_options().width() - 1) / 2;
-  absl::flat_hash_map<absl::string_view, AltAlignedPileup>
-      alt_aligned_pileup_map({
-          {"none", AltAlignedPileup::kNone},
-          {"base_channels", AltAlignedPileup::kBaseChannels},
-          {"diff_channels", AltAlignedPileup::kDiffChannels},
-          {"rows", AltAlignedPileup::kRows},
-          {"single_row", AltAlignedPileup::kSingleRow},
-      });
-  auto it =
-      alt_aligned_pileup_map.find(options_.pic_options().alt_aligned_pileup());
-  if (it == alt_aligned_pileup_map.end()) {
-    LOG(FATAL) << "Unknown value is specified for alt_aligned_pileup";
-  } else {
-    alt_aligned_pileup_ = it->second;
-  }
+  alt_aligned_pileup_ =
+      GetAltAlignedPileup(options_.pic_options().alt_aligned_pileup());
+  pileup_image_height_ = CalculatePileupImageHeight(options_);
+
   if (test_mode) {
     return;
   }
@@ -338,16 +327,6 @@ bool HasAtLeastOneNonSingleBaseAllele(const Variant& variant) {
   return false;
 }
 
-// Returns the index of the longer alt (if more than one).
-int GetLongestAltCombinationIndex(
-    absl::Span<const std::string> alt_combination) {
-  if (alt_combination.size() == 2 &&
-      alt_combination[1].size() > alt_combination[0].size()) {
-    return 1;
-  }
-  return 0;
-}
-
 void UpdateStats(enum EncodedVariantType variant_type,
                  const VariantLabel* label, int label_value,
                  std::unordered_map<std::string, int>& stats) {
@@ -406,31 +385,25 @@ std::string EncodeVariant(const Variant& variant, const VariantLabel* label) {
 }  // namespace
 
 std::string ExamplesGenerator::EncodeExample(
-    absl::Span<const std::unique_ptr<ImageRow>> image,
-    absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_image,
+    std::vector<std::vector<std::unique_ptr<ImageRow>>>& image_per_sample,
+    std::vector<std::vector<std::vector<std::unique_ptr<ImageRow>>>>&
+        alt_image_per_sample,
     const Variant& variant, absl::Span<const std::string> alt_combination,
     std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
     const std::unique_ptr<VariantLabel>& label) const {
-  // 1 row: ref (no alt)
-  image_shape[0] = image.size();
-  std::vector<int> alt_image_row_indices = {};
-  if (alt_aligned_pileup_ == AltAlignedPileup::kRows) {
-    // 3 rows: ref, alt1, alt2
-    image_shape[0] = image.size() * 3;
-    alt_image_row_indices = {0, 1};
-  } else if (alt_aligned_pileup_ == AltAlignedPileup::kSingleRow) {
-    // 2 rows: ref, alt1 or alt2 (whichever is longest)
-    image_shape[0] = image.size() * 2;
-    alt_image_row_indices = {GetLongestAltCombinationIndex(alt_combination)};
-  }
-  image_shape[1] = image[0]->Width();              // Width of the pileup.
-  image_shape[2] = options_.pic_options().channels().size();  // Num channels.
+  // Height
+  image_shape[0] = pileup_image_height_;
+  // Width
+  image_shape[1] = image_per_sample.front()[0]->Width();
+  // Depth (Num Channels)
+  image_shape[2] = options_.pic_options().channels().size();
 
   std::vector<unsigned char> data(
       image_shape[0] * image_shape[1] * image_shape[2], 0);
 
-  FillPileupArray(image, alt_image, alt_aligned_pileup_, &data, data.size(), 0,
-                  alt_image_row_indices);
+  // Fill in pileup image by sample.
+  FillPileupArrayBySample(image_per_sample, alt_image_per_sample, options_,
+                          alt_combination, &data, data.size());
 
   // Encode alt allele indices.
   absl::flat_hash_set<int> alt_indices_set;
@@ -669,8 +642,9 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
   int min_trimming_overlap = kDefaultMinimumReadOverlap;
   for (const std::vector<std::string>& alt_combination :
        AltAlleleCombinations(candidate)) {
-    std::vector<std::unique_ptr<ImageRow>> ref_images;
-    std::vector<std::vector<std::unique_ptr<ImageRow>>> alt_images(2);
+    std::vector<std::vector<std::unique_ptr<ImageRow>>> ref_image_per_sample;
+    std::vector<std::vector<std::vector<std::unique_ptr<ImageRow>>>>
+        alt_images_per_sample;
     for (int this_sample_order : sample_order) {
       // Implementing the logic from internal#comment5.
       CHECK(this_sample_order < options_.sample_options().size());
@@ -719,41 +693,28 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
           image_start_pos, alt_combination,
           options_.sample_options(this_sample_order), mean_coverage,
           &original_start_positions, blank_channels_set);
-      // Collect rows from all samples in ref_images.
-      for (auto& row : ref_image) {
-        ref_images.push_back(std::move(row));
-      }
       bool sample_needs_alt_alignment = sample_it->second.needs_alt_alignment;
-      if (variant_needs_alt_alignment) {
-        if (sample_needs_alt_alignment) {
-          CreateAltAlignedImages(candidate, alt_combination, trimmed_reads,
-                                 this_sample_order, region, alt_images,
-                                 mean_coverage, &original_start_positions);
-        } else {
-          // If the sample does not need alt alignment, we still want to fill
-          // the corresponding area with 0s.
-          // NOTE: The easiest way to simulate this behavior is to use the same
-          // function, but to give it an empty list of reads.
-          // This might not be the cleanest way to write the logic, but it is
-          // a lot easier for human to understand.
-          CreateAltAlignedImages(candidate, alt_combination, {},
-                                 this_sample_order, region, alt_images,
-                                 mean_coverage, nullptr);
-        }
+      std::vector<std::vector<std::unique_ptr<ImageRow>>> alt_images(2);
+      if (variant_needs_alt_alignment && sample_needs_alt_alignment) {
+        CreateAltAlignedImages(candidate, alt_combination, trimmed_reads,
+                               this_sample_order, region, alt_images,
+                               mean_coverage, &original_start_positions);
       }
+      // Collect rows from all samples in ref_images.
+      ref_image_per_sample.push_back(std::move(ref_image));
+      alt_images_per_sample.push_back(std::move(alt_images));
     }
     if (options_.stream_examples()) {
       stream_examples_->StreamExample(
-          ref_images, alt_images, alt_aligned_pileup_,
-          EncodeAltAlleles(variant, alt_combination, nullptr),
+          ref_image_per_sample, alt_images_per_sample, alt_aligned_pileup_,
+          alt_combination, EncodeAltAlleles(variant, alt_combination, nullptr),
           EncodeVariant(variant, nullptr));
       UpdateStats(encoded_variant_type, nullptr, 0, stats);
     } else {
-      sample.writer->Add(EncodeExample(ref_images, alt_images, variant,
-                                               alt_combination, stats,
-                                               image_shape, label),
-                         variant.reference_name(),
-                         variant.start());
+      sample.writer->Add(
+          EncodeExample(ref_image_per_sample, alt_images_per_sample, variant,
+                        alt_combination, stats, image_shape, label),
+          variant.reference_name(), variant.start());
     }
   }
 }

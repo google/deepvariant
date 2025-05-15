@@ -208,8 +208,9 @@ class ExamplesGenerator {
 
   // Encodes a variant into a pileup example.
   std::string EncodeExample(
-      absl::Span<const std::unique_ptr<ImageRow>> image,
-      absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_image,
+      std::vector<std::vector<std::unique_ptr<ImageRow>>>& image_per_sample,
+      std::vector<std::vector<std::vector<std::unique_ptr<ImageRow>>>>&
+          alt_image_per_sample,
       const nucleus::genomics::v1::Variant& variant,
       absl::Span<const std::string> alt_combination,
       std::unordered_map<std::string, int>& stats,
@@ -263,6 +264,9 @@ class ExamplesGenerator {
 
   // Alt aligned pileup option.
   AltAlignedPileup alt_aligned_pileup_;
+
+  // Total height of the pileup image.
+  int pileup_image_height_;
 
   std::vector<std::unique_ptr<VariantLabel>> labels_;
 

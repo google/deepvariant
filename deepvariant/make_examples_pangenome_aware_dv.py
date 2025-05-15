@@ -258,6 +258,7 @@ def reads_and_pangenome_samples_from_flags(add_flags=True, flags_obj=None):
           variant_type_string_to_enum(variant_type_string)
           for variant_type_string in _VARIANT_TYPES_TO_BLANK.value
       ],
+      alt_aligned_pileup=dv_constants.SampleAltAlignedPileupOption.NONE.value,
   )
 
   if add_flags:

@@ -616,7 +616,7 @@ message PileupImageOptions {
 }
 
 // Options that may differ by sample.
-// Next ID: 21.
+// Next ID: 22.
 message SampleOptions {
   // A string to identify the role of this sample in the analysis, e.g. in
   // trios 'child', 'parent1', or 'parent2'. Importantly, `role` strings should
@@ -696,6 +696,10 @@ message SampleOptions {
   // representing an allele is less than this threshold, the reads are not
   // downsampled.
   int32 non_uniform_downsampling_threshold = 20;
+
+  // Set sample-specific alt-aligned pileup option. If set, overrides the global
+  // setting. Valid options are "none", "single_row" and "rows".
+  string alt_aligned_pileup = 21;
 }
 
 // High-level options that encapsulates all of the parameters needed to run

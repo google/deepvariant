@@ -1695,6 +1695,7 @@ cc_test(
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
     ],

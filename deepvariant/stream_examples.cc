@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "deepvariant/fast_pipeline_utils.h"
@@ -54,15 +55,10 @@ StreamExamples::StreamExamples(
     const MakeExamplesOptions& options,
     const AltAlignedPileup& alt_aligned_pileup)
     : options_(options), alt_aligned_pileup_(alt_aligned_pileup) {
+  int pileup_image_height = CalculatePileupImageHeight(options);
   // Calculate the size of the pileup image.
-  pileup_image_size_ = options_.pic_options().width() *
-                       options_.pic_options().height() *
+  pileup_image_size_ = pileup_image_height * options_.pic_options().width() *
                        options_.pic_options().channels().size();
-  if (alt_aligned_pileup_ == AltAlignedPileup::kRows) {
-    pileup_image_size_ *= 3;
-  } else if (alt_aligned_pileup_ == AltAlignedPileup::kSingleRow) {
-    pileup_image_size_ *= 2;
-  }
   absl::string_view shm_prefix = options.shm_prefix();
   // Name of the shared memory buffer.
   shm_name_ = GetShmBufferName(shm_prefix, options_.task_id());
@@ -119,9 +115,11 @@ void StreamExamples::WriteBytesToShm(const void* bytes, int len) {
 // The recipient is notified once the buffer is full or all examples are
 // processed.
 void StreamExamples::StreamExample(
-    absl::Span<const std::unique_ptr<ImageRow>> ref_rows,
-    absl::Span<const std::vector<std::unique_ptr<ImageRow>>> alt_images,
+    std::vector<std::vector<std::unique_ptr<ImageRow>>>& image_per_sample,
+    std::vector<std::vector<std::vector<std::unique_ptr<ImageRow>>>>&
+        alt_image_per_sample,
     const AltAlignedPileup& alt_aligned_pileup,
+    absl::Span<const std::string> alt_combination,
     absl::string_view alt_indices_encoded, absl::string_view variant_encoded) {
   // Calculate the space needed.
   int required_space = variant_encoded.size() + alt_indices_encoded.size() +
@@ -138,9 +136,9 @@ void StreamExamples::StreamExample(
       // Write pileup image size.
       WriteLenToShm(pileup_image_size_);
       // Write pileup image. FillPileupArray populates the shm_buffer_ directly.
-      FillPileupArray(ref_rows, alt_images, alt_aligned_pileup, &shm_buffer_,
-                      shm_buffer_size_, shm_buffer_pos_);
-      shm_buffer_pos_ += pileup_image_size_;
+      shm_buffer_pos_ = FillPileupArrayBySample(
+          image_per_sample, alt_image_per_sample, options_, alt_combination,
+          &shm_buffer_, shm_buffer_size_, shm_buffer_pos_);
       break;
     } else {
       // Let call_variants know that items are ready and wait for the buffer to
