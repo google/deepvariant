@@ -30,6 +30,8 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(dirname "$0")"
+source "$SCRIPT_DIR/inference_utils.sh"
 
 USAGE=$'
 Example usage:
@@ -539,18 +541,6 @@ echo "TRUTH_BED: ${TRUTH_BED}"
 echo "TRUTH_VCF: ${TRUTH_VCF}"
 echo "========================="
 
-function run() {
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    # Prints out command to stdout and a [DRY RUN] tag to stderr.
-    # This allows the users to use the dry_run mode to get a list of
-    # executable commands by redirecting stdout to a file.
-    1>&2 printf "[DRY RUN] " && echo "$*"
-  else
-    echo "$*"
-    eval "$@"
-  fi
-}
-
 function copy_gs_or_http_file() {
   if [[ "$1" == http* ]]; then
     if curl --output /dev/null --silent --head --fail "$1"; then
@@ -561,7 +551,7 @@ function copy_gs_or_http_file() {
     fi
   elif [[ "$1" == gs://* ]]; then
     status=0
-    gsutil -q stat "$1" || status=1
+    run --skip-dry-run-print gsutil -q stat "$1" || status=1
     if [[ $status == 0 ]]; then
       run echo "Copying from \"$1\" to \"$2\""
       # Skip the file if it exists.
