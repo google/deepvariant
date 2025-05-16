@@ -191,6 +191,7 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRI
 WORKDIR /opt/smallmodels/deeptrio/wgs/child/variables
 ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_child.smallmodel/variables/variables.data-00000-of-00001 \
   https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_child.smallmodel/variables/variables.index ./
+RUN chmod -R +r /opt/smallmodels/deeptrio/wgs/child/*
 
 
 WORKDIR /opt/smallmodels/deeptrio/wgs/parent
