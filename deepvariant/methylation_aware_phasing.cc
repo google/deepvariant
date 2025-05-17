@@ -44,6 +44,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "boost/math/distributions/normal.hpp"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -257,9 +258,9 @@ double GetMethylationLevelAtSite(const DeepVariantCall_ReadSupport& read) {
 //   A vector of methylated sites that are considered informative
 //   for distinguishing haplotypes based on methylation signal.
 std::vector<DeepVariantCall> IdentifyInformativeSites(
-  const std::vector<DeepVariantCall>& methylated_calls,
-  const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
-  const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads) {
+    absl::Span<const DeepVariantCall> methylated_calls,
+    const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
+    const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads) {
   std::vector<DeepVariantCall> informative_sites;
   absl::flat_hash_set<std::string> hap1_names, hap2_names;
   for (const auto* r : hap1_reads) hap1_names.insert(r->read_name());

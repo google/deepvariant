@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 
 namespace learning {
@@ -81,7 +82,7 @@ double GetMethylationLevelAtSite(const DeepVariantCall_ReadSupport& read);
 // Identifies methylated reference sites that show differential methylation
 // between haplotype 1 and haplotype 2 read sets.
 std::vector<DeepVariantCall> IdentifyInformativeSites(
-    const std::vector<DeepVariantCall>& methylated_calls,
+    absl::Span<const DeepVariantCall> methylated_calls,
     const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
     const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads);
 
