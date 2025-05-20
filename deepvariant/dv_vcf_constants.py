@@ -108,6 +108,7 @@ def deepvariant_header(
       vcf_constants.reserved_format_field('MF'),
       vcf_constants.reserved_format_field('MD'),
       vcf_constants.reserved_format_field('MT'),
+      vcf_constants.reserved_format_field('MI'),
   ]
   if add_info_candidates:
     info_fields.append(

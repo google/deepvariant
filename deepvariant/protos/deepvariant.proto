@@ -309,6 +309,10 @@ message DeepVariantCall {
   // make_examples will process all alt alleles.
   repeated CallVariantsOutput.AltAlleleIndices
       make_examples_alt_allele_indices = 8;
+
+  // P-value calculated from Wilcoxon Rank-Sum Test between two haplotypes’
+  // methylation values.
+  float methylation_p_value = 9;
 }
 
 // Options to control how our AlleleCounter code works.

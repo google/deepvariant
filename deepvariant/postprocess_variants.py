@@ -545,7 +545,9 @@ def add_call_to_variant(
   if is_methylated(call):
     mf = variantcall_utils.get_mf(call)
     mt = variantcall_utils.determine_methylation_type(mf)
+    mi = variantcall_utils.get_mi(call)
     variantcall_utils.set_mt(call, mt)
+    variantcall_utils.set_mi(call, mi)
   variantcall_utils.set_gt(call, genotype)
   variantcall_utils.set_gq(call, gq)
   gls = [genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions]

@@ -32,9 +32,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from typing import List
-
-from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import vcf_constants
 
@@ -43,6 +40,7 @@ _GL = 'GL'
 _GT = 'GT'
 _MF = 'MF'
 _MT = 'MT'
+_MI = 'MI'
 
 # The max number of regions we can expect to be processed by a single shard.
 _MAX_REGIONS_INSIDE_SHARD = 100_000
@@ -65,8 +63,8 @@ def set_format(variant_call, field_name, value, vcf_object=None):
   Args:
     variant_call: VariantCall proto. The VariantCall to modify.
     field_name: str. The name of the field to set.
-    value: A single value or list of values to update the VariantCall with.
-      The type of the value is determined by the `vcf_object` if one is given,
+    value: A single value or list of values to update the VariantCall with. The
+      type of the value is determined by the `vcf_object` if one is given,
       otherwise is looked up based on the reserved FORMAT fields in the VCF
       specification.
     vcf_object: (Optional) A VcfReader or VcfWriter object. If not None, the
@@ -107,14 +105,14 @@ def get_format(variant_call, field_name, vcf_object=None):
   """
   if field_name == _GL:
     return get_gl(variant_call)
-  if field_name == _GT:
+  elif field_name == _GT:
     return get_gt(variant_call)
-  if field_name == _MF:
+  elif field_name == _MF:
     return get_mf(variant_call)
-  if field_name == _MT:
+  elif field_name == _MT:
     return get_mt(variant_call)
-  if field_name == _MF:
-    return get_mf(variant_call)
+  elif field_name == _MI:
+    return get_mi(variant_call)
 
   if vcf_object is None:
     get_field_fn = vcf_constants.reserved_format_field_get_fn(field_name)
@@ -205,7 +203,8 @@ def set_med_dp(variant_call, med_dp):
 def get_med_dp(variant_call):
   """Gets the 'MED_DP' field of the VariantCall."""
   return struct_utils.get_int_field(
-      variant_call.info, 'MED_DP', is_single_field=True)
+      variant_call.info, 'MED_DP', is_single_field=True
+  )
 
 
 def set_min_dp(variant_call, min_dp):
@@ -221,13 +220,15 @@ def set_model_id(variant_call, model_id):
 def get_min_dp(variant_call):
   """Gets the 'MIN_DP' field of the VariantCall."""
   return struct_utils.get_int_field(
-      variant_call.info, 'MIN_DP', is_single_field=True)
+      variant_call.info, 'MIN_DP', is_single_field=True
+  )
 
 
 def set_bam_fname(variant_call, bam_fname):
   """Sets 'BAM_FNAME' field of the VariantCall."""
-  return struct_utils.set_string_field(variant_call.info, 'BAM_FNAME',
-                                       bam_fname)
+  return struct_utils.set_string_field(
+      variant_call.info, 'BAM_FNAME', bam_fname
+  )
 
 
 def set_ps(variant_call, ps):
@@ -338,8 +339,34 @@ def get_mf(variant_call):
   return [val.number_value for val in mf_values if hasattr(val, 'number_value')]
 
 
-def determine_methylation_type(mf_values, low_threshold=0.2,
-                               high_threshold=0.8):
+def get_mi(variant_call):
+  """Returns the p-value for allele-specific methylation sites (MI).
+
+  The p-value is calculated using a Wilcoxon Rank-Sum Test based on the observed
+  difference in methylation across idenfied haplotypes.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to retrieve MI from.
+  """
+  if not variant_call.info or 'MI' not in variant_call.info:
+    return []
+
+  return variant_call.info['MI'].values[0].number_value
+
+
+def set_mi(variant_call, mi_value):
+  """Sets the p-value for allele-specific methylation sites (MI) in VariantCall.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to modify.
+      mi_value: float. The p-value for allele-specific methylation sites.
+  """
+  struct_utils.set_number_field(variant_call.info, 'MI', mi_value)
+
+
+def determine_methylation_type(
+    mf_values, low_threshold=0.2, high_threshold=0.8
+):
   """Determines the methylation type (MT) based on methylation fraction (MF) values.
 
   Args:
@@ -363,4 +390,3 @@ def determine_methylation_type(mf_values, low_threshold=0.2,
     return '1/1'  # Fully methylated
   else:
     return '0/0'  # Unmethylated
-

@@ -69,112 +69,136 @@ RESERVED_FILTER_FIELDS = [
 # Reserved INFO field definitions, as per the VCF 4.3 spec.
 RESERVED_INFO_FIELDS = [
     variants_pb2.VcfInfo(
-        id='AA', number='1', type=STRING_TYPE, description='Ancestral allele'),
+        id='AA', number='1', type=STRING_TYPE, description='Ancestral allele'
+    ),
     variants_pb2.VcfInfo(
         id='AC',
         number='A',
         type=INTEGER_TYPE,
-        description='Allele count in genotypes, for each ALT '
-        'allele, in the same order as listed'),
+        description=(
+            'Allele count in genotypes, for each ALT '
+            'allele, in the same order as listed'
+        ),
+    ),
     variants_pb2.VcfInfo(
         id='AD',
         number='R',
         type=INTEGER_TYPE,
-        description='Total read depth for each allele'),
+        description='Total read depth for each allele',
+    ),
     variants_pb2.VcfInfo(
         id='ADF',
         number='R',
         type=INTEGER_TYPE,
-        description='Read depth for each allele on the forward '
-        'strand'),
+        description='Read depth for each allele on the forward strand',
+    ),
     variants_pb2.VcfInfo(
         id='ADR',
         number='R',
         type=INTEGER_TYPE,
-        description='Read depth for each allele on the reverse strand'),
+        description='Read depth for each allele on the reverse strand',
+    ),
     variants_pb2.VcfInfo(
         id='AF',
         number='A',
         type=FLOAT_TYPE,
-        description='Allele frequency for each ALT allele in '
-        'the same order as listed (estimated from '
-        'primary data, not called genotypes)'),
+        description=(
+            'Allele frequency for each ALT allele in '
+            'the same order as listed (estimated from '
+            'primary data, not called genotypes)'
+        ),
+    ),
     variants_pb2.VcfInfo(
         id='AN',
         number='1',
         type=INTEGER_TYPE,
-        description='Total number of alleles in called genotypes'),
+        description='Total number of alleles in called genotypes',
+    ),
     variants_pb2.VcfInfo(
-        id='BQ', number='1', type=FLOAT_TYPE, description='RMS base quality'),
+        id='BQ', number='1', type=FLOAT_TYPE, description='RMS base quality'
+    ),
     variants_pb2.VcfInfo(
         id='CIGAR',
         number='A',
         type=STRING_TYPE,
-        description='Cigar string describing how to align an '
-        'alternate allele to the reference allele'),
+        description=(
+            'Cigar string describing how to align an '
+            'alternate allele to the reference allele'
+        ),
+    ),
     variants_pb2.VcfInfo(
-        id='DB', number='0', type=FLAG_TYPE, description='dbSNP membership'),
+        id='DB', number='0', type=FLAG_TYPE, description='dbSNP membership'
+    ),
     variants_pb2.VcfInfo(
         id='DP',
         number='1',
         type=INTEGER_TYPE,
-        description='Combined depth across samples'),
+        description='Combined depth across samples',
+    ),
     variants_pb2.VcfInfo(
         id='END',
         number='1',
         type=INTEGER_TYPE,
-        description='End position (for use with symbolic alleles)'),
+        description='End position (for use with symbolic alleles)',
+    ),
     variants_pb2.VcfInfo(
-        id='H2', number='0', type=FLAG_TYPE, description='HapMap2 membership'),
+        id='H2', number='0', type=FLAG_TYPE, description='HapMap2 membership'
+    ),
     variants_pb2.VcfInfo(
-        id='H3', number='0', type=FLAG_TYPE, description='HapMap3 membership'),
+        id='H3', number='0', type=FLAG_TYPE, description='HapMap3 membership'
+    ),
     # NOTE: In the VCF 4.3 spec, the type of 'MQ' is listed as '.', even though
     # that is not specified as a valid type. Because root mean square is
     # typically a float value, we specify its type as FLOAT_TYPE.
     variants_pb2.VcfInfo(
-        id='MQ', number='1', type=FLOAT_TYPE,
-        description='RMS mapping quality'),
+        id='MQ', number='1', type=FLOAT_TYPE, description='RMS mapping quality'
+    ),
     variants_pb2.VcfInfo(
         id='MQ0',
         number='1',
         type=INTEGER_TYPE,
-        description='Number of MAPQ == 0 reads'),
+        description='Number of MAPQ == 0 reads',
+    ),
     variants_pb2.VcfInfo(
         id='NS',
         number='1',
         type=INTEGER_TYPE,
-        description='Number of samples with data'),
+        description='Number of samples with data',
+    ),
     # NOTE: In the VCF 4.3 spec, the type of 'SB' is listed as '.', even though
     # that is not specified as a valid type. Because strand bias is usually a
     # numerical measurement (e.g. p-value of contingency table), we specify its
     # type as FLOAT_TYPE.
     variants_pb2.VcfInfo(
-        id='SB', number='.', type=FLOAT_TYPE, description='Strand bias'),
+        id='SB', number='.', type=FLOAT_TYPE, description='Strand bias'
+    ),
     variants_pb2.VcfInfo(
         id='SOMATIC',
         number='0',
         type=FLAG_TYPE,
-        description='Somatic mutation (for cancer genomics)'),
+        description='Somatic mutation (for cancer genomics)',
+    ),
     variants_pb2.VcfInfo(
         id='VALIDATED',
         number='0',
         type=FLAG_TYPE,
-        description='Validated by follow-up experiment'),
+        description='Validated by follow-up experiment',
+    ),
     variants_pb2.VcfInfo(
         id='1000G',
         number='0',
         type=FLAG_TYPE,
-        description='1000 Genomes membership'),
+        description='1000 Genomes membership',
+    ),
     variants_pb2.VcfInfo(
-        id='ALT_PS',
-        number='R',
-        type=INTEGER_TYPE,
-        description='Allele phases'),
+        id='ALT_PS', number='R', type=INTEGER_TYPE, description='Allele phases'
+    ),
     variants_pb2.VcfInfo(
         id='PS_CONTIG',
         number='1',
         type=STRING_TYPE,
-        description='Contig for continuous phase set'),
+        description='Contig for continuous phase set',
+    ),
 ]
 
 # Reserved FORMAT field definitions, as per the VCF 4.3 spec.
@@ -286,6 +310,16 @@ RESERVED_FORMAT_FIELDS = [
             ' 1/1=Methylated'
         ),
     ),
+    variants_pb2.VcfFormatInfo(
+        id='MI',
+        number='1',
+        type=FLOAT_TYPE,
+        description=(
+            'Allele-specific methylation score: p-value for'
+            ' Wilcoxon Rank-Sum test based on the observed difference in'
+            ' methylation between haplotypes.'
+        ),
+    ),
 ]
 
 # Map from field type to the function used to set struct_pb2.Value elements
@@ -346,19 +380,23 @@ def create_get_fn(value_type, number):
     a list of typed values or a single typed value, depending on the expected
     number of values returned.
   """
-  is_single_field = (number == '0' or number == '1')
+  is_single_field = number == '0' or number == '1'
   if value_type == CHARACTER_TYPE or value_type == STRING_TYPE:
     return functools.partial(
-        struct_utils.get_string_field, is_single_field=is_single_field)
+        struct_utils.get_string_field, is_single_field=is_single_field
+    )
   elif value_type == INTEGER_TYPE:
     return functools.partial(
-        struct_utils.get_int_field, is_single_field=is_single_field)
+        struct_utils.get_int_field, is_single_field=is_single_field
+    )
   elif value_type == FLOAT_TYPE:
     return functools.partial(
-        struct_utils.get_number_field, is_single_field=is_single_field)
+        struct_utils.get_number_field, is_single_field=is_single_field
+    )
   elif value_type == FLAG_TYPE:
     return functools.partial(
-        struct_utils.get_bool_field, is_single_field=is_single_field)
+        struct_utils.get_bool_field, is_single_field=is_single_field
+    )
   else:
     raise ValueError('Invalid value_type: {}'.format(value_type))
 
@@ -366,8 +404,7 @@ def create_get_fn(value_type, number):
 # Map from INFO field name to the function used to set struct_pb2.Value elements
 # of that field.
 RESERVED_INFO_FIELD_SET_FNS = {
-    info.id: SET_FN_LOOKUP[info.type]
-    for info in RESERVED_INFO_FIELDS
+    info.id: SET_FN_LOOKUP[info.type] for info in RESERVED_INFO_FIELDS
 }
 
 # Map from INFO field name to the function used to get struct_pb2.Value elements
@@ -380,8 +417,7 @@ RESERVED_INFO_FIELD_GET_FNS = {
 # Map from FORMAT field name to the function used to set struct_pb2.Value
 # elements of that field.
 RESERVED_FORMAT_FIELD_SET_FNS = {
-    fmt.id: SET_FN_LOOKUP[fmt.type]
-    for fmt in RESERVED_FORMAT_FIELDS
+    fmt.id: SET_FN_LOOKUP[fmt.type] for fmt in RESERVED_FORMAT_FIELDS
 }
 
 # Map from FORMAT field name to the function used to get struct_pb2.Value
@@ -428,7 +464,8 @@ def reserved_info_field_get_fn(field_name):
     return RESERVED_INFO_FIELD_GET_FNS[field_name]
   except KeyError:
     raise ValueError(
-        'Unknown reserved INFO field to get: {}'.format(field_name))
+        'Unknown reserved INFO field to get: {}'.format(field_name)
+    )
 
 
 def reserved_format_field_set_fn(field_name):
@@ -467,4 +504,5 @@ def reserved_format_field_get_fn(field_name):
     return RESERVED_FORMAT_FIELD_GET_FNS[field_name]
   except KeyError:
     raise ValueError(
-        'Unknown reserved FORMAT field to get: {}'.format(field_name))
+        'Unknown reserved FORMAT field to get: {}'.format(field_name)
+    )

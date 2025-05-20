@@ -43,14 +43,6 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-// Returns true if methylation values between the two haplotypes are
-// significantly different (p < 0.05).
-// Returns false if p >= threshold or inputs are invalid (e.g. one haplotype
-// has no methylation data).
-bool IsDifferentiallyMethylated(
-    const std::vector<double>& hap1_methyl,
-    const std::vector<double>& hap2_methyl);
-
 // Performs the Wilcoxon Rank-Sum Test (Mann-Whitney U Test) between two
 // haplotypes’ methylation values. Returns the two-sided p-value.
 // Returns -1.0 if either haplotype has no data.
@@ -81,10 +73,10 @@ double GetMethylationLevelAtSite(const DeepVariantCall_ReadSupport& read);
 
 // Identifies methylated reference sites that show differential methylation
 // between haplotype 1 and haplotype 2 read sets.
-std::vector<DeepVariantCall> IdentifyInformativeSites(
-    absl::Span<const DeepVariantCall> methylated_calls,
+std::vector<DeepVariantCall> IdentifyInformativeSitesAndUpdatePValues(
     const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
-    const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads);
+    const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads,
+    std::vector<DeepVariantCall>& methylated_calls);
 
 // Returns a unique key identifying a read based on its fragment name and
 // read number.
@@ -105,11 +97,12 @@ std::vector<const DeepVariantCall_ReadSupport*> ExtractReadsByPhase(
 // identifies differentially methylated sites, and votes for each unphased
 // read's haplotype assignment by comparing its methylation levels to those
 // signatures.
-std::vector<int> PerformMethylationAwarePhasing(
+std::tuple<std::vector<int>,
+           std::vector<double>> PerformMethylationAwarePhasing(
   const std::vector<nucleus::genomics::v1::Read>&
     reads_to_phase,
   const std::vector<int>& initial_read_phases,
-  const std::vector<DeepVariantCall>& methylated_ref_sites,
+  std::vector<DeepVariantCall>& methylated_ref_sites,
   int max_iter);
 
 }  // namespace deepvariant

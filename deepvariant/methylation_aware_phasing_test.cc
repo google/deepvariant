@@ -43,13 +43,41 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
+// Helper function for creating a DeepVariant Call with the given parameters.
+DeepVariantCall MakeMethylCall(
+    int pos,
+    int n_hap1_reads,
+    int n_hap2_reads,
+    int hap1_methyl,
+    int hap2_methyl,
+    std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
+    std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads) {
+  DeepVariantCall call;
+  call.mutable_variant()->set_start(pos);
+  auto* ext = call.mutable_ref_support_ext();
+  for (int i = 0; i < n_hap1_reads; ++i) {
+    auto* r = ext->add_read_infos();
+    r->set_read_name("hap1_" + std::to_string(i));
+    r->set_methylation_level(hap1_methyl);
+    hap1_reads.push_back(r);
+  }
+  for (int i = 0; i < n_hap2_reads; ++i) {
+    auto* r = ext->add_read_infos();
+    r->set_read_name("hap2_" + std::to_string(i));
+    r->set_methylation_level(hap2_methyl);
+    hap2_reads.push_back(r);
+  }
+  return call;
+}
+
 // Test case: Distinct distributions should be differentially methylated
 TEST(MethylationAwarePhasingTest,
      DistinctDistributionsIsDifferentiallyMethylated) {
   std::vector<double> hap1_methyl = {0.10, 0.15, 0.20, 0.12, 0.18};
   std::vector<double> hap2_methyl = {0.75, 0.80, 0.85, 0.78, 0.82};
 
-  EXPECT_TRUE(IsDifferentiallyMethylated(hap1_methyl, hap2_methyl));
+  double p_val = WilcoxonRankSumTest(hap1_methyl, hap2_methyl);
+  EXPECT_LT(p_val, 0.05);
 }
 
 // Test case: Identical distributions should not be differentially methylated
@@ -57,27 +85,22 @@ TEST(MethylationAwarePhasingTest,
      IdenticalDistributionsIsDifferentiallyMethylated) {
   std::vector<double> hap1_methyl = {0.35, 0.40, 0.45, 0.50, 0.42};
   std::vector<double> hap2_methyl = {0.35, 0.40, 0.45, 0.50, 0.42};
-
-  EXPECT_FALSE(IsDifferentiallyMethylated(hap1_methyl, hap2_methyl));
+  double p_val = WilcoxonRankSumTest(hap1_methyl, hap2_methyl);
+  EXPECT_GT(p_val, 0.05);
 }
-
 // Test case: Empty haplotypes should not be differentially methylated
 TEST(MethylationAwarePhasingTest,
      EmptyHaplotypesIsNotDifferentiallyMethylated) {
   std::vector<double> hap1_methyl = {};
   std::vector<double> hap2_methyl = {};
-
-  // Case 1: Both haplotypes are empty
-  EXPECT_FALSE(IsDifferentiallyMethylated(
-      hap1_methyl, hap2_methyl));
-
-  // Case 2: One haplotype is empty, one is non-empty
+  double p_val = WilcoxonRankSumTest(hap1_methyl, hap2_methyl);
+  // Case 1: Both haplotypes are empty; p-value should be -1.0
+  EXPECT_EQ(p_val, -1.0);
+  // Case 2: One haplotype is empty, one is non-empty; p-value should be -1.0
   hap2_methyl = {0.2, 0.4, 0.6};
-
-  EXPECT_FALSE(IsDifferentiallyMethylated(
-    hap1_methyl, hap2_methyl));
+  p_val = WilcoxonRankSumTest(hap1_methyl, hap2_methyl);
+  EXPECT_EQ(p_val, -1.0);
 }
-
 TEST(MethylationAwarePhasingTest, WilcoxonRankSumSortOrderMatters) {
   // hap1 has clearly higher values than hap2, so we expect a very small p-value
   std::vector<double> hap1_methyl = {0.9, 0.85, 0.88, 0.95, 0.92};
@@ -131,33 +154,33 @@ TEST(MethylationAwarePhasingTest, ExtractReadsByPhaseReturnsCorrectSubset) {
   EXPECT_EQ(result[0]->read_name(), "b");
   EXPECT_EQ(result[1]->read_name(), "c");
 }
-
-TEST(MethylationAwarePhasingTest, IdentifyInformativeSitesDetectsSignal) {
-  DeepVariantCall call;
-  call.mutable_variant()->set_start(100);
-  auto* ext = call.mutable_ref_support_ext();
-
+TEST(MethylationAwarePhasingTest, IdentifyInformativeSitesFiltersCorrectly) {
   std::vector<const DeepVariantCall_ReadSupport*> hap1_reads, hap2_reads;
+  DeepVariantCall informative_call =
+      MakeMethylCall(100, 3, 3, 25, 230, hap1_reads, hap2_reads);
+  DeepVariantCall low_coverage_call =
+      MakeMethylCall(200, 1, 1, 25, 230, hap1_reads, hap2_reads);
+  DeepVariantCall low_total_read_support =
+      MakeMethylCall(300, 2, 2, 25, 230, hap1_reads, hap2_reads);
+  DeepVariantCall low_mean_methyl_diff_call =
+      MakeMethylCall(200, 3, 3, 125, 130, hap1_reads, hap2_reads);
+  DeepVariantCall high_stddev_call =
+      MakeMethylCall(400, 3, 3, 10, 200, hap1_reads, hap2_reads);
+  // Add one more read to high_stddev_call to make the stddev high on one side.
+  auto* r = high_stddev_call.mutable_ref_support_ext()->add_read_infos();
+  r->set_read_name("hap1_3");
+  r->set_methylation_level(250);
+  hap1_reads.push_back(r);
 
-  // Add 3 low-methylation reads to hap1
-  for (int i = 0; i < 3; ++i) {
-    auto* r = ext->add_read_infos();
-    r->set_read_name("hap1_" + std::to_string(i));
-    r->set_methylation_level(25);  // ~0.1
-    hap1_reads.push_back(r);
-  }
-
-  // Add 3 high-methylation reads to hap2
-  for (int i = 0; i < 3; ++i) {
-    auto* r = ext->add_read_infos();
-    r->set_read_name("hap2_" + std::to_string(i));
-    r->set_methylation_level(230);  // ~0.9
-    hap2_reads.push_back(r);
-  }
-
-  auto result = IdentifyInformativeSites({call}, hap1_reads, hap2_reads);
-  ASSERT_EQ(result.size(), 1);
-  EXPECT_EQ(result[0].variant().start(), 100);
+  std::vector<DeepVariantCall> calls = {
+      informative_call, low_coverage_call, low_total_read_support,
+      low_mean_methyl_diff_call, high_stddev_call};
+  auto informative_sites =
+      IdentifyInformativeSitesAndUpdatePValues(hap1_reads, hap2_reads, calls);
+  ASSERT_EQ(informative_sites.size(), 1);
+  EXPECT_EQ(informative_sites[0].variant().start(), 100);
+  EXPECT_NEAR(informative_sites[0].methylation_p_value(), 0.049534,
+              1e-6);  // informative call
 }
 
 TEST(MethylationAwarePhasingTest, HaplotypeVoteWithMethylationVotesCorrectly) {

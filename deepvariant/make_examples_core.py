@@ -83,6 +83,7 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import utils
 from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
 # pylint: disable=g-direct-tensorflow-import
 from tensorflow.python.lib.io import tf_record
 # pylint: enable=g-direct-tensorflow-import
@@ -2444,15 +2445,34 @@ class RegionProcessor:
 
   def filter_candidates_by_region(
       self,
-      candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      candidates: np.ndarray,
       region: range_pb2.Range,
-  ) -> Sequence[deepvariant_pb2.DeepVariantCall]:
-    return [
-        candidate
-        for candidate in candidates
-        if candidate.variant.start >= region.start
-        and candidate.variant.start < region.end
-    ]
+  ) -> np.ndarray:
+    """Filters candidate variants by region.
+
+    This function takes a list of candidate variants and a region,
+    and returns a list of candidate variants that are within the region.
+
+    Args:
+      candidates: A list of DeepVariantCall protos.
+      region: A nucleus.genomics.v1.Range object specifying the region we want
+        to filter for.
+
+    Returns:
+      A list of DeepVariantCall protos in an np.array
+    """
+
+    def filter_region(candidate, region):
+      return (
+          candidate.variant.start >= region.start
+          and candidate.variant.start < region.end
+      )
+
+    filter_region_vec = np.vectorize(filter_region)
+    if candidates.any():
+      return candidates[filter_region_vec(candidates, region)]
+    else:
+      return np.array([])
 
   def _root_join(self, path, makedirs=True):
     fullpath = os.path.join(
@@ -2744,17 +2764,24 @@ class RegionProcessor:
       # SNP candidates will be phased using direct phasing.
       # Methylated reference sites will be phased using methylation-aware
       # phasing after direct phasing.
-      snp_candidates = []
-      methylated_ref_sites = []
+      # Store candidates in a numpy array for easier indexing.
+      candidates[role] = np.array(candidates[role])
+      snp_candidate_idx = np.arange(len(candidates[role]))
+      methylated_ref_site_idx = np.array([])
+      methylated_ref_sites = np.array([])
       if self.options.enable_methylation_aware_phasing:
-        for candidate in candidates[role]:
-          if self._is_methylated_reference_site(candidate):
-            methylated_ref_sites.append(candidate)
-          else:
-            snp_candidates.append(candidate)
+        # If methylation aware phasing is enabled, filter for methylated
+        # reference sites and SNP candidates.
+        is_methylated_ref_site = np.array(
+            list(map(self._is_methylated_reference_site, candidates[role]))
+        )
+        methylated_ref_site_idx = np.where(is_methylated_ref_site)[0]
+        methylated_ref_sites = candidates[role][methylated_ref_site_idx]
 
-        # Only use SNP candidates for direct phasing
-        candidates[role] = snp_candidates
+        snp_candidate_idx = np.where(~is_methylated_ref_site)[0]
+
+      # Only use SNP candidates for direct phasing
+      snp_candidates = candidates[role][snp_candidate_idx]
 
       if self.options.phase_reads and not sample.options.skip_phasing:
         if padded_region is not None:
@@ -2777,28 +2804,51 @@ class RegionProcessor:
         # Skip phasing if number of candidates is over the phase_max_candidates.
         if (
             self.options.phase_max_candidates
-            and len(candidates[role]) > self.options.phase_max_candidates
+            and len(snp_candidates) > self.options.phase_max_candidates
         ):
           logging_with_options(
               self.options,
               'Skip phasing: len(candidates[%s]) is %s.'
-              % (role, len(candidates[role])),
+              % (role, len(snp_candidates)),
           )
         else:
           read_phases = self.direct_phasing_cpp.phase(
-              candidates[role], reads_to_phase
+              snp_candidates, reads_to_phase
           )
 
           # If methylation-aware phasing is enabled, run it on unphased reads.
           if (
               self.options.enable_methylation_aware_phasing
-              and methylated_ref_sites
+              and methylated_ref_sites.size
           ):
+            # Before performing methylation-aware phasing, tag phased reads
+            # with the snp-based phasing:
+            for read, phase in zip(reads_to_phase, read_phases):
+              if phase in [1, 2]:
+                read.info['XP'].values.add(string_value='snp')
+
             # Perform methylation-aware phasing on unphased reads from direct
-            # phasing.
-            read_phases = methylation_aware_phasing.phase(
+            # phasing. This call also returns the p-values from a Wilcoxon
+            # signed rank test for each methylated reference site and its
+            # association with existing haplotypes.
+            read_phases, methyl_p_values = methylation_aware_phasing.phase(
                 reads_to_phase, read_phases, methylated_ref_sites
             )
+
+            assert len(methyl_p_values) == len(methylated_ref_sites)
+
+            # After methylation-aware phasing, tag newly-phased reads as being
+            # phased using 5mC calls.
+            for read, phase in zip(reads_to_phase, read_phases):
+              if not read.info.get('XP') and phase in [1, 2]:
+                read.info['XP'].values.add(string_value='5mC')
+
+            for candidate, p_value in zip(
+                candidates[role][methylated_ref_site_idx], methyl_p_values
+            ):
+              for call in candidate.variant.calls:
+                if p_value > 0:
+                  variantcall_utils.set_mi(call, p_value)
 
           # Assign phase tag to reads after direct phasing and/or
           # methylation-aware phasing.
@@ -2842,7 +2892,7 @@ class RegionProcessor:
             if self.options.pic_options.reverse_haplotypes:
               if read_phase in [1, 2]:
                 read_phase = 1 + (read_phase % 2)
-            read.info['HP'].values.add(int_value=read_phase)
+            read.info['HP'].values.add(int_value=read_phase)  #  Haplotype phase
             read_phases_by_sample[role][read_key] = read_phase
             if writer and self.options.read_phases_output:
               writer.write_read_phase(read, read_phase, region_n)
@@ -2881,7 +2931,6 @@ class RegionProcessor:
         candidates[role] = self.filter_candidates_by_region(
             candidates[role], region
         )
-
     return candidates, gvcfs, read_phases_by_sample, phased_candidates_count
 
   def get_channels(self) -> List[int]:

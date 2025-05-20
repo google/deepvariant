@@ -36,6 +36,7 @@
 #include <cstddef>
 #include <numeric>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -55,21 +56,6 @@ namespace deepvariant {
 
 const float kPThreshold = 0.05;
 const float kRankSumVarianceDenominator = 12.0;
-
-// This function checks whether a methylated site is differentially methylated
-// between haplotypes.
-//
-// It checks if the site's methylation values from haplotype 1 and
-// haplotype 2 originate from significantly different distributions. It is used
-// to identify sites where methylation is haplotype-specific, which can be
-// leveraged to phase previously unphased reads based on their methylation
-// patterns. It returns true if the p-value of the Wilcoxon Rank-Sum Test is
-// less than the p-value threshold.
-bool IsDifferentiallyMethylated(const std::vector<double>& hap1_methyl,
-                                const std::vector<double>& hap2_methyl) {
-  double p_val = WilcoxonRankSumTest(hap1_methyl, hap2_methyl);
-  return p_val >= 0 && p_val < kPThreshold;
-}
 
 // Performs two-sided Wilcoxon Rank-Sum Test (Mann-Whitney U Test) between two
 // haplotypes’ methylation values. The calculated p-value is returned. Returns
@@ -247,26 +233,29 @@ double GetMethylationLevelAtSite(const DeepVariantCall_ReadSupport& read) {
 // haplotype 2. For each site, the function collects methylation levels from
 // hap1/hap2 reads (based on read name matches in the call’s ReadSupport list),
 // and runs a Wilcoxon rank-sum test to determine if the distributions differ.
+// If the p-value is below a threshold, the site is considered informative and
+// the p-value is updated in the DeepVariantCall object.
 //
 // Args:
-//   methylated_calls: Vector of DeepVariantCall objects for methylated ref
-//                     sites.
 //   hap1_reads: Pointers to ReadSupport entries assigned to haplotype 1.
 //   hap2_reads: Pointers to ReadSupport entries assigned to haplotype 2.
+//   methylated_calls: (in/out) parameter; A Vector of DeepVariantCall objects
+//                    containing for methylated ref sites.
 //
 // Returns:
 //   A vector of methylated sites that are considered informative
-//   for distinguishing haplotypes based on methylation signal.
-std::vector<DeepVariantCall> IdentifyInformativeSites(
-    absl::Span<const DeepVariantCall> methylated_calls,
-    const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
-    const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads) {
+//   for distinguishing haplotypes based on methylation signal. The p-values
+//   for these sites are updated in the DeepVariantCall objects.
+std::vector<DeepVariantCall> IdentifyInformativeSitesAndUpdatePValues(
+  const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
+  const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads,
+    std::vector<DeepVariantCall>& methylated_calls) {
   std::vector<DeepVariantCall> informative_sites;
   absl::flat_hash_set<std::string> hap1_names, hap2_names;
   for (const auto* r : hap1_reads) hap1_names.insert(r->read_name());
   for (const auto* r : hap2_reads) hap2_names.insert(r->read_name());
 
-  for (const auto& call : methylated_calls) {
+  for (auto& call : methylated_calls) {
     std::vector<double> hap1_methyl;
     std::vector<double> hap2_methyl;
 
@@ -319,8 +308,10 @@ std::vector<DeepVariantCall> IdentifyInformativeSites(
       continue;
     }
     // --------------------------------------------------------------------
-
-    if (IsDifferentiallyMethylated(hap1_methyl, hap2_methyl)) {
+    double p_value = WilcoxonRankSumTest(hap1_methyl, hap2_methyl);
+    call.set_methylation_p_value(p_value);
+    // Filter out sites with a p-value above the threshold.
+    if (p_value >= 0 && p_value < kPThreshold) {
       informative_sites.push_back(call);
     }
   }
@@ -399,12 +390,14 @@ std::vector<const DeepVariantCall_ReadSupport*> ExtractReadsByPhase(
 //   max_iter: Maximum number of phasing iterations to perform.
 //
 // Returns:
-//   A vector of integer phase calls (0, 1, or 2) for each read, same size and
-//   order as reads_to_phase.
-std::vector<int> PerformMethylationAwarePhasing(
+//   A tuple. The first element is a vector of integer phase calls (0, 1, or 2)
+//   for each read, same size and order as reads_to_phase. The second element is
+//   a vector of p-values for each methylated reference site.
+std::tuple<std::vector<int>,
+           std::vector<double>> PerformMethylationAwarePhasing(
   const std::vector<nucleus::genomics::v1::Read>& reads_to_phase,
   const std::vector<int>& initial_read_phases,
-  const std::vector<DeepVariantCall>& methylated_ref_sites,
+  std::vector<DeepVariantCall>& methylated_ref_sites,
   int max_iter) {
   // Build a map of read support for each read.
   std::unordered_map<std::string, DeepVariantCall_ReadSupport> read_support_map;
@@ -454,8 +447,8 @@ std::vector<int> PerformMethylationAwarePhasing(
       break;
     }
 
-    auto informative_sites =
-        IdentifyInformativeSites(methylated_ref_sites, hap1_reads, hap2_reads);
+    auto informative_sites = IdentifyInformativeSitesAndUpdatePValues(
+        hap1_reads, hap2_reads, methylated_ref_sites);
 
     LOG(INFO) << "Informative methylated sites: " << informative_sites.size();
 
@@ -478,7 +471,13 @@ std::vector<int> PerformMethylationAwarePhasing(
     }
   }
 
-  return current_phases;
+  // Extract informative site p-values
+  std::vector<double> p_values(methylated_ref_sites.size());
+  for (int i = 0; i < methylated_ref_sites.size(); ++i) {
+    p_values[i] = methylated_ref_sites[i].methylation_p_value();
+  }
+
+  return std::tuple(current_phases, p_values);
 }
 
 }  // namespace deepvariant
