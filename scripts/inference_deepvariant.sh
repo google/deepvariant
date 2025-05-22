@@ -65,7 +65,7 @@ Flags:
 If model_preset is not specified, the below flags are required:
 --model_type Type of DeepVariant model to run (WGS, WES, PACBIO, ONT_R104, HYBRID_PACBIO_ILLUMINA)
 --ref Path to GCP bucket containing ref file (.fa)
---bam Path to GCP bucket containing BAM
+--bam Path to GCP bucket containing BAM (can be a comma-separated list for multiple BAMs)
 --truth_vcf Path to GCP bucket containing truth VCF
 --truth_bed Path to GCP bucket containing truth BED
 --capture_bed Path to GCP bucket containing captured file (only needed for WES model_type)
@@ -447,40 +447,84 @@ echo "========================="
 
 
 function copy_gs_or_http_file() {
-  if [[ "$1" == http* ]]; then
-    if curl --output /dev/null --silent --head --fail "$1"; then
-      run echo "Copying from \"$1\" to \"$2\""
-      run aria2c -c -x10 -s10 "$1" -d "$2"
-    else
-      run echo "File $1 does not exist. Skip copying."
-    fi
-  elif [[ "$1" == gs://* ]]; then
-    status=0
-    run --skip-dry-run-print gsutil -q stat "$1" || status=1
-    if [[ $status == 0 ]]; then
-      run echo "Copying from \"$1\" to \"$2\""
-      run gcloud storage cp "$1" "$2"
-    else
-      run echo "File $1 does not exist. Skip copying."
-    fi
-  else
-    echo "Unrecognized file format: $1" >&2
-    exit 1
+  local file_item
+  # Set Internal Field Separator (IFS) to comma to split the string
+  # -r: do not allow backslashes to escape any characters
+  # -a files_to_copy: read into an array named 'files_to_copy'
+  IFS=',' read -r -a files_to_copy <<< "$1"
+
+  # Check if any files were actually parsed
+  if [[ ${#files_to_copy[@]} -eq 0 ]] && [[ -n "$1" ]]; then
+      echo "Warning: No valid file names parsed from the input string '$1'."
+      echo "         This might happen if the string only contains commas or is malformed."
+      exit 1
+  elif [[ ${#files_to_copy[@]} -eq 0 ]]; then
+      echo "No files specified in the input string."
+      exit 1
   fi
+
+  for file_item in "${files_to_copy[@]}"; do
+    local trimmed_file
+    trimmed_file=$(echo "$file_item" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    if [[ "$trimmed_file" == http* ]]; then
+      if curl --output /dev/null --silent --head --fail "$trimmed_file"; then
+        run echo "Copying from \"$trimmed_file\" to \"$2\""
+        run aria2c -c -x10 -s10 "$trimmed_file" -d "$2"
+      else
+        run echo "File $trimmed_file does not exist. Skip copying."
+      fi
+    elif [[ "$trimmed_file" == gs://* ]]; then
+      status=0
+      run --skip-dry-run-print gsutil -q stat "$trimmed_file" || status=1
+      if [[ $status == 0 ]]; then
+        run echo "Copying from \"$trimmed_file\" to \"$2\""
+        # Skip the file if it exists.
+        run gcloud storage cp -n "$trimmed_file" "$2"
+      else
+        run echo "File $trimmed_file does not exist. Skip copying."
+      fi
+    else
+      echo "Unrecognized file format: $trimmed_file" >&2
+      exit 1
+    fi
+  done
 }
 
 function copy_correct_index_file() {
-  BAM="$1"
-  INPUT_DIR="$2"
+  # We need to parse the BAM file name to get the correct index file name. And
+  # copy the index file one by one to the input directory using
+  # copy_gs_or_http_file. copy_gs_or_http_file supports copying a list of files
+  # or a single file.
+  local BAM="$1"
+  local INPUT_DIR="$2"
+  local bam_file_item
+
+  # Set Internal Field Separator (IFS) to comma to split the string
+  # -r: do not allow backslashes to escape any characters
+  # -a files_to_copy: read into an array named 'files_to_copy'
+  IFS=',' read -r -a files_to_copy <<< "$BAM"
+
+  # Check if any files were actually parsed
+  if [[ ${#files_to_copy[@]} -eq 0 ]] && [[ -n "$1" ]]; then
+      echo "Warning: No valid file names parsed from the input string '$1'."
+      echo "         This might happen if the string only contains commas or is malformed."
+      exit 1
+  elif [[ ${#files_to_copy[@]} -eq 0 ]]; then
+      echo "No files specified in the input string."
+      exit 1
+  fi
+
   # Index files have two acceptable naming patterns. We explicitly check for
   # both since we cannot use wildcard paths with http files.
-  if [[ "${BAM}" == *".cram" ]]; then
-    copy_gs_or_http_file "${BAM%.cram}.crai" "${INPUT_DIR}"
-    copy_gs_or_http_file "${BAM}.crai" "${INPUT_DIR}"
-  else
-    copy_gs_or_http_file "${BAM%.bam}.bai" "${INPUT_DIR}"
-    copy_gs_or_http_file "${BAM}.bai" "${INPUT_DIR}"
-  fi
+  for bam_file_item in "${files_to_copy[@]}"; do
+    if [[ "${bam_file_item}" == *".cram" ]]; then
+      copy_gs_or_http_file "${bam_file_item%.cram}.crai" "${INPUT_DIR}"
+      copy_gs_or_http_file "${bam_file_item}.crai" "${INPUT_DIR}"
+    else
+      copy_gs_or_http_file "${bam_file_item%.bam}.bai" "${INPUT_DIR}"
+      copy_gs_or_http_file "${bam_file_item}.bai" "${INPUT_DIR}"
+    fi
+  done
 }
 
 function copy_data() {
@@ -631,6 +675,29 @@ function get_docker_image() {
   fi
 }
 
+# Process input as a comma-separated list of files.
+# First extract base names from the list. Then add them to the coma-separated
+# line containing basenames prepended with "/input/".
+function process_file_list() {
+  FILE_LIST="$1"
+  processed_reads_list=()
+  if [[ -n "$1" ]]; then
+      _OLD_IFS="$IFS"; IFS=','; read -r -a bam_array <<< "$FILE_LIST"; IFS="$_OLD_IFS"
+      for item in "${bam_array[@]}"; do
+          trimmed_item=$(echo "$item" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          if [[ -z "$trimmed_item" ]]; then continue; fi
+          base_name=$(basename -- "$trimmed_item")
+          processed_reads_list+=( "/input/$base_name" )
+      done
+  fi
+
+  basename_list=""
+  if [[ ${#processed_reads_list[@]} -gt 0 ]]; then
+      _OLD_IFS="$IFS"; IFS=','; basename_list="${processed_reads_list[*]}"; IFS="$_OLD_IFS"
+  fi
+  echo "$basename_list"
+}
+
 function setup_args() {
   if [[ -n "${PANGENOME}" ]]; then
     run echo "Copy from gs:// path ${PANGENOME} to ${INPUT_DIR}/"
@@ -748,7 +815,7 @@ function run_deepvariant_with_docker() {
     /opt/deepvariant/bin/${MAIN_BINARY_NAME} \
     --model_type="${MODEL_TYPE}" \
     --ref="/input/$(basename $REF).gz" \
-    --reads="/input/$(basename $BAM)" \
+    --reads="$(process_file_list $BAM)" \
     --output_vcf="/output/${OUTPUT_VCF}" \
     --output_gvcf="/output/${OUTPUT_GVCF}" \
     --num_shards "${NUM_SHARDS}" \
