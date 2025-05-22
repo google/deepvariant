@@ -910,10 +910,13 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
           bool is_methylated = false;
           int32_t methylation_level = GetMethylationLevel(read, base_offset);
           // Store methylation probability for each read allele.
-          // This is used for methylation-aware phasing.
-          if (IsMethylated(read, base_offset,
-                          options_.enable_methylation_calling(),
-                          methylation_calling_threshold)) {
+          // Only run when methylation-calling is enabled or methylation-aware
+          // phasing is enabled.
+          if (IsMethylated(
+                  read, base_offset,
+                  options_.enable_methylation_calling() ||
+                      options_.enable_methylation_aware_phasing(),
+                  methylation_calling_threshold)) {
             is_methylated = true;
           }
           if (IsValidRefOffset(ref_offset) &&

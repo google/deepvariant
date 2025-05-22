@@ -634,6 +634,8 @@ _ENABLE_METHYLATION_AWARE_PHASING = flags.DEFINE_bool(
     (
         '[Experimental] If True, enables methylation-aware phasing. '
         'This mode uses methylation information to phase reads. '
+        'With this option, the p-value for allele-specific methylation is '
+        'output as format field MI.\n '
         'Note: This feature is experimental and may change in future versions.'
     ),
 )

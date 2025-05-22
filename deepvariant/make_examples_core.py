@@ -2927,6 +2927,15 @@ class RegionProcessor:
       ):
         self.log_graph_metrics(region, self.direct_phasing_cpp)
 
+      # If methylation-aware phasing is enabled, but methylation-calling is
+      # disabled, then filter out methylation ref sites from output.
+      if (
+          not self.options.enable_methylation_calling
+          and self.options.enable_methylation_aware_phasing
+      ):
+        # Filter out methylated ref site indices from candidates.
+        candidates[role] = candidates[role][snp_candidate_idx]
+
       if padded_region is not None:
         candidates[role] = self.filter_candidates_by_region(
             candidates[role], region
