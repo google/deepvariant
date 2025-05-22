@@ -676,6 +676,7 @@ def postprocess_variants_command(
     command.extend(['--pon_filtering', '"{}"'.format(pon_filtering)])
   elif (
       _MODEL_TYPE.value == 'WGS_TUMOR_ONLY'
+      or _MODEL_TYPE.value == 'WES_TUMOR_ONLY'
       or _MODEL_TYPE.value == 'FFPE_WGS_TUMOR_ONLY'
       or _MODEL_TYPE.value == 'FFPE_WES_TUMOR_ONLY'
   ):
