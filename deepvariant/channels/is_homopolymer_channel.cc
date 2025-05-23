@@ -38,6 +38,7 @@
 
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/strings/string_view.h"
 
 namespace learning {
 namespace genomics {
@@ -84,7 +85,7 @@ std::vector<std::uint8_t> IsHomopolymerChannel::IsHomopolymer(
   // ATCGGGAG
   // 00011100
   std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size(), 0);
-  const auto& seq = read.aligned_sequence();
+  absl::string_view seq = read.aligned_sequence();
   for (int i = 2; i < seq.size(); i++) {
     if (seq[i] == seq[i - 1] && seq[i - 1] == seq[i - 2]) {
       homopolymer[i] = 1;
