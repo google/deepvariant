@@ -241,7 +241,7 @@ class DirectPhasing {
 
   // Find all reads supporting starting_score partition and <vertex>.
   // Reads that start at <vertex> are also counted.
-  absl::flat_hash_set<ReadIndex> FindSupportingReads(
+  std::vector<absl::flat_hash_set<ReadIndex>> FindSupportingReads(
       const Vertex& vertex, const Score& starting_score, int phase) const;
 
   // Calculate phasing score for pair of vertices that end <edge1> and <edge2>
@@ -305,6 +305,7 @@ class DirectPhasing {
 
   // Map read name to read id.
   absl::flat_hash_map<std::string, ReadIndex> read_to_index_;
+  absl::flat_hash_map<ReadIndex, std::string> index_to_read_name_;
 
   // Graph Vizualization
   VertexIndexMap IndexMap() const;

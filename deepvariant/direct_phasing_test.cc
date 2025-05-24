@@ -755,8 +755,11 @@ TEST(DirectPhasingTest, NotPhasablePosition) {
   //          \ /
   //          / \
   // C ---- G ---- C      G ---- T   Phase 2
-  // In this example reads 1,2,3 can be assigned any phase 1 or no phase, but
-  // algorithm favors assigning phase1.
+  // This test also verifies the case when a position does not have incoming and
+  // outcoming edges. In that case we need to set scores to 0. The example is
+  // position 110. Since phasing cannoe be done at position 110, we need to
+  // restart phasing at position 110, but then there is no connection the
+  // next position.
   std::vector<DeepVariantCall> candidates = {
       MakeCandidate(100, 101,
                     {{"A", {"read1/0", "read2/0", "read3/0", "read10/0"}},
@@ -795,9 +798,12 @@ TEST(DirectPhasingTest, NotPhasablePosition) {
   DirectPhasing::Score score_110_G_G =
       DirectPhasingPeer::FindScore(direct_phasing, v_110_g, v_110_g);
 
-  // All scores at 110 should be equal.
-  EXPECT_EQ(score_110_C_G.score, score_110_C_C.score);
-  EXPECT_EQ(score_110_C_C.score, score_110_G_G.score);
+  // Since all scores are the same we cannot phase this position, therefore
+  // scoring is reset from position 110 and initial scores are calculated for
+  // position 110.
+  EXPECT_EQ(score_110_C_G.score, 4);
+  EXPECT_EQ(score_110_C_C.score, 2);
+  EXPECT_EQ(score_110_G_G.score, 2);
   // Candidate at 110 should be unphased.
   EXPECT_EQ(direct_phasing.graph_[v_110_g].allele_info.phase, 0);
   EXPECT_EQ(direct_phasing.graph_[v_110_c].allele_info.phase, 0);
