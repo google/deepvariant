@@ -45,7 +45,6 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include "absl/types/span.h"
 #include "boost/math/distributions/normal.hpp"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
