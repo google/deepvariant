@@ -46,9 +46,8 @@ namespace deepvariant {
 // Performs the Wilcoxon Rank-Sum Test (Mann-Whitney U Test) between two
 // haplotypes’ methylation values. Returns the two-sided p-value.
 // Returns -1.0 if either haplotype has no data.
-double WilcoxonRankSumTest(
-    const std::vector<double>& hap1_methyl,
-    const std::vector<double>& hap2_methyl);
+double WilcoxonRankSumTest(absl::Span<const double> hap1_methyl,
+                           absl::Span<const double> hap2_methyl);
 
 // Votes on the haplotype assignment for an unphased read using methylation
 // similarity.

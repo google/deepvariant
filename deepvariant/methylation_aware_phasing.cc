@@ -61,8 +61,8 @@ const float kRankSumVarianceDenominator = 12.0;
 // -1.0 if either haplotype input vector is empty, in which case the test cannot
 // be performed. This may occur if no reads were phased to a given haplotype at
 // this site.
-double WilcoxonRankSumTest(const std::vector<double>& hap1_methyl,
-                           const std::vector<double>& hap2_methyl) {
+double WilcoxonRankSumTest(absl::Span<const double> hap1_methyl,
+                           absl::Span<const double> hap2_methyl) {
   size_t n1 = hap1_methyl.size(), n2 = hap2_methyl.size();
   if (n1 == 0 || n2 == 0) {
     return -1.0;
