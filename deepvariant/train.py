@@ -535,7 +535,9 @@ def train(config: ml_collections.ConfigDict):
   # Training Loop #
   # ============= #
 
-  metric_writer = metric_writers.create_default_writer(logdir=experiment_dir)
+  metric_writer = metric_writers.create_default_writer(
+      logdir=experiment_dir, write_to_xm_measurements=True
+  )
   metric_writer.write_hparams(config.to_dict())
   report_progress = periodic_actions.ReportProgress(
       num_train_steps=num_train_steps,
