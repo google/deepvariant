@@ -78,7 +78,7 @@ wait_for_dpkg_lock
 
 # See https://askubuntu.com/questions/909277.
 sudo -H DEBIAN_FRONTEND=noninteractive apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git wget > /dev/null
-sudo -H apt-get install "${APT_ARGS[@]}" python3-distutils > /dev/null
+sudo -H apt-get install --fix-missing "${APT_ARGS[@]}" python3-distutils > /dev/null
 
 note_build_stage "Install python3 packaging infrastructure"
 
