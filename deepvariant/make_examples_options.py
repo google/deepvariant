@@ -502,6 +502,14 @@ _HP_TAG_FOR_ASSEMBLY_POLISHING = flags.DEFINE_integer(
         'sort_by_haplotypes has to be set to True for this to work.'
     ),
 )
+_SORT_BY_ALT_ALLELE_SUPPORT = flags.DEFINE_boolean(
+    'sort_by_alt_allele_support',
+    False,
+    'If True, reads in the pileup image will be sorted primarily by the '
+    'alternate allele they support (from the variant call), then by '
+    'haplotype, then by position. Reads supporting reference or unlisted '
+    'alts will appear after reads supporting listed alts.',
+)
 _ADD_HP_CHANNEL = flags.DEFINE_bool(
     'add_hp_channel',
     False,
@@ -1176,6 +1184,10 @@ def shared_flags_to_options(
     options.pic_options.reverse_haplotypes = _REVERSE_HAPLOTYPES.value
     options.pic_options.hp_tag_for_assembly_polishing = (
         _HP_TAG_FOR_ASSEMBLY_POLISHING.value
+    )
+
+    options.pic_options.sort_by_alt_allele_support = (
+        _SORT_BY_ALT_ALLELE_SUPPORT.value
     )
 
     if _WRITE_RUN_INFO.value:

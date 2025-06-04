@@ -482,7 +482,7 @@ message VariantLabelerOptions {
 }
 
 // Options to control how we construct pileup images.
-// Next ID: 41.
+// Next ID: 42.
 message PileupImageOptions {
   // The height, in pixels, of the pileup image we'll construct.
   int32 height = 1;
@@ -617,6 +617,10 @@ message PileupImageOptions {
 
   // Deprecated fields.
   int32 sort_by_haplotypes_sample_hp_tag = 35 [deprecated = true];
+
+  // If true, reads will be sorted by the alternate allele they support.
+  // For detailed behavior, see pileup_image_native.cc.
+  bool sort_by_alt_allele_support = 41;
 }
 
 // Options that may differ by sample.

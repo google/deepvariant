@@ -65,23 +65,38 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
-bool SortByAlignment(
-    std::tuple<int, int, const Read*, std::unique_ptr<ImageRow>>& a,
-    std::tuple<int, int, const Read*, std::unique_ptr<ImageRow>>& b) {
-  // Sort reads by position + fragment_name + read_number.
-  const Read* read1 = std::get<2>(a);
-  const Read* read2 = std::get<2>(b);
-  int position1 = std::get<1>(a);
-  int position2 = std::get<1>(b);
-  if (std::tuple<int, int>(std::get<0>(a), position1) ==
-      std::tuple<int, int>(std::get<0>(b), position2)) {
-    return std::tuple<std::string, int>(read1->fragment_name(),
-                                        read1->read_number()) <
-           std::tuple<std::string, int>(read2->fragment_name(),
-                                        read2->read_number());
+// Define a tuple type for sorting:
+// <hap_index, allele_support_group, position, read_ptr, image_row_ptr>
+using ReadPileupTuple =
+    std::tuple<int, int, int, const Read*, std::unique_ptr<ImageRow>>;
+
+bool SortImageRows(const ReadPileupTuple& a, const ReadPileupTuple& b) {
+  // Primary sort key: haplotype index (std::get<0>(a)).
+  if (std::get<0>(a) != std::get<0>(b)) {
+    return std::get<0>(a) < std::get<0>(b);
   }
-  return std::tuple<int, int>(std::get<0>(a), position1) <
-         std::tuple<int, int>(std::get<0>(b), position2);
+
+  // Secondary sort key: allele_support_group (std::get<1>(a)).
+  // Smaller groups come first.
+  if (std::get<1>(a) != std::get<1>(b)) {
+    return std::get<1>(a) < std::get<1>(b);
+  }
+
+  // Tertiary sort key: alignment position (std::get<2>(a)).
+  const Read* read1 = std::get<3>(a);
+  const Read* read2 = std::get<3>(b);
+  int position1 = std::get<2>(a);
+  int position2 = std::get<2>(b);
+
+  if (position1 != position2) {
+    return position1 < position2;
+  }
+
+  // Tie-breaking: fragment_name, then read_number.
+  return std::tuple<std::string, int>(read1->fragment_name(),
+                                      read1->read_number()) <
+         std::tuple<std::string, int>(read2->fragment_name(),
+                                      read2->read_number());
 }
 
 ImageRow::ImageRow(int width, int num_channels)
@@ -338,12 +353,27 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     sampled_indices = DownsampleReadIndices(reads, max_reads, gen);
   }
 
-  // We add a row for each read in order, down-sampling if the number of
-  // reads is greater than the max reads for each sample.
+  // Precompute read-to-allele_group mapping if sorting by alt allele support.
+  absl::flat_hash_map<std::string, int> read_name_to_allele_group_map;
+  int num_alt_alleles_in_variant = 0;
+
+  if (options_.sort_by_alt_allele_support()) {
+    num_alt_alleles_in_variant = dv_call.variant().alternate_bases_size();
+    for (int i = 0; i < num_alt_alleles_in_variant; ++i) {
+      const std::string& alt = dv_call.variant().alternate_bases(i);
+      auto it = dv_call.allele_support().find(alt);
+      if (it != dv_call.allele_support().end()) {
+        for (const std::string& read_name : it->second.read_names()) {
+          read_name_to_allele_group_map[read_name] = i;
+        }
+      }
+    }
+  }
+
   // Each tuple contains:
-  //   <hap_index, original read_alignment_positionm, read, image_row>
-  std::vector<std::tuple<int, int, const Read*, std::unique_ptr<ImageRow>>>
-      pileup_of_reads;
+  // <hap_index, allele_support_group, original_read_alignment_position,
+  // read_ptr, image_row_ptr>
+  std::vector<ReadPileupTuple> pileup_of_reads;
   for (int index : sampled_indices) {
     if (pileup_of_reads.size() >= max_reads) {
       break;
@@ -355,21 +385,37 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     if (image_row == nullptr) {
       continue;
     }
-    if (alignment_positions == nullptr || alignment_positions->empty()) {
-      pileup_of_reads.push_back(std::make_tuple(
-          GetHapIndex(read), read.alignment().position().position(), &read,
-          std::move(image_row)));
+
+    int hap_idx = GetHapIndex(read);
+    int allele_support_group;
+    if (options_.sort_by_alt_allele_support()) {
+      // Default to a group that sorts after all specific alt alleles.
+      allele_support_group = num_alt_alleles_in_variant;
+      std::string read_key =
+          read.fragment_name() + "/" + std::to_string(read.read_number());
+      auto map_it = read_name_to_allele_group_map.find(read_key);
+      if (map_it != read_name_to_allele_group_map.end()) {
+        allele_support_group = map_it->second;
+      }
     } else {
-      pileup_of_reads.push_back(std::make_tuple(GetHapIndex(read),
-                                                alignment_positions->at(index),
-                                                &read, std::move(image_row)));
+      // If not sorting by allele support, give all reads the same group.
+      allele_support_group = 0;
     }
+
+    int64_t read_align_pos =
+        (alignment_positions == nullptr || alignment_positions->empty())
+            ? read.alignment().position().position()
+            : alignment_positions->at(index);
+
+    pileup_of_reads.emplace_back(hap_idx, allele_support_group,
+                                 static_cast<int>(read_align_pos), &read,
+                                 std::move(image_row));
   }
 
-  // Sort reads by alignment position.
-  std::sort(pileup_of_reads.begin(), pileup_of_reads.end(), SortByAlignment);
-  for (auto& [hap_index, pos, read, row] : pileup_of_reads) {
-    rows.push_back(std::move(row));
+  std::sort(pileup_of_reads.begin(), pileup_of_reads.end(), SortImageRows);
+  for (auto& [hap_idx, allele_group, pos, read_ptr, row_ptr] :
+       pileup_of_reads) {
+    rows.push_back(std::move(row_ptr));
   }
 
   // Finally, fill in any missing rows to bring our image to pileup_height rows

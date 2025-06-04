@@ -867,6 +867,106 @@ TEST_P(FillPileupArrayBySampleTest, FillPileupArrayBySampleTestCases) {
   EXPECT_THAT(pileup_image, testing::ElementsAreArray(expected_pilup_image));
 }
 
+// Test fixture for testing pileup image sorting logic.
+class PileupImageSortingTest : public ::testing::Test {
+ protected:
+  PileupImageOptions options_;
+  SampleOptions sample_options_;
+
+  void SetUp() override {
+    // Use minimal options for a focused test on sorting logic.
+    options_ = MakeDefaultPileupImageOptions(/*width=*/9, /*height=*/8,
+                                             /*ref_band_height=*/1);
+    options_.set_sort_by_haplotypes(true);
+    options_.set_sort_by_alt_allele_support(true);
+    options_.set_random_seed(12345);
+    auto* channels = options_.mutable_channels();
+    channels->Add("read_base");  // A simple channel to differentiate reads.
+    options_.set_num_channels(channels->size());
+
+    sample_options_.set_pileup_height(options_.height());
+  }
+};
+
+// Test to verify that reads are sorted correctly based on haplotype,
+// allele support, position, and read name.
+TEST_F(PileupImageSortingTest, SortsByHaplotypeThenAlleleSupport) {
+  PileupImageEncoderNative encoder(options_);
+
+  // Setup a variant call with two alternate alleles ("G", "T").
+  DeepVariantCall call = MakeDeepVariantCall(MakeVariant("A", {"G", "T"}, 4));
+  (*call.mutable_allele_support())["G"].add_read_names("read_z_supports_g/0");
+  (*call.mutable_allele_support())["T"].add_read_names("read_a_supports_t/0");
+  (*call.mutable_allele_support())["G"].add_read_names("read_g2/0");
+
+  // Create a set of reads with varying properties. Ensure that the alphabetical
+  // sort order of read names is DIFFERENT from the allele support sort order.
+  // This makes the test robust.
+  //
+  // Allele Support Order: G (alt 0) < T (alt 1)
+  // Read Name Order: "read_a_supports_t" < "read_z_supports_g"
+  Read read_z_supports_g =
+      MakeRead("chr1", 0, "CCCCGCCCC", {"9M"}, "read_z_supports_g", 1);
+  Read read_a_supports_t =
+      MakeRead("chr1", 0, "CCCCTCCCC", {"9M"}, "read_a_supports_t", 1);
+  Read read_ref1 = MakeRead("chr1", 1, "CCCCACCCC", {"9M"}, "read_ref1", 1);
+  Read read_g2 = MakeRead("chr1", 0, "GGGGGCCCC", {"9M"}, "read_g2", 2);
+  Read read_ref2 = MakeRead("chr1", 0, "AAAAACCCC", {"9M"}, "read_ref2", 2);
+  Read read_ref3 = MakeRead("chr1", 0, "TTTTTCCCC", {"9M"}, "read_ref3", 2);
+
+  // The expected order of reads in the pileup image after sorting.
+  // The sorting keys (hap_idx, allele_group, pos) for each read are:
+  // read_z_supports_g: (1, 0, 0) -- HP=1, supports "G" (alt 0)
+  // read_a_supports_t: (1, 1, 0) -- HP=1, supports "T" (alt 1)
+  // read_ref1:         (1, 2, 1) -- HP=1, supports ref (group 2), pos 1
+  // read_g2:           (2, 0, 0) -- HP=2, supports "G" (alt 0)
+  // read_ref2:         (2, 2, 0) -- HP=2, supports ref,
+  //                                       tie-break with read_ref3 by name
+  // read_ref3:         (2, 2, 0) -- HP=2, supports ref
+  std::vector<const Read*> expected_read_order = {
+      &read_z_supports_g, &read_a_supports_t, &read_ref1,
+      &read_g2,           &read_ref2,         &read_ref3};
+
+  // Provide the reads in a different, unsorted order to ensure sorting is
+  // tested.
+  std::vector<const Read*> reads_to_sort = {
+      &read_ref3, &read_ref2,         &read_g2,
+      &read_ref1, &read_a_supports_t, &read_z_supports_g};
+
+  std::string ref_bases = "CCCCACCCC";  // width 9, variant at pos 4
+  int image_start_pos = 0;
+
+  std::vector<std::unique_ptr<ImageRow>> image_rows =
+      encoder.BuildPileupForOneSample(call, ref_bases, reads_to_sort,
+                                      image_start_pos, {"G", "T"},
+                                      sample_options_, 0.0, nullptr, {});
+
+  // Generate the expected image rows based on the correct sort order.
+  std::vector<std::unique_ptr<ImageRow>> expected_image_rows;
+  expected_image_rows.push_back(encoder.EncodeReference(ref_bases));
+  for (const Read* read : expected_read_order) {
+    expected_image_rows.push_back(encoder.EncodeRead(
+      call, ref_bases, *read, image_start_pos, {"G", "T"}, {}));
+  }
+
+  // Add empty rows to match the behavior of BuildPileupForOneSample
+  int empty_rows_to_add =
+      sample_options_.pileup_height() - expected_image_rows.size();
+  for (int i = 0; i < empty_rows_to_add; ++i) {
+    expected_image_rows.push_back(
+        std::make_unique<ImageRow>(options_.width(), options_.num_channels()));
+  }
+
+  // Verify that the generated image rows match the expected rows in order.
+  ASSERT_EQ(image_rows.size(), expected_image_rows.size());
+  for (size_t i = 0; i < image_rows.size(); ++i) {
+    ASSERT_NE(image_rows[i], nullptr);
+    ASSERT_NE(expected_image_rows[i], nullptr);
+    EXPECT_EQ(*image_rows[i], *expected_image_rows[i])
+        << "Mismatch at image row " << i;
+  }
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
