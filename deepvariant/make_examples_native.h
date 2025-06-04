@@ -244,6 +244,9 @@ class ExamplesGenerator {
   bool SampleNeedsAltAlignment(const SampleOptions& sample_options) const;
 
   // Helper methods to extract reference bases for a given range.
+  // For candidates on either edge of the contig, GetReferenceBasesForPileup
+  // will pad the reference bases with Ns to ensure that the reference bases
+  // span the width of the pileup image.
   std::string GetReferenceBasesForPileup(
       const nucleus::genomics::v1::Variant& variant) const;
   std::string GetReferenceBases(
@@ -299,6 +302,12 @@ class ExamplesGeneratorPeer {
   static bool NeedAltAlignment(const ExamplesGenerator& generator,
                                const nucleus::genomics::v1::Variant& variant) {
     return generator.NeedAltAlignment(variant);
+  }
+
+  static std::string CallGetReferenceBasesForPileup(
+      const ExamplesGenerator& generator,
+      const nucleus::genomics::v1::Variant& variant) {
+    return generator.GetReferenceBasesForPileup(variant);
   }
 };
 

@@ -728,7 +728,7 @@ TEST(ExamplesGenerator, NeedAlignmentAltAlignedIndels) {
   // INS - need alt alignement.
   EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("A", {"AT"}, 10)));
-  // DEL - need alt alignement.
+  // DEL - need alt alignment.
   EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("AC", {"A"}, 10)));
   // SNP and INS - need alt alignment.
@@ -748,10 +748,10 @@ TEST(ExamplesGenerator, NeedAlignmentAltAlignedAll) {
   // SNP - need alt alignment.
   EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("A", {"T"}, 10)));
-  // INS - need alt alignement.
+  // INS - need alt alignment.
   EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("A", {"AT"}, 10)));
-  // DEL - need alt alignement.
+  // DEL - need alt alignment.
   EXPECT_TRUE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("AC", {"A"}, 10)));
   // SNP and INS - need alt alignment.
@@ -770,16 +770,69 @@ TEST(ExamplesGenerator, NeedAlignmentAltAlignedNone) {
   // SNP - need alt alignment.
   EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("A", {"T"}, 10)));
-  // INS - need alt alignement.
+  // INS - need alt alignment.
   EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("A", {"AT"}, 10)));
-  // DEL - need alt alignement.
+  // DEL - need alt alignment.
   EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("AC", {"A"}, 10)));
   // SNP and INS - need alt alignment.
   EXPECT_FALSE(ExamplesGeneratorPeer::NeedAltAlignment(
       generator, MakeVariant("A", {"C", "AT"}, 10)));
 }
+
+struct GetReferenceBasesForPileupTestData {
+  int variant_start;
+  std::string expected_reference_bases;
+};
+
+class GetReferenceBasesForPileupTest
+    : public testing::TestWithParam<GetReferenceBasesForPileupTestData> {};
+
+TEST_P(GetReferenceBasesForPileupTest, GetReferenceBasesForPileupTestCases) {
+  const GetReferenceBasesForPileupTestData& param = GetParam();
+  MakeExamplesOptions options;
+  options.mutable_pic_options()->set_width(21);
+  options.mutable_pic_options()->set_alt_aligned_pileup("none");
+  ExamplesGenerator generator(options, {{"main_sample", "name.tfrecord.gz"}},
+                              /*test_mode=*/true);
+  // Create InMemory reference of 21 bases.
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+  CreateTestSeq("chr1", 0, 0, 21, "AGTGGGGGGGGGATGGGGGTG", &contigs, &seqs);
+  ExamplesGeneratorPeer::SetRefReader(
+      generator,
+      std::move(
+          nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie()));
+
+  Variant variant = MakeVariant("A", {"T"}, param.variant_start);
+
+  std::string reference_bases =
+      ExamplesGeneratorPeer::CallGetReferenceBasesForPileup(generator, variant);
+  EXPECT_EQ(reference_bases, param.expected_reference_bases);
+};
+
+INSTANTIATE_TEST_SUITE_P(
+    GetReferenceBasesForPileupTests, GetReferenceBasesForPileupTest,
+    ValuesIn(std::vector<GetReferenceBasesForPileupTestData>({
+        {
+            // Variant is in the center of the contig, no padding needed.
+            .variant_start = 10,
+            .expected_reference_bases = "AGTGGGGGGGGGATGGGGGTG",
+        },
+        {
+            // Variant is close to the start of the contig, left padding needed.
+            .variant_start = 5,
+            .expected_reference_bases = "NNNNNAGTGGGGGGGGGATGG",
+        },
+        {
+            // Variant is close to the end of the contig, right padding needed.
+            .variant_start = 16,
+            .expected_reference_bases = "GGGGGGATGGGGGTGNNNNNN",
+        },
+    })));
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

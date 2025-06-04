@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -512,13 +513,28 @@ bool ExamplesGenerator::NeedAltAlignment(const Variant& variant) const {
 
 std::string ExamplesGenerator::GetReferenceBasesForPileup(
     const Variant& variant) const {
-  int start = variant.start() - half_width_;
-  int end = start + options_.pic_options().width();
+  int64_t n_bases =
+      ref_reader_->Contig(variant.reference_name()).ValueOrDie()->n_bases();
+  int64_t start = variant.start() - half_width_;
+  int64_t end = start + options_.pic_options().width();
+
+  int region_start = std::max(0L, start);
+  int region_end = std::min(n_bases, end);
   Range region;
   region.set_reference_name(variant.reference_name());
-  region.set_start(start);
-  region.set_end(end);
-  return GetReferenceBases(region);
+  region.set_start(region_start);
+  region.set_end(region_end);
+  std::string ref_bases = GetReferenceBases(region);
+
+  if (start < 0) {
+    std::string ref_bases_prefix = std::string(std::abs(start), 'N');
+    ref_bases = ref_bases_prefix + ref_bases;
+  }
+  if (end > n_bases) {
+    std::string ref_bases_suffix = std::string(end - n_bases, 'N');
+    ref_bases = ref_bases + ref_bases_suffix;
+  }
+  return ref_bases;
 }
 
 std::string ExamplesGenerator::GetReferenceBases(const Range& region) const {
