@@ -239,7 +239,19 @@ std::vector<std::vector<int>> GetReadIndicesAllelePartition(
 
   // Create a partition element for each allele.
   std::vector<std::vector<int>> read_index_partition_by_allele;
-  for (const auto& [allele, supporting_reads] : dv_call.allele_support()) {
+
+  // 1. Collect allele keys and sort them to ensure deterministic partition
+  // order.
+  std::vector<std::string> sorted_allele_keys;
+  for (const auto& allele_support_pair : dv_call.allele_support()) {
+    sorted_allele_keys.push_back(allele_support_pair.first);
+  }
+  std::sort(sorted_allele_keys.begin(), sorted_allele_keys.end());
+
+  // Iterate using sorted allele keys
+  for (const std::string& allele_key : sorted_allele_keys) {
+    const auto& supporting_reads =
+        dv_call.allele_support().at(allele_key);
     std::vector<int> read_indices_supporting_allele;
     for (const std::string& read_name : supporting_reads.read_names()) {
       auto it = read_name_to_index_map.find(read_name);
@@ -259,6 +271,11 @@ std::vector<std::vector<int>> GetReadIndicesAllelePartition(
   for (const auto& [_, index] : read_name_to_index_map) {
     read_indices_supporting_ref.push_back(index);
   }
+  // 2. Sort the ref-supporting indices because flat_hash_map iteration is not
+  // ordered.
+  std::sort(read_indices_supporting_ref.begin(),
+            read_indices_supporting_ref.end());
+
   read_index_partition_by_allele.push_back(read_indices_supporting_ref);
   return read_index_partition_by_allele;
 }
