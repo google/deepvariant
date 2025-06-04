@@ -32,6 +32,7 @@
 #include "deepvariant/pileup_image_native.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -48,6 +49,7 @@
 #include "tensorflow/core/platform/test.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 
 namespace learning {

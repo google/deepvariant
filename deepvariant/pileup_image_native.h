@@ -114,6 +114,13 @@ std::vector<int> GetSampleAltImageRowIndices(
 // setting.
 int CalculatePileupImageHeight(const MakeExamplesOptions& options);
 
+// Returns a vector of vectors, where each inner vector represents a partition
+// of read indices supporting a single allele. The last partition is for reads
+// supporting the reference allele.
+std::vector<std::vector<int>> GetReadIndicesAllelePartition(
+    const DeepVariantCall& dv_call,
+    const std::vector<const ::nucleus::genomics::v1::Read*>& reads);
+
 class PileupImageEncoderNative {
  public:
   // All channel enums that will be processed by this PileupImageEncoder

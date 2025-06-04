@@ -1693,6 +1693,7 @@ cc_test(
         ":pileup_image_native",
         ":testing_utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
