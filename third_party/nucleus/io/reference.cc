@@ -156,7 +156,9 @@ StatusOr<std::unique_ptr<IndexedFastaReader>> IndexedFastaReader::FromFile(
   faidx_t* faidx = fai_load3_x(fasta_path, fai_path, gzi, 0);
   if (faidx == nullptr) {
     return ::nucleus::NotFound(
-        absl::StrCat("could not load fasta and/or fai for fasta ", fasta_path));
+        absl::StrCat("Failed to load FASTA file ", fasta_path, " and/or index "
+        "file ", fai_path, ". Please double check these files exist and are "
+        "of the correct format."));
   }
   return std::unique_ptr<IndexedFastaReader>(
       new IndexedFastaReader(fasta_path, faidx, options, cache_size_bases));
