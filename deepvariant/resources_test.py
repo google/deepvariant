@@ -26,11 +26,13 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+import contextlib
 import resource
 from unittest import mock
+
 from absl.testing import absltest
+
 # https://stackoverflow.com/questions/34630393/python2-7-contextlib-exitstack-equivalent
-import contextlib2
 
 from deepvariant import resources
 
@@ -84,7 +86,7 @@ class ResourcesTest(absltest.TestCase):
         )
     )
 
-    with contextlib2.ExitStack() as stack:
+    with contextlib.ExitStack() as stack:
       for ctx in patchers:
         stack.enter_context(ctx)
       with resources.ResourceMonitor() as monitor:
