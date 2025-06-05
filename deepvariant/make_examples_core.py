@@ -2552,6 +2552,11 @@ class RegionProcessor:
           phased_genotype[alt_2_order[0]] = 2
           variant_utils.set_info(candidate.variant, 'ALT_PS', phased_genotype)
           variant_utils.set_info(candidate.variant, 'PS_CONTIG', phase_contig)
+          variant_utils.set_info(
+              candidate.variant,
+              'FIRST_VARIANT_IN_BLOCK',
+              phased_variants[phased_variants_index].is_first_in_block,
+          )
         phased_variants_index += 1
       # If variant is not phased, we infer phase from read phases and supporting
       # reads.
@@ -2593,6 +2598,11 @@ class RegionProcessor:
           index += 1
         variant_utils.set_info(candidate.variant, 'ALT_PS', phased_genotype)
         variant_utils.set_info(candidate.variant, 'PS_CONTIG', phase_contig)
+        variant_utils.set_info(
+            candidate.variant,
+            'FIRST_VARIANT_IN_BLOCK',
+            False,
+        )
     return len(phased_variants)
 
   def candidates_in_region(

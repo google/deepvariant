@@ -52,7 +52,8 @@ PYBIND11_MODULE(direct_phasing, m) {
   py::class_<PhasedVariant>(m, "PhasedVariant")
       .def_readwrite("position", &PhasedVariant::position)
       .def_readwrite("phase_1_bases", &PhasedVariant::phase_1_bases)
-      .def_readwrite("phase_2_bases", &PhasedVariant::phase_2_bases);
+      .def_readwrite("phase_2_bases", &PhasedVariant::phase_2_bases)
+      .def_readwrite("is_first_in_block", &PhasedVariant::is_first_in_block);
 
   py::classh<DirectPhasing>(m, "DirectPhasing")
       .def(py::init<>())

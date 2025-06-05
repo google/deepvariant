@@ -199,6 +199,12 @@ RESERVED_INFO_FIELDS = [
         type=STRING_TYPE,
         description='Contig for continuous phase set',
     ),
+    variants_pb2.VcfInfo(
+        id='FIRST_VARIANT_IN_BLOCK',
+        number='0',
+        type=FLAG_TYPE,
+        description='Is first in block',
+    ),
 ]
 
 # Reserved FORMAT field definitions, as per the VCF 4.3 spec.

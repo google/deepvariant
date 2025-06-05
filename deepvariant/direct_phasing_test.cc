@@ -1020,7 +1020,8 @@ TEST(DirectPhasingTest, DirectPhasingReuseObject) {
 
 bool operator==(const PhasedVariant& a, const PhasedVariant& b) {
   return a.position == b.position && a.phase_1_bases == b.phase_1_bases &&
-         a.phase_2_bases == b.phase_2_bases;
+         a.phase_2_bases == b.phase_2_bases &&
+         a.is_first_in_block == b.is_first_in_block;
 }
 
 TEST(DirectPhasingTest, GetPhasedVariantsSanity) {
@@ -1050,15 +1051,116 @@ TEST(DirectPhasingTest, GetPhasedVariantsSanity) {
   EXPECT_THAT(
       direct_phasing.GetPhasedVariants(),
       ElementsAreArray(std::vector<PhasedVariant>{
-          {.position = 100, .phase_1_bases = "A", .phase_2_bases = "C"},
-          {.position = 105, .phase_1_bases = "G", .phase_2_bases = "C"},
-          {.position = 110, .phase_1_bases = "T", .phase_2_bases = "G"}}));
+          {.position = 100, .phase_1_bases = "A", .phase_2_bases = "C",
+           .is_first_in_block = true},
+          {.position = 105, .phase_1_bases = "G", .phase_2_bases = "C",
+           .is_first_in_block = false},
+          {.position = 110, .phase_1_bases = "T", .phase_2_bases = "G",
+           .is_first_in_block = false}}));
 
   // Release memory.
   for (auto read : reads) {
     delete read.p_;
   }
 }
+
+
+TEST(DirectPhasingTest, GetPhasedVariantsWithBrokenPhase) {
+  DirectPhasing direct_phasing;
+
+  // Create test candidates.
+  std::vector<DeepVariantCall> candidates = {
+    MakeCandidate(100, 101,
+      {{"A", {"read1/0", "read2/0", "read3/0", "read10/0"}},
+       {"C", {"read4/0", "read5/0"}}}),
+      MakeCandidate(
+      105, 106,
+      {{"C", {"read1/0", "read2/0", "read3/0", "read10/0", "read11/0"}},
+      {"G", {"read4/0", "read5/0", "read12/0", "read13/0"}}}),
+      MakeCandidate(
+      110, 111,
+      {{"C", {"read10/0", "read13/0"}}, {"G", {"read11/0", "read12/0"}}}),
+      MakeCandidate(
+      120, 121,
+      {{"T", {"read6/0", "read7/0"}}, {"G", {"read8/0", "read9/0"}}}),
+      MakeCandidate(
+      125, 126,
+      {{"A", {"read6/0", "read7/0"}}, {"T", {"read8/0", "read9/0"}}})};
+
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
+      CreateTestReads(10);
+
+  nucleus::StatusOr<std::vector<int>> phases =
+      direct_phasing.PhaseReads(candidates, reads);
+  EXPECT_TRUE(phases.ok());
+
+  EXPECT_THAT(
+      direct_phasing.GetPhasedVariants(),
+      ElementsAreArray(std::vector<PhasedVariant>{
+          {.position = 100, .phase_1_bases = "A", .phase_2_bases = "C",
+           .is_first_in_block = true},
+          {.position = 105, .phase_1_bases = "C", .phase_2_bases = "G",
+           .is_first_in_block = false},
+          // This posistion is not present in the output because the variant at
+          // this position could not be phased.
+          // {.position = 110, .phase_1_bases = "C", .phase_2_bases = "C",
+          // .is_first_in_block = false},
+          {.position = 120, .phase_1_bases = "G", .phase_2_bases = "T",
+           .is_first_in_block = true},
+          {.position = 125, .phase_1_bases = "T", .phase_2_bases = "A",
+           .is_first_in_block = false}}));
+
+  // Release memory.
+  for (auto read : reads) {
+    delete read.p_;
+  }
+}
+
+TEST(DirectPhasingTest, GetPhasedVariantsBrokenPhaseNoConnection) {
+  DirectPhasing direct_phasing;
+
+  // Create test candidates.
+  std::vector<DeepVariantCall> candidates = {
+      MakeCandidate(100, 101,
+                    {{"A", {"read1/0", "read2/0", "read3/0"}},  // SUB allele
+                     {"C", {"read4/0", "read5/0", "read6/0"}}}  // SUB allele
+                    ),
+      MakeCandidate(105, 106,
+                    {{"C", {"read4/0", "read5/0", "read1/0"}},
+                     {"G", {"read2/0", "read3/0", "read6/0"}}}),
+      MakeCandidate(110, 111,
+                    {{"C", {"read7/0", "read8/0", "read9/0"}},
+                      {"G", {"read10/0", "read11/0", "read12/0"}}}),
+        MakeCandidate(120, 121,
+                    {{"T", {"read10/0", "read11/0", "read9/0"}},  // SUB allele
+                     {"G", {"read7/0", "read8/0", "read12/0"}}}  // SUB allele
+                    )};
+
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads =
+      CreateTestReads(12);
+
+  nucleus::StatusOr<std::vector<int>> phases =
+      direct_phasing.PhaseReads(candidates, reads);
+  EXPECT_TRUE(phases.ok());
+
+  EXPECT_THAT(
+      direct_phasing.GetPhasedVariants(),
+      ElementsAreArray(std::vector<PhasedVariant>{
+          {.position = 100, .phase_1_bases = "A", .phase_2_bases = "C",
+           .is_first_in_block = true},
+          {.position = 105, .phase_1_bases = "G", .phase_2_bases = "C",
+           .is_first_in_block = false},
+          {.position = 110, .phase_1_bases = "C", .phase_2_bases = "G",
+           .is_first_in_block = true},
+          {.position = 120, .phase_1_bases = "G", .phase_2_bases = "T",
+           .is_first_in_block = false}}));
+
+  // Release memory.
+  for (auto read : reads) {
+    delete read.p_;
+  }
+}
+
 
 }  // namespace deepvariant
 }  // namespace genomics

@@ -50,6 +50,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -295,14 +296,14 @@ DirectPhasing::MaxScore(int position) const {
 }
 
 void DirectPhasing::AssignPhasesToVertices() {
-  // Assigning a random valid score. The max_score should be at least no less
-  // then this.
   if (scores_.empty()) {
     return;
   }
   absl::flat_hash_map<VertexPair, Score>::const_iterator max_score_it =
       scores_.end();
   int i = positions_.size() - 1;
+  absl::flat_hash_map<VertexPair, Score>::const_iterator prev_score =
+      scores_.end();
   // Going backward from the last positions find the first position that can
   // be phased.
   while (i >= 0) {
@@ -319,12 +320,25 @@ void DirectPhasing::AssignPhasesToVertices() {
 
     // Unwind from the last position up and record phases at each position.
     bool is_break_point_position = true;
-    auto prev_score = max_score_it;
+    if (prev_score == scores_.end()) {
+      prev_score = max_score_it;
+    } else {
+      // Mark the first position in the block.
+      graph_[prev_score->first.phase_1_vertex]
+          .allele_info.is_first_in_block = true;
+      graph_[prev_score->first.phase_2_vertex]
+          .allele_info.is_first_in_block = true;
+    }
+    // bool is_first_in_block = true;
     while (max_score_it != scores_.end()) {
+      // If phase_1 and phase_2 vertices are different then we assign phase 1
+      // to the first vertex and phase 2 to the second vertex.
       if (max_score_it->first.phase_1_vertex !=
           max_score_it->first.phase_2_vertex) {
         graph_[max_score_it->first.phase_1_vertex].allele_info.phase = 1;
         graph_[max_score_it->first.phase_2_vertex].allele_info.phase = 2;
+      // If phase_1 and phase_2 vertices are the same then we have a homozygous
+      // position.
       } else {
         graph_[max_score_it->first.phase_1_vertex].allele_info.phase = 0;
         graph_[max_score_it->first.phase_2_vertex].allele_info.phase = 0;
@@ -337,7 +351,9 @@ void DirectPhasing::AssignPhasesToVertices() {
         graph_[max_score_it->first.phase_1_vertex].allele_info.phase = 0;
         graph_[max_score_it->first.phase_2_vertex].allele_info.phase = 0;
         i--;
-        is_break_point_position = false;
+        LOG(WARNING) << "Unexpected phasing score at position "
+            << graph_[max_score_it->first.phase_1_vertex].allele_info.position;
+        is_break_point_position = true;
         break;
       }
       // Go to the next score.
@@ -349,7 +365,7 @@ void DirectPhasing::AssignPhasesToVertices() {
           graph_[max_score_it->first.phase_2_vertex].allele_info.phase = 0;
         }
         i--;
-        is_break_point_position = false;
+        prev_score = max_score_it;
         break;
       }
       prev_score = max_score_it;
@@ -357,6 +373,12 @@ void DirectPhasing::AssignPhasesToVertices() {
       i--;
       is_break_point_position = false;
     }
+  }  // while all positions
+  if (prev_score != scores_.end()) {
+    graph_[max_score_it->first.phase_1_vertex]
+        .allele_info.is_first_in_block = true;
+    graph_[max_score_it->first.phase_2_vertex]
+        .allele_info.is_first_in_block = true;
   }
 }
 
@@ -369,6 +391,7 @@ std::vector<PhasedVariant> DirectPhasing::GetPhasedVariants() const {
     }
 
     std::array<std::string, 2> bases = {"", ""};
+    bool is_first_in_block = false;
     for (const Vertex& v : it->second) {
       const auto& vertex = graph_[v];
       if (vertex.allele_info.phase == 1) {
@@ -376,11 +399,13 @@ std::vector<PhasedVariant> DirectPhasing::GetPhasedVariants() const {
       } else if (vertex.allele_info.phase == 2) {
         bases[1] = vertex.allele_info.bases;
       }
+      is_first_in_block = vertex.allele_info.is_first_in_block;
     }
     if (!bases[0].empty() && !bases[1].empty()) {
       phased_variants.push_back({.position = pos,
                                  .phase_1_bases = bases[0],
-                                 .phase_2_bases = bases[1]});
+                                 .phase_2_bases = bases[1],
+                                 .is_first_in_block = is_first_in_block});
     }
   }
   return phased_variants;

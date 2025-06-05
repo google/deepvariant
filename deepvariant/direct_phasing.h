@@ -84,6 +84,7 @@ struct AlleleInfo {
   std::string bases = "";
   int phase = 0;
   std::vector<ReadSupportInfo> read_support;
+  bool is_first_in_block = false;
 };
 
 // Data structure to hold variant phases. It is only used for reporting.
@@ -91,6 +92,7 @@ struct PhasedVariant {
   int64_t position;
   std::string phase_1_bases;
   std::string phase_2_bases;
+  bool is_first_in_block = false;
 };
 
 inline bool operator==(const AlleleInfo& lhs, const AlleleInfo& rhs) {
