@@ -21,11 +21,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    |  45m13.77s
-call_variants                    |  16m25.61s
-postprocess_variants (with gVCF) |  6m51.14s
-vcf_stats_report (optional)      |  5m16.42s (optional)
-total                            |  78m57.99s (1h18m57.99s)
+make_examples                    |  45m13.13s
+call_variants                    |  16m29.96s
+postprocess_variants (with gVCF) |  6m45.88s
+vcf_stats_report (optional)      |  5m15.00s (optional)
+total                            |  80m44.68s (1h20m44.68s)
 
 ### Accuracy
 
@@ -48,11 +48,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 3m0.54s
-call_variants                    | 0m33.30s
-postprocess_variants (with gVCF) | 0m38.91s
-vcf_stats_report (optional)      | 0m4.97s (optional)
-total                            | 4m45.64s
+make_examples                    | 3m4.42s
+call_variants                    | 0m34.07s
+postprocess_variants (with gVCF) | 0m39.31s
+vcf_stats_report (optional)      | 0m5.17s (optional)
+total                            | 5m22.81s
 
 ### Accuracy
 
@@ -88,11 +88,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 36m48.09s
-call_variants                    | 11m33.13s
-postprocess_variants (with gVCF) | 4m47.06s
-vcf_stats_report (optional)      | 5m26.10s (optional)
-total                            | 66m14.44s (1h06m14.44s)
+make_examples                    | 37m50.60s
+call_variants                    | 11m53.23s
+postprocess_variants (with gVCF) | 4m46.98s
+vcf_stats_report (optional)      | 5m29.43s (optional)
+total                            | 67m40.38s (1h07m40.38s)
 
 ### Accuracy
 
@@ -104,9 +104,8 @@ to run DeepVariant once.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501348   | 3153     | 3117     | 0.99375       | 0.994046         | 0.993898        |
-| SNP   | 3321474  | 6021     | 3903     | 0.998191      | 0.998828         | 0.998509        |
-
+| INDEL | 501345   | 3156     | 3105     | 0.993744      | 0.994069         | 0.993906        |
+| SNP   | 3321480  | 6015     | 3877     | 0.998192      | 0.998836         | 0.998514        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/PACBIO/deepvariant.output.visual_report.html)
 
@@ -119,11 +118,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | 55m56.13s
-call_variants                    | 17m29.76s
-postprocess_variants (with gVCF) | 5m58.82s
-vcf_stats_report (optional)      | 6m23.70s (optional)
-total                            | 91m6.31s (1h31m6.31s)
+make_examples                    | 51m33.25s
+call_variants                    | 16m40.08s
+postprocess_variants (with gVCF) | 5m34.46s
+vcf_stats_report (optional)      | 6m16.02s (optional)
+total                            | 85m20.85s (1h25m20.85s)
 
 ### Accuracy
 
@@ -132,8 +131,8 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 450891   | 53610    | 40728    | 0.893737      | 0.919559         | 0.906464        |
-| SNP   | 3319370  | 8125     | 2954     | 0.997558      | 0.999111         | 0.998334        |
+| INDEL | 450871   | 53630    | 40718    | 0.893697      | 0.919574         | 0.906451        |
+| SNP   | 3319385  | 8110     | 2932     | 0.997563      | 0.999118         | 0.99834         |
 
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/ONT_R104/deepvariant.output.visual_report.html)
@@ -147,11 +146,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 62m2.28s
-call_variants                    | 65m3.32s
-postprocess_variants (with gVCF) | 3m43.18s
-vcf_stats_report (optional)      | 5m6.89s (optional)
-total                            | 154m30.64s (2h34m30.64s)
+make_examples                    | 59m54.04s
+call_variants                    | 64m55.50s
+postprocess_variants (with gVCF) | 3m39.68s
+vcf_stats_report (optional)      | 5m4.61s (optional)
+total                            | 152m8.17s (2h32m8.17s)
 
 ### Accuracy
 
