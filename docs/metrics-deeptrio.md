@@ -21,15 +21,15 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 165m53.25s
-call_variants: HG002             | 20m35.09s
-call_variants: HG003             | 22m9.17s
-call_variants: HG004             | 21m49.53s
-postprocess_variants (parallel)  | 8m12.84s; 8m48.05s; 8m50.40s
-vcf_stats_report(optional):HG002 | 6m23.53s
-vcf_stats_report(optional):HG003 | 6m26.04s
-vcf_stats_report(optional):HG003 | 6m43.78s
-total                            | 251m13.52s (4h11m13.52s)
+make_examples                    | 176m50.14s
+call_variants: HG002             | 21m40.64s
+call_variants: HG003             | 23m16.19s
+call_variants: HG004             | 23m7.08s
+postprocess_variants (parallel)  | 8m27.91s; 9m0.21s; 9m10.29s
+vcf_stats_report(optional):HG002 | 6m25.41s
+vcf_stats_report(optional):HG003 | 6m36.23s
+vcf_stats_report(optional):HG003 | 6m44.98s
+total                            | 264m47.84s (4h24m47.84s)
 
 ### Accuracy
 
@@ -74,15 +74,15 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Wall time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 17m8.34s+189m10.68s
-call_variants: HG002             | 30m23.02s
-call_variants: HG003             | 37m13.83s
-call_variants: HG004             | 36m59.66s
-postprocess_variants (parallel)  | 7m59.91s; 8m23.51s; 8m30.73s
-vcf_stats_report(optional):HG002 | 6m52.84s
-vcf_stats_report(optional):HG003 | 6m58.93s
-vcf_stats_report(optional):HG003 | 7m6.09s
-total                            | 331m0.71s (5h31m0.71s)
+make_examples                    | 17m42.77s+193m23.63s
+call_variants: HG002             | 31m2.29s
+call_variants: HG003             | 37m45.37s
+call_variants: HG004             | 38m1.23s
+postprocess_variants (parallel)  | 8m5.07s; 8m27.69s; 8m33.67s
+vcf_stats_report(optional):HG002 | 6m54.64s
+vcf_stats_report(optional):HG003 | 7m2.10s
+vcf_stats_report(optional):HG003 | 7m8.97s
+total                            | 338m19.05s (5h38m19.05s)
 
 * See VCF stats report (for all chromosomes)
   - [HG002](https://storage.googleapis.com/deepvariant/visual_reports/DeepTrio/1.9.0/PACBIO/HG002.output.visual_report.html)
@@ -98,21 +98,21 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11214    | 42       | 78       | 0.996269      | 0.993369         | 0.994817        |
+| INDEL | 11212    | 44       | 79       | 0.996091      | 0.993283         | 0.994685        |
 | SNP   | 71310    | 23       | 18       | 0.999678      | 0.999748         | 0.999713        |
 
 #### HG003:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10575    | 53       | 71       | 0.995013      | 0.993623         | 0.994317        |
+| INDEL | 10576    | 52       | 70       | 0.995107      | 0.993712         | 0.994409        |
 | SNP   | 70149    | 17       | 32       | 0.999758      | 0.999544         | 0.999651        |
 
 #### HG004:
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 10952    | 48       | 61       | 0.995636      | 0.994709         | 0.995172        |
+| INDEL | 10953    | 47       | 61       | 0.995727      | 0.994709         | 0.995218        |
 | SNP   | 71622    | 37       | 18       | 0.999484      | 0.999749         | 0.999616        |
 
 ## Whole Exome Sequencing (Illumina)
@@ -124,15 +124,15 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Wall time (minutes)
 -------------------------------- | --------------
-make_examples                    | 7m14.00s
-call_variants: HG002             | 2m15.50s
-call_variants: HG003             | 2m16.04s
-call_variants: HG004             | 2m17.15s
-postprocess_variants (parallel)  | 0m9.25s; 0m9.44s; 0m9.57s
-vcf_stats_report(optional):HG002 | 0m5.60s
-vcf_stats_report(optional):HG003 | 0m5.69s
-vcf_stats_report(optional):HG003 | 0m5.84s
-total                            | 14m23.30s
+make_examples                    | 7m23.68s
+call_variants: HG002             | 2m18.20s
+call_variants: HG003             | 2m18.97s
+call_variants: HG004             | 2m19.08s
+postprocess_variants (parallel)  | 0m9.42s; 0m9.58s; 0m9.80s
+vcf_stats_report(optional):HG002 | 0m5.69s
+vcf_stats_report(optional):HG003 | 0m5.85s
+vcf_stats_report(optional):HG003 | 0m5.91s
+total                            | 14m40.92s
 
 ### Accuracy
 
