@@ -35,6 +35,7 @@
 #include <cstddef>
 #include <functional>
 #include <random>
+#include <utility>
 #include <vector>
 
 #include "absl/random/distributions.h"
@@ -66,6 +67,41 @@ int InPlaceReservoirSampleImpl(int sample_size,
     }
   }
   return sample_size;
+}
+
+template <typename T>
+absl::StatusOr<std::vector<T>> SampleWithPartitionMinsImpl(
+    std::vector<std::vector<T>> partition, int sample_size,
+    int min_per_partition,
+    std::function<std::pair<std::vector<T>, std::vector<T>>(std::vector<T>&,
+                                                            size_t)>
+        subset_provider) {
+  std::vector<T> sampled;
+  std::vector<T> unsampled;
+
+  // First get min_per_partition from each partition.
+  for (auto& partition_elements : partition) {
+    auto [sampled_elements, unsampled_elements] =
+        subset_provider(partition_elements, min_per_partition);
+    sampled.insert(sampled.end(), sampled_elements.begin(),
+                   sampled_elements.end());
+    unsampled.insert(unsampled.end(), unsampled_elements.begin(),
+                     unsampled_elements.end());
+  }
+
+  // Complete the rest of the sample from the unsampled elements.
+  int remaining_to_sample = sample_size - sampled.size();
+  // If remaining_to_sample is negative, it means our threshold per allele
+  // results in more than sample_size.
+  if (remaining_to_sample < 0) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Threshold of ", min_per_partition,
+        " per partition results in more than sample_size elements."));
+  }
+  auto [sampled_elements, _] = subset_provider(unsampled, remaining_to_sample);
+  sampled.insert(sampled.end(), sampled_elements.begin(),
+                 sampled_elements.end());
+  return sampled;
 }
 
 }  // namespace internal
@@ -102,31 +138,22 @@ template <typename T>
 absl::StatusOr<std::vector<T>> SampleWithPartitionMins(
     std::vector<std::vector<T>> partition, int sample_size,
     int min_per_partition, std::mt19937_64& gen) {
-  std::vector<T> sampled;
-  std::vector<T> unsampled;
-
-  // First get min_per_partition from each partition.
-  for (auto& partition_elements : partition) {
-    int index =
-        InPlaceReservoirSample(min_per_partition, gen, partition_elements);
-    sampled.insert(sampled.end(), partition_elements.begin(),
-                   partition_elements.begin() + index);
-    unsampled.insert(unsampled.end(), partition_elements.begin() + index,
-                     partition_elements.end());
-  }
-
-  // Complete the rest of the sample from the unsampled elements.
-  int remaining_to_sample = sample_size - sampled.size();
-  // If remaining_to_sample is negative, it means our threshold per allele
-  // results in more than sample_size.
-  if (remaining_to_sample < 0) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "Threshold of ", min_per_partition,
-        " per partition results in more than sample_size elements."));
-  }
-  int index = InPlaceReservoirSample(remaining_to_sample, gen, unsampled);
-  sampled.insert(sampled.end(), unsampled.begin(), unsampled.begin() + index);
-  return sampled;
+  std::function<std::pair<std::vector<T>, std::vector<T>>(std::vector<T>&,
+                                                          size_t)>
+      uniform_subset_provider =
+          [&gen, min_per_partition](std::vector<T>& population,
+                                    size_t num_to_sample) {
+            std::vector<T> sampled;
+            std::vector<T> unsampled;
+            int index = InPlaceReservoirSample(num_to_sample, gen, population);
+            sampled.insert(sampled.end(), population.begin(),
+                           population.begin() + index);
+            unsampled.insert(unsampled.end(), population.begin() + index,
+                             population.end());
+            return std::make_pair(sampled, unsampled);
+          };
+  return internal::SampleWithPartitionMinsImpl(
+      partition, sample_size, min_per_partition, uniform_subset_provider);
 }
 
 }  // namespace learning::genomics::deepvariant::sampling

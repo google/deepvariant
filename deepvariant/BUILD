@@ -1058,11 +1058,41 @@ cc_library(
 
 cc_test(
     name = "sampling_util_test",
-    srcs = ["sampling_util_test.cc"],
+    srcs = [
+        "sampling_util_test.cc",
+    ],
     deps = [
+        ":distribution_functor",
         ":sampling_util",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_library(
+    name = "distribution_functor",
+    hdrs = ["distribution_functor.h"],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+    ],
+)
+
+cc_test(
+    name = "distribution_functor_test",
+    srcs = [
+        "distribution_functor.h",
+        "distribution_functor_test.cc",
+    ],
+    deps = [
+        ":distribution_functor",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
     ],

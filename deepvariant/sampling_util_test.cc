@@ -30,66 +30,140 @@
  */
 #include "deepvariant/sampling_util.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <functional>
 #include <numeric>
+#include <utility>
 #include <vector>
 
+#include "deepvariant/distribution_functor.h"
 #include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 
 namespace learning::genomics::deepvariant::sampling::internal {
-using ::testing::_;
-using ::testing::Each;
-using ::testing::Pair;
 
-bool next_returns(const std::vector<int>& limits, std::vector<int>& current) {
-  int index = current.size() - 1;
-  while (index >= 0 && current[index] == limits[index]) {
-    current[index] = 0;
-    index--;
+typedef absl::flat_hash_set<int> int_set;
+
+std::vector<int_set> all_subsets(int_set univ, size_t size) {
+  std::vector<int> univ_vec(univ.begin(), univ.end());
+  std::vector<bool> keep(univ.size(), false);
+  for (int i = 0; i != size; i++) {
+    keep[i] = true;
   }
-  if (index < 0) {
-    return false;
-  }
-  current[index]++;
-  return true;
+
+  std::vector<int_set> subsets;
+  do {
+    int_set subset;
+    for (int i = 0; i != univ.size(); i++) {
+      if (keep[i]) {
+        subset.insert(univ_vec[i]);
+      }
+    }
+    subsets.push_back(subset);
+  } while (std::prev_permutation(keep.begin(), keep.end()));
+  return subsets;
 }
 
 TEST(SamplingUtilTest, InPlaceReservoirSampleIsUniform) {
-  // Test picking 3 elements from {0, 1, 2, 3, 4, 5, 6}
-  std::vector<int> population(7);
-  std::vector<int> returns{0, 0, 0, 0};
-  const std::vector<int> limits = {3, 4, 5, 6};
+  // The population is the set of all integers from 0 to 6.
+  int_set population = {0, 1, 2, 3, 4, 5, 6};
 
-  // We iterate over all possible functions that given n in [3, 6], return an
-  // element from [0, n]. And we count how many times each subset occurs as a
-  // sample.
-  absl::flat_hash_map<absl::flat_hash_set<int>, int> counter;
-  do {
-    std::iota(population.begin(), population.end(), 0);
-    std::function f = [&returns](int i) {
-      if (i >= 3 && i < 7) {
-        return returns[i - 3];
-      } else {
-        return 0;
-      }
+  // A function that provides a family of uniform distributions over integers.
+  distribution_functor::DistributionGenerator<size_t, size_t>
+      uniform_integer_distribution_provider([](size_t max) {
+        std::vector<size_t> domain(max + 1);
+        std::iota(domain.begin(), domain.end(), 0);
+        return distribution_functor::uniform<size_t>(domain);
+      });
+
+  // Function under test.
+  auto fut = [population](std::function<size_t(size_t)> index_provider) {
+    std::vector<int> population_vec(population.begin(), population.end());
+    int sample_size =
+        InPlaceReservoirSampleImpl(3, index_provider, population_vec);
+    population_vec.resize(sample_size);
+    return int_set(population_vec.begin(), population_vec.end());
+  };
+
+  auto final_distribution = distribution_functor::dist_map(
+      uniform_integer_distribution_provider, fut);
+
+  // Check the final distribution is the uniform distribution over all subsets
+  // of size 3.
+  EXPECT_EQ(final_distribution,
+            distribution_functor::uniform<int_set>(all_subsets(population, 3)));
+}
+
+int_set complement(const int_set& inner, const int_set& outer) {
+  int_set outer_copy(outer.begin(), outer.end());
+  absl::erase_if(outer_copy, [&inner](int i) { return inner.contains(i); });
+  return outer_copy;
+}
+
+typedef std::pair<std::vector<int>, std::vector<int>> vector_pair;
+
+vector_pair get_vector_pair(const int_set& left, const int_set& right) {
+  return std::make_pair(std::vector<int>(left.begin(), left.end()),
+                        std::vector<int>(right.begin(), right.end()));
+}
+
+TEST(SamplingUtilTest, CheckSampleWithPartitionMinsDistribution) {
+  // Consider the case of two partitions, each with 3 elements, and we want to
+  // sample 4 elements from their union, with at least 1 element from each
+  // partition.
+  std::vector<std::vector<int>> partition = {{0, 1, 2}, {3, 4, 5}};
+  size_t sample_size = 4;
+  int min_per_partition = 1;
+  int_set first = {0, 1, 2};
+  int_set second = {3, 4, 5};
+
+  // A function that provides a family of uniform distributions over subsets.
+  distribution_functor::DistributionGenerator<int_set, int_set, size_t>
+      uniform_subset_distribution_provider([](int_set set, size_t size) {
+        return distribution_functor::uniform<int_set>(all_subsets(set, size));
+      });
+
+  // The function under test.
+  auto fut = [&partition, &sample_size, &min_per_partition](
+                 std::function<int_set(int_set, size_t)> subset_provider) {
+    std::function<vector_pair(std::vector<int>&, size_t)> vector_pair_provider =
+        [&subset_provider](std::vector<int> pop,
+                           size_t num_to_sample) -> vector_pair {
+      const int_set pop_set(pop.begin(), pop.end());
+      auto sampled = subset_provider(pop_set, num_to_sample);
+      auto complement_sampled = complement(sampled, pop_set);
+      return get_vector_pair(sampled, complement_sampled);
     };
-    int sample_size = InPlaceReservoirSampleImpl(3, f, population);
-    absl::flat_hash_set<int> sample(population.begin(),
-                                    population.begin() + sample_size);
-    counter[sample]++;
-  } while (next_returns(limits, returns));
+    auto sample = SampleWithPartitionMinsImpl(
+        partition, sample_size, min_per_partition, vector_pair_provider);
+    return int_set(sample->begin(), sample->end());
+  };
 
-  // Choose 3 elements from 7 elements: (7 choose 3) = 35 combinations.
-  EXPECT_EQ(counter.size(), 35);
-  // Since there are 4*5*6*7 = 35*24 possible functions, each sample should
-  // occur exactly 24 times.
-  EXPECT_THAT(counter, Each(Pair(_, 24)));
+  auto final_distribution =
+      distribution_functor::dist_map(uniform_subset_distribution_provider, fut);
+
+  // Project the distribution into a bernoulli representing the chance the set
+  // is balanced across the partition.
+  auto is_balanced_distribution =
+      distribution_functor::dist_map(final_distribution, [](auto v) {
+        int c = 0;
+        for (int i = 0; i < 3; ++i) {
+          if (v.contains(i)) {
+            c++;
+          }
+        }
+        return (c % 2) == 0;
+      });
+
+  // The distribution should be balanced 2/3 of the time.
+  EXPECT_EQ(is_balanced_distribution,
+            distribution_functor::Distribution<bool>::FromWeightMap(
+                {{true, 2}, {false, 1}}));
 }
 
 }  // namespace learning::genomics::deepvariant::sampling::internal
