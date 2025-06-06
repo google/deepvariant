@@ -1048,6 +1048,8 @@ cc_library(
     name = "sampling_util",
     hdrs = ["sampling_util.h"],
     deps = [
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",

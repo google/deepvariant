@@ -37,6 +37,8 @@
 #include <random>
 #include <vector>
 
+#include "absl/random/distributions.h"
+#include "absl/random/random.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -76,8 +78,7 @@ template <typename T>
 int InPlaceReservoirSample(int sample_size, std::mt19937_64& gen,
                            std::vector<T>& population) {
   auto uniform_index_dist = [&gen](size_t max) {
-    auto dist = std::uniform_int_distribution<size_t>(0, max);
-    return dist(gen);
+    return absl::Uniform<size_t>(absl::IntervalClosed, gen, 0, max);
   };
   return internal::InPlaceReservoirSampleImpl(sample_size, uniform_index_dist,
                                               population);
