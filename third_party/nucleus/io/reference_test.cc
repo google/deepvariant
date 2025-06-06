@@ -246,9 +246,8 @@ TEST(StatusOrLoadFromFile, ReturnsBadStatusIfFaiIsMissing) {
       IndexedFastaReader::FromFile(GetTestData("unindexed.fasta"),
                                    GetTestData("unindexed.fasta.fai"),
                                    nucleus::genomics::v1::FastaReaderOptions());
-  EXPECT_THAT(result, IsNotOKWithCodeAndMessage(
-                          absl::StatusCode::kNotFound,
-                          "could not load fasta and/or fai for fasta"));
+  EXPECT_THAT(result, IsNotOKWithCodeAndMessage(absl::StatusCode::kNotFound,
+                                                "Failed to load FASTA file"));
 }
 
 TEST(IndexedFastaReaderTest, WriteAfterCloseIsntOK) {
