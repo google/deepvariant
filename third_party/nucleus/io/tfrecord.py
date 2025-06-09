@@ -40,9 +40,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import contextlib
 import heapq
-
-import contextlib2
 
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
@@ -175,7 +174,7 @@ def write_tfrecords(protos, output_path, compression_type=None):
       based on file extension.
   """
   if sharded_file_utils.is_sharded_file_spec(output_path):
-    with contextlib2.ExitStack() as stack:
+    with contextlib.ExitStack() as stack:
       _, n_shards, _ = sharded_file_utils.parse_sharded_file_spec(output_path)
       writers = [
           stack.enter_context(
