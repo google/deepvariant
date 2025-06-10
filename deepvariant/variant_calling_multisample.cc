@@ -1101,7 +1101,6 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
     // This logic handles adding NDP, NAD, and NAF to the tumor variant.
     // An allele map for the normal sample is constructed, based on the
     // tumor alleles.
-    LOG(INFO) << "Adding normal read depths to tumor variant";
     AlleleMap matched_normal_allele_map = BuildMatchedNormalAlleleMap(
         output_options.non_target_sample_alleles, ref_bases, allele_map);
 
