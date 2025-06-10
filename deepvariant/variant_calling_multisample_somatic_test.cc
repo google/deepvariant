@@ -227,6 +227,97 @@ TEST(VariantCallingSomaticTest, TestCallVariantWithMaxFractionForNormal) {
   caller3->Clear();
 }
 
+TEST(VariantCallingTest,
+  TestAllelesInNormal) {
+AlleleCount tumor_allele_count =
+   MakeTestAlleleCount(20, 15, "tumor", "A", "T", 190);
+AlleleCount normal_allele_count =
+   MakeTestAlleleCount(25, 1, "normal", "A", "T", 190);
+const std::vector<AlleleCount>& target_sample_allele_counts = {
+  tumor_allele_count,
+  normal_allele_count,
+};
+absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+   allele_counter_iterators;
+
+absl::node_hash_map<std::string, AlleleCount> allele_counts = {
+  {"tumor_sample", tumor_allele_count},
+  {"normal_sample", normal_allele_count},
+};
+
+std::unique_ptr<VariantCaller> caller =
+   VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+       BasicOptions(),
+       target_sample_allele_counts,
+       "tumor_sample",
+       "tumor");
+int skip_next_count = 0;
+int prev_deletion_end = 0;
+const std::optional<DeepVariantCall> optional_variant_1 =
+   caller->CallVariant(allele_counts,
+                      &allele_counter_iterators["tumor"],
+                      skip_next_count, prev_deletion_end);
+EXPECT_TRUE(static_cast<bool>(optional_variant_1));
+
+DeepVariantCall variant = optional_variant_1.value();
+auto call = variant.variant().calls(0);
+EXPECT_THAT(call.info().contains("NDP"), true);
+EXPECT_THAT(call.info().contains("NAD"), true);
+EXPECT_THAT(call.info().contains("NAF"), true);
+EXPECT_THAT(call.info().at("NDP").values(0).int_value(), 25);
+EXPECT_THAT(call.info().at("NAD").values(0).int_value(), 24);
+EXPECT_THAT(call.info().at("NAD").values(1).int_value(), 1);
+EXPECT_THAT(call.info().at("NAF").values(0).number_value(), 0.04);
+
+caller->Clear();
+}
+
+
+TEST(VariantCallingTest,
+  TestNoAllelesInNormal) {
+AlleleCount tumor_allele_count =
+   MakeTestAlleleCount(20, 15, "tumor", "A", "T", 190);
+AlleleCount normal_allele_count =
+   MakeTestAlleleCount(25, 0, "normal", "A", "T", 190);
+const std::vector<AlleleCount>& target_sample_allele_counts = {
+  tumor_allele_count,
+  normal_allele_count,
+};
+absl::node_hash_map<std::string, std::vector<AlleleCount>::const_iterator>
+   allele_counter_iterators;
+
+absl::node_hash_map<std::string, AlleleCount> allele_counts = {
+  {"tumor_sample", tumor_allele_count},
+  {"normal_sample", normal_allele_count},
+};
+
+std::unique_ptr<VariantCaller> caller =
+   VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+       BasicOptions(),
+       target_sample_allele_counts,
+       "tumor_sample",
+       "tumor");
+int skip_next_count = 0;
+int prev_deletion_end = 0;
+const std::optional<DeepVariantCall> optional_variant_1 =
+   caller->CallVariant(allele_counts,
+                      &allele_counter_iterators["tumor"],
+                      skip_next_count, prev_deletion_end);
+EXPECT_TRUE(static_cast<bool>(optional_variant_1));
+
+DeepVariantCall variant = optional_variant_1.value();
+auto call = variant.variant().calls(0);
+EXPECT_THAT(call.info().contains("NDP"), true);
+EXPECT_THAT(call.info().contains("NAD"), true);
+EXPECT_THAT(call.info().contains("NAF"), true);
+EXPECT_THAT(call.info().at("NDP").values(0).int_value(), 25);
+EXPECT_THAT(call.info().at("NAD").values(0).int_value(), 25);
+EXPECT_THAT(call.info().at("NAD").values(1).int_value(), 0);
+EXPECT_THAT(call.info().at("NAF").values(0).number_value(), 0.0);
+
+caller->Clear();
+}
+
 }  // namespace multi_sample
 }  // namespace deepvariant
 }  // namespace genomics

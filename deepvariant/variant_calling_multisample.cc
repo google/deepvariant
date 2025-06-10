@@ -77,6 +77,11 @@ const char* const kVAFFormatField = "VAF";
 const char* const kMFFormatField = "MF";
 const char* const kMDFormatField = "MD";
 
+// Paired Normal Sample fields
+const char* const kDPNormalFormatField = "NDP";
+const char* const kADNormalFormatField = "NAD";
+const char* const kVAFNormalFormatField = "NAF";
+
 // The VCF/Variant allele string to use when you don't have any alt alleles.
 const char* const kNoAltAllele = ".";
 
@@ -530,7 +535,7 @@ SelectAltAllelesResult VariantCaller::SelectAltAlleles(
     const SelectAltAllelesInputOptions& options) const {
   SelectAltAllelesResult output_options;
   // allele_counts_mod is initialized to be the same as allele_counts. If
-  // complex variants are eneabled then allele_counts_mod will be modified.
+  // complex variants are enabled then allele_counts_mod will be modified.
   for (const auto& [sample_name, allele_count] :
            options.allele_counts_by_sample) {
       output_options.allele_counts_mod.insert({sample_name, allele_count});
@@ -544,9 +549,9 @@ SelectAltAllelesResult VariantCaller::SelectAltAlleles(
   std::vector<AlleleCount> all_samples_allele_counts;
   all_samples_allele_counts.reserve(options.allele_counts_by_sample.size());
   // "Non-target" samples are referring to all the samples that are providing
-  // supportive information. Usually the main truth labels are not from this
-  // sample, or usually it means that the calls coming from these non-target
-  // samples are not the main focus of our problem.
+  // supportive information. For example, in DeepTrio, they correspond to the
+  // parent samples. In DeepSomatic tumor-normal calling, it would refer to the
+  // normal sample.
   std::vector<AlleleCount> non_target_allele_counts;
   non_target_allele_counts.reserve(options.allele_counts_by_sample.size());
   for (const auto& allele_counts_entry : options.allele_counts_by_sample) {
@@ -568,7 +573,7 @@ SelectAltAllelesResult VariantCaller::SelectAltAlleles(
   const int all_samples_total_count =
       TotalAlleleCounts(all_samples_allele_counts);
 
-  std::vector<Allele> alt_alleles;
+  std::vector<Allele> target_sample_alt_alleles;
   for (const auto& allele : target_sample_alleles) {
     if (AlleleFilter(
             allele,
@@ -576,7 +581,7 @@ SelectAltAllelesResult VariantCaller::SelectAltAlleles(
             target_samples_total_count,
             all_samples_total_count,
             all_sample_alleles)) {
-      alt_alleles.push_back(allele);
+      target_sample_alt_alleles.push_back(allele);
     }
   }  // for (alleles in target samples)
 
@@ -586,13 +591,15 @@ SelectAltAllelesResult VariantCaller::SelectAltAlleles(
     return SelectAltAllelesWithComplexVariant(
         {
           .allele_counts_by_sample = options.allele_counts_by_sample,
-          .alt_alleles = std::move(alt_alleles)
+          .alt_alleles = std::move(target_sample_alt_alleles)
         });
   } else {
     return {
-      .alt_alleles = alt_alleles,
+      .alt_alleles = target_sample_alt_alleles,
       .complex_variant_created = false,
       .ref_bases = "",
+      .non_target_sample_alleles = non_target_sample_alleles,
+      .non_target_allele_counts = std::move(non_target_allele_counts),
     };
   }
 }
@@ -610,9 +617,9 @@ void AddGenotypes(const std::string& sample_name,
   }
 }
 
-AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
-                         absl::Span<const Allele> alt_alleles,
-                         absl::string_view ref_bases) {
+AlleleMap BuildAlleleMap(absl::Span<const Allele> alt_alleles,
+                         absl::string_view ref_bases,
+                         bool skip_ref_allele = false) {
   AlleleMap allele_map;
 
   // Compute the alt alleles, recording the mapping from each Allele to its
@@ -647,6 +654,9 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
         break;
       default:
         // this includes AlleleType::REFERENCE which should have been removed
+        if (skip_ref_allele) {
+          break;
+        }
         LOG(FATAL) << "Unexpected alt allele " << alt_allele.DebugString();
     }
   }
@@ -742,6 +752,79 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
   }
 }
 
+// Constructs an allele map with alleles that are ordered using a matched
+// tumor allele map. Only alleles found in the matched tumor will be output.
+AlleleMap BuildMatchedNormalAlleleMap(
+  const std::vector<Allele>& normal_allele_count,
+  absl::string_view ref_bases,
+  const AlleleMap& allele_map) {
+  const AlleleMap normal_allele_map =
+      BuildAlleleMap(normal_allele_count, ref_bases, true);
+
+  AlleleMap normal_allele_map_ordered;
+  bool found_normal_match;
+
+  // TODO: remove double-loop in favor of a map lookup.
+  for (const auto& [tumor_alt_allele, tumor_allele_bases] : allele_map) {
+    found_normal_match = false;
+    for (const auto& [normal_alt_allele, normal_allele_bases] :
+          normal_allele_map) {
+      if (IsAllelesTheSame(tumor_alt_allele, normal_alt_allele)) {
+        found_normal_match = true;
+        normal_allele_map_ordered[normal_alt_allele] = normal_allele_bases;
+        break;
+      }
+    }
+    if (!found_normal_match) {
+      Allele empty_normal_allele;
+      // Set the allele type and bases, but not count.
+      empty_normal_allele.set_type(tumor_alt_allele.type());
+      empty_normal_allele.set_bases(tumor_allele_bases);
+      normal_allele_map_ordered[empty_normal_allele] = tumor_allele_bases;
+    }
+  }
+  return normal_allele_map_ordered;
+}
+
+// Adds the NDP, NAD, and NAF fields to the tumor sample VariantCall.
+// NDP: the total number of observed reads at this site (in normal)
+// NAD: the number of reads supporting each of our ref and alt alleles.
+// NAF: the allele fraction of the variants (only including alt alleles).
+// These are calculated from the provided allele_count information. The
+// allele_map is needed to map between the Variant reference and alternate_bases
+// and the Alleles used in allele_count.
+void AddNormalReadDepths(const AlleleCount& allele_count,
+                         const AlleleMap& allele_map, Variant* variant) {
+  // Set the NDP to the total good reads seen at this position.
+  VariantCall* call = variant->mutable_calls(0);
+
+  nucleus::SetInfoField(kDPNormalFormatField, TotalAlleleCounts(allele_count),
+                        call);
+
+  int dp = TotalAlleleCounts(allele_count);
+  // Build up AD and VAF.
+  std::vector<int> ad;
+  std::vector<double> vaf;
+  ad.push_back(allele_count.ref_supporting_read_count());
+
+  absl::btree_map<absl::string_view, const Allele*> alt_to_alleles;
+  for (const auto& [allele, alt_bases] : allele_map) {
+    alt_to_alleles[alt_bases] = &allele;
+  }
+
+  for (const std::string& alt : variant->alternate_bases()) {
+    const Allele& allele = *alt_to_alleles.find(alt)->second;
+    ad.push_back(allele.count());
+    if (dp > 0) {
+      vaf.push_back(1.0 * allele.count() / dp);
+    } else {
+      vaf.push_back(0.0);
+    }
+  }
+  nucleus::SetInfoField(kADNormalFormatField, ad, call);
+  nucleus::SetInfoField(kVAFNormalFormatField, vaf, call);
+}
+
 // Returns true if the current site should be emitted, even if it's a reference
 // site. This function is used to return reference site samples if the
 // member variable fraction_reference_sites_to_emit >= 0.0 by pulling draws
@@ -815,9 +898,12 @@ std::vector<T> VariantCaller::AlleleCountsGenerator(
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
     const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-    const std::string& target_sample) {
+    const std::string& target_sample,
+    const std::string& target_role) {
   this->allele_counters_per_sample_ = allele_counters;
   this->target_sample_ = target_sample;
+  this->target_role_ = target_role;
+
   // Get Allele counts for the target sample
   auto it = allele_counters.find(target_sample);
   if (it == allele_counters.end()) {
@@ -835,9 +921,11 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
 
 std::vector<int> VariantCaller::CallPositionsFromAlleleCounts(
     const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-    const std::string& target_sample) {
+    const std::string& target_sample,
+    const std::string& target_role) {
   this->allele_counters_per_sample_ = allele_counters;
   this->target_sample_ = target_sample;
+  this->target_role_ = target_role;
   // Get Allele counts for the target sample
   auto it = allele_counters.find(target_sample);
   if (it == allele_counters.end()) {
@@ -867,7 +955,7 @@ std::optional<int> VariantCaller::CallVariantPosition(
       {
       .allele_counts_by_sample = allele_counts_by_sample,
       .create_complex_alleles = false,
-      .prev_deletion_end = prev_deletion_end
+      .prev_deletion_end = prev_deletion_end,
     });
 
   // Include reference site as candidate for methylation-aware phasing if it is
@@ -987,8 +1075,7 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
   const AlleleMap allele_map =
-      BuildAlleleMap(target_sample_allele_count,
-                     output_options.alt_alleles, ref_bases);
+      BuildAlleleMap(output_options.alt_alleles, ref_bases);
 
   // Skip next skip_next_count allele counts if comexple variant was processed.
   if (ref_bases.size() > 1 && allele_map.size() > 1 &&
@@ -1010,6 +1097,22 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
             StringPtrLessThan());
 
   AddReadDepths(target_sample_allele_count, allele_map, variant);
+  if (target_role_ == "tumor") {
+    // This logic handles adding NDP, NAD, and NAF to the tumor variant.
+    // An allele map for the normal sample is constructed, based on the
+    // tumor alleles.
+    LOG(INFO) << "Adding normal read depths to tumor variant";
+    AlleleMap matched_normal_allele_map = BuildMatchedNormalAlleleMap(
+        output_options.non_target_sample_alleles, ref_bases, allele_map);
+
+    if (!matched_normal_allele_map.empty()) {
+    // Filter and reorder the normal allele map to only contain the same
+    // alleles as the tumor allele map.
+    AddNormalReadDepths(output_options.non_target_allele_counts.at(0),
+                        matched_normal_allele_map,
+                        variant);
+    }
+  }
   if (output_options.complex_variant_created) {
     AddSupportingReads(output_options.allele_counts_mod, allele_map,
                       target_sample_, &call);

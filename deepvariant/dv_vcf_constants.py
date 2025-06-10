@@ -52,12 +52,39 @@ DEEP_VARIANT_MODEL_ID_FORMAT = 'MID'
 UNCALLED_GENOTYPE = -1
 
 
+# Format Fields specific to T-N somatic calling.
+SOMATIC_FORMAT_FIELDS = [
+    variants_pb2.VcfFormatInfo(
+        id='NDP',
+        number='1',
+        type=vcf_constants.INTEGER_TYPE,
+        description='Number of reads in the normal sample.',
+    ),
+    variants_pb2.VcfFormatInfo(
+        id='NAD',
+        number='R',
+        type=vcf_constants.INTEGER_TYPE,
+        description=(
+            'Read depth in the normal sample for alleles reported in the tumor'
+            ' sample'
+        ),
+    ),
+    variants_pb2.VcfFormatInfo(
+        id='NAF',
+        number='R',
+        type=vcf_constants.FLOAT_TYPE,
+        description='VAF of ALT alleles in the normal sample.',
+    ),
+]
+
+
 def deepvariant_header(
     contigs,
     sample_names,
     add_info_candidates=False,
     include_med_dp=True,
     include_model_id=False,
+    include_somatic_fields=False,
 ):
   """Returns a VcfHeader used for writing VCF output.
 
@@ -74,6 +101,7 @@ def deepvariant_header(
       purposes.
     include_med_dp: boolean. If True, we will include MED_DP.
     include_model_id: boolean, If True, tag variants by model that called them.
+    include_somatic_fields: boolean, If True, add somatic-specific fields.
 
   Returns:
     A nucleus.genomics.v1.VcfHeader proto with known fixed headers and the given
@@ -141,6 +169,9 @@ def deepvariant_header(
             description='Identifies which model called this variant.',
         )
     )
+
+  if include_somatic_fields:
+    formats.extend(SOMATIC_FORMAT_FIELDS)
 
   return variants_pb2.VcfHeader(
       fileformat='VCFv4.2',

@@ -1250,6 +1250,7 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_vc.calls_and_gvcfs.assert_called_once_with(
         allele_counters={'sample_id': mock_ac},
         target_sample='sample_id',
+        target_role='main_sample',
         include_gvcfs=include_gvcfs,
         include_med_dp=include_med_dp,
         left_padding=0,

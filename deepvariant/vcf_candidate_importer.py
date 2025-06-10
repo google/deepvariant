@@ -61,6 +61,7 @@ class VcfCandidateImporter(variant_caller.VariantCaller):
       self,
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       sample_name: str,
+      sample_role: str = '',
   ) -> List[deepvariant_pb2.DeepVariantCall]:
     return self.cpp_variant_caller_from_vcf.calls_from_vcf(
         allele_counters[sample_name], self.vcf_reader
@@ -70,6 +71,7 @@ class VcfCandidateImporter(variant_caller.VariantCaller):
       self,
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       sample_name: str,
+      sample_role: str = '',
   ):
     return self.cpp_variant_caller_from_vcf.call_positions_from_vcf(
         allele_counters[sample_name], self.vcf_reader

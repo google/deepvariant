@@ -2763,6 +2763,7 @@ class RegionProcessor:
       candidates[role], gvcfs[role] = sample.variant_caller.calls_and_gvcfs(
           allele_counters=allele_counters,
           target_sample=sample.options.name,
+          target_role=sample.options.role,
           include_gvcfs=gvcf_output_enabled(self.options),
           include_med_dp=self.options.include_med_dp,
           left_padding=left_padding,

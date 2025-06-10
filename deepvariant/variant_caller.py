@@ -416,6 +416,7 @@ class VariantCaller(metaclass=abc.ABCMeta):
       self,
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       target_sample: str,
+      target_role: str = '',
       include_gvcfs: bool = False,
       include_med_dp: bool = False,
       left_padding: int = 0,
@@ -430,6 +431,7 @@ class VariantCaller(metaclass=abc.ABCMeta):
         holding the allele counts we will use to find candidate variants and
         create gvcf records.
       target_sample: string. Sample ID of sample for which variants are called.
+      target_role: string. Role of the target sample.
       include_gvcfs: boolean. If True, we will compute gVCF records for all of
         the AlleleCounts in AlleleCounter.
       include_med_dp: boolean. If True, in the gVCF records, we will include
@@ -448,7 +450,9 @@ class VariantCaller(metaclass=abc.ABCMeta):
     # TODO Consider passing left and right padding to get_candidates so
     # that we didn't waiste runtime on calculating candidates beoynd the region.
     candidates = self.get_candidates(
-        allele_counters=allele_counters, sample_name=target_sample
+        allele_counters=allele_counters,
+        sample_name=target_sample,
+        sample_role=target_role,
     )
 
     gvcfs = []
@@ -468,6 +472,7 @@ class VariantCaller(metaclass=abc.ABCMeta):
       self,
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       sample_name: str,
+      sample_role: str = '',
   ):
     raise NotImplementedError
 
@@ -476,5 +481,6 @@ class VariantCaller(metaclass=abc.ABCMeta):
       self,
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       sample_name: str,
+      sample_role: str = '',
   ):
     raise NotImplementedError

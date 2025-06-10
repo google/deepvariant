@@ -59,18 +59,27 @@ PYBIND11_MODULE(variant_calling_multisample, m) {
            [](multi_sample::VariantCaller& self,
               const std::unordered_map<std::string, AlleleCounter*>&
                   allele_counts_wrapper,
-              const std::string& target_sample) {
+              const std::string& target_sample,
+              const std::string& target_role = "") {
              auto cpp_result = self.CallsFromAlleleCounts(allele_counts_wrapper,
-                                                          target_sample);
+                                                          target_sample,
+                                                          target_role);
              return cpp_result;
-           })
+           },
+          py::arg("allele_counts_wrapper"),
+          py::arg("target_sample"),
+          py::arg("target_role") = "")
       .def("call_positions_from_allele_counts",
            [](multi_sample::VariantCaller& self,
               const std::unordered_map<std::string, AlleleCounter*>&
                   allele_counters,
-              const std::string& target_sample) {
+              const std::string& target_sample,
+              const std::string& target_role = "") {
              auto cpp_result = self.CallPositionsFromAlleleCounts(
-                 allele_counters, target_sample);
+                 allele_counters, target_sample, target_role);
              return cpp_result;
-           });
+           },
+           py::arg("allele_counts_wrapper"),
+           py::arg("target_sample"),
+           py::arg("target_role") = "");
 }

@@ -33,11 +33,11 @@ from absl.testing import parameterized
 import numpy as np
 import numpy.testing as npt
 
-from third_party.nucleus.util import variant_utils
-from third_party.nucleus.util import variantcall_utils
 from deepvariant import testdata
 from deepvariant import variant_caller
 from deepvariant.protos import deepvariant_pb2
+from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
 
 
 def setUpModule():
@@ -75,10 +75,12 @@ class PlaceholderVariantCaller(variant_caller.VariantCaller):
         max_cache_coverage=max_cache_coverage,
     )
 
-  def get_candidates(self, allele_counters, sample_name):
+  def get_candidates(self, allele_counters, sample_name, sample_role: str = ''):
     return None
 
-  def get_candidate_positions(self, allele_counters, sample_name: str):
+  def get_candidate_positions(
+      self, allele_counters, sample_name: str, sample_role: str = ''
+  ):
     return None
 
 

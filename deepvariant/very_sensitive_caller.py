@@ -54,16 +54,22 @@ class VerySensitiveCaller(variant_caller.VariantCaller):
       self,
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       sample_name: str,
+      sample_role: str = "",
   ) -> Sequence[deepvariant_pb2.DeepVariantCall]:
     return self.cpp_variant_caller.calls_from_allele_counts(
-        allele_counters, sample_name
+        allele_counters,
+        sample_name,
+        sample_role,
     )
 
   def get_candidate_positions(
       self,
       allele_counters: Dict[str, allelecounter.AlleleCounter],
       sample_name: str,
+      sample_role: str = "",
   ):
     return self.cpp_variant_caller.call_positions_from_allele_counts(
-        allele_counters, sample_name
+        allele_counters,
+        sample_name,
+        sample_role,
     )

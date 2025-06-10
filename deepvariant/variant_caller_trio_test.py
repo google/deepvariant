@@ -70,10 +70,20 @@ class PlaceholderVariantCaller(variant_caller.VariantCaller):
         max_cache_coverage=max_cache_coverage,
     )
 
-  def get_candidates(self, allele_counters, sample_name):
+  def get_candidates(
+      self,
+      allele_counters,
+      sample_name,
+      sample_role: str = '',
+  ):
     return None
 
-  def get_candidate_positions(self, allele_counters, sample_name: str):
+  def get_candidate_positions(
+      self,
+      allele_counters,
+      sample_name: str,
+      sample_role: str = '',
+  ):
     return None
 
 

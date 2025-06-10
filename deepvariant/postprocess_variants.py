@@ -247,9 +247,14 @@ _PON_FILTERING = flags.DEFINE_string(
 # listed here will be have its values cleaned up if we've removed any alt
 # alleles.
 # Each tuple contains: field name, ref_is_zero.
-_ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset(
-    [('AD', True), ('VAF', False), ('MF', True), ('MD', True)]
-)
+_ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset([
+    ('AD', True),
+    ('VAF', False),
+    ('MF', True),
+    ('MD', True),
+    ('NAD', True),
+    ('NAF', False),
+])
 
 # The number of places past the decimal point to round QUAL estimates to.
 _QUAL_PRECISION = 7
@@ -1676,6 +1681,7 @@ def main(argv=()):
         sample_names=[sample_name],
         add_info_candidates=_DEBUG_OUTPUT_ALL_CANDIDATES.value == 'INFO',
         include_model_id=_SMALL_MODEL_CVO_RECORDS.value is not None,
+        include_somatic_fields=_PROCESS_SOMATIC.value,
     )
     if _PROCESS_SOMATIC.value:
       header.filters.append(

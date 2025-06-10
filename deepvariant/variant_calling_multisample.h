@@ -49,6 +49,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -89,6 +90,14 @@ extern const char* const kVAFFormatField;
 extern const char* const kMFFormatField;
 extern const char* const kMDFormatField;
 
+// Constants for:
+// NDP (depth in normal),
+// NAD (depth by allele in normal),
+// NAF (variant allele fraction in normal) format fields.
+extern const char* const kDPNormalFormatField;
+extern const char* const kADNormalFormatField;
+extern const char* const kVAFNormalFormatField;
+
 // Implements the less functionality needed to use an Allele as a key in a map.
 struct OrderAllele {
   bool operator()(const Allele& allele1, const Allele& allele2) const {
@@ -122,10 +131,12 @@ struct SelectAltAllelesInputOptions {
 
 // Output options for SelectAltAlleles() function.
 struct SelectAltAllelesResult {
-  std::vector<Allele> alt_alleles;
+  std::vector<Allele> alt_alleles;  // Alt alleles for the target sample.
   absl::node_hash_map<std::string, AlleleCount> allele_counts_mod;
   bool complex_variant_created;
   std::string ref_bases;
+  std::vector<Allele> non_target_sample_alleles;
+  std::vector<AlleleCount> non_target_allele_counts;
 };
 
 // Input options for SelectAltAllelesWithComplexVariant() function.
@@ -224,14 +235,16 @@ class VariantCaller {
   std::vector<DeepVariantCall> CallsFromAlleleCounts(
       const std::unordered_map<std::string, AlleleCounter*>&
           allele_counters,
-      const std::string& target_sample);
+      const std::string& target_sample,
+      const std::string& target_role = "");
 
   // High-level API for calculating potential variant position in a region.
   // This function is almost identical to CallsFromAlleleCounts except it
   // only calculates candidate positions.
   std::vector<int> CallPositionsFromAlleleCounts(
       const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-      const std::string& target_sample);
+      const std::string& target_sample,
+      const std::string& target_role = "");
 
   // Iterates allele_counts for all samples and calls specified function F for
   // each candidate. Currently there are 2 use case: generate candidates,
@@ -307,9 +320,11 @@ class VariantCaller {
   // Helper function to create a VariantCaller for testing.
   static std::unique_ptr<VariantCaller> MakeTestVariantCallerFromAlleleCounts(
       VariantCallerOptions options, absl::Span<const AlleleCount> allele_counts,
-      const std::string& sample_name) {
+      const std::string& sample_name,
+      const std::string& sample_role = "") {
     auto caller = std::make_unique<VariantCaller>(options);
     caller->target_sample_ = sample_name;
+    caller->target_role_ = sample_role;
     AlleleCounter* allele_counter =
         AlleleCounter::InitFromAlleleCounts(allele_counts);
     caller->allele_counters_per_sample_[sample_name] = allele_counter;
@@ -374,6 +389,8 @@ class VariantCaller {
   std::unordered_map<std::string, AlleleCounter*> allele_counters_per_sample_;
   // Name of the target sample for multi-allelic variant calling.
   std::string target_sample_;
+  // Role of the target sample for multi-allelic variant calling.
+  std::string target_role_;
 
   // Helper functions for methylation-aware phasing methylation merging
   // (PacBio only).

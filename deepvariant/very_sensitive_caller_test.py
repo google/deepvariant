@@ -121,7 +121,7 @@ class VerySensitiveCallerTests(parameterized.TestCase):
 
     expected_allele_counts_param = {'SAMPLE_ID': allele_counter}
     mock_cpp.calls_from_allele_counts.assert_called_once_with(
-        expected_allele_counts_param, 'SAMPLE_ID'
+        expected_allele_counts_param, 'SAMPLE_ID', ''
     )
     self.assertEqual(candidates, fake_candidates)
 

@@ -41,6 +41,9 @@ _GT = 'GT'
 _MF = 'MF'
 _MT = 'MT'
 _MI = 'MI'
+_NAD = 'NAD'
+_NDP = 'NDP'
+_NAF = 'NAF'
 
 # The max number of regions we can expect to be processed by a single shard.
 _MAX_REGIONS_INSIDE_SHARD = 100_000
@@ -81,6 +84,16 @@ def set_format(variant_call, field_name, value, vcf_object=None):
   if field_name == _MT:
     set_mt(variant_call, value)
     return
+  if field_name == _NAD:
+    set_nad(variant_call, value)
+    return
+  if field_name == _NDP:
+    set_ndp(variant_call, value)
+    return
+  if field_name == _NAF:
+    set_naf(variant_call, value)
+    return
+
   if vcf_object is None:
     set_field_fn = vcf_constants.reserved_format_field_set_fn(field_name)
   else:
@@ -113,6 +126,12 @@ def get_format(variant_call, field_name, vcf_object=None):
     return get_mt(variant_call)
   elif field_name == _MI:
     return get_mi(variant_call)
+  elif field_name == _NAD:
+    return get_nad(variant_call)
+  elif field_name == _NDP:
+    return get_ndp(variant_call)
+  elif field_name == _NAF:
+    return get_naf(variant_call)
 
   if vcf_object is None:
     get_field_fn = vcf_constants.reserved_format_field_get_fn(field_name)
@@ -362,6 +381,77 @@ def set_mi(variant_call, mi_value):
       mi_value: float. The p-value for allele-specific methylation sites.
   """
   struct_utils.set_number_field(variant_call.info, 'MI', mi_value)
+
+
+def get_nad(variant_call):
+  """Returns the number of reads supporting each allele in the normal sample.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to retrieve NAD from.
+  """
+  if not variant_call.info or 'NAD' not in variant_call.info:
+    return []
+
+  return [
+      x.int_value
+      for x in variant_call.info['NAD'].values
+      if hasattr(x, 'int_value')
+  ]
+
+
+def set_nad(variant_call, ad_n_value):
+  """Sets the number of reads supporting each allele in the normal sample.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to modify.
+      ad_n_value: int. The number of reads supporting each allele in the normal
+        sample.
+  """
+  struct_utils.set_int_field(variant_call.info, 'NAD', ad_n_value)
+
+
+def get_ndp(variant_call):
+  """Returns the total depth observed in the normal sample.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to retrieve NDP from.
+  """
+  if not variant_call.info or 'NDP' not in variant_call.info:
+    return []
+
+  return variant_call.info['NDP'].values[0].int_value
+
+
+def set_ndp(variant_call, dp_n_value):
+  """Sets the number of reads observed in the normal sample.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to modify.
+      dp_n_value: int. The number of reads supporting the reference allele.
+  """
+  struct_utils.set_int_field(variant_call.info, 'NDP', dp_n_value)
+
+
+def get_naf(variant_call):
+  """Returns the number of reads supporting the reference allele.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to retrieve NAF from.
+  """
+  if not variant_call.info or 'NAF' not in variant_call.info:
+    return []
+
+  return variant_call.info['NAF'].values[0].number_value
+
+
+def set_naf(variant_call, vaf_n_value):
+  """Sets the number of reads supporting the reference allele (NAF) in VariantCall.
+
+  Args:
+      variant_call: VariantCall proto. The VariantCall to modify.
+      vaf_n_value: float. The number of reads supporting the reference allele.
+  """
+  struct_utils.set_number_field(variant_call.info, 'NAF', vaf_n_value)
 
 
 def determine_methylation_type(
