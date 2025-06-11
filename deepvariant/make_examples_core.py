@@ -2494,17 +2494,20 @@ class RegionProcessor:
       epath.Path(subdir).mkdir(parents=True, exist_ok=True)
     return fullpath
 
-  def _file_for_region(self, region, basename):
+  def _file_for_region_and_sample(self, region, sample_name, basename):
     """Returns the path to a file in a region-specific subdirectory."""
     # TODO: This logic currently only works for single sample.
     # Once we extend to multi-sample, we can remove this assert.
-    assert len(self.samples) == 1
-    return self._root_join(os.path.join(ranges.to_literal(region), basename))
+    return self._root_join(
+        os.path.join(ranges.to_literal(region), f'{sample_name}_{basename}')
+    )
 
-  def log_graph_metrics(self, region, graph):
+  def log_graph_metrics(self, region, sample, graph):
     """Logs, if enabled, graph construction information for region."""
     if graph:
-      dest_file = self._file_for_region(region, 'graph.dot')
+      dest_file = self._file_for_region_and_sample(
+          region, sample.options.role, 'graph.dot'
+      )
       with epath.Path(dest_file).open('w') as f:
         f.write(graph.graphviz())
 
@@ -2925,7 +2928,6 @@ class RegionProcessor:
           # This logic below will write out the DOT files under the directory
           # specified by the flag --realigner_diagnostics, if phase_reads is
           # set to True.
-          # TODO: Extend the logic to work for multi-sample cases.
 
           if self.options.phasing_error_stats_output:
             if (
@@ -2945,9 +2947,8 @@ class RegionProcessor:
       if (
           self.options.phase_reads
           and self.options.realigner_options.diagnostics.output_root
-          and len(self.samples) == 1  # TODO
       ):
-        self.log_graph_metrics(region, self.direct_phasing_cpp)
+        self.log_graph_metrics(region, sample, self.direct_phasing_cpp)
 
       # If methylation-aware phasing is enabled, but methylation-calling is
       # disabled, then filter out methylation ref sites from output.
