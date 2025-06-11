@@ -243,8 +243,12 @@ def get_deepsomatic_wes_config(
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
-  config.num_epochs = 80
-  config.early_stopping_patience = 10
+  config.num_epochs = 100
+  config.early_stopping_patience = 50
+  config.class_weights = '1,1,10'
+  config.learning_rate = 0.000009120108596883167
+  config.learning_rate_decay_rate = 0.8799173585418989
+  config.warmup_steps = 7590
 
 
 def get_deepsomatic_pacbio_tumor_normal_config(
