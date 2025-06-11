@@ -28,7 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Shared flags and option handling for DeepVariant and DeepTrio."""
 
-import os.path
 import re
 import textwrap
 from typing import List
@@ -964,30 +963,9 @@ def shared_flags_to_options(
     channel_set = []
     channels_enum = None
     if make_examples_core.in_calling_mode(options) and flags_obj.checkpoint:
-      # --checkpoint flag may contain the path to saved model or a checkpoint.
-      # Example: --checkpoint=/some/path/to/saved_model/
-      # Example: --checkpoint=/some/path/to/checkpoint/model.ckpt
-      # The algorithm of calculating the path to example_info.json should
-      # handle all previous releases, both ckpt and saved model cases.
-      # We assume that the name is example_info.json if checkpoint flag points
-      # to a saved model.
-      # File name may vary if checkpoint is set with cktp path.
-      # If checkpoint is a directory containing saved_model.pb then it is a
-      # saved model.
-      if gfile.Exists(f'{_CHECKPOINT.value}/saved_model.pb'):
-        model_example_info_json = f'{_CHECKPOINT.value}/example_info.json'
-      else:
-        # checkpoint is a ckpt path. We need to strip the last part of the path
-        # to get the directory. Inside, we need to find the file which ends
-        # with example_info.json.
-        model_dir = os.path.dirname(_CHECKPOINT.value)
-        # We expect the json file to be in the same directory as the checkpoint.
-        model_example_info_json = f'{model_dir}/example_info.json'
-      if not gfile.Exists(model_example_info_json):
-        raise ValueError(
-            f'example_info.json not found in {_CHECKPOINT.value}. Please'
-            ' check the checkpoint path.'
-        )
+      model_example_info_json = (
+          make_examples_core.get_model_example_info_json_path(_CHECKPOINT.value)
+      )
       _, channels_enum, _ = dv_utils.get_shape_and_channels_from_json(
           f'{model_example_info_json}'
       )

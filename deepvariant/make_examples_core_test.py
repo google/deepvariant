@@ -151,6 +151,92 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
           deepvariant_pb2.MakeExamplesOptions.Mode, 'foo'
       )
 
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_with_empty_example_info_file(self):
+    example_info_file = self.create_tempfile(
+        file_path='model.example_info.json', content='{}'
+    )
+    FLAGS.mode = 'calling'
+    FLAGS.checkpoint = example_info_file.full_path
+
+    with self.assertLogs() as logs:
+      make_examples_core.apply_flags_for_calling(FLAGS)
+
+    self.assertEqual(
+        logs.records[0].message,
+        'model.example_info filename: %s' % example_info_file.full_path,
+    )
+
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_with_examples_info_flag(self):
+    example_info_file = self.create_tempfile(
+        file_path='model.example_info.json',
+        content='{"flags_for_calling": {"pileup_image_height": 100}}',
+    )
+    FLAGS.mode = 'calling'
+    FLAGS.checkpoint = example_info_file.full_path
+
+    make_examples_core.apply_flags_for_calling(FLAGS)
+
+    self.assertEqual(FLAGS.pileup_image_height, 100)
+
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_with_non_existing_flag(self):
+    example_info_file = self.create_tempfile(
+        file_path='model.example_info.json',
+        content='{"flags_for_calling": {"foo": "bar"}}',
+    )
+    FLAGS.mode = 'calling'
+    FLAGS.checkpoint = example_info_file.full_path
+
+    with self.assertRaises(SystemExit) as se:
+      make_examples_core.apply_flags_for_calling(FLAGS)
+
+    self.assertEqual(se.exception.code, 1)
+
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_with_command_line_flag(self):
+    example_info_file = self.create_tempfile(
+        file_path='model.example_info.json',
+        content='{"flags_for_calling": {"pileup_image_height": "100"}}',
+    )
+    FLAGS.mode = 'calling'
+    FLAGS.checkpoint = example_info_file.full_path
+    FLAGS.pileup_image_height = 200
+    FLAGS['pileup_image_height'].present = True
+
+    make_examples_core.apply_flags_for_calling(FLAGS)
+
+    self.assertEqual(FLAGS.pileup_image_height, 200)
+
+  def test_no_example_info_json_path_with_saved_model(self):
+    with self.assertRaises(ValueError):
+      make_examples_core.get_model_example_info_json_path('')
+
+  def test_old_example_info_json_path_with_saved_model(self):
+    example_info_file = self.create_tempfile(file_path='example_info.json')
+    checkpoint = example_info_file.full_path
+    with self.assertLogs() as logs:
+      model_example_info_json_path = (
+          make_examples_core.get_model_example_info_json_path(checkpoint)
+      )
+    self.assertEqual(model_example_info_json_path, example_info_file.full_path)
+    self.assertEqual(
+        logs.records[0].message,
+        'model.example_info.json not found in %s. Fallback to an'
+        ' example_info.json file in the same directory.' % checkpoint,
+    )
+
+  def test_model_example_info_json_path_with_saved_model(self):
+    example_info_file = self.create_tempfile(
+        file_path='model.example_info.json'
+    )
+    checkpoint = example_info_file.full_path
+    model_example_info_json_path = (
+        make_examples_core.get_model_example_info_json_path(checkpoint)
+    )
+    self.assertEqual(model_example_info_json_path, example_info_file.full_path)
+
   def test_extract_sample_name_from_reads_single_sample(self):
     mock_sample_reader = mock.Mock()
     mock_sample_reader.header = reads_pb2.SamHeader(

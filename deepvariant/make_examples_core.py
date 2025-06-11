@@ -36,6 +36,7 @@ import math
 import os
 import random
 import re
+import sys
 import time
 from typing import Any, DefaultDict, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
 
@@ -70,6 +71,7 @@ from deepvariant.small_model import inference as small_model_inference
 from deepvariant.small_model import make_small_model_examples
 from deepvariant.vendor import timer
 from google.protobuf import text_format
+from tensorflow.python.platform import gfile
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import sam
@@ -402,6 +404,15 @@ def in_training_mode(options):
 
 def in_calling_mode(options):
   return options.mode == deepvariant_pb2.MakeExamplesOptions.CALLING
+
+
+def in_calling_mode_from_flag(mode_flag):
+  mode = deepvariant_pb2.MakeExamplesOptions.UNSPECIFIED
+  if mode_flag:
+    mode = parse_proto_enum_flag(
+        deepvariant_pb2.MakeExamplesOptions.Mode, mode_flag.upper()
+    )
+  return mode == deepvariant_pb2.MakeExamplesOptions.CALLING
 
 
 def in_candidate_sweep_mode(options):
@@ -3563,3 +3574,117 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
 
   region_processor.make_examples_native.signal_shard_finished()
   log_summary_stats(options, n_stats)
+
+
+def get_model_example_info_json_path(checkpoint: str) -> str:
+  """Returns the path to the example_info.json file for the given checkpoint path."""
+  # --checkpoint flag may contain the path to saved model or a checkpoint.
+  # Example: --checkpoint=/some/path/to/saved_model/
+  # Example: --checkpoint=/some/path/to/checkpoint/model.ckpt
+  # The algorithm of calculating the path to example_info.json should
+  # handle all previous releases, both ckpt and saved model cases.
+  # We assume that the name is example_info.json if checkpoint flag points
+  # to a saved model.
+  # File name may vary if checkpoint is set with cktp path.
+  # If checkpoint is a directory containing saved_model.pb then it is a
+  # saved model.
+  if gfile.Exists(f'{checkpoint}/saved_model.pb'):
+    model_example_info_json = f'{checkpoint}/model.example_info.json'
+    example_info_json = f'{checkpoint}/example_info.json'
+  else:
+    # checkpoint is a ckpt path. We need to strip the last part of the path
+    # to get the directory. Inside, we need to find the file which ends
+    # with example_info.json.
+    model_dir = os.path.dirname(checkpoint)
+    # We expect the json file to be in the same directory as the checkpoint.
+    model_example_info_json = f'{model_dir}/model.example_info.json'
+    example_info_json = f'{model_dir}/example_info.json'
+  if gfile.Exists(model_example_info_json):
+    return model_example_info_json
+
+  if gfile.Exists(example_info_json):
+    logging.warning(
+        'model.example_info.json not found in %s. Fallback to an'
+        ' example_info.json file in the same directory.',
+        checkpoint,
+    )
+    return example_info_json
+
+  raise ValueError(
+      f'model.example_info.json not found in {checkpoint}. Please'
+      ' check the checkpoint path.'
+  )
+
+
+def apply_flags_for_calling(flags_obj: flags.FlagValues):
+  """Read flags for calling from the example_info.json file and apply them to the flag values object.
+
+  Flag values are resolved in the following order:
+  1. Command Line: User-provided flags take the highest priority.
+  2. model.example_info.json: Flags defined in the example_info.json
+     file are applied next.
+  3. Default Values: If a flag is not specified elsewhere,
+     its default value is used.
+
+  Args:
+    flags_obj: The flag values object.
+  """
+  example_info_filename: Optional[str] = None
+
+  # Only read the example_info.json file in calling mode, if a checkpoint is
+  # provided.
+  if in_calling_mode_from_flag(flags_obj.mode) and flags_obj.checkpoint:
+    try:
+      example_info_filename = get_model_example_info_json_path(
+          flags_obj.checkpoint
+      )
+    except ValueError as e:
+      logging.exception(
+          'Error: Failed to get model.example_info.json path: %s', e
+      )
+
+  logging.info('model.example_info filename: %s', example_info_filename)
+
+  flags_map = {}
+  if example_info_filename is not None:
+    logging.info('Reading flags_for_calling from %s', example_info_filename)
+
+    try:
+      with epath.Path(example_info_filename).open('r') as fin:
+        flags_map = json.load(fin)['flags_for_calling']
+    except IOError:
+      logging.info(
+          'Example info file not found. Options will only be set that have been'
+          ' passed in directly.'
+      )
+    except KeyError:
+      logging.info(
+          'No options are set from the `model.example_info.json` file because'
+          " the 'flags_for_calling' section is missing."
+      )
+
+  if flags_map:
+    logging.info(
+        'Flags for calling:\n%s',
+        '\n'.join([f'{k}: {v}' for k, v in flags_map.items()]),
+    )
+
+  for flag_name in flags_map:
+    if flag_name not in flags_obj:
+      logging.error(
+          'Error: Flag "%s" is not defined as an application flag.', flag_name
+      )
+      sys.exit(1)
+
+    flag = flags_obj[flag_name]
+    if flag.present:
+      logging.warning(
+          'Flag %s is specified in make.example_info.json [%s] but overridden'
+          ' by command line with value [%s]',
+          flag_name,
+          flags_map[flag_name],
+          flag.value,
+      )
+      continue
+
+    flag.value = flags_map[flag_name]

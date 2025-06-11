@@ -27,19 +27,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Step one of DeepVariant: creates tf.Example protos for training/calling."""
-
 import os
 from absl import app
 from absl import flags
 
 from deepvariant import dv_constants
-
 from deepvariant import logging_level
 from deepvariant import make_examples_core
 from deepvariant import make_examples_options
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io.python import hts_verbose
-
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import proto_utils
 
@@ -159,6 +156,8 @@ def default_options(add_flags=True, flags_obj=None):
   """
   if not flags_obj:
     flags_obj = FLAGS
+
+  make_examples_core.apply_flags_for_calling(flags_obj)
 
   samples_in_order, sample_role_to_train = one_sample_from_flags(
       add_flags=add_flags, flags_obj=flags_obj

@@ -443,16 +443,12 @@ py_library(
         ":make_examples_core",
         ":make_examples_options",
         "//deepvariant/protos:deepvariant_py_pb2",
-        "//deepvariant/python:allelecounter",
-        "//deepvariant/python:direct_phasing",
-        "//deepvariant/python:methylation_aware_phasing",
         "//third_party/nucleus/io/python:hts_verbose",
-        "//third_party/nucleus/protos:range_py_pb2",
-        "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl:app",
         "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
     ],
 )
 
@@ -648,6 +644,7 @@ py_binary(
         "//third_party/nucleus/util:errors",
         "//third_party/nucleus/util:proto_utils",
         "@absl_py//absl/flags",
+        "@absl_py//absl/logging",
         "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
         "@absl_py//absl:app",
     ],
