@@ -220,17 +220,17 @@ def get_deepsomatic_wgs_config(config: ml_collections.ConfigDict):
   config.beta_2 = 0.9665259112630292
   config.ema_momentum = 0.991463134331829
   config.label_smoothing = 0.000001
-  config.early_stopping_patience = 100
+  config.early_stopping_patience = 10
   config.optimizer = 'adam'
   config.warmup_steps = 1000
   config.weight_decay = 0.00004
+  config.use_mixed_precision = True
   config.learning_rate = 0.00009483389877395854
   config.learning_rate_decay_rate = 0.5
   config.warmup_steps = 10000
   config.num_epochs = 10
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
-  config.init_checkpoint = '/path/to/warmstart/checkpoint'
 
 
 def get_deepsomatic_wes_config(

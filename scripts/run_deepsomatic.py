@@ -456,6 +456,7 @@ def make_examples_somatic_command(
   if _MODEL_TYPE.value == 'WGS':
     # Specific flags that are not default can be added here.
     special_args = {}
+    special_args['sort_by_alt_allele_support'] = True
     special_args['vsc_min_fraction_indels'] = 0.05
     special_args['vsc_min_fraction_snps'] = 0.029
     special_args['vsc_max_fraction_indels_for_non_target_sample'] = 0.5

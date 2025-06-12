@@ -66,6 +66,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' %s'
+        ' --sort_by_alt_allele_support'
         ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
         ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
         ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
@@ -129,6 +130,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' %s'
+        ' --sort_by_alt_allele_support'
         ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
         ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
         ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
@@ -213,6 +215,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         '%s'
+        ' --sort_by_alt_allele_support'
         ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
         ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
         ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
@@ -239,17 +242,24 @@ class RunDeepSomaticTest(parameterized.TestCase):
     )
 
   @parameterized.parameters(
-      ('keep_secondary_alignments=true', '--keep_secondary_alignments'),
-      ('keep_secondary_alignments=false', '--nokeep_secondary_alignments'),
+      (
+          'keep_secondary_alignments=true',
+          '--keep_secondary_alignments --sort_by_alt_allele_support',
+      ),
+      (
+          'keep_secondary_alignments=false',
+          '--nokeep_secondary_alignments --sort_by_alt_allele_support',
+      ),
       (
           'keep_secondary_alignments=true,keep_supplementary_alignments=true',
-          '--keep_secondary_alignments --keep_supplementary_alignments',
+          '--keep_secondary_alignments --keep_supplementary_alignments '
+          + '--sort_by_alt_allele_support',
       ),
       (
           'use_ref_for_cram=true,keep_secondary_alignments=true,'
           + 'keep_supplementary_alignments=false',
           '--keep_secondary_alignments --nokeep_supplementary_alignments '
-          + '--use_ref_for_cram',
+          + '--sort_by_alt_allele_support --use_ref_for_cram',
       ),
   )
   @flagsaver.flagsaver
@@ -309,6 +319,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
             ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
             ' --checkpoint "/opt/models/wgs/model.ckpt" --gvcf'
             ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
+            ' --sort_by_alt_allele_support'
             ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
             ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
             ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
@@ -346,6 +357,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' --gvcf'
         ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" %s'
+        ' --sort_by_alt_allele_support'
         ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
         ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
         ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
