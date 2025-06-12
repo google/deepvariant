@@ -233,10 +233,10 @@ def get_deepsomatic_wgs_config(config: ml_collections.ConfigDict):
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
 
 
-def get_deepsomatic_wes_config(
+def get_deepsomatic_wes_tumor_only_config(
     config: ml_collections.ConfigDict,
 ):
-  """Config parameters for wgs training."""
+  """Config parameters for WES_TUMOR_ONLY training."""
   get_wgs_config(config)
   config.best_checkpoint_metric = 'tune/f1_homalt'
   # Exome Dataset
@@ -467,8 +467,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_deepsomatic_hybrid_config(config)
   elif config_name == 'deepsomatic_wgs_tumor_only':
     get_deepsomatic_wgs_tumor_only_config(config)
-  elif config_name == 'deepsomatic_wes':
-    get_deepsomatic_wes_config(config)
+  elif config_name == 'deepsomatic_wes_tumor_only':
+    get_deepsomatic_wes_tumor_only_config(config)
   elif config_name == 'deepsomatic_wgs_ffpe':
     get_deepsomatic_wgs_ffpe_config(config)
   elif config_name == 'deepsomatic_wes_ffpe':
