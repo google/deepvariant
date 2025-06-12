@@ -251,6 +251,29 @@ def get_deepsomatic_wes_tumor_only_config(
   config.warmup_steps = 7590
 
 
+def get_deepsomatic_wes_config(
+    config: ml_collections.ConfigDict,
+):
+  """Config parameters for DeepSomatic WES training."""
+  # Exome Dataset
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = ''
+  config.adaptive_epsilon = True  # necessary when using adam optimizer
+  config.best_checkpoint_metric = 'tune/f1_homalt'
+  config.beta_1 = 0.9651804083266324  # necessary when using adam optimizer
+  config.beta_2 = 0.9665259112630292  # necessary when using adam optimizer
+  config.early_stopping_patience = 10
+  config.ema_momentum = 0.991463134331829
+  config.learning_rate = 0.0013699439419246591
+  config.learning_rate_decay_rate = 0.8311741723269322
+  config.learning_rate_num_epochs_per_decay = 2.25
+  config.num_epochs = 100
+  config.num_validation_examples = 150000
+  config.optimizer = 'adam'
+  config.warmup_steps = 3159
+
+
 def get_deepsomatic_pacbio_tumor_normal_config(
     config: ml_collections.ConfigDict,
 ):
@@ -467,6 +490,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_deepsomatic_hybrid_config(config)
   elif config_name == 'deepsomatic_wgs_tumor_only':
     get_deepsomatic_wgs_tumor_only_config(config)
+  elif config_name == 'deepsomatic_wes':
+    get_deepsomatic_wes_config(config)
   elif config_name == 'deepsomatic_wes_tumor_only':
     get_deepsomatic_wes_tumor_only_config(config)
   elif config_name == 'deepsomatic_wgs_ffpe':
