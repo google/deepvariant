@@ -112,6 +112,23 @@ cc_library(
 )
 
 cc_library(
+    name = "read_supports_variant_fuzzy_channel",
+    srcs = ["read_supports_variant_fuzzy_channel.cc"],
+    hdrs = ["read_supports_variant_fuzzy_channel.h"],
+    deps = [
+        ":channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "identity_channel",
     srcs = ["identity_channel.cc"],
     hdrs = ["identity_channel.h"],

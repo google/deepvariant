@@ -60,6 +60,7 @@
 #include "deepvariant/channels/read_base_channel.h"
 #include "deepvariant/channels/read_mapping_percent_channel.h"
 #include "deepvariant/channels/read_supports_variant_channel.h"
+#include "deepvariant/channels/read_supports_variant_fuzzy_channel.h"
 #include "deepvariant/channels/strand_channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_set.h"
@@ -389,6 +390,9 @@ std::unique_ptr<Channel> Channels::ChannelEnumToObject(
     case DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT:
       return std::unique_ptr<Channel>(
           new ReadSupportsVariantChannel(width, options));
+    case DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT_FUZZY:
+      return std::unique_ptr<Channel>(
+          new ReadSupportsVariantFuzzyChannel(width, options));
     case DeepVariantChannelEnum::CH_READ_MAPPING_PERCENT:
       return std::unique_ptr<Channel>(
           new ReadMappingPercentChannel(width, options));
@@ -443,6 +447,8 @@ DeepVariantChannelEnum Channels::ChannelStrToEnum(const std::string& channel) {
   if (channel == ch_strand) return DeepVariantChannelEnum::CH_STRAND;
   if (channel == ch_read_supports_variant)
     return DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT;
+  if (channel == ch_read_supports_variant_fuzzy)
+    return DeepVariantChannelEnum::CH_READ_SUPPORTS_VARIANT_FUZZY;
   if (channel == ch_base_differs_from_ref)
     return DeepVariantChannelEnum::CH_BASE_DIFFERS_FROM_REF;
   if (channel == ch_read_mapping_percent)

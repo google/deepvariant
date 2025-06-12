@@ -1235,7 +1235,7 @@ message MakeExamplesRunInfo {
   MakeExamplesStats stats = 4;
 }
 
-// Next ID: 25.
+// Next ID: 26.
 enum DeepVariantChannelEnum {
   // Default should be unspecified.
   CH_UNSPECIFIED = 0;
@@ -1263,6 +1263,11 @@ enum DeepVariantChannelEnum {
   // Two extra channels for base_channels:
   CH_BASE_CHANNELS_ALTERNATE_ALLELE_1 = 20;
   CH_BASE_CHANNELS_ALTERNATE_ALLELE_2 = 21;
+
+  // Read supports variant fuzzy channel (can be used instead of
+  // CH_READ_SUPPORTS_VARIANT). This channel is used to find reads that support
+  // the variant with a fuzzy match.
+  CH_READ_SUPPORTS_VARIANT_FUZZY = 25;
 
   // The following channels correspond to the "Opt Channels" defined in
   // deepvariant/pileup_channel_lib.h:

@@ -1143,6 +1143,7 @@ cc_library(
         "//deepvariant/channels:read_base_channel",
         "//deepvariant/channels:read_mapping_percent_channel",
         "//deepvariant/channels:read_supports_variant_channel",
+        "//deepvariant/channels:read_supports_variant_fuzzy_channel",
         "//deepvariant/channels:strand_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:cigar_cc_pb2",
@@ -1163,6 +1164,7 @@ cc_test(
     srcs = ["pileup_channel_lib_test.cc"],
     deps = [
         ":pileup_channel_lib",
+        ":testing_utils",
         "//deepvariant/channels:allele_frequency_channel",
         "//deepvariant/channels:avg_base_quality_channel",
         "//deepvariant/channels:blank_channel",
@@ -1177,6 +1179,7 @@ cc_test(
         "//deepvariant/channels:mapping_quality_channel",
         "//deepvariant/channels:read_mapping_percent_channel",
         "//deepvariant/channels:read_supports_variant_channel",
+        "//deepvariant/channels:read_supports_variant_fuzzy_channel",
         "//deepvariant/channels:strand_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:cigar_cc_pb2",

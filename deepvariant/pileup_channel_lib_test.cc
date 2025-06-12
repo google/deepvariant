@@ -50,8 +50,10 @@
 #include "deepvariant/channels/mapping_quality_channel.h"
 #include "deepvariant/channels/read_mapping_percent_channel.h"
 #include "deepvariant/channels/read_supports_variant_channel.h"
+#include "deepvariant/channels/read_supports_variant_fuzzy_channel.h"
 #include "deepvariant/channels/strand_channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/testing_utils.h"
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/flat_hash_set.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
@@ -231,6 +233,147 @@ TEST(ReadSupportsAlt, OtherAlleleSupporting) {
   std::vector<std::string> alt_alleles = {};
 
   std::uint8_t rsa = channel.ReadSupportsAlt(dv_call, read, alt_alleles);
+  EXPECT_EQ(rsa, 2);
+}
+
+TEST(ReadSupportsAltFuzzy, AlleleUnsupporting) {
+  PileupImageOptions options{};
+  ReadSupportsVariantFuzzyChannel channel(/*width=*/100, options);
+  Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"});
+  DeepVariantCall dv_call = DeepVariantCall::default_instance();
+  std::vector<std::string> alt_alleles = {};
+
+  std::uint8_t rsa = channel.ReadSupportsAlt(dv_call, read, alt_alleles);
+  EXPECT_EQ(rsa, 0);
+}
+
+TEST(ReadSupportsAltFuzzy, AlleleSupporting) {
+  PileupImageOptions options{};
+  ReadSupportsVariantFuzzyChannel channel(/*width=*/100, options);
+  Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"}, "FRAG1");
+  read.set_read_number(1);
+
+  DeepVariantCall_SupportingReads dv_supporting_reads =
+      DeepVariantCall_SupportingReads::default_instance();
+  dv_supporting_reads.add_read_names("FRAG1/1");
+
+  DeepVariantCall dv_call = DeepVariantCall::default_instance();
+
+  dv_call.mutable_variant()->mutable_alternate_bases()->Add("GGGCGCATT");
+
+  dv_call.mutable_allele_support()->insert(
+      google::protobuf::MapPair<std::string, DeepVariantCall_SupportingReads>(
+          "GGGCGCATT", dv_supporting_reads));
+
+  std::vector<std::string> alt_alleles = {"GGGCGCATT"};
+
+  std::uint8_t rsa = channel.ReadSupportsAlt(dv_call, read, alt_alleles);
+  EXPECT_EQ(rsa, 1);
+}
+
+TEST(ReadSupportsAltFuzzy, OtherAlleleSupporting) {
+  PileupImageOptions options{};
+  ReadSupportsVariantFuzzyChannel channel(/*width=*/100, options);
+  Read read = nucleus::MakeRead("chr1", 1, "GGGCGCTTTT", {"8M"}, "FRAG2");
+  read.set_read_number(2);
+
+  DeepVariantCall_SupportingReads dv_supporting_reads =
+      DeepVariantCall_SupportingReads::default_instance();
+  dv_supporting_reads.add_read_names("FRAG2/2");
+
+  DeepVariantCall dv_call = DeepVariantCall::default_instance();
+
+  dv_call.mutable_variant()->mutable_alternate_bases()->Add("GGGCGCATT");
+
+  dv_call.mutable_allele_support()->insert(
+      google::protobuf::MapPair<std::string, DeepVariantCall_SupportingReads>(
+          "GGGCGCATT", dv_supporting_reads));
+
+  std::vector<std::string> alt_alleles = {};
+
+  std::uint8_t rsa = channel.ReadSupportsAlt(dv_call, read, alt_alleles);
+  EXPECT_EQ(rsa, 2);
+}
+
+TEST(ReadSupportsAltFuzzy, OtherAlleleFuzzySupporting) {
+  PileupImageOptions options{};
+  ReadSupportsVariantFuzzyChannel channel(/*width=*/100, options);
+  // Creating 3 reads that support different alt alleles.
+  Read read_1 = MakeRead("chr1", 1, "GGGCGCTT", {"8M"}, "Read1", /*hp_tag=*/1);
+  read_1.set_read_number(1);
+  Read read_2 = MakeRead("chr1", 1, "GGGCGCT", {"8M"}, "Read2", /*hp_tag=*/1);
+  read_2.set_read_number(1);
+  Read read_3 = MakeRead("chr1", 1, "GGGCGCTTT", {"8M"}, "Read3", /*hp_tag=*/1);
+  read_3.set_read_number(1);
+  // Read4 supports allele on a different phase.
+  Read read_4 = MakeRead("chr1", 1, "GGGCGC", {"8M"}, "Read4", /*hp_tag=*/2);
+  read_4.set_read_number(1);
+
+  DeepVariantCall_SupportingReads dv_supporting_reads_1 =
+      DeepVariantCall_SupportingReads::default_instance();
+  dv_supporting_reads_1.add_read_names("Read1/1");
+  DeepVariantCall_SupportingReads dv_supporting_reads_2 =
+      DeepVariantCall_SupportingReads::default_instance();
+  dv_supporting_reads_2.add_read_names("Read2/1");
+  DeepVariantCall_SupportingReads dv_supporting_reads_3 =
+      DeepVariantCall_SupportingReads::default_instance();
+  dv_supporting_reads_3.add_read_names("Read3/1");
+  DeepVariantCall_SupportingReads dv_supporting_reads_4 =
+      DeepVariantCall_SupportingReads::default_instance();
+  dv_supporting_reads_4.add_read_names("Read4/1");
+
+  DeepVariantCall dv_call = DeepVariantCall::default_instance();
+
+  dv_call.mutable_variant()->mutable_alternate_bases()->Add("GGGCGCATT");
+  // 1-base shorter alt
+  dv_call.mutable_variant()->mutable_alternate_bases()->Add("GGGCGCAT");
+  // 1-base longer alt
+  dv_call.mutable_variant()->mutable_alternate_bases()->Add("GGGCGCATTT");
+  // 2-base shorter alt. This alt allele has different HP tag.
+  dv_call.mutable_variant()->mutable_alternate_bases()->Add("GGGCGCA");
+
+  // Add HP tags to the variant, hp tags are set per alt allele.
+  auto alt_ps_field =
+      (*dv_call.mutable_variant()->mutable_info())["ALT_PS"].add_values();
+  alt_ps_field->set_int_value(1);
+  alt_ps_field =
+      (*dv_call.mutable_variant()->mutable_info())["ALT_PS"].add_values();
+  alt_ps_field->set_int_value(1);
+  alt_ps_field =
+      (*dv_call.mutable_variant()->mutable_info())["ALT_PS"].add_values();
+  alt_ps_field->set_int_value(1);
+  // HP tag is set to 2 for the last allele.
+  alt_ps_field =
+      (*dv_call.mutable_variant()->mutable_info())["ALT_PS"].add_values();
+  alt_ps_field->set_int_value(2);
+
+  dv_call.mutable_allele_support()->insert(
+      google::protobuf::MapPair<std::string, DeepVariantCall_SupportingReads>(
+          "GGGCGCATT", dv_supporting_reads_1));
+  dv_call.mutable_allele_support()->insert(
+      google::protobuf::MapPair<std::string, DeepVariantCall_SupportingReads>(
+          "GGGCGCAT", dv_supporting_reads_2));
+  dv_call.mutable_allele_support()->insert(
+      google::protobuf::MapPair<std::string, DeepVariantCall_SupportingReads>(
+          "GGGCGCATTT", dv_supporting_reads_3));
+  dv_call.mutable_allele_support()->insert(
+      google::protobuf::MapPair<std::string, DeepVariantCall_SupportingReads>(
+          "GGGCGCA", dv_supporting_reads_4));
+
+  // Creating pileup with 1 alt allele.
+  std::vector<std::string> alt_alleles = {"GGGCGCATT"};
+
+  // Read1 supports the alt allele in the pileup.
+  std::uint8_t rsa = channel.ReadSupportsAlt(dv_call, read_1, alt_alleles);
+  EXPECT_EQ(rsa, 1);
+  // Read2 fuzzy supports the alt allele in the pileup.
+  rsa = channel.ReadSupportsAlt(dv_call, read_2, alt_alleles);
+  EXPECT_EQ(rsa, 10);
+  // Read3 fuzzy supports the alt allele in the pileup.
+  rsa = channel.ReadSupportsAlt(dv_call, read_3, alt_alleles);
+  EXPECT_EQ(rsa, 10);
+  // Read4 fuzzy supports the alt allele in the pileup but has different HP tag.
+  rsa = channel.ReadSupportsAlt(dv_call, read_4, alt_alleles);
   EXPECT_EQ(rsa, 2);
 }
 
@@ -734,7 +877,6 @@ TEST(GetRefChannelDataTest, ReadData) {
                 DeepVariantChannelEnum::CH_BLANK)][0],
             0);
 }
-
 
 }  // namespace deepvariant
 }  // namespace genomics

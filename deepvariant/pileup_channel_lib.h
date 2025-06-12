@@ -62,6 +62,8 @@ static const auto& ch_base_quality = "base_quality";
 static const auto& ch_mapping_quality = "mapping_quality";
 static const auto& ch_strand = "strand";
 static const auto& ch_read_supports_variant = "read_supports_variant";
+static const auto& ch_read_supports_variant_fuzzy =
+    "read_supports_variant_fuzzy";
 static const auto& ch_base_differs_from_ref = "base_differs_from_ref";
 
 //--------------------//
