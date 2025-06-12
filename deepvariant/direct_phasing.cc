@@ -319,7 +319,6 @@ void DirectPhasing::AssignPhasesToVertices() {
     }
 
     // Unwind from the last position up and record phases at each position.
-    bool is_break_point_position = true;
     if (prev_score == scores_.end()) {
       prev_score = max_score_it;
     } else {
@@ -330,7 +329,9 @@ void DirectPhasing::AssignPhasesToVertices() {
           .allele_info.is_first_in_block = true;
     }
     // bool is_first_in_block = true;
+    int num_verts_in_block = 0;
     while (max_score_it != scores_.end()) {
+      num_verts_in_block++;
       // If phase_1 and phase_2 vertices are different then we assign phase 1
       // to the first vertex and phase 2 to the second vertex.
       if (max_score_it->first.phase_1_vertex !=
@@ -345,22 +346,26 @@ void DirectPhasing::AssignPhasesToVertices() {
       }
       // This should not happen because score is always increasing, or phasing
       // is restarted if there is no increase.
-      if (max_score_it != prev_score &&
+      // prev_score can be the same as current score if we start a new block and
+      // last score happens to be the same as current score.
+      if (max_score_it != prev_score && num_verts_in_block > 1 &&
           max_score_it->second.score == prev_score->second.score) {
         // Phasing cannot be continued. We have to break here.
         graph_[max_score_it->first.phase_1_vertex].allele_info.phase = 0;
         graph_[max_score_it->first.phase_2_vertex].allele_info.phase = 0;
         i--;
         LOG(WARNING) << "Unexpected phasing score at position "
-            << graph_[max_score_it->first.phase_1_vertex].allele_info.position;
-        is_break_point_position = true;
+            << graph_[max_score_it->first.phase_1_vertex].allele_info.position
+            << " with score " << max_score_it->second.score;
         break;
       }
       // Go to the next score.
       auto next_max_score_it = scores_.find(
           {max_score_it->second.from[0], max_score_it->second.from[1]});
       if (next_max_score_it == scores_.end()) {
-        if (is_break_point_position)  {
+        // If continuous phasing block consists of just one vertex then we
+        // cannot phase this block.
+        if (num_verts_in_block == 1)  {
           graph_[max_score_it->first.phase_1_vertex].allele_info.phase = 0;
           graph_[max_score_it->first.phase_2_vertex].allele_info.phase = 0;
         }
@@ -371,7 +376,6 @@ void DirectPhasing::AssignPhasesToVertices() {
       prev_score = max_score_it;
       max_score_it = next_max_score_it;
       i--;
-      is_break_point_position = false;
     }
   }  // while all positions
   if (prev_score != scores_.end()) {
