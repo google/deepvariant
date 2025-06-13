@@ -779,7 +779,7 @@ AlleleMap BuildMatchedNormalAlleleMap(
       Allele empty_normal_allele;
       // Set the allele type and bases, but not count.
       empty_normal_allele.set_type(tumor_alt_allele.type());
-      empty_normal_allele.set_bases(tumor_allele_bases);
+      empty_normal_allele.set_bases(tumor_alt_allele.bases());
       normal_allele_map_ordered[empty_normal_allele] = tumor_allele_bases;
     }
   }
@@ -813,7 +813,11 @@ void AddNormalReadDepths(const AlleleCount& allele_count,
   }
 
   for (const std::string& alt : variant->alternate_bases()) {
-    const Allele& allele = *alt_to_alleles.find(alt)->second;
+    const auto it = alt_to_alleles.find(alt);
+    CHECK(it != alt_to_alleles.end())
+        << "Internal error: could not find alt " << alt
+        << " in normal allele map.";
+    const Allele& allele = *it->second;
     ad.push_back(allele.count());
     if (dp > 0) {
       vaf.push_back(1.0 * allele.count() / dp);
