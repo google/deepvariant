@@ -149,12 +149,13 @@ ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEP
 RUN chmod -R +r /opt/models/deepsomatic/ont/*
 
 WORKDIR /opt/models/deepsomatic/ffpe_wgs
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/fingerprint.pb \
- https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/saved_model.pb \
- https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/example_info.json ./
+# TODO: Update this before release.
+ADD https://storage.googleapis.com/brain-genomics/pichuan/xm_experiments/169996522/wu_1/best/deepsomatic.ffpe_wgs.savedmodel/fingerprint.pb \
+ https://storage.googleapis.com/brain-genomics/pichuan/xm_experiments/169996522/wu_1/best/deepsomatic.ffpe_wgs.savedmodel/saved_model.pb \
+ https://storage.googleapis.com/brain-genomics/pichuan/xm_experiments/169996522/wu_1/best/deepsomatic.ffpe_wgs.savedmodel/example_info.json ./
 WORKDIR /opt/models/deepsomatic/ffpe_wgs/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/variables/variables.data-00000-of-00001 \
- https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION_DEEPSOMATIC}/savedmodels/deepsomatic.ffpe_wgs.savedmodel/variables/variables.index ./
+ADD https://storage.googleapis.com/brain-genomics/pichuan/xm_experiments/169996522/wu_1/best/deepsomatic.ffpe_wgs.savedmodel/variables/variables.data-00000-of-00001 \
+ https://storage.googleapis.com/brain-genomics/pichuan/xm_experiments/169996522/wu_1/best/deepsomatic.ffpe_wgs.savedmodel/variables/variables.index ./
 RUN chmod -R +r /opt/models/deepsomatic/ffpe_wgs/*
 
 

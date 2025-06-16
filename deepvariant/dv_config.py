@@ -341,15 +341,17 @@ def get_deepsomatic_wgs_tumor_only_config(config: ml_collections.ConfigDict):
   config.tune_dataset_pbtxt = '/placer/prod/home/brain-genomics/danielecook/deepsomatic/ds_wgs_tumor_only/ds_wgs_tumor_only_tune.dataset_config.pbtxt'
 
 
-# FFPE Configs
 def get_deepsomatic_wgs_ffpe_config(
     config: ml_collections.ConfigDict,
 ):
+  """Config parameters for FFPE_WGS (tumor-normal) training."""
   get_wgs_config(config)
-  config.best_checkpoint_metric = 'tune/f1_homalt'
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
-  config.init_checkpoint = '/path/to/warmstart/checkpoint'
+  config.init_checkpoint = ''
+  config.best_checkpoint_metric = 'tune/f1_homalt'
+  config.early_stopping_patience = 15
+  config.num_epochs = 22
 
 
 def get_deepsomatic_wes_ffpe_config(
