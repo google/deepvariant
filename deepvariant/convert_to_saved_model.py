@@ -116,6 +116,10 @@ def initialize_model(
   return model
 
 
+def convert_gs_to_bigstore(gs_path: str) -> str:
+  return gs_path
+
+
 def main(_):
   """Main entry point."""
   loaded_model = initialize_model(
@@ -125,8 +129,8 @@ def main(_):
   tf.saved_model.save(loaded_model, _OUTPUT.value)
   # Copy over the example_info.json.
   gfile.Copy(
-      _EXAMPLE_INFO_JSON.value,
-      os.path.join(_OUTPUT.value, 'example_info.json'),
+      convert_gs_to_bigstore(_EXAMPLE_INFO_JSON.value),
+      convert_gs_to_bigstore(os.path.join(_OUTPUT.value, 'example_info.json')),
       overwrite=True,
   )
 
