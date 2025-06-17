@@ -232,8 +232,13 @@ def set_min_dp(variant_call, min_dp):
 
 
 def set_model_id(variant_call, model_id):
-  """Sets the 'MID' field of the VariantCall."""
+  """Sets the 'MID' (Model ID) field of the VariantCall."""
   set_format(variant_call, 'MID', model_id)
+
+
+def get_model_id(variant_call):
+  """Gets the 'MID' (Model ID) field of the VariantCall."""
+  return get_format(variant_call, 'MID')
 
 
 def get_min_dp(variant_call):

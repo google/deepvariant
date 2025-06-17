@@ -144,13 +144,16 @@ def _create_variant(
   )
 
 
-def _create_variant_with_alleles(ref=None, alts=None, start=0):
+def _create_variant_with_alleles(ref=None, alts=None, start=0, model_id=None):
   """Creates a Variant record with specified alternate_bases."""
+  variant_call = variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)
+  if model_id:
+    variantcall_utils.set_model_id(variant_call, model_id)
   return variants_pb2.Variant(
       reference_bases=ref,
       alternate_bases=alts,
       start=start,
-      calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)],
+      calls=[variant_call],
   )
 
 
@@ -979,6 +982,34 @@ class PostprocessVariantsTest(parameterized.TestCase):
           [0.99, 0.01, 0.0],
           6,
       ),
+      # Example with 2 alternate_bases which are called by 2 separate models.
+      # expected_unnormalized_probs is min of 0/0, 0/1, 1/1, 0/2, 1/2, 2/2
+      (
+          [
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.19, 0.75, 0.06],
+                  variant=_create_variant_with_alleles(
+                      alts=['C', 'T'], model_id='small_model'
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.03, 0.93, 0.04],
+                  variant=_create_variant_with_alleles(
+                      alts=['C', 'T'], model_id='deepvariant'
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.03, 0.92, 0.05],
+                  variant=_create_variant_with_alleles(
+                      alts=['C', 'T'], model_id='deepvariant'
+                  ),
+              ),
+          ],
+          [0.033062, 0.10498016, 0.00496365, 0.5842303, 0.2543793, 0.01838462],
+      ),
   )
   @flagsaver.flagsaver
   def test_merge_predictions_multiallelics_probs(
@@ -1124,6 +1155,131 @@ class PostprocessVariantsTest(parameterized.TestCase):
   def test_exception_merge_predictions(self, inputs, text):
     with self.assertRaisesRegex(ValueError, text):
       postprocess_variants.merge_predictions(inputs)
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='biallelic_case',
+          call_variants_outputs=[
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.999, 0.001, 0],
+                  variant=_create_variant_with_alleles(
+                      alts=['T'], model_id='small_model'
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.2, 0.8, 0],
+                  variant=_create_variant_with_alleles(
+                      alts=['T'], model_id='deepvariant'
+                  ),
+              ),
+          ],
+          gq_threshold=20,
+          expected_indices=[0],
+      ),
+      dict(
+          testcase_name='multiallelic_case',
+          call_variants_outputs=[
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.999, 0.001, 0],  # above threshold
+                  variant=_create_variant_with_alleles(
+                      alts=['T', 'C'], model_id='small_model'
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.2, 0.8, 0],
+                  variant=_create_variant_with_alleles(
+                      alts=['T', 'C'], model_id='deepvariant'
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.2, 0.8, 0],  # below threshold
+                  variant=_create_variant_with_alleles(
+                      alts=['T', 'C'], model_id='small_model'
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.999, 0.001, 0],
+                  variant=_create_variant_with_alleles(
+                      alts=['T', 'C'], model_id='deepvariant'
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.999, 0.001, 0],  # above threshold
+                  variant=_create_variant_with_alleles(
+                      alts=['T', 'C'], model_id='small_model'
+                  ),
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.2, 0.8, 0],
+                  variant=_create_variant_with_alleles(
+                      alts=['T', 'C'], model_id='deepvariant'
+                  ),
+              ),
+          ],
+          gq_threshold=20,
+          expected_indices=[0, 3, 4],
+      ),
+  )
+  def test_resolve_call_variant_output_by_model(
+      self, call_variants_outputs, gq_threshold, expected_indices
+  ):
+    output = postprocess_variants.resolve_call_variant_outputs_by_model(
+        call_variants_outputs, gq_threshold
+    )
+    expected_output = [call_variants_outputs[i] for i in expected_indices]
+    self.assertEqual(output, expected_output)
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='variants_match_same_model',
+          variant_1=_create_variant_with_alleles(
+              alts=['T'], model_id='deepvariant'
+          ),
+          variant_2=_create_variant_with_alleles(
+              alts=['T'], model_id='deepvariant'
+          ),
+          variants_are_equal=True,
+      ),
+      dict(
+          testcase_name='variants_match_different_model',
+          variant_1=_create_variant_with_alleles(
+              alts=['T'], model_id='small_model'
+          ),
+          variant_2=_create_variant_with_alleles(
+              alts=['T'], model_id='deepvariant'
+          ),
+          variants_are_equal=True,
+      ),
+      dict(
+          testcase_name='variants_do_not_match',
+          variant_1=_create_variant_with_alleles(alts=['T']),
+          variant_2=_create_variant_with_alleles(alts=['C']),
+          variants_are_equal=False,
+      ),
+      dict(
+          testcase_name='variants_do_not_match_same_model',
+          variant_1=_create_variant_with_alleles(
+              alts=['T'], model_id='deepvariant'
+          ),
+          variant_2=_create_variant_with_alleles(
+              alts=['C'], model_id='deepvariant'
+          ),
+          variants_are_equal=False,
+      ),
+  )
+  def test_variants_are_equal(self, variant_1, variant_2, variants_are_equal):
+    self.assertEqual(
+        postprocess_variants.variants_are_equal(variant_1, variant_2),
+        variants_are_equal,
+    )
 
   @parameterized.parameters(
       (

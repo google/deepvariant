@@ -60,6 +60,7 @@ from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import variant_utils
+from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vis
 
 
@@ -79,6 +80,8 @@ _LOG_EVERY_N_BATCHES = 50
 
 _DEFAULT_INPUT_READ_THREADS = 32
 _DEFAULT_PREFETCH_BUFFER_BYTES = 16 * 1000 * 1000
+
+DEEP_VARIANT_MODEL_ID = 'deepvariant'
 
 FLAGS = flags.FLAGS
 
@@ -391,6 +394,8 @@ def _create_cvo_proto(
       genotype_probabilities=gls,
       debug_info=debug_info,
   )
+  variant_call = call_variants_output.variant.calls[0]
+  variantcall_utils.set_model_id(variant_call, DEEP_VARIANT_MODEL_ID)
   return call_variants_output
 
 

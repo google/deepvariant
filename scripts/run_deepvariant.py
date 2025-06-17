@@ -271,6 +271,16 @@ _REPORT_TITLE = flags.DEFINE_string(
         'If not provided, the title will be the sample name.'
     ),
 )
+_EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES = flags.DEFINE_list(
+    'emit_vcf_by_small_model_gq_values',
+    None,
+    '[Experimental] When set as a list of integers, DeepVariant classifies all'
+    ' candidates using both small and CNN models. It then generates separate'
+    ' VCF files for each specified GQ (Genotype Quality) threshold by'
+    ' initiating multiple post-processing jobs. This experimental feature aims'
+    ' to analyze the combined accuracy of the two models across different GQ'
+    ' thresholds for all samples.',
+)
 
 MODEL_TYPE_MAP = {
     ModelType.WGS: '/opt/models/wgs',
@@ -419,6 +429,19 @@ def _set_small_model_config(
     special_args['small_model_vaf_context_window_size'] = (
         config.vaf_context_window
     )
+  if _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
+    special_args['small_model_emit_all_candidates'] = True
+
+
+def _rename_vcf_file_by_gq(
+    vcf_file: str,
+    gq_threshold: str | int,
+) -> str:
+  """Renames a VCF file by adding a suffix with the GQ threshold."""
+  if vcf_file.endswith('.vcf.gz'):
+    return vcf_file.replace('.vcf.gz', f'_gq_{gq_threshold}.vcf.gz')
+  else:
+    return f'{vcf_file}_gq_{gq_threshold}.vcf.gz'
 
 
 def make_examples_command(
@@ -769,29 +792,46 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
   )
 
   # postprocess_variants
-  commands.append(
-      postprocess_variants_command(
-          ref=_REF.value,
-          infile=call_variants_output,
-          outfile=_OUTPUT_VCF.value,
-          small_model_cvo_records=small_model_cvo_records,
-          extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
-          nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
-          gvcf_outfile=_OUTPUT_GVCF.value,
-          sample_name=_SAMPLE_NAME.value,
-          haploid_contigs=_HAPLOID_CONTIGS.value,
-          par_regions_bed=_PAR_REGIONS.value,
-          regions=_REGIONS.value,
+  if _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
+    for gq in _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
+      commands.append(
+          postprocess_variants_command(
+              ref=_REF.value,
+              infile=call_variants_output,
+              outfile=_rename_vcf_file_by_gq(_OUTPUT_VCF.value, gq),
+              small_model_cvo_records=small_model_cvo_records,
+              extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+              sample_name=_SAMPLE_NAME.value,
+              haploid_contigs=_HAPLOID_CONTIGS.value,
+              par_regions_bed=_PAR_REGIONS.value,
+              regions=_REGIONS.value,
+              resolve_call_variants_outputs_by_model=True,
+              small_model_gq_threshold=gq,
+          )
       )
-  )
-
-  # vcf_stats_report
-  if _VCF_STATS_REPORT.value:
+  else:
     commands.append(
-        vcf_stats_report_command(
-            vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value
+        postprocess_variants_command(
+            ref=_REF.value,
+            infile=call_variants_output,
+            outfile=_OUTPUT_VCF.value,
+            small_model_cvo_records=small_model_cvo_records,
+            extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+            nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
+            gvcf_outfile=_OUTPUT_GVCF.value,
+            sample_name=_SAMPLE_NAME.value,
+            haploid_contigs=_HAPLOID_CONTIGS.value,
+            par_regions_bed=_PAR_REGIONS.value,
+            regions=_REGIONS.value,
         )
     )
+    # vcf_stats_report
+    if _VCF_STATS_REPORT.value:
+      commands.append(
+          vcf_stats_report_command(
+              vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value
+          )
+      )
 
   # runtime-by-region
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:

@@ -63,6 +63,7 @@ Flags:
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 --skip_happy (true|false) If True, skip the hap.py evaluation.
+--emit_vcf_by_small_model_gq_values (comma-separated list of integers) If set, emits a separate VCF for each provided small model GQ threshold.
 
 If model_preset is not specified, the below flags are required:
 --model_type Type of DeepTrio model to run (WGS, WES, PACBIO, ONT)
@@ -97,6 +98,7 @@ CUSTOMIZED_MODEL_PARENT=""
 CUSTOMIZED_SMALL_MODEL=""
 CUSTOMIZED_SMALL_MODEL_PARENT=""
 DOCKER_SOURCE="google/deepvariant"
+EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES=""
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
 MODEL_TYPE=""
@@ -272,6 +274,11 @@ while (( "$#" )); do
       ;;
     --bam_parent2)
       BAM_PARENT2="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --emit_vcf_by_small_model_gq_values)
+      EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -513,6 +520,7 @@ echo "POSTPROCESS_VARIANTS_PARENT2_ARGS: ${POSTPROCESS_VARIANTS_PARENT2_ARGS}"
 echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
 echo "REF: ${REF}"
 echo "REGIONS: ${REGIONS}"
+echo "EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES: ${EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES}"
 echo "TRUTH_BED_CHILD: ${TRUTH_BED_CHILD}"
 echo "TRUTH_BED_PARENT1: ${TRUTH_BED_PARENT1}"
 echo "TRUTH_BED_PARENT2: ${TRUTH_BED_PARENT2}"
@@ -747,6 +755,10 @@ function setup_args() {
       echo "Enabling small model"
       extra_args+=( --nodisable_small_model )
     fi
+  fi
+  if [[ -n "${EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES}" ]]; then
+    echo "Running small model debug GQ over ${EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES}"
+    extra_args+=( --emit_vcf_by_small_model_gq_values "${EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES}")
   fi
   if [[ -n "${MAKE_EXAMPLES_ARGS}" ]]; then
     # In order to use proposed variants, we have to pass vcf_candidate_importer

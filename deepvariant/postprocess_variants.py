@@ -38,6 +38,7 @@ from typing import Iterable, Iterator, Sequence
 
 from absl import flags
 from absl import logging
+from google.protobuf import json_format
 import numpy as np
 import pysam
 import tensorflow as tf
@@ -50,6 +51,7 @@ from deepvariant import haplotypes
 from deepvariant import logging_level
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import postprocess_variants as postprocess_variants_lib
+from deepvariant.small_model import inference as small_model_inference
 from absl import app
 import multiprocessing
 from third_party.nucleus.io import sharded_file_utils
@@ -65,9 +67,10 @@ from third_party.nucleus.util import errors
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import proto_utils
 from third_party.nucleus.util import ranges
+from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
-from third_party.nucleus.util.struct_utils import add_string_field
+
 
 
 _INFILE = flags.DEFINE_string(
@@ -240,6 +243,23 @@ _PON_FILTERING = flags.DEFINE_string(
         'PON will be marked with a PON filter, and PASS filter value will be '
         'removed.'
     ),
+)
+_RESOLVE_CALL_VARIANTS_OUTPUTS_BY_MODEL = flags.DEFINE_bool(
+    'resolve_call_variants_outputs_by_model',
+    False,
+    '[Experimental] If true, postprocess_variants expects 2 CVO records for'
+    ' each example, one from each model. One of the CVO record is chosen based'
+    ' on the value of the `--small_model_gq_threshold` flag. This mirrors the'
+    ' same behavior that normally happens in `make_examples` during inference.'
+    ' The purpose is to explore the joint accuracy of the two'
+    ' models as a function of GQ thresholds.',
+)
+_SMALL_MODEL_GQ_THRESHOLD = flags.DEFINE_integer(
+    'small_model_gq_threshold',
+    -1,
+    '[Experimental] The GQ threshold for accepting classifications from the'
+    ' small model. Used when `--resolve_call_variants_outputs_by_model` is'
+    ' true.',
 )
 
 # Some format fields are indexed by alt allele, such as AD (depth by allele).
@@ -640,6 +660,30 @@ def _check_alt_allele_indices(
   return True
 
 
+def variants_are_equal(
+    variant_1: variants_pb2.Variant,
+    variant_2: variants_pb2.Variant,
+) -> bool:
+  """Returns True if the variants are the same, ignoring the calls field.
+
+  The `calls` field is ignored because the `VariantCall` object might originate
+  from the small model (during make_examples) or the CNN model (during
+  call_variants); what matters is that the `Variant` objects themselves match.
+
+  Args:
+    variant_1: The first variant to compare.
+    variant_2: The second variant to compare.
+
+  Returns:
+    True if the variants are the same, otherwise False.
+  """
+  variant_1_vars = json_format.MessageToDict(variant_1)
+  variant_2_vars = json_format.MessageToDict(variant_2)
+  del variant_1_vars['calls']
+  del variant_2_vars['calls']
+  return variant_1_vars == variant_2_vars
+
+
 def is_valid_call_variants_outputs(
     call_variants_outputs: Sequence[deepvariant_pb2.CallVariantsOutput],
 ) -> bool:
@@ -655,13 +699,16 @@ def is_valid_call_variants_outputs(
   if not call_variants_outputs:
     return True  # An empty list is a degenerate case.
 
-  if not _check_alt_allele_indices(call_variants_outputs):
+  if (
+      not _check_alt_allele_indices(call_variants_outputs)
+      and not _RESOLVE_CALL_VARIANTS_OUTPUTS_BY_MODEL.value
+  ):
     return False
 
   first_call, other_calls = call_variants_outputs[0], call_variants_outputs[1:]
   # Sanity check that all call_variants_outputs have the same `variant`.
   for call_to_check in other_calls:
-    if first_call.variant != call_to_check.variant:
+    if not variants_are_equal(first_call.variant, call_to_check.variant):
       logging.warning(
           (
               'Expected all inputs to merge_predictions to have the '
@@ -1044,6 +1091,50 @@ def get_par_regions() -> ranges.RangeSet | None:
     return None
 
 
+def resolve_call_variant_outputs_by_model(
+    call_variants_outputs: Sequence[deepvariant_pb2.CallVariantsOutput],
+    gq_threshold: float,
+) -> Sequence[deepvariant_pb2.CallVariantsOutput]:
+  """Picks one of the CVO pairs by model ID based on the GQ threshold.
+
+  In GQ debug mode, CVOs are written by both models. This means for every
+  candidate <> alt_allele_indices combination, there are 2 CVOs with class
+  probabilities from each model. For every alt_allele_indices set, one of the
+  CVOs is picked based on the GQ threshold, following the same logic as happens
+  in make_examples: if the GQ threshold is met, the CVO from the small model is
+  picked. Otherwise, the CVO from the deepvariant model is picked. This allows
+  multiple postprocess_variant commands to produce many VCFs from a single
+  deepvariant run, allowing for a detailed analysis of which GQ threshold
+  is optimal.
+
+  Args:
+    call_variants_outputs: list of CVOs for a given variant site.
+    gq_threshold: GQ threshold.
+
+  Returns:
+    A list of CVOs, one for each alt_allele_indices set from one of the models.
+  """
+  filtered_by_gq = []
+  cvos_grouped_by_alt_allele_indices = itertools.groupby(
+      call_variants_outputs,
+      lambda x: x.alt_allele_indices,
+  )
+  for _, cvo_pair in cvos_grouped_by_alt_allele_indices:
+    # every group should have 2 CVOs, one for each model, which are sorted into
+    # alphabetical order by model ID: ["deepvariant", "small_model"]
+    deepvariant_call, small_model_call = sorted(
+        cvo_pair,
+        key=lambda x: variantcall_utils.get_model_id(x.variant.calls[0]),
+    )
+    if small_model_inference.passes_confidence_threshold(
+        small_model_call.genotype_probabilities, gq_threshold
+    ):
+      filtered_by_gq.append(small_model_call)
+    else:
+      filtered_by_gq.append(deepvariant_call)
+  return filtered_by_gq
+
+
 def merge_predictions(
     call_variants_outputs: Sequence[deepvariant_pb2.CallVariantsOutput],
     qual_filter: float | None = None,
@@ -1055,6 +1146,10 @@ def merge_predictions(
   #
   # Because of the logic above, this function expects all cases above to have
   # genotype_predictions that we can combine from.
+  if _RESOLVE_CALL_VARIANTS_OUTPUTS_BY_MODEL.value:
+    call_variants_outputs = resolve_call_variant_outputs_by_model(
+        call_variants_outputs, _SMALL_MODEL_GQ_THRESHOLD.value
+    )
 
   par_regions = get_par_regions()
 
@@ -1092,7 +1187,7 @@ def merge_predictions(
   )
 
   if debug_output_all_candidates == 'INFO':
-    add_string_field(
+    struct_utils.add_string_field(
         canonical_variant.info,
         'CANDIDATES',
         '|'.join(canonical_variant.alternate_bases),

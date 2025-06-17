@@ -43,12 +43,26 @@ from third_party.nucleus.util import variantcall_utils
 
 
 SMALL_MODEL_ID = "small_model"
+_MAX_CONFIDENCE = 1 - 1e-7
 
 GENOTYPE_BY_ENCODING = {
     make_small_model_examples.GenotypeEncoding.REF.value: (0, 0),
     make_small_model_examples.GenotypeEncoding.HET.value: (0, 1),
     make_small_model_examples.GenotypeEncoding.HOM_ALT.value: (1, 1),
 }
+
+
+def passes_confidence_threshold(
+    class_probabilities: Sequence[float],
+    threshold: float,
+) -> bool:
+  """Returns True if the probability is above the threshold."""
+  return (
+      genomics_math.ptrue_to_bounded_phred(
+          max(class_probabilities), _MAX_CONFIDENCE
+      )
+      >= threshold
+  )
 
 
 class SmallModelVariantCaller:
@@ -59,7 +73,6 @@ class SmallModelVariantCaller:
   determine if we can accept to write it as CVO directly or if it should be
   passed to the regular DeepVariant model as a pileup image.
   """
-  MAX_CONFIDENCE = 1 - 1e-7
 
   def __init__(
       self,
@@ -67,11 +80,13 @@ class SmallModelVariantCaller:
       snp_gq_threshold: float,
       indel_gq_threshold: float,
       batch_size: int,
+      emit_all_candidates: bool = False,
   ):
     self.classifier = classifier
     self.snp_gq_threshold = snp_gq_threshold
     self.indel_gq_threshold = indel_gq_threshold
     self.batch_size = batch_size
+    self.emit_all_candidates = emit_all_candidates
 
   @classmethod
   def from_model_path(
@@ -80,6 +95,7 @@ class SmallModelVariantCaller:
       snp_gq_threshold: float,
       indel_gq_threshold: float,
       batch_size: int,
+      emit_all_candidates: bool = False,
   ) -> "SmallModelVariantCaller":
     """Init class with a path to a pickled model."""
     return cls(
@@ -87,10 +103,14 @@ class SmallModelVariantCaller:
         snp_gq_threshold,
         indel_gq_threshold,
         batch_size,
+        emit_all_candidates,
     )
 
   def _accept_call_result(
-      self, candidate, alt_allele_indices, probability
+      self,
+      candidate: deepvariant_pb2.DeepVariantCall,
+      alt_allele_indices: tuple[int, ...],
+      class_probabilities: Sequence[float],
   ) -> bool:
     """Determine if the given probability is above the GQ threshold."""
     if variant_utils.is_snp(
@@ -102,17 +122,12 @@ class SmallModelVariantCaller:
       threshold = self.snp_gq_threshold
     else:
       threshold = self.indel_gq_threshold
-    return (
-        genomics_math.ptrue_to_bounded_phred(
-            max(probability), self.MAX_CONFIDENCE
-        )
-        >= threshold
-    )
+    return passes_confidence_threshold(class_probabilities, threshold)
 
   def _get_call_variant_outputs(
       self,
-      candidate,
-      genotype_probabilities,
+      candidate: deepvariant_pb2.DeepVariantCall,
+      genotype_probabilities: Sequence[float],
       alt_allele_indices: tuple[int, ...],
   ) -> deepvariant_pb2.CallVariantsOutput:
     """Returns a CallVariantsOutput for the given candidate and prediction."""
@@ -160,13 +175,16 @@ class SmallModelVariantCaller:
         candidates_with_alt_allele_indices,
         genotype_probabilities,
     ):
-      if self._accept_call_result(candidate, alt_allele_indices, probability):
+      accept_call_result = self._accept_call_result(
+          candidate, alt_allele_indices, probability
+      )
+      if accept_call_result or self.emit_all_candidates:
         call_variant_outputs.append(
             self._get_call_variant_outputs(
                 candidate, probability, alt_allele_indices
             )
         )
-      else:
+      if not accept_call_result or self.emit_all_candidates:
         candidate.make_examples_alt_allele_indices.append(
             deepvariant_pb2.CallVariantsOutput.AltAlleleIndices(
                 indices=alt_allele_indices

@@ -57,6 +57,7 @@ Flags:
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
 --save_intermediate_results (true|false) If True, keep intermediate outputs from make_examples and call_variants.
 --skip_happy (true|false) If True, skip the hap.py evaluation.
+--emit_vcf_by_small_model_gq_values (comma-separated list of integers) If set, emits a separate VCF for each provided small model GQ threshold.
 --report_title Optional title for reports (VCF stats report and make_examples runtime report).
 
 --main_binary_name (run_deepvariant|run_pangenome_aware_deepvariant)  Default is run_deepvariant. If using the pangenome-aware DeepVariant Docker image, use run_pangenome_aware_deepvariant.
@@ -90,6 +91,7 @@ CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
 CUSTOMIZED_SMALL_MODEL=""
 DOCKER_SOURCE="google/deepvariant"
+EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES=""
 MAIN_BINARY_NAME="run_deepvariant"
 MAKE_EXAMPLES_ARGS=""
 MODEL_PRESET=""
@@ -278,6 +280,11 @@ while (( "$#" )); do
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
+    --emit_vcf_by_small_model_gq_values)
+      EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
     --num_shards)
       NUM_SHARDS="$2"
       shift # Remove argument name from processing
@@ -441,6 +448,7 @@ echo "PROPOSED_VARIANTS: ${PROPOSED_VARIANTS}"
 echo "REF: ${REF}"
 echo "REGIONS: ${REGIONS}"
 echo "REPORT_TITLE: ${REPORT_TITLE}"
+echo "EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES: ${EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES}"
 echo "TRUTH_BED: ${TRUTH_BED}"
 echo "TRUTH_VCF: ${TRUTH_VCF}"
 echo "========================="
@@ -787,6 +795,10 @@ function setup_args() {
       echo "Enabling small model"
       extra_args+=( --nodisable_small_model )
     fi
+  fi
+  if [[ -n "${EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES}" ]]; then
+      echo "Running small model debug GQ over ${EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES}"
+      extra_args+=( --emit_vcf_by_small_model_gq_values "${EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES}")
   fi
   # If you're running an older version (before 1.2) that doesn't have this flag,
   # you'll need to comment out this line.

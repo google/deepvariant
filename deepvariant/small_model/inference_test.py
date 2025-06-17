@@ -50,6 +50,7 @@ FAKE_VARIANT_CALL_2 = deepvariant_pb2.DeepVariantCall(
         reference_name="chr10",
         reference_bases="T",
         alternate_bases=["C"],
+        calls=[variants_pb2.VariantCall(genotype=[-1])],
     )
 )
 FAKE_VARIANT_CALL_INSERTION = deepvariant_pb2.DeepVariantCall(
@@ -65,6 +66,7 @@ FAKE_VARIANT_CALL_DELETION = deepvariant_pb2.DeepVariantCall(
         reference_name="chr11",
         reference_bases="TCC",
         alternate_bases=["T"],
+        calls=[variants_pb2.VariantCall(genotype=[-1])],
     )
 )
 FAKE_EXAMPLE = tf.train.Example(
@@ -215,6 +217,43 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
       )
     self.assertLen(call_variant_outputs, 1)
     self.assertLen(filtered_candidates, 1)
+
+  def test_emit_all_candidates_enabled(self):
+    variant_caller = inference.SmallModelVariantCaller(
+        classifier=self.mock_classifier,
+        snp_gq_threshold=100,
+        indel_gq_threshold=100,
+        batch_size=4,
+        emit_all_candidates=True,
+    )
+    call_variant_outputs, candidates_not_called = variant_caller.call_variants(
+        candidates_with_alt_allele_indices=[
+            (
+                FAKE_VARIANT_CALL_1,
+                make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+            ),
+            (
+                FAKE_VARIANT_CALL_2,
+                make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+            ),
+            (
+                FAKE_VARIANT_CALL_INSERTION,
+                make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+            ),
+            (
+                FAKE_VARIANT_CALL_DELETION,
+                make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+            ),
+        ],
+        examples=[
+            tf.train.Example(),
+            tf.train.Example(),
+            tf.train.Example(),
+            tf.train.Example(),
+        ],
+    )
+    self.assertLen(call_variant_outputs, 4)
+    self.assertLen(candidates_not_called, 4)
 
 
 if __name__ == "__main__":

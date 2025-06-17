@@ -761,6 +761,15 @@ _SMALL_MODEL_CALL_MULTIALLELICS = flags.DEFINE_bool(
     True,
     'Allows the small model to call multiallelic candidate sites.',
 )
+_SMALL_MODEL_EMIT_ALL_CANDIDATES = flags.DEFINE_bool(
+    'small_model_emit_all_candidates',
+    False,
+    '[Experimental] When this flag is set, the small model classifies all'
+    ' candidates while also passing them along to the CNN for classification.'
+    ' These are resolved during postprocess_variants into separate VCF files'
+    ' per GQ threshold. The purpose is to explore the joint accuracy of the two'
+    ' models as a function of GQ thresholds.',
+)
 _SMALL_MODEL_INFERENCE_BATCH_SIZE = flags.DEFINE_integer(
     'small_model_inference_batch_size',
     128,
@@ -914,6 +923,7 @@ def shared_flags_to_options(
       small_model_call_multiallelics=_SMALL_MODEL_CALL_MULTIALLELICS.value,
       small_model_inference_batch_size=_SMALL_MODEL_INFERENCE_BATCH_SIZE.value,
       small_model_vaf_context_window_size=_SMALL_MODEL_VAF_CONTEXT_WINDOW_SIZE.value,
+      small_model_emit_all_candidates=_SMALL_MODEL_EMIT_ALL_CANDIDATES.value,
       downsample_classes=list(map(float, _DOWNSAMPLE_CLASSES.value)),
       sample_mean_coverage_on_calling_regions=_SAMPLE_MEAN_COVERAGE_ON_CALLING_REGIONS.value,
       enable_methylation_calling=_ENABLE_METHYLATION_CALLING.value,
