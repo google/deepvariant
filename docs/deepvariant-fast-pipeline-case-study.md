@@ -8,7 +8,7 @@ PacBio data.
 Fast Pipeline is a DeepVariant feature that allows parallelization of the
 make_examples and call_variant stages. It is especially useful for machines with
 a GPU. Examples are streamed to call_variants inference, allowing simultaneous
-utilization of both the CPU and GPU. Please note that this feature is still
+utilization of both the CPU and GPU. Note that this feature is still
 experimental.
 
 This setup requires a machine with a GPU. For this case study, we will use a
@@ -27,11 +27,12 @@ gcloud compute instances create "deepvariant-fast-pipeline" \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --maintenance-policy "TERMINATE" \
   --accelerator=type=nvidia-tesla-p4,count=1 \
-  --image-family "ubuntu-2204-lts" \
-  --image-project "ubuntu-os-cloud" \
-  --machine-type "n1-standard-16" \
+  --image-family="common-cu124-ubuntu-2204-py310-conda" \
+  --image-project="deeplearning-platform-release" \
+  --machine-type="n1-standard-16" \
   --boot-disk-size "100" \
-  --zone "us-central1-a"
+  --zone "us-central1-a" \
+  --metadata="install-nvidia-driver=True"
 ```
 
 You can then ssh into the machine by running:
@@ -40,24 +41,10 @@ You can then ssh into the machine by running:
 gcloud compute ssh "deepvariant-fast-pipeline" --zone us-central1-a
 ```
 
-## Install Nvidia drivers and Nvidia container toolkit (optional)
-
-CUDA drivers and NVIDIA Container toolkit are required to run the case study.
-Please refer to the following documentation for more details.
-[NVIDIA CUDA Installation Guide for Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/),
-[Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-
-For this case study we used the
-[script](https://github.com/google/deepvariant/blob/r1.9/scripts/install_nvidia_docker.sh)
-that automates the CUDA and container tools kit installation.
-
-Please note that the script takes about 30 minutes to run.
-
-```bash
-wget https://raw.githubusercontent.com/google/deepvariant/refs/heads/r1.9/scripts/install_nvidia_docker.sh
-chmod +x install_nvidia_docker.sh
-./install_nvidia_docker.sh
-```
+Because `--metadata="install-nvidia-driver=True"` is set, the machine will
+automatically start to install the drivers. However, it will take a few minutes
+to finish installing the drivers. You can use `nvidia-smi` to see whether it's
+done or not.
 
 ## Get Docker image, models, and test data
 

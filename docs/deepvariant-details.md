@@ -305,25 +305,27 @@ gcloud compute instances create "${USER}-cpu"  \
 We tested with P100 GPU, which is currently only available on N1 machines:
 
 ```shell
-gcloud compute instances create "${USER}-gpu" \
+gcloud compute instances create "${USER}-gpu-dlvm" \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --maintenance-policy "TERMINATE" \
-  --accelerator=type=nvidia-tesla-p100,count=1 \
-  --image-family "ubuntu-2204-lts" \
-  --image-project "ubuntu-os-cloud" \
-  --machine-type "n1-standard-16" \
-  --boot-disk-size "300" \
-  --zone "us-west1-b" \
-  --min-cpu-platform "Intel Skylake"
+  --accelerator="type=nvidia-tesla-p100,count=1" \
+  --image-family="common-cu124-ubuntu-2204-py310-conda" \
+  --image-project="deeplearning-platform-release" \
+  --machine-type="n1-standard-16" \
+  --boot-disk-size="300" \
+  --zone="us-west1-b" \
+  --metadata="install-nvidia-driver=True"
 ```
+
+Because `--metadata="install-nvidia-driver=True"` is set, the machine will
+automatically start to install the drivers. However, it will take a few minutes
+to finish installing the drivers. You can use `nvidia-smi` to see whether it's
+done or not.
 
 NOTE: Be sure to manage instances efficiently. Remember to delete the instances
 you're not using. You can find the instances at:
 https://console.cloud.google.com/compute/instances?project=YOUR_PROJECT
 
-[exome case study]: deepvariant-exome-case-study.md
 [whole genome case study]: deepvariant-case-study.md
-[quick start]: deepvariant-quick-start.md
-[Running DeepVariant on Google Cloud Platform]: https://cloud.google.com/life-sciences/docs/tutorials/deepvariant
 [TensorFlow]: http://www.tensorflow.org/
 [Colab example]: visualizing_examples.ipynb

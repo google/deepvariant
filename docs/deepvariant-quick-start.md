@@ -169,10 +169,6 @@ If you are using GPUs, you can pull the GPU version, and make sure you run with
 `--gpus 1`. `call_variants` is the only step that uses the GPU, and can only use
 one at a time. `make_examples` and `postprocess_variants` do not run on GPU.
 
-For an example to install GPU driver and docker, see [install_nvidia_docker.sh].
-
-
-
 ```
 sudo docker run --gpus 1 \
   -v "${INPUT_DIR}":"/input" \
@@ -181,6 +177,9 @@ sudo docker run --gpus 1 \
   /opt/deepvariant/bin/run_deepvariant \
   ...
 ```
+
+For an example to get a VM with GPU drivers and Docker installed, see
+[Command for a GPU machine on Google Cloud Platform](deepvariant-details.md#command-for-a-gpu-machine-on-google-cloud-platform).
 
 ## Notes on Singularity
 
@@ -195,7 +194,7 @@ singularity run -B /usr/lib/locale/:/usr/lib/locale/ \
   docker://google/deepvariant:"${BIN_VERSION}" \
   /opt/deepvariant/bin/run_deepvariant \
   --model_type=WGS \ **Replace this string with exactly one of the following [WGS,WES,PACBIO,ONT_R104,HYBRID_PACBIO_ILLUMINA]**
-  --vcf_stats_report=true \ 
+  --vcf_stats_report=true \
   --ref="${INPUT_DIR}"/ucsc.hg19.chr20.unittest.fasta \
   --reads="${INPUT_DIR}"/NA12878_S1.chr20.10_10p1mb.bam \
   --regions "chr20:10,000,000-10,010,000" \
@@ -279,6 +278,4 @@ INDEL   PASS            4         4         0           13         0          9 
 [Dockerfile]: https://github.com/google/deepvariant/blob/r1.9/Dockerfile
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
-[VCF]: https://samtools.github.io/hts-specs/VCFv4.3.pdf
 [run_deepvariant.py]: ../scripts/run_deepvariant.py
-[install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
