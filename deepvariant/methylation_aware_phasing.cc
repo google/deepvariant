@@ -145,10 +145,10 @@ double WilcoxonRankSumTest(absl::Span<const double> hap1_methyl,
 //   2 if assigned to haplotype 2,
 //   or 0 if the read cannot be confidently assigned to either haplotype.
 int HaplotypeVoteWithMethylation(
-  const DeepVariantCall_ReadSupport& unphased_read,
-  const std::vector<DeepVariantCall>& informative_calls,
-  const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
-  const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads) {
+    const DeepVariantCall_ReadSupport& unphased_read,
+    absl::Span<const DeepVariantCall> informative_calls,
+    const std::vector<const DeepVariantCall_ReadSupport*>& hap1_reads,
+    const std::vector<const DeepVariantCall_ReadSupport*>& hap2_reads) {
   const std::string unphased_name = unphased_read.read_name();
   int hap1_votes = 0, hap2_votes = 0;
 
@@ -393,12 +393,11 @@ std::vector<const DeepVariantCall_ReadSupport*> ExtractReadsByPhase(
 //   A tuple. The first element is a vector of integer phase calls (0, 1, or 2)
 //   for each read, same size and order as reads_to_phase. The second element is
 //   a vector of p-values for each methylated reference site.
-std::tuple<std::vector<int>,
-           std::vector<double>> PerformMethylationAwarePhasing(
-  const std::vector<nucleus::genomics::v1::Read>& reads_to_phase,
-  const std::vector<int>& initial_read_phases,
-  std::vector<DeepVariantCall>& methylated_ref_sites,
-  int max_iter) {
+std::tuple<std::vector<int>, std::vector<double>>
+PerformMethylationAwarePhasing(
+    absl::Span<const nucleus::genomics::v1::Read> reads_to_phase,
+    const std::vector<int>& initial_read_phases,
+    std::vector<DeepVariantCall>& methylated_ref_sites, int max_iter) {
   // Build a map of read support for each read.
   std::unordered_map<std::string, DeepVariantCall_ReadSupport> read_support_map;
   for (const auto& call : methylated_ref_sites) {
