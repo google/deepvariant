@@ -150,7 +150,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   @parameterized.parameters(
       # All tests are run with fast_pass_aligner enabled. There are no
       # golden sets version for ssw realigner.
-      dict(mode='calling', num_shards=0),
+      dict(
+          mode='calling',
+          num_shards=0,
+          pileup_image_height_child=60,
+          pileup_image_height_parent=40,
+      ),
       dict(mode='calling', num_shards=3),
       dict(mode='candidate_sweep', num_shards=0),
       dict(mode='candidate_sweep', num_shards=3),
@@ -169,7 +174,13 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   )
   @flagsaver.flagsaver
   def test_make_examples_end2end(
-      self, mode, num_shards, labeler_algorithm=None, use_fast_pass_aligner=True
+      self,
+      mode,
+      num_shards,
+      labeler_algorithm=None,
+      use_fast_pass_aligner=True,
+      pileup_image_height_child=None,
+      pileup_image_height_parent=None,
   ):
     self.assertIn(mode, {'calling', 'training', 'candidate_sweep'})
     region = ranges.parse_literal('20:10,000,000-10,010,000')
@@ -182,6 +193,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.sample_name_to_train = 'child'
     FLAGS.sample_name_parent1 = 'parent1'
     FLAGS.sample_name_parent2 = 'parent2'
+    if pileup_image_height_child is not None:
+      FLAGS.pileup_image_height_child = pileup_image_height_child
+    if pileup_image_height_parent is not None:
+      FLAGS.pileup_image_height_parent = pileup_image_height_parent
     FLAGS.candidates = test_utils.test_tmpfile(
         _sharded('vsc.tfrecord', num_shards)
     )
