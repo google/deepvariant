@@ -49,6 +49,16 @@ FLAGS = flags.FLAGS
 
 def setUpModule():
   testdata.init()
+  # Create virtual devices
+  physical_devices = tf.config.list_physical_devices("CPU")
+  if physical_devices:
+    tf.config.set_logical_device_configuration(
+        physical_devices[0],
+        [
+            tf.config.LogicalDeviceConfiguration(),
+            tf.config.LogicalDeviceConfiguration(),
+        ],
+    )
 
 
 class CallVariantsTest(parameterized.TestCase):
@@ -185,8 +195,12 @@ class CallVariantsTest(parameterized.TestCase):
             getattr(one_cvo.debug_info.pileup_curation, field.name), 0
         )
 
+  @parameterized.named_parameters(
+      dict(testcase_name="ckpt", saved_model=False),
+      dict(testcase_name="saved_model", saved_model=True),
+  )
   @flagsaver.flagsaver
-  def test_call_variants_with_activation_layers_end2end(self):
+  def test_call_variants_with_activation_layers_end2end(self, saved_model):
     # Load in test data and get input shape
     training_testdata_path = testdata.GOLDEN_TRAINING_EXAMPLES
     example_info_json_path = dv_utils.get_example_info_json_filename(
@@ -194,7 +208,12 @@ class CallVariantsTest(parameterized.TestCase):
     )
 
     # Load and save a model with random weights
-    input_checkpoint_dir = os.path.join(self.create_tempdir("input"), "ckpt")
+    if saved_model:
+      input_checkpoint_dir = os.path.join(
+          self.create_tempdir("input"), "saved_model"
+      )
+    else:
+      input_checkpoint_dir = os.path.join(self.create_tempdir("input"), "ckpt")
     tf.io.gfile.makedirs(input_checkpoint_dir)
     tf.io.gfile.copy(
         example_info_json_path,
@@ -209,7 +228,10 @@ class CallVariantsTest(parameterized.TestCase):
     model = keras_modeling.get_model(config)(
         input_shape, weights=None, init_backbone_with_imagenet=False
     )
-    model.save_weights(input_checkpoint_dir)
+    if saved_model:
+      model.save(input_checkpoint_dir)
+    else:
+      model.save_weights(input_checkpoint_dir)
 
     # set up output directory
     output_dir = self.create_tempdir()
@@ -242,7 +264,73 @@ class CallVariantsTest(parameterized.TestCase):
     # Let's just check the first record.
     one_cvo = call_variants_outputs[0]
     self.assertNotEmpty(one_cvo.debug_info.image_encoded)
-    self.assertNotEmpty(one_cvo.debug_info.layer_output_encoded["mixed5"])
+    if not saved_model:
+      self.assertNotEmpty(one_cvo.debug_info.layer_output_encoded["mixed5"])
+
+  @flagsaver.flagsaver
+  def test_call_variants_multi_gpu_end2end(self):
+    # Load in test data and get input shape
+    calling_testdata_path = testdata.GOLDEN_CALLING_EXAMPLES
+    example_info_json_path = dv_utils.get_example_info_json_filename(
+        calling_testdata_path, None
+    )
+
+    # Load and save a model with random weights
+    input_checkpoint_dir = os.path.join(
+        self.create_tempdir("input"), "saved_model"
+    )
+    tf.io.gfile.makedirs(input_checkpoint_dir)
+    tf.io.gfile.copy(
+        example_info_json_path,
+        os.path.join(input_checkpoint_dir, "example_info.json"),
+        overwrite=True,
+    )
+    input_shape = dv_utils.get_shape_from_examples_path(calling_testdata_path)
+
+    config = ml_collections.ConfigDict()
+    with config.unlocked() as config:
+      config.model_type = "inception_v3"
+    model = keras_modeling.get_model(config)(
+        input_shape, weights=None, init_backbone_with_imagenet=False
+    )
+    model.save(input_checkpoint_dir)
+
+    # set up output directory
+    output_dir = self.create_tempdir()
+    output_tfrecord = os.path.join(output_dir, "output.tfrecord.gz")
+
+    # Run end to end variant calling
+    FLAGS.batch_size = 4
+    FLAGS.include_debug_info = False
+    FLAGS.outfile = output_tfrecord
+    FLAGS.examples = calling_testdata_path
+    FLAGS.checkpoint = input_checkpoint_dir
+    call_variants.main()
+
+    # Assert
+    sharded_output_files = tf.io.gfile.listdir(output_dir)
+    self.assertLen(sharded_output_files, 1)
+
+    only_sharded_output_filepath = os.path.join(
+        output_dir, sharded_output_files[0]
+    )
+    call_variants_outputs = list(
+        tfrecord.read_tfrecords(
+            only_sharded_output_filepath,
+            proto=deepvariant_pb2.CallVariantsOutput,
+            compression_type="GZIP",
+        )
+    )
+
+    # Check that we have the right number of output protos
+    num_examples = len(
+        list(
+            tfrecord.read_tfrecords(
+                calling_testdata_path, compression_type="GZIP"
+            )
+        )
+    )
+    self.assertLen(call_variants_outputs, num_examples)
 
   @parameterized.named_parameters(
       dict(

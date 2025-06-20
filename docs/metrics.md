@@ -21,22 +21,22 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    |  45m13.13s
-call_variants                    |  16m29.96s
-postprocess_variants (with gVCF) |  6m45.88s
-vcf_stats_report (optional)      |  5m15.00s (optional)
-total                            |  80m44.68s (1h20m44.68s)
+make_examples                    |  46m9.10s
+call_variants                    |  16m42.33s
+postprocess_variants (with gVCF) |  6m52.90s
+vcf_stats_report (optional)      |  5m18.72s (optional)
+total                            |  83m28.11s (1h23m28.11s)
 
 ### Accuracy
 
 hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
 held out while training.
 
-| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+`| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
 | INDEL | 501527   | 2974     | 1262     | 0.994105      | 0.997591         | 0.995845        |
 | SNP   | 3306720  | 20776    | 4900     | 0.993756      | 0.998521         | 0.996133        |
-
+`
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/WGS/deepvariant.output.visual_report.html)
 
 ## WES (Illumina)
@@ -48,11 +48,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 3m4.42s
-call_variants                    | 0m34.07s
-postprocess_variants (with gVCF) | 0m39.31s
-vcf_stats_report (optional)      | 0m5.17s (optional)
-total                            | 5m22.81s
+make_examples                    | 2m59.33s
+call_variants                    | 0m34.08s
+postprocess_variants (with gVCF) | 0m38.62s
+vcf_stats_report (optional)      | 0m5.02s (optional)
+total                            | 5m1.57s
 
 ### Accuracy
 
@@ -88,11 +88,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 37m50.60s
-call_variants                    | 11m53.23s
-postprocess_variants (with gVCF) | 4m46.98s
-vcf_stats_report (optional)      | 5m29.43s (optional)
-total                            | 67m40.38s (1h07m40.38s)
+make_examples                    | 37m51.05s
+call_variants                    | 11m42.48s
+postprocess_variants (with gVCF) | 4m50.48s
+vcf_stats_report (optional)      | 5m23.08s (optional)
+total                            | 68m47.35s (1h08m47.35s)
 
 ### Accuracy
 
@@ -118,11 +118,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | 51m33.25s
-call_variants                    | 16m40.08s
-postprocess_variants (with gVCF) | 5m34.46s
-vcf_stats_report (optional)      | 6m16.02s (optional)
-total                            | 85m20.85s (1h25m20.85s)
+make_examples                    | 53m39.33s
+call_variants                    | 16m50.55s
+postprocess_variants (with gVCF) | 5m44.15s
+vcf_stats_report (optional)      | 6m25.25s (optional)
+total                            | 91m3.72s (1h31m3.72s)
 
 ### Accuracy
 
@@ -146,11 +146,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 59m54.04s
-call_variants                    | 64m55.50s
-postprocess_variants (with gVCF) | 3m39.68s
-vcf_stats_report (optional)      | 5m4.61s (optional)
-total                            | 152m8.17s (2h32m8.17s)
+make_examples                    | 61m57.75s
+call_variants                    | 65m43.32s
+postprocess_variants (with gVCF) | 3m51.42s
+vcf_stats_report (optional)      | 5m10.99s (optional)
+total                            | 167m14.75s (2h47m14.75s)
 
 ### Accuracy
 

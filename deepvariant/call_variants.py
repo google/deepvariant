@@ -450,7 +450,7 @@ def get_dataset(
     path,
     example_shape,
     channel_indices,
-    batch_size,
+    global_batch_size,
     include_debug_info,
     debugging_true_label_mode,
     use_data_from_stream=False,
@@ -481,7 +481,7 @@ def get_dataset(
     image = dv_utils.preprocess_images(image, channel_indices)
     variant = parsed_features['variant/encoded']
     alt_allele_indices = parsed_features['alt_allele_indices/encoded']
-    optional_label = None
+    optional_label = tf.constant([-1], dtype=tf.int64)
     if debugging_true_label_mode:
       optional_label = parsed_features['label']
     return image_encoded, image, variant, alt_allele_indices, optional_label
@@ -502,7 +502,7 @@ def get_dataset(
         map_func=_parse_example_from_stream, num_parallel_calls=tf.data.AUTOTUNE
     )
     enc_image_variant_alt_allele_ds = enc_image_variant_alt_allele_ds.batch(
-        batch_size=batch_size
+        batch_size=global_batch_size
     ).prefetch(tf.data.AUTOTUNE)
     return enc_image_variant_alt_allele_ds
   # Dataset from TFRecord files.
@@ -533,7 +533,7 @@ def get_dataset(
     )
 
     enc_image_variant_alt_allele_ds = enc_image_variant_alt_allele_ds.batch(
-        batch_size=batch_size
+        batch_size=global_batch_size
     ).prefetch(tf.data.AUTOTUNE)
     return enc_image_variant_alt_allele_ds
 
@@ -753,6 +753,9 @@ def call_variants(
     allow_empty_examples: bool,
 ):
   """Main driver of call_variants."""
+  strategy = tf.distribute.MirroredStrategy()
+  logging.info('Number of devices: %d', strategy.num_replicas_in_sync)
+
   first_example = None
   if not use_dataset_from_stream:
     first_example = dv_utils.get_one_example_from_examples_path(
@@ -823,49 +826,66 @@ def call_variants(
         3, 'Set KMP_BLOCKTIME to {}'.format(os.environ['KMP_BLOCKTIME'])
     )
 
-  use_saved_model = tf.io.gfile.exists(checkpoint_path) and tf.io.gfile.exists(
-      f'{checkpoint_path}/saved_model.pb'
-  )
-  logging.info('Use saved model: %s', str(use_saved_model))
-
-  if checkpoint_path is None:
-    raise ValueError('Checkpoint filename must be specified.')
-
-  channel_indices = []
-  if not use_saved_model:
-    if not os.path.isdir(checkpoint_path):
-      example_info_json_path = os.path.join(
-          os.path.dirname(checkpoint_path), 'example_info.json'
-      )
-    else:
-      example_info_json_path = os.path.join(
-          checkpoint_path, 'example_info.json'
-      )
-    example_info = json.loads(tf.io.gfile.GFile(example_info_json_path).read())
-
-    for idx, channel_enum in enumerate(example_info['channels']):
-      if channel_enum not in example_info.get('ablation_channels', []):
-        channel_indices.append(idx)
-
-  example_shape, model = load_model_and_check_shape(
-      checkpoint_path,
-      examples_filename,
-      first_example,
-      use_saved_model,
-      _STREAM_EXAMPLES.value,
+  global_batch_size = batch_size * strategy.num_replicas_in_sync
+  logging.info(
+      'Per-replica batch size is %d. Global batch size is %d.',
+      batch_size,
+      global_batch_size,
   )
 
-  if not example_shape:
-    raise ValueError(
-        'Could not infer example shape from examples or model directory.'
+  with strategy.scope():
+    use_saved_model = tf.io.gfile.exists(
+        checkpoint_path
+    ) and tf.io.gfile.exists(f'{checkpoint_path}/saved_model.pb')
+    logging.info('Use saved model: %s', str(use_saved_model))
+
+    if checkpoint_path is None:
+      raise ValueError('Checkpoint filename must be specified.')
+
+    channel_indices = []
+    if not use_saved_model:
+      if not os.path.isdir(checkpoint_path):
+        example_info_json_path = os.path.join(
+            os.path.dirname(checkpoint_path), 'example_info.json'
+        )
+      else:
+        example_info_json_path = os.path.join(
+            checkpoint_path, 'example_info.json'
+        )
+      example_info = json.loads(
+          tf.io.gfile.GFile(example_info_json_path).read()
+      )
+
+      for idx, channel_enum in enumerate(example_info['channels']):
+        if channel_enum not in example_info.get('ablation_channels', []):
+          channel_indices.append(idx)
+
+    example_shape, model = load_model_and_check_shape(
+        checkpoint_path,
+        examples_filename,
+        first_example,
+        use_saved_model,
+        _STREAM_EXAMPLES.value,
     )
+
+    if not example_shape:
+      raise ValueError(
+          'Could not infer example shape from examples or model directory.'
+      )
+
+    activation_model = model
+    if include_debug_info and activation_layers:
+      if not use_saved_model:
+        activation_model = modeling.get_activations_model(
+            model, activation_layers
+        )
 
   logging.info('example_shape: %s', example_shape)
   enc_image_variant_alt_allele_ds = get_dataset(
       examples_filename,
       example_shape,
       channel_indices,
-      batch_size,
+      global_batch_size,
       include_debug_info,
       debugging_true_label_mode,
       use_dataset_from_stream,
@@ -873,90 +893,133 @@ def call_variants(
       num_shards,
   )
 
-  activation_model = model
-  if include_debug_info and activation_layers:
-    if not use_saved_model:
-      activation_model = modeling.get_activations_model(
-          model, activation_layers
-      )
+  dist_dataset = strategy.experimental_distribute_dataset(
+      enc_image_variant_alt_allele_ds
+  )
+
+  @tf.function
+  def predict_step(inputs):
+    (
+        image_encodes,
+        images_in_batch,
+        variants,
+        alt_allele_indices_list,
+        optional_label_list,
+    ) = inputs
+    if use_saved_model:
+      predictions = model.signatures['serving_default'](images_in_batch)[
+          'classification'
+      ]
+    else:
+      predictions = model(images_in_batch, training=False)
+
+    layer_outputs = {}
+    if include_debug_info and activation_layers:
+      if not use_saved_model:
+        layer_outputs = activation_model(images_in_batch, training=False)
+    return (
+        predictions,
+        image_encodes,
+        images_in_batch,
+        variants,
+        alt_allele_indices_list,
+        optional_label_list,
+        layer_outputs,
+    )
 
   batch_no = 0
   n_examples = 0
   n_batches = 0
   start_time = time.time()
-  for (
-      image_encodes,
-      images_in_batch,
-      variants,
-      alt_allele_indices_list,
-      optional_label_list,
-  ) in enc_image_variant_alt_allele_ds:
-    # These elements per iteration are read from the `get_dataset` function,
-    # specifically the `_parse_example` function within it.
-    if use_saved_model:
-      predictions = model.signatures['serving_default'](images_in_batch)
-      predictions = predictions['classification'].numpy()
-    else:
-      if not is_gpu_available:
-        # This is faster on CPU but slower on GPU.
-        predictions = model.predict_on_batch(images_in_batch)
-      else:
-        # This is faster on GPU but slower on CPU.
-        predictions = model(images_in_batch, training=False).numpy()
 
-    layer_outputs = {}
-    if include_debug_info and activation_layers:
-      if not use_saved_model:
-        if not is_gpu_available:
-          # This is faster on CPU but slower on GPU.
-          layer_outputs = activation_model.predict_on_batch(images_in_batch)
-        else:
-          # This is faster on GPU but slower on CPU.
-          layer_outputs = activation_model(images_in_batch, training=False)
+  for distributed_inputs in dist_dataset:
+    (
+        predictions_per_replica,
+        image_encodes_per_replica,
+        images_in_batch_per_replica,
+        variants_per_replica,
+        alt_allele_indices_list_per_replica,
+        optional_label_list_per_replica,
+        layer_outputs_per_replica,
+    ) = strategy.run(predict_step, args=(distributed_inputs,))
+
+    for i in range(strategy.num_replicas_in_sync):
+      local_predictions = strategy.experimental_local_results(
+          predictions_per_replica
+      )[i]
+      if tf.equal(tf.size(local_predictions), 0):
+        continue
+
+      predictions = local_predictions.numpy()
+      image_encodes = strategy.experimental_local_results(
+          image_encodes_per_replica
+      )[i].numpy()
+      images_in_batch = strategy.experimental_local_results(
+          images_in_batch_per_replica
+      )[i]
+      variants = strategy.experimental_local_results(variants_per_replica)[
+          i
+      ].numpy()
+      alt_allele_indices_list = strategy.experimental_local_results(
+          alt_allele_indices_list_per_replica
+      )[i].numpy()
+      optional_label_list_local = strategy.experimental_local_results(
+          optional_label_list_per_replica
+      )[i]
+      optional_label_list = (
+          optional_label_list_local.numpy()
+          if optional_label_list_local is not None
+          else None
+      )
+
+      layer_outputs = {}
+      if include_debug_info and activation_layers:
+        if not use_saved_model:
+          layer_outputs_local = strategy.experimental_local_results(
+              layer_outputs_per_replica
+          )[i]
           layer_outputs = {
               layer_name: output.numpy()
-              for layer_name, output in layer_outputs.items()
+              for layer_name, output in layer_outputs_local.items()
           }
-      else:
-        logging.warning(
-            'Activation layers: %s are not saved in CVO. Change to ckpt'
-            'model file to get activation layers outputs.',
-            ','.join(activation_layers),
-        )
-
-    pileup_curation_in_batch = None
-    if include_debug_info:
-      pileup_curation_in_batch = [
-          vis.curate_pileup(
-              vis.split_3d_array_into_channels(
-                  dv_utils.unpreprocess_images(image.numpy())
-              )
+        else:
+          logging.warning(
+              'Activation layers: %s are not saved in CVO. Change to ckpt'
+              'model file to get activation layers outputs.',
+              ','.join(activation_layers),
           )
-          for image in images_in_batch
-      ]
-    batch_no += 1
-    duration = time.time() - start_time
-    n_examples += len(predictions)
-    n_batches += 1
-    logging.log_every_n(
-        logging.INFO,
-        'Predicted %s examples in %s batches [%.3f sec per 100].',
-        _LOG_EVERY_N_BATCHES,
-        n_examples,
-        n_batches,
-        (100 * duration) / n_examples,
-    )
-    if optional_label_list is not None:
-      optional_label_list = optional_label_list.numpy()
-    next(writer_queues_iterator).put((
-        predictions,
-        image_encodes.numpy(),
-        variants.numpy(),
-        alt_allele_indices_list.numpy(),
-        optional_label_list,
-        layer_outputs,
-        pileup_curation_in_batch,
-    ))
+
+      pileup_curation_in_batch = None
+      if include_debug_info:
+        pileup_curation_in_batch = [
+            vis.curate_pileup(
+                vis.split_3d_array_into_channels(
+                    dv_utils.unpreprocess_images(image.numpy())
+                )
+            )
+            for image in images_in_batch
+        ]
+      batch_no += 1
+      duration = time.time() - start_time
+      n_examples += len(predictions)
+      n_batches += 1
+      logging.log_every_n(
+          logging.INFO,
+          'Predicted %s examples in %s batches [%.3f sec per 100].',
+          _LOG_EVERY_N_BATCHES,
+          n_examples,
+          n_batches,
+          (100 * duration) / n_examples if n_examples > 0 else 0.0,
+      )
+      next(writer_queues_iterator).put((
+          predictions,
+          image_encodes,
+          variants,
+          alt_allele_indices_list,
+          optional_label_list,
+          layer_outputs,
+          pileup_curation_in_batch,
+      ))
 
   # Put none values in each queue so the running processes can terminate.
   for queue in writer_queues:
