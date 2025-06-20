@@ -36,6 +36,7 @@ import json
 from typing import Optional, Tuple
 
 from absl import logging
+import ml_collections
 import numpy as np
 import tensorflow as tf
 
@@ -341,6 +342,15 @@ def get_shape_and_channels_from_json(example_info_json):
 def get_tf_record_writer(output_filename: str) -> tf.io.TFRecordWriter:
   tf_options = tf.io.TFRecordOptions(compression_type='GZIP')
   return tf.io.TFRecordWriter(output_filename, options=tf_options)
+
+
+def maybe_cast_images_to_bfloat16(
+    images: tf.Tensor, config: ml_collections.ConfigDict
+) -> tf.Tensor:
+  """Casts images to bfloat16 if use_mixed_precision and tpu_... are True."""
+  if config.use_mixed_precision and config.tpu_casts_images_to_bfloat16:
+    images = tf.cast(images, tf.bfloat16)
+  return images
 
 
 def preprocess_images(images, channel_indices=None):

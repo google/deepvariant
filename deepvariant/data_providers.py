@@ -121,7 +121,9 @@ def create_parse_example_fn(
     )
 
     image = tf.io.decode_raw(result['image/encoded'], tf.uint8)
-    result['image'] = tf.reshape(image, input_shape)
+    result['image'] = dv_utils.maybe_cast_images_to_bfloat16(
+        tf.reshape(image, input_shape), config
+    )
 
     # Image preprocessing and one-hot labeling takes place on accelerators to
     # reduce memory usage and speed up training. Do not move those ops here.

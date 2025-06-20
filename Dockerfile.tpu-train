@@ -1,0 +1,31 @@
+# Copyright 2025 Google LLC.
+# EXPERIMANTAL! This is not officially supported yet.
+
+ARG BASE_IMAGE="us-docker.pkg.dev/vertex-ai/training/tf-tpu.2-15.cp310:latest"
+
+FROM $BASE_IMAGE
+
+RUN sudo apt update -y && sudo apt install -y python3-pip
+ENV VIRTUAL_ENV=/root/tf-venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN python3 -m venv $VIRTUAL_ENV
+
+# Install packages
+RUN pip install absl-py
+RUN pip install clu
+RUN pip install tensorflow_addons
+RUN pip install contextlib2
+RUN pip install tf-models-official==2.15
+RUN pip install jax==0.5.2
+RUN pip install protobuf==3.20.0
+
+# Build DeepVariant
+WORKDIR /opt/deepvariant
+COPY . /opt/deepvariant
+
+WORKDIR /opt/deepvariant
+RUN sudo apt-get install -y protobuf-compiler
+RUN sudo python3 setup.py build_proto
+RUN sudo python3 setup.py install
+
+CMD ["/bin/bash"]

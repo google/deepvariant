@@ -419,6 +419,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
 
   config.use_ema = True
   config.use_mixed_precision = False
+  config.tpu_casts_images_to_bfloat16 = False
 
   config.denovo_enabled = False
   # class_weights can be specified as a comma-delimited string of weights

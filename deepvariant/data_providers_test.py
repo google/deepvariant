@@ -119,6 +119,25 @@ class ClassWeightsTest(absltest.TestCase):
     )
 
 
+class TpuCastImagesToBfloat16Test(absltest.TestCase):
+
+  def test_parse_example_with_cast(self):
+    config = dv_config.get_config('exome+test')
+    config.use_mixed_precision = True
+    config.tpu_casts_images_to_bfloat16 = True
+    batch = next(get_golden_dataset(config=config, mode='train'))
+    images, _, _, _ = batch
+    self.assertEqual(images.dtype, tf.bfloat16)
+
+  def test_parse_example_without_cast(self):
+    config = dv_config.get_config('exome+test')
+    config.use_mixed_precision = False
+    config.tpu_casts_images_to_bfloat16 = False
+    batch = next(get_golden_dataset(config=config, mode='train'))
+    images, _, _, _ = batch
+    self.assertEqual(images.dtype, tf.uint8)
+
+
 class CreateExamplesTest(absltest.TestCase):
 
   def setUp(self):
