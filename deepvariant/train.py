@@ -319,6 +319,7 @@ def train(config: ml_collections.ConfigDict):
       model_input, labels, sample_weight, variant_type = inputs
       sample_weight = tf.cast(sample_weight, tf.float32)
       variant_type = tf.cast(variant_type, tf.float32)
+      model_input = dv_utils.maybe_cast_images_to_bfloat16(model_input, config)
       model_input = dv_utils.preprocess_images(
           model_input,
           channel_indices,

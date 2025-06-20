@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from absl.testing import absltest
 from absl.testing import parameterized
+import ml_collections
 import numpy as np
 import tensorflow as tf
 
@@ -220,6 +221,25 @@ class DVUtilsTest(parameterized.TestCase):
         dv_utils.preprocess_images(test_input, [1, 2, 3]).shape,
         [1, 1, 1, 3],
     )
+
+
+class MaybeCastImagesToBfloat16Test(parameterized.TestCase):
+
+  def test_cast_to_bfloat16(self):
+    images = tf.ones([1, 1, 1, 7], dtype=tf.uint8)
+    config = ml_collections.ConfigDict()
+    config.use_mixed_precision = True
+    config.tpu_casts_images_to_bfloat16 = True
+    casted_images = dv_utils.maybe_cast_images_to_bfloat16(images, config)
+    self.assertEqual(casted_images.dtype, tf.bfloat16)
+
+  def test_no_cast(self):
+    images = tf.ones([1, 1, 1, 7], dtype=tf.uint8)
+    config = ml_collections.ConfigDict()
+    config.use_mixed_precision = False
+    config.tpu_casts_images_to_bfloat16 = False
+    casted_images = dv_utils.maybe_cast_images_to_bfloat16(images, config)
+    self.assertEqual(casted_images.dtype, tf.uint8)
 
 
 if __name__ == '__main__':

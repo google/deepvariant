@@ -121,9 +121,7 @@ def create_parse_example_fn(
     )
 
     image = tf.io.decode_raw(result['image/encoded'], tf.uint8)
-    result['image'] = dv_utils.maybe_cast_images_to_bfloat16(
-        tf.reshape(image, input_shape), config
-    )
+    result['image'] = tf.reshape(image, input_shape)
 
     # Image preprocessing and one-hot labeling takes place on accelerators to
     # reduce memory usage and speed up training. Do not move those ops here.
@@ -295,8 +293,6 @@ def read_dataset_config(dataset_config_filename):
         )
     )
 
-  # TODO: remove this check once we're able to deal with absence
-  # of num_examples.
   if not dataset_config.num_examples:
     raise ValueError(
         'The dataset in the config {} does not have a num_examples.'.format(
