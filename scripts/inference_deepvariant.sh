@@ -649,15 +649,15 @@ function get_docker_image() {
         (sleep 5 ; sudo docker pull "${IMAGE}")"
   fi
   if [[ "${USE_GPU}" = true ]]; then
-    docker_args+=( --gpus 1 )
+    docker_args+=( --gpus all )
     # shellcheck disable=SC2027
     # shellcheck disable=SC2086
-    run "sudo docker run --gpus 1 "${IMAGE}" \
+    run "sudo docker run --gpus all "${IMAGE}" \
       python3 -c 'import tensorflow as tf; \
       print(\"is_gpu_available=\" + str(tf.test.is_gpu_available()))'"
     # shellcheck disable=SC2027
     # shellcheck disable=SC2086
-    run "sudo docker run --gpus 1 "${IMAGE}" \
+    run "sudo docker run --gpus all "${IMAGE}" \
       python3 -c 'import tensorflow as tf; \
       tf.test.is_gpu_available() or exit(1)' \
       2> /dev/null || exit 1"
