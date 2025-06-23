@@ -32,6 +32,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$0")"
 source "$SCRIPT_DIR/inference_utils.sh"
+source "$SCRIPT_DIR/docker_utils.sh"
 
 USAGE=$'
 Example usage:
@@ -651,7 +652,6 @@ function get_docker_image() {
         --build-arg=FROM_IMAGE=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04 \
         --build-arg=DV_GPU_BUILD=1 -t deeptrio_gpu ."
       run echo "Done building GPU Docker image ${IMAGE}."
-      docker_args+=( --gpus 1 )
     else
       IMAGE="deeptrio:latest"
       # Building twice in case the first one times out.
@@ -660,22 +660,14 @@ function get_docker_image() {
       run echo "Done building Docker image ${IMAGE}."
     fi
   else
-    if [[ "${USE_GPU}" = true ]]; then
-      IMAGE="${DOCKER_SOURCE}:deeptrio-${BIN_VERSION}-gpu"
-      # shellcheck disable=SC2027
-      # shellcheck disable=SC2086
-      run "sudo docker pull "${IMAGE}" || \
+    IMAGE=$(get_deeptrio_docker_image_name "${DOCKER_SOURCE}" "${BIN_VERSION}" "${USE_GPU}")
+    # shellcheck disable=SC2027
+    # shellcheck disable=SC2086
+    run "sudo docker pull "${IMAGE}" || \
         (sleep 5 ; sudo docker pull "${IMAGE}")"
-      docker_args+=( --gpus 1 )
-    else
-      IMAGE="${DOCKER_SOURCE}:deeptrio-${BIN_VERSION}"
-      # shellcheck disable=SC2027
-      # shellcheck disable=SC2086
-      run "sudo docker pull "${IMAGE}" || \
-        (sleep 5 ; sudo docker pull "${IMAGE}")"
-    fi
   fi
   if [[ "${USE_GPU}" = true ]]; then
+    docker_args+=( --gpus 1 )
     # shellcheck disable=SC2027
     # shellcheck disable=SC2086
     run "sudo docker run --gpus 1 "${IMAGE}" \
