@@ -38,6 +38,7 @@
 
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/strings/string_view.h"
 
 namespace learning {
 namespace genomics {
@@ -86,10 +87,9 @@ std::vector<std::uint8_t> HomopolymerWeightedChannel::HomopolymerWeighted(
   // ATCGGGAA
   // 11133322
   std::vector<std::uint8_t> homopolymer(read.aligned_sequence().size(), 0);
-  const auto& seq = read.aligned_sequence();
-  homopolymer[0] = 1;
+  const absl::string_view seq = read.aligned_sequence();
   int current_weight = 1;
-  for (int i = 1; i <= seq.size(); i++) {
+  for (int i = 1; i < seq.size(); i++) {
     if (seq[i] == seq[i - 1]) {
       current_weight += 1;
     } else {
@@ -98,6 +98,9 @@ std::vector<std::uint8_t> HomopolymerWeightedChannel::HomopolymerWeighted(
       }
       current_weight = 1;
     }
+  }
+  for (int cw = current_weight; cw >= 1; cw--) {
+    homopolymer[seq.size() - cw] = current_weight;
   }
   return homopolymer;
 }
