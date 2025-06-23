@@ -811,9 +811,9 @@ function run_deeptrio() {
   # shellcheck disable=SC2086
   # shellcheck disable=SC2145
   run "(time (sudo docker run \
+    ${docker_args[@]-} \
     -v "${INPUT_DIR}":"/input" \
     -v "${OUTPUT_DIR}:/output" \
-    ${docker_args[@]-} \
     "${IMAGE}" \
   /opt/deepvariant/bin/deeptrio/run_deeptrio \
     --model_type "${MODEL_TYPE}" \

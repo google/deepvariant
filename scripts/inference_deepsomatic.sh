@@ -32,6 +32,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$0")"
 source "$SCRIPT_DIR/inference_utils.sh"
+source "$SCRIPT_DIR/docker_utils.sh"
 
 USAGE=$'
 Example usage:
@@ -702,27 +703,13 @@ function get_docker_image() {
     fi
 
   else
+    IMAGE=$(get_deepsomatic_docker_image_name "${DOCKER_SOURCE}" "${BIN_VERSION}" "${USE_GPU}")
+    # shellcheck disable=SC2027
+    # shellcheck disable=SC2086
+    run "sudo docker pull "${IMAGE}" || \
+        (sleep 5 ; sudo docker pull "${IMAGE}")"
     if [[ "${USE_GPU}" = true ]]; then
-      if [[ "${DOCKER_SOURCE}" = "gcr.io/google.com/brain-genomics/deepvariant" ]]; then
-        IMAGE="${DOCKER_SOURCE}:deepsomatic-${BIN_VERSION}-gpu"
-      else
-        IMAGE="${DOCKER_SOURCE}:${BIN_VERSION}-gpu"
-      fi
-      # shellcheck disable=SC2027
-      # shellcheck disable=SC2086
-      run "sudo docker pull "${IMAGE}" || \
-        (sleep 5 ; sudo docker pull "${IMAGE}")"
       docker_args+=( --gpus 1 )
-    else
-      if [[ "${DOCKER_SOURCE}" = "gcr.io/google.com/brain-genomics/deepvariant" ]]; then
-        IMAGE="${DOCKER_SOURCE}:deepsomatic-${BIN_VERSION}"
-      else
-        IMAGE="${DOCKER_SOURCE}:${BIN_VERSION}"
-      fi
-      # shellcheck disable=SC2027
-      # shellcheck disable=SC2086
-      run "sudo docker pull "${IMAGE}" || \
-        (sleep 5 ; sudo docker pull "${IMAGE}")"
     fi
   fi
   if [[ "${USE_GPU}" = true ]]; then
@@ -849,9 +836,9 @@ function run_deepsomatic_with_docker() {
   # shellcheck disable=SC2086
   # shellcheck disable=SC2145
   run "(time (sudo docker run \
+    ${docker_args[@]-} \
     -v "${INPUT_DIR}":"/input" \
     -v "${OUTPUT_DIR}:/output" \
-    ${docker_args[@]-} \
     "${IMAGE}" \
     run_deepsomatic \
     --model_type="${MODEL_TYPE}" \
