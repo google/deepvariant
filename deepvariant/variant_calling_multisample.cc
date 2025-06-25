@@ -1101,7 +1101,8 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
             StringPtrLessThan());
 
   AddReadDepths(target_sample_allele_count, allele_map, variant);
-  if (target_role_ == "tumor") {
+  if (target_role_ == "tumor" &&
+      !output_options.non_target_allele_counts.empty()) {
     // This logic handles adding NDP, NAD, and NAF to the tumor variant.
     // An allele map for the normal sample is constructed, based on the
     // tumor alleles.

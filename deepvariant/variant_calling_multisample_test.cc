@@ -31,9 +31,12 @@
 
 #include "deepvariant/variant_calling_multisample.h"
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/allelecounter.h"
@@ -50,10 +53,14 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "third_party/nucleus/io/reference.h"
 #include "third_party/nucleus/protos/range.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
+#include "third_party/nucleus/testing/test_utils.h"
 #include "third_party/nucleus/util/utils.h"
 
 namespace learning {
@@ -64,6 +71,8 @@ namespace multi_sample {
 using absl::StrCat;
 using ContigInfo = nucleus::genomics::v1::ContigInfo;
 using ReferenceSequence = nucleus::genomics::v1::ReferenceSequence;
+using nucleus::MakeRange;
+using nucleus::genomics::v1::Range;
 
 constexpr char kSampleName[] = "MySampleName";
 
@@ -165,6 +174,17 @@ VariantCallerOptions BasicOptions() {
   options.set_ploidy(2);
 
   return options;
+}
+
+// Creates a new AlleleCount with custom Reference and on specified chr from
+// start to end.
+std::unique_ptr<AlleleCounter> MakeCounter(
+  const nucleus::GenomeReference* ref, absl::string_view chr,
+  const int64_t start, const int64_t end) {
+  AlleleCounterOptions options;
+  Range range = MakeRange(chr, start, end);
+  return std::make_unique<AlleleCounter>(ref, range, std::vector<int>(),
+                                          options);
 }
 
 // Test small_model_vaf_context_window_size = 5.
@@ -1146,6 +1166,66 @@ INSTANTIATE_TEST_SUITE_P(
       }
     },
     })));
+
+TEST(VariantCallingTest, TumorOnlySomaticCalling) {
+  // Test the Tumor-only: where target_role is "tumor" but there are no
+  // non-target (i.e., normal) samples.
+
+  // Set up the reference genome. We will create a SNP at position 10.
+  // The reference base at position 10 is 'G'.
+  //                           0123456789
+  const std::string ref_seq = "AGTGGGGGGGGTGGGGGGGG";  // 20 bases long
+
+  // Create the AlleleCounter and add reads to it to create a variant.
+  std::vector<ContigInfo> contigs(1);
+  std::vector<ReferenceSequence> seqs(1);
+  CreateTestSeq("chr1", 0, 0, 20, ref_seq, &contigs, &seqs);
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counter =
+      MakeCounter(ref.get(), "chr1", 0, 20);
+
+  // Add 7 reads supporting the alternate 'A' at position 10.
+  for (int i = 0; i < 7; ++i) {
+    allele_counter->Add(
+        nucleus::MakeRead("chr1", 0, "AGTGGGGGGGATGGGGGGGG", {"20M"}), "tumor");
+  }
+  // Add 3 reads supporting the reference 'G' at position 10.
+  for (int i = 0; i < 3; ++i) {
+    allele_counter->Add(nucleus::MakeRead("chr1", 0, ref_seq, {"20M"}),
+                        "tumor");
+  }
+
+  // Set up the map of AlleleCounters as the input.
+  std::unordered_map<std::string, AlleleCounter*> allele_counters_for_api;
+  allele_counters_for_api["tumor"] = allele_counter.get();
+
+  // Set up the VariantCaller.
+  VariantCallerOptions vc_options = BasicOptions();
+  vc_options.set_sample_name("tumor");
+  // Ensure our 7 ALT reads are enough to pass the filter.
+  vc_options.set_min_count_snps(1);
+  // 7 ALT / 10 total = 0.7, so this passes.
+  vc_options.set_min_fraction_snps(0.1);
+  VariantCaller caller(vc_options);
+
+  // We pass "tumor" as the target_role. This, combined with the fact
+  // that there is no "normal" sample in our map, is how we test the Tumor-only
+  // behavior.
+  std::vector<DeepVariantCall> calls =
+      caller.CallsFromAlleleCounts(allele_counters_for_api, "tumor", "tumor");
+
+  ASSERT_EQ(calls.size(), 1);
+  const auto& call = calls[0];
+  const auto& variant = call.variant();
+  EXPECT_EQ(variant.reference_name(), "chr1");
+  EXPECT_EQ(variant.start(), 10);
+  EXPECT_EQ(variant.reference_bases(), "G");
+  ASSERT_EQ(variant.alternate_bases_size(), 1);
+  EXPECT_EQ(variant.alternate_bases(0), "A");
+}
 
 }  // namespace multi_sample
 }  // namespace deepvariant
