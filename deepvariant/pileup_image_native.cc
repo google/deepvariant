@@ -277,6 +277,9 @@ std::vector<std::vector<int>> GetReadIndicesAllelePartition(
         read_name_to_index_map.erase(it);
       }
     }
+    // Sort the read indices because flat_hash_map iteration is not ordered.
+    std::sort(read_indices_supporting_allele.begin(),
+              read_indices_supporting_allele.end());
     read_index_partition_by_allele.push_back(read_indices_supporting_allele);
   }
 
