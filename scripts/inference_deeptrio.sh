@@ -667,7 +667,7 @@ function get_docker_image() {
         (sleep 5 ; sudo docker pull "${IMAGE}")"
   fi
   if [[ "${USE_GPU}" = true ]]; then
-    docker_args+=( --gpus 1 )
+    docker_args+=( --gpus all )
     # shellcheck disable=SC2027
     # shellcheck disable=SC2086
     run "sudo docker run --gpus 1 "${IMAGE}" \

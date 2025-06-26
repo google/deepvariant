@@ -693,7 +693,6 @@ function get_docker_image() {
         --build-arg=FROM_IMAGE=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04 \
         --build-arg=DV_GPU_BUILD=1 -t deepsomatic_gpu ."
       run echo "Done building GPU Docker image ${IMAGE}."
-      docker_args+=( --gpus 1 )
     else
       IMAGE="deepsomatic:latest"
       # Building twice in case the first one times out.
@@ -708,11 +707,9 @@ function get_docker_image() {
     # shellcheck disable=SC2086
     run "sudo docker pull "${IMAGE}" || \
         (sleep 5 ; sudo docker pull "${IMAGE}")"
-    if [[ "${USE_GPU}" = true ]]; then
-      docker_args+=( --gpus 1 )
-    fi
   fi
   if [[ "${USE_GPU}" = true ]]; then
+    docker_args+=( --gpus all )
     # shellcheck disable=SC2027
     # shellcheck disable=SC2086
     run "sudo docker run --gpus 1 "${IMAGE}" \
