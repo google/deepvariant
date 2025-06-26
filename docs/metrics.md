@@ -32,11 +32,11 @@ total                            |  83m28.11s (1h23m28.11s)
 hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
 held out while training.
 
-`| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
+| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
 | INDEL | 501527   | 2974     | 1262     | 0.994105      | 0.997591         | 0.995845        |
 | SNP   | 3306720  | 20776    | 4900     | 0.993756      | 0.998521         | 0.996133        |
-`
+
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/WGS/deepvariant.output.visual_report.html)
 
 ## WES (Illumina)
