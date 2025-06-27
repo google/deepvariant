@@ -84,13 +84,7 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
   // Iterate positions in order. Calculate the score for each combination of
   // allele pairs.
   for (int i = 0; i < positions_.size(); i++) {
-    // TODO Call UpdateStartingScore if score cannot be improved from
-    // position to the next position. This happens with bad data where reads
-    // are mismapped. Good example is chr1:143175001-143200000.
-    // In this case we can break the graph and treat each piece as separate
-    // graphs. This TODO has a lower impact because it happens with "bad" data
-    // and DeepVariant will reject these candidates in most of the cases.
-    // The work is tracked in internal
+    // Score is calculated differently for the first position.
     if (i == 0) {
       UpdateStartingScore(vertices_by_position_[positions_[i]]);
       continue;
@@ -145,6 +139,9 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
         // have at least one combination that advances the score.
         if (prev_score_it->second.score < score.score) {
           found_advancing_score = true;
+        } else {
+          // We cannot use the score because it does not advance.
+          continue;
         }
         // If the score for the given vertices already exists then we update
         // it if the new score is higher.
@@ -169,12 +166,12 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
 
     // If after assigning all score we find out that all scores are the same
     // we cannot phase this position. In that case the phasing is restarted from
-    // the next position.
-    if (!found_advancing_score || AllScoresAreTheSame(keyed_edges)) {
-      if (i < positions_.size() - 1) {
+    // the next position. The exception is when we are at the last position. In
+    // that case we don't do anything.
+    if (i < positions_.size() - 1 && (!found_advancing_score
+                                      || AllScoresAreTheSame(keyed_edges))) {
         UpdateStartingScore(vertices_by_position_[positions_[i]]);
         continue;
-      }
     }
   }  // for i in positions_
   // Backtrack from the last position. For each position where best partition is
@@ -209,6 +206,9 @@ bool DirectPhasing::AllScoresAreTheSame(
       const Vertex& to_1 = edge_1.second.m_target;
       const Vertex& to_2 = edge_2.second.m_target;
       auto score_it = scores_.find({to_1, to_2});
+      if (score_it == scores_.end()) {
+        continue;
+      }
       if (score_it->second.score < min_score) {
         min_score = score_it->second.score;
       }
@@ -233,8 +233,14 @@ bool DirectPhasing::CompareVertexPairByBases(
   if (v2_1 == nullptr || v2_2 == nullptr) {
     return true;
   }
-  return graph_[v1_1].allele_info.bases + graph_[v1_2].allele_info.bases >
-      graph_[v2_1].allele_info.bases + graph_[v2_2].allele_info.bases;
+  if (graph_[v1_1].allele_info.bases > graph_[v2_1].allele_info.bases) {
+    return true;
+  }
+  if (graph_[v1_1].allele_info.bases < graph_[v2_1].allele_info.bases) {
+    return false;
+  } else {
+    return graph_[v1_2].allele_info.bases > graph_[v2_2].allele_info.bases;
+  }
 }
 
 absl::flat_hash_map<DirectPhasing::VertexPair,
