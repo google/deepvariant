@@ -408,27 +408,16 @@ def _use_small_model() -> bool:
   return ModelType(_MODEL_TYPE.value) in SMALL_MODEL_CONFIG_BY_MODEL_TYPE
 
 
-def _set_small_model_config(
+def _update_small_model_flags(
     special_args: dict[str, Any],
-    model_type: ModelType,
     customized_small_model: str | None,
 ) -> None:
   """Sets small model config parameters."""
   if not _use_small_model():
+    special_args['call_small_model_examples'] = False
     return
-  special_args['call_small_model_examples'] = True
-  special_args['track_ref_reads'] = True
-  config = SMALL_MODEL_CONFIG_BY_MODEL_TYPE.get(model_type)
   if customized_small_model:
     special_args['trained_small_model_path'] = customized_small_model
-  elif config:
-    special_args['trained_small_model_path'] = config.small_model_checkpoint
-  if config:
-    special_args['small_model_snp_gq_threshold'] = config.snp_gq_threshold
-    special_args['small_model_indel_gq_threshold'] = config.indel_gq_threshold
-    special_args['small_model_vaf_context_window_size'] = (
-        config.vaf_context_window
-    )
   if _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
     special_args['small_model_emit_all_candidates'] = True
 
@@ -485,54 +474,13 @@ def make_examples_command(
     )
 
   special_args = {}
-  model_type = ModelType(_MODEL_TYPE.value)
-  if model_type == ModelType.PACBIO:
-    special_args['alt_aligned_pileup'] = 'diff_channels'
-    special_args['max_reads_per_partition'] = 600
-    special_args['min_mapping_quality'] = 1
-    special_args['parse_sam_aux_fields'] = True
-    special_args['partition_size'] = 25000
-    special_args['phase_reads'] = True
-    special_args['pileup_image_width'] = 147
-    special_args['realign_reads'] = False
-    special_args['sort_by_haplotypes'] = True
-    special_args['track_ref_reads'] = True
-    special_args['vsc_min_fraction_indels'] = 0.12
-    special_args['trim_reads_for_pileup'] = True
-  elif model_type == ModelType.ONT_R104:
-    special_args['alt_aligned_pileup'] = 'diff_channels'
-    special_args['max_reads_per_partition'] = 600
-    special_args['min_mapping_quality'] = 5
-    special_args['parse_sam_aux_fields'] = True
-    special_args['partition_size'] = 25000
-    special_args['phase_reads'] = True
-    special_args['pileup_image_width'] = 99
-    special_args['realign_reads'] = False
-    special_args['sort_by_haplotypes'] = True
-    special_args['track_ref_reads'] = True
-    special_args['vsc_min_fraction_snps'] = 0.08
-    special_args['vsc_min_fraction_indels'] = 0.12
-    special_args['trim_reads_for_pileup'] = True
-  elif model_type == ModelType.HYBRID_PACBIO_ILLUMINA:
-    special_args['trim_reads_for_pileup'] = True
-  elif model_type == ModelType.MASSEQ:
-    special_args['alt_aligned_pileup'] = 'diff_channels'
-    special_args['max_reads_per_partition'] = 0
-    special_args['min_mapping_quality'] = 1
-    special_args['parse_sam_aux_fields'] = True
-    special_args['partition_size'] = 25000
-    special_args['phase_reads'] = True
-    special_args['pileup_image_width'] = 199
-    special_args['realign_reads'] = False
-    special_args['sort_by_haplotypes'] = True
-    special_args['track_ref_reads'] = True
-    special_args['vsc_min_fraction_indels'] = 0.12
-    special_args['trim_reads_for_pileup'] = True
-    special_args['max_reads_for_dynamic_bases_per_region'] = 1500
-
-  _set_small_model_config(
-      special_args, model_type, _CUSTOMIZED_SMALL_MODEL.value
-  )
+  # Starting from v1.10.0, the args for make_examples in calling mode are
+  # defined in the model.example_info.json file corresponding to each model
+  # type.
+  # Small model args should be in the model.example_info.json file
+  # as well. However, if the user specifies customized small model, we will
+  # override the default small model args here.
+  _update_small_model_flags(special_args, _CUSTOMIZED_SMALL_MODEL.value)
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
@@ -698,6 +646,28 @@ def check_flags():
         _MODEL_TYPE.value,
         _CUSTOMIZED_MODEL.value,
     )
+    if tf.io.gfile.isdir(_CUSTOMIZED_MODEL.value):
+      model_dir = _CUSTOMIZED_MODEL.value
+    else:
+      model_dir = os.path.dirname(_CUSTOMIZED_MODEL.value)
+    if not tf.io.gfile.exists(f'{model_dir}/model.example_info.json'):
+      raise RuntimeError(
+          'Unable to find model.example_info.json in the model directory:'
+          ' Starting from v1.10.0, the model file needs to have a'
+          ' corresponding model.example_info.json file. You can see'
+          f' gs://deepvariant/models/DeepVariant/{DEEP_VARIANT_VERSION}/savedmodels/deepvariant.*.savedmodel/model.example_info.json'
+          ' as examples. The best way is to consult the people who trained the'
+          ' model to understand what flags should be used for make_examples.'
+      )
+    if not tf.io.gfile.exists(
+        f'{_CUSTOMIZED_MODEL.value}/model.example_info.json'
+    ):
+      raise RuntimeError(
+          'Starting from v1.10.0, the model file needs to have a corresponding'
+          ' model.example_info.json file. You can see'
+          f' gs://deepvariant/models/DeepVariant/{DEEP_VARIANT_VERSION}/savedmodels/deepvariant.*.savedmodel/model.example_info.json'
+          ' as an example.'
+      )
   if _CUSTOMIZED_SMALL_MODEL.value is not None:
     logging.info(
         (

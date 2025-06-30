@@ -113,7 +113,7 @@ class CallVariantsTest(parameterized.TestCase):
     tf.io.gfile.makedirs(input_checkpoint_dir)
     tf.io.gfile.copy(
         example_info_json_path,
-        os.path.join(input_checkpoint_dir, "example_info.json"),
+        os.path.join(input_checkpoint_dir, "model.example_info.json"),
         overwrite=True,
     )
     input_shape = dv_utils.get_shape_from_examples_path(calling_testdata_path)
@@ -217,7 +217,7 @@ class CallVariantsTest(parameterized.TestCase):
     tf.io.gfile.makedirs(input_checkpoint_dir)
     tf.io.gfile.copy(
         example_info_json_path,
-        os.path.join(input_checkpoint_dir, "example_info.json"),
+        os.path.join(input_checkpoint_dir, "model.example_info.json"),
         overwrite=True,
     )
     input_shape = dv_utils.get_shape_from_examples_path(training_testdata_path)
@@ -282,7 +282,7 @@ class CallVariantsTest(parameterized.TestCase):
     tf.io.gfile.makedirs(input_checkpoint_dir)
     tf.io.gfile.copy(
         example_info_json_path,
-        os.path.join(input_checkpoint_dir, "example_info.json"),
+        os.path.join(input_checkpoint_dir, "model.example_info.json"),
         overwrite=True,
     )
     input_shape = dv_utils.get_shape_from_examples_path(calling_testdata_path)

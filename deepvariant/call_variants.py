@@ -619,6 +619,32 @@ def write_empty_output_file(examples_filename: str, output_file: str) -> None:
     tfrecord.write_tfrecords([], path, compression_type='GZIP')
 
 
+def get_model_example_info_json(model_example_info_json_dir: str) -> str:
+  """Returns the model example info json file."""
+  model_example_info_json = os.path.join(
+      model_example_info_json_dir, 'model.example_info.json'
+  )
+  if tf.io.gfile.exists(model_example_info_json):
+    return model_example_info_json
+
+  # Try for example_info.json next for backwards compatibility. Eventually, we
+  # should remove this.
+  logging.info(
+      'model.example_info.json file not found in %s. '
+      'Try for example_info.json next.',
+      model_example_info_json_dir,
+  )
+  model_example_info_json = os.path.join(
+      model_example_info_json_dir, 'example_info.json'
+  )
+  if tf.io.gfile.exists(model_example_info_json):
+    return model_example_info_json
+  raise ValueError(
+      'model.example_info.json and example_info.json both do not exist in'
+      f' {model_example_info_json_dir}.'
+  )
+
+
 def load_model_and_check_shape(
     checkpoint_path: str,
     examples_filename: str,
@@ -651,7 +677,7 @@ def load_model_and_check_shape(
 
   if use_saved_model:
     model = tf.saved_model.load(checkpoint_path)
-    model_example_info_json = f'{checkpoint_path}/example_info.json'
+    model_example_info_json = get_model_example_info_json(checkpoint_path)
     model_example_shape, _, channel_indices = (
         dv_utils.get_shape_and_channels_from_json(model_example_info_json)
     )
@@ -712,7 +738,7 @@ def load_model_and_check_shape(
     else:
       raise ValueError(
           'Could not infer example shape from examples or model directory. '
-          'example_info.json was not found in the model directory.'
+          'model.example_info.json was not found in the model directory.'
       )
 
     # If we are using channel ablation, the example shape of incoming
@@ -845,13 +871,12 @@ def call_variants(
     channel_indices = []
     if not use_saved_model:
       if not os.path.isdir(checkpoint_path):
-        example_info_json_path = os.path.join(
-            os.path.dirname(checkpoint_path), 'example_info.json'
-        )
+        example_info_json_path_dir = os.path.dirname(checkpoint_path)
       else:
-        example_info_json_path = os.path.join(
-            checkpoint_path, 'example_info.json'
-        )
+        example_info_json_path_dir = checkpoint_path
+      example_info_json_path = get_model_example_info_json(
+          example_info_json_path_dir
+      )
       example_info = json.loads(
           tf.io.gfile.GFile(example_info_json_path).read()
       )
