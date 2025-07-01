@@ -141,6 +141,16 @@ NUM_REGIONS_FOR_MEAN_COVERAGE = 1500
 # Number of loci to use for computing mean coverage.
 NUM_LOCI_FOR_MEAN_COVERAGE = 10
 
+# Minimum difference between number of reads for each phase of an allele.
+# This constant is used to determine allele phase by counting the number of
+# supporting reads of each phase.
+MIN_DIFF_READS_FOR_ALLELE_PHASE = 3
+
+# Maximum number of reads supporting an opposite phase when allele phase is
+# calculated. If number of reads for an opposite phase is larger than this
+# value, we will assign phase 0 to the allele.
+MAX_NUM_READS_FOR_OPOSITE_PHASE = 2
+
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
 # ---------------------------------------------------------------------------
@@ -2510,6 +2520,50 @@ class RegionProcessor:
       with epath.Path(dest_file).open('w') as f:
         f.write(graph.graphviz())
 
+  def infer_allele_phase(
+      self, alternate_bases, ref_support_ext, allele_support, read_id_to_phase
+  ):
+    """Infers allele phase from supporting reads."""
+    # Count the number of reads of each phase supporting the allele.
+    # Assign phase to the allele that is supported by more reads. The
+    # difference between the number of reads supporting each phase must be
+    # at least 2.
+    phased_genotype = [0] * (len(alternate_bases) + 1)
+    index = 0
+    for allele_index in range(len(alternate_bases) + 1):
+      phases = [0, 0, 0]  # number of reads supporting each phase.
+      # allele_index == 0 is REF
+      if allele_index == 0:
+        # Get REF supporting reads.
+        for ref_read_support in ref_support_ext:
+          # In multi-sample mode we have reads that support an allele but
+          # come from a non-target sample. We ignore these reads.
+          if ref_read_support.read_name in read_id_to_phase:
+            phases[read_id_to_phase[ref_read_support.read_name]] += 1
+      else:
+        # Find allele bases, then get supporting reads.
+        if allele_index > len(alternate_bases) or allele_index < 1:
+          continue
+        alt_bases = alternate_bases[allele_index - 1]
+        for read_name in allele_support[alt_bases].read_names:
+          if read_name in read_id_to_phase:
+            phases[read_id_to_phase[read_name]] += 1
+
+      if (
+          phases[1] > phases[2]
+          and phases[1] - phases[2] > MIN_DIFF_READS_FOR_ALLELE_PHASE
+          and phases[2] <= MAX_NUM_READS_FOR_OPOSITE_PHASE
+      ):
+        phased_genotype[index] = 1
+      elif (
+          phases[2] > phases[1]
+          and phases[2] - phases[1] > MIN_DIFF_READS_FOR_ALLELE_PHASE
+          and phases[1] <= MAX_NUM_READS_FOR_OPOSITE_PHASE
+      ):
+        phased_genotype[index] = 2
+      index += 1
+    return phased_genotype
+
   def add_phasing_to_candidate(self, candidates, read_id_to_phase):
     """Adds phasing information to candidates.
 
@@ -2574,41 +2628,12 @@ class RegionProcessor:
       # If variant is not phased, we infer phase from read phases and supporting
       # reads.
       else:
-        # Count the number of reads of each phase supporting the allele.
-        # Assign phase to the allele that is supported by more reads. The
-        # difference between the number of reads supporting each phase must be
-        # at least 2.
-        phased_genotype = [0] * (len(candidate.variant.alternate_bases) + 1)
-        index = 0
-        for allele_index in range(len(candidate.variant.alternate_bases) + 1):
-          phases = [0, 0, 0]  # number of reads supporting each phase.
-          # allele_index == 0 is REF
-          if allele_index == 0:
-            # Get REF supporting reads.
-            for ref_read_support in candidate.ref_support_ext.read_infos:
-              # In multi-sample mode we have reads that support an allele but
-              # come from a non-target sample. We ignore these reads.
-              if ref_read_support.read_name in read_id_to_phase:
-                phases[read_id_to_phase[ref_read_support.read_name]] += 1
-          else:
-            # Find allele bases, then get supporting reads.
-            if (
-                allele_index > len(candidate.variant.alternate_bases)
-                or allele_index < 1
-            ):
-              continue
-            alt_bases = candidate.variant.alternate_bases[allele_index - 1]
-            for read_support in candidate.allele_support_ext[
-                alt_bases
-            ].read_infos:
-              if read_support.read_name in read_id_to_phase:
-                phases[read_id_to_phase[read_support.read_name]] += 1
-
-          if phases[1] > phases[2] and phases[1] - phases[2] > 1:
-            phased_genotype[index] = 1
-          elif phases[2] > phases[1] and phases[2] - phases[1] > 1:
-            phased_genotype[index] = 2
-          index += 1
+        phased_genotype = self.infer_allele_phase(
+            candidate.variant.alternate_bases,
+            candidate.ref_support_ext.read_infos,
+            candidate.allele_support,
+            read_id_to_phase,
+        )
         variant_utils.set_info(candidate.variant, 'ALT_PS', phased_genotype)
         variant_utils.set_info(candidate.variant, 'PS_CONTIG', phase_contig)
         variant_utils.set_info(
