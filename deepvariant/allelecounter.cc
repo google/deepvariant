@@ -80,17 +80,18 @@ using nucleus::genomics::v1::Read;
 std::vector<Allele> SumAlleleCounts(const AlleleCount& allele_count,
                                     bool include_low_quality) {
   std::map<std::pair<string_view, AlleleType>, int> allele_sums;
-  for (const auto& entry : allele_count.read_alleles()) {
-    if (include_low_quality || !entry.second.is_low_quality()) {
-      ++allele_sums[{entry.second.bases(), entry.second.type()}];
+  for (const auto& [read_id, allele] : allele_count.read_alleles()) {
+    if (include_low_quality || !allele.is_low_quality()) {
+      ++allele_sums[{allele.bases(), allele.type()}];
     }
   }
 
   std::vector<Allele> to_return;
   to_return.reserve(allele_sums.size());
-  for (const auto& entry : allele_sums) {
+  for (const auto& [allele_bases_allele_type, allele_count] : allele_sums) {
     to_return.push_back(
-        MakeAllele(entry.first.first, entry.first.second, entry.second));
+        MakeAllele(allele_bases_allele_type.first,
+                   allele_bases_allele_type.second, allele_count));
   }
 
   // TODO SumAlleleCounts is only used in one place in variant_calling.cc
