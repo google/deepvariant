@@ -106,6 +106,7 @@ CHANNELS = [
     'mean_coverage',
     'base_methylation',
     'base_6ma',
+    'read_supports_variant_fuzzy',
 ]
 
 ALT_ALIGNED_PILEUP_CHANNELS = [
@@ -168,6 +169,9 @@ CHANNEL_ENUM_TO_STRING = {
     deepvariant_pb2.CH_MEAN_COVERAGE: 'mean_coverage',
     deepvariant_pb2.CH_BASE_METHYLATION: 'base_methylation',
     deepvariant_pb2.CH_BASE_6MA: 'base_6ma',
+    deepvariant_pb2.CH_READ_SUPPORTS_VARIANT_FUZZY: (
+        'read_supports_variant_fuzzy'
+    ),
 }
 
 # Create a reverse mapping
