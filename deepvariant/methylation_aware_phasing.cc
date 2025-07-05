@@ -351,9 +351,8 @@ std::string ReadKeyForMethylationAwarePhasing(
 // Returns:
 //   A vector of pointers to the reads assigned to the specified phase.
 std::vector<const DeepVariantCall_ReadSupport*> ExtractReadsByPhase(
-  const std::vector<DeepVariantCall_ReadSupport>& reads,
-  const std::vector<int>& phases,
-  int target_phase) {
+    absl::Span<const DeepVariantCall_ReadSupport> reads,
+    absl::Span<const int> phases, int target_phase) {
   std::vector<const DeepVariantCall_ReadSupport*> filtered;
   for (size_t i = 0; i < reads.size(); ++i) {
     if (phases[i] == target_phase) {

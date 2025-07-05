@@ -84,9 +84,8 @@ std::string ReadKeyForMethylationAwarePhasing(
 
 // Extracts reads assigned to a specific haplotype phase (0, 1, or 2).
 std::vector<const DeepVariantCall_ReadSupport*> ExtractReadsByPhase(
-    const std::vector<DeepVariantCall_ReadSupport>& reads,
-    const std::vector<int>& phases, int target_phase);
-
+    absl::Span<const DeepVariantCall_ReadSupport> reads,
+    absl::Span<const int> phases, int target_phase);
 
 // Performs iterative methylation-aware phasing on a set of reads.
 //
