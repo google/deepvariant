@@ -3601,8 +3601,13 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   log_summary_stats(options, n_stats)
 
 
-def get_model_example_info_json_path(checkpoint: str) -> str:
+def get_model_example_info_json_path(
+    checkpoint: str, checkpoint_json: Optional[str] = None
+) -> str:
   """Returns the path to the example_info.json file for the given checkpoint path."""
+  if checkpoint_json:
+    return checkpoint_json
+
   # --checkpoint flag may contain the path to saved model or a checkpoint.
   # Example: --checkpoint=/some/path/to/saved_model/
   # Example: --checkpoint=/some/path/to/checkpoint/model.ckpt

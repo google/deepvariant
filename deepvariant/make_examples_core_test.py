@@ -213,6 +213,14 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     with self.assertRaises(ValueError):
       make_examples_core.get_model_example_info_json_path('')
 
+  def test_example_info_json_path_with_json_arg(self):
+    model_example_info_json_path = (
+        make_examples_core.get_model_example_info_json_path(
+            'ignored', 'expected_json_file'
+        )
+    )
+    self.assertEqual(model_example_info_json_path, 'expected_json_file')
+
   def test_old_example_info_json_path_with_saved_model(self):
     example_info_file = self.create_tempfile(file_path='example_info.json')
     checkpoint = example_info_file.full_path

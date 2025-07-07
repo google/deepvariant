@@ -97,6 +97,15 @@ _CHECKPOINT = flags.DEFINE_string(
     None,
     'Path to the TensorFlow model checkpoint.',
 )
+_CHECKPOINT_JSON = flags.DEFINE_string(
+    'checkpoint_json',
+    None,
+    (
+        'Optional. File path to a model.example_info.json to pair with'
+        ' --checkpoint. If not set, we will use the'
+        ' model.example_info.json found in the checkpoint directory.'
+    ),
+)
 _CANDIDATES = flags.DEFINE_string(
     'candidates',
     '',
@@ -974,7 +983,9 @@ def shared_flags_to_options(
     channels_enum = None
     if make_examples_core.in_calling_mode(options) and flags_obj.checkpoint:
       model_example_info_json = (
-          make_examples_core.get_model_example_info_json_path(_CHECKPOINT.value)
+          make_examples_core.get_model_example_info_json_path(
+              _CHECKPOINT.value, _CHECKPOINT_JSON.value
+          )
       )
       _, channels_enum, _ = dv_utils.get_shape_and_channels_from_json(
           f'{model_example_info_json}'

@@ -160,13 +160,22 @@ _VERSION = flags.DEFINE_boolean(
     allow_hide_cpp=True,
 )
 
-# Optional flags for call_variants.
+# Optional flags for call_variants and make_examples.
 _CUSTOMIZED_MODEL = flags.DEFINE_string(
     'customized_model',
     None,
     (
         'Optional. A path to a model checkpoint to load for the `call_variants`'
         ' step. If not set, the default for each --model_type will be used'
+    ),
+)
+_CUSTOMIZED_MODEL_JSON = flags.DEFINE_string(
+    'customized_model_json',
+    None,
+    (
+        'Optional. File path to a model.example_info.json to pair with'
+        ' --customized_model. If not set, we will use the'
+        ' model.example_info.json found in the model directory.'
     ),
 )
 _DISABLE_SMALL_MODEL = flags.DEFINE_boolean(
@@ -183,7 +192,6 @@ _CUSTOMIZED_SMALL_MODEL = flags.DEFINE_string(
         'the `make_examples` step.'
     ),
 )
-# Optional flags for make_examples.
 _NUM_SHARDS = flags.DEFINE_integer(
     'num_shards', 1, 'Optional. Number of shards for make_examples step.'
 )
@@ -438,6 +446,7 @@ def make_examples_command(
     reads,
     examples,
     model_ckpt,
+    model_ckpt_json,
     extra_args,
     runtime_by_region_path=None,
     **kwargs,
@@ -449,6 +458,7 @@ def make_examples_command(
     reads: Input BAM file.
     examples: Output tfrecord file containing tensorflow.Example files.
     model_ckpt: Path to the TensorFlow model checkpoint.
+    model_ckpt_json: Path to the model.example_info.json file, or None.
     extra_args: Comma-separated list of flag_name=flag_value.
     runtime_by_region_path: Output path for runtime by region metrics.
     **kwargs: Additional arguments to pass in for make_examples.
@@ -467,6 +477,8 @@ def make_examples_command(
   command.extend(['--reads', '"{}"'.format(reads)])
   command.extend(['--examples', '"{}"'.format(examples)])
   command.extend(['--checkpoint', '"{}"'.format(model_ckpt)])
+  if model_ckpt_json:
+    command.extend(['--checkpoint_json', '"{}"'.format(model_ckpt_json)])
 
   if runtime_by_region_path is not None:
     command.extend(
@@ -626,10 +638,9 @@ def check_flags():
 
     if use_saved_model:
       logging.info('Using saved model: %s', str(use_saved_model))
-    elif (
-        not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.data-00000-of-00001')
-        or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index')
-    ):
+    elif not tf.io.gfile.exists(
+        _CUSTOMIZED_MODEL.value + '.data-00000-of-00001'
+    ) or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index'):
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
@@ -650,23 +661,17 @@ def check_flags():
       model_dir = _CUSTOMIZED_MODEL.value
     else:
       model_dir = os.path.dirname(_CUSTOMIZED_MODEL.value)
-    if not tf.io.gfile.exists(f'{model_dir}/model.example_info.json'):
-      raise RuntimeError(
-          'Unable to find model.example_info.json in the model directory:'
-          ' Starting from v1.10.0, the model file needs to have a'
-          ' corresponding model.example_info.json file. You can see'
-          f' gs://deepvariant/models/DeepVariant/{DEEP_VARIANT_VERSION}/savedmodels/deepvariant.*.savedmodel/model.example_info.json'
-          ' as examples. The best way is to consult the people who trained the'
-          ' model to understand what flags should be used for make_examples.'
-      )
-    if not tf.io.gfile.exists(
-        f'{_CUSTOMIZED_MODEL.value}/model.example_info.json'
+    if (
+        not tf.io.gfile.exists(f'{model_dir}/model.example_info.json')
+        and not tf.io.gfile.exists(f'{model_dir}/model.example_info.json')
+        and not tf.io.gfile.exists(_CUSTOMIZED_MODEL_JSON.value)
     ):
       raise RuntimeError(
           'Starting from v1.10.0, the model file needs to have a corresponding'
           ' model.example_info.json file. You can see'
           f' gs://deepvariant/models/DeepVariant/{DEEP_VARIANT_VERSION}/savedmodels/deepvariant.*.savedmodel/model.example_info.json'
-          ' as an example.'
+          ' as examples. The best way is to consult the people who trained the'
+          ' model to understand what flags should be used for make_examples.'
       )
   if _CUSTOMIZED_SMALL_MODEL.value is not None:
     logging.info(
@@ -737,6 +742,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           reads=_READS.value,
           examples=examples,
           model_ckpt=model_ckpt,
+          model_ckpt_json=_CUSTOMIZED_MODEL_JSON.value,
           runtime_by_region_path=runtime_by_region_path,
           extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
           # kwargs:

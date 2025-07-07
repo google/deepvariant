@@ -90,6 +90,7 @@ BIN_VERSION="latest"
 CALL_VARIANTS_ARGS=""
 CAPTURE_BED=""
 CUSTOMIZED_MODEL=""
+CUSTOMIZED_MODEL_JSON=""
 CUSTOMIZED_SMALL_MODEL=""
 DOCKER_SOURCE="google/deepvariant"
 EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES=""
@@ -173,6 +174,11 @@ while (( "$#" )); do
       ;;
     --customized_model)
       CUSTOMIZED_MODEL="$2"
+      shift # Remove argument name from processing
+      shift # Remove argument value from processing
+      ;;
+    --customized_model_json)
+      CUSTOMIZED_MODEL_JSON="$2"
       shift # Remove argument name from processing
       shift # Remove argument value from processing
       ;;
@@ -436,6 +442,7 @@ echo "BIN_VERSION: ${BIN_VERSION}"
 echo "CALL_VARIANTS_ARGS: ${CALL_VARIANTS_ARGS}"
 echo "CAPTURE_BED: ${CAPTURE_BED}"
 echo "CUSTOMIZED_MODEL: ${CUSTOMIZED_MODEL}"
+echo "CUSTOMIZED_MODEL_JSON: ${CUSTOMIZED_MODEL_JSON}"
 echo "CUSTOMIZED_SMALL_MODEL: ${CUSTOMIZED_SMALL_MODEL}"
 echo "MAIN_BINARY_NAME: ${MAIN_BINARY_NAME}"
 echo "MAKE_EXAMPLES_ARGS: ${MAKE_EXAMPLES_ARGS}"
@@ -712,14 +719,22 @@ function setup_args() {
       echo "Using saved model"
       run mkdir -p "${INPUT_DIR}/savedmodel"
       run gcloud storage cp -R "${CUSTOMIZED_MODEL}"/'*' "${INPUT_DIR}"/savedmodel/
-      run gcloud storage cp "${CUSTOMIZED_MODEL}"/example_info.json "${INPUT_DIR}"/savedmodel/example_info.json
+      if [[ -n "${CUSTOMIZED_MODEL_JSON}" ]]; then
+        run gcloud storage cp "${CUSTOMIZED_MODEL_JSON}" "${INPUT_DIR}/savedmodel/model.example_info.json"
+      else
+        run gcloud storage cp "${CUSTOMIZED_MODEL}"/model.example_info.json "${INPUT_DIR}"/savedmodel/model.example_info.json
+      fi
       extra_args+=( --customized_model "/input/savedmodel")
     else
       echo "Using checkpoint"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".data-00000-of-00001 "${INPUT_DIR}/model.ckpt.data-00000-of-00001"
       run gcloud storage cp "${CUSTOMIZED_MODEL}".index "${INPUT_DIR}/model.ckpt.index"
       CUSTOMIZED_MODEL_DIR="$(dirname "${CUSTOMIZED_MODEL}")"
-      run "gcloud storage cp ${CUSTOMIZED_MODEL_DIR}/example_info.json ${INPUT_DIR}/example_info.json"
+      if [[ -n "${CUSTOMIZED_MODEL_JSON}" ]]; then
+        run gcloud storage cp "${CUSTOMIZED_MODEL_JSON}" "${INPUT_DIR}/model.example_info.json"
+      else
+        run gcloud storage cp "${CUSTOMIZED_MODEL}"/model.example_info.json "${INPUT_DIR}/model.example_info.json"
+      fi
       extra_args+=( --customized_model "/input/model.ckpt")
     fi
   else
