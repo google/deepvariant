@@ -44,6 +44,7 @@
 #include "deepvariant/pileup_channel_lib.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/sampling_util.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -240,7 +241,7 @@ int CalculatePileupImageHeight(const MakeExamplesOptions& options) {
 // Returns a vector of vectors, where each inner vector represents a partition
 // of read indices supporting a single allele. The last partition is for reads
 // supporting the reference allele.
-std::vector<std::vector<int>> GetReadIndicesAllelePartition(
+absl::btree_set<absl::btree_set<int>> GetReadIndicesAllelePartition(
     const DeepVariantCall& dv_call,
     const std::vector<const ::nucleus::genomics::v1::Read*>& reads) {
   // Map read names to their indices in the reads vector. This is used to
@@ -253,56 +254,39 @@ std::vector<std::vector<int>> GetReadIndicesAllelePartition(
   }
 
   // Create a partition element for each allele.
-  std::vector<std::vector<int>> read_index_partition_by_allele;
+  absl::btree_set<absl::btree_set<int>> read_index_partition_by_allele;
 
-  // 1. Collect allele keys and sort them to ensure deterministic partition
-  // order.
-  std::vector<std::string> sorted_allele_keys;
-  for (const auto& allele_support_pair : dv_call.allele_support()) {
-    sorted_allele_keys.push_back(allele_support_pair.first);
-  }
-  std::sort(sorted_allele_keys.begin(), sorted_allele_keys.end());
-
-  // Iterate using sorted allele keys
-  for (const std::string& allele_key : sorted_allele_keys) {
-    const auto& supporting_reads =
-        dv_call.allele_support().at(allele_key);
-    std::vector<int> read_indices_supporting_allele;
+  // Iterate over the allele support map.
+  for (const auto& [allele_key, supporting_reads] : dv_call.allele_support()) {
+    absl::btree_set<int> read_indices_supporting_allele;
     for (const std::string& read_name : supporting_reads.read_names()) {
       auto it = read_name_to_index_map.find(read_name);
       if (it != read_name_to_index_map.end()) {
-        read_indices_supporting_allele.push_back(it->second);
+        read_indices_supporting_allele.insert(it->second);
         // Remove the read name from the map, so after this section we will only
         // have the reads that don't support any allele.
         read_name_to_index_map.erase(it);
       }
     }
-    // Sort the read indices because flat_hash_map iteration is not ordered.
-    std::sort(read_indices_supporting_allele.begin(),
-              read_indices_supporting_allele.end());
-    read_index_partition_by_allele.push_back(read_indices_supporting_allele);
+    read_index_partition_by_allele.insert(read_indices_supporting_allele);
   }
 
   // Ref support info is not always available, so we assume that reads that do
   // not support any allele support the ref.
-  std::vector<int> read_indices_supporting_ref;
+  absl::btree_set<int> read_indices_supporting_ref;
   for (const auto& [_, index] : read_name_to_index_map) {
-    read_indices_supporting_ref.push_back(index);
+    read_indices_supporting_ref.insert(index);
   }
-  // 2. Sort the ref-supporting indices because flat_hash_map iteration is not
-  // ordered.
-  std::sort(read_indices_supporting_ref.begin(),
-            read_indices_supporting_ref.end());
 
-  read_index_partition_by_allele.push_back(read_indices_supporting_ref);
+  read_index_partition_by_allele.insert(read_indices_supporting_ref);
   return read_index_partition_by_allele;
 }
 
-absl::StatusOr<std::vector<int>> DownsampleReadIndicesWithMinsPerAllele(
+absl::StatusOr<absl::btree_set<int>> DownsampleReadIndicesWithMinsPerAllele(
     const std::vector<const ::nucleus::genomics::v1::Read*>& reads,
     int max_reads, const DeepVariantCall& dv_call, int min_per_allele,
     std::mt19937_64 gen) {
-  std::vector<std::vector<int>> allele_to_read_indices_map =
+  absl::btree_set<absl::btree_set<int>> allele_to_read_indices_map =
       GetReadIndicesAllelePartition(dv_call, reads);
   return sampling::SampleWithPartitionMins(allele_to_read_indices_map,
                                            max_reads, min_per_allele, gen);
@@ -338,7 +322,7 @@ PileupImageEncoderNative::BuildPileupForOneSample(
   }
 
   // Create a downsampled vector of read indices.
-  std::vector<int> sampled_indices;
+  std::vector<int> sampled_indices(max_reads);
   auto gen = std::mt19937_64(options_.random_seed());
   if (sample_options.use_non_uniform_downsampling()) {
     // Sampling with thresholds may fail if the threshold is too high, so we
@@ -349,9 +333,11 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     if (!status_or_sampled_indices.ok()) {
       LOG(WARNING) << "Failed to downsample reads with thresholds: "
                    << status_or_sampled_indices.status();
+      sampled_indices = DownsampleReadIndices(reads, max_reads, gen);
+    } else {
+      sampled_indices.assign(status_or_sampled_indices->begin(),
+                             status_or_sampled_indices->end());
     }
-    sampled_indices = status_or_sampled_indices.value_or(
-        DownsampleReadIndices(reads, max_reads, gen));
   } else {
     sampled_indices = DownsampleReadIndices(reads, max_reads, gen);
   }

@@ -43,11 +43,11 @@
 #include <gmock/gmock-more-matchers.h>
 
 #include "tensorflow/core/platform/test.h"
-#include "absl/container/flat_hash_set.h"
+#include "absl/container/btree_set.h"
 
 namespace learning::genomics::deepvariant::sampling::internal {
 
-typedef absl::flat_hash_set<int> int_set;
+typedef absl::btree_set<int> int_set;
 
 std::vector<int_set> all_subsets(int_set univ, size_t size) {
   std::vector<int> univ_vec(univ.begin(), univ.end());
@@ -69,7 +69,7 @@ std::vector<int_set> all_subsets(int_set univ, size_t size) {
   return subsets;
 }
 
-TEST(SamplingUtilTest, InPlaceReservoirSampleIsUniform) {
+TEST(SamplingUtilTest, ReservoirSampleIsUniform) {
   // The population is the set of all integers from 0 to 6.
   int_set population = {0, 1, 2, 3, 4, 5, 6};
 
@@ -82,12 +82,8 @@ TEST(SamplingUtilTest, InPlaceReservoirSampleIsUniform) {
       });
 
   // Function under test.
-  auto fut = [population](std::function<size_t(size_t)> index_provider) {
-    std::vector<int> population_vec(population.begin(), population.end());
-    int sample_size =
-        InPlaceReservoirSampleImpl(3, index_provider, population_vec);
-    population_vec.resize(sample_size);
-    return int_set(population_vec.begin(), population_vec.end());
+  auto fut = [&population](std::function<size_t(size_t)> index_provider) {
+    return ReservoirSampleImpl(3, index_provider, population);
   };
 
   auto final_distribution = distribution_functor::dist_map(
@@ -116,7 +112,7 @@ TEST(SamplingUtilTest, CheckSampleWithPartitionMinsDistribution) {
   // Consider the case of two partitions, each with 3 elements, and we want to
   // sample 4 elements from their union, with at least 1 element from each
   // partition.
-  std::vector<std::vector<int>> partition = {{0, 1, 2}, {3, 4, 5}};
+  absl::btree_set<int_set> partition = {{0, 1, 2}, {3, 4, 5}};
   size_t sample_size = 4;
   int min_per_partition = 1;
   int_set first = {0, 1, 2};
@@ -131,17 +127,8 @@ TEST(SamplingUtilTest, CheckSampleWithPartitionMinsDistribution) {
   // The function under test.
   auto fut = [&partition, &sample_size, &min_per_partition](
                  std::function<int_set(int_set, size_t)> subset_provider) {
-    std::function<vector_pair(std::vector<int>&, size_t)> vector_pair_provider =
-        [&subset_provider](std::vector<int> pop,
-                           size_t num_to_sample) -> vector_pair {
-      const int_set pop_set(pop.begin(), pop.end());
-      auto sampled = subset_provider(pop_set, num_to_sample);
-      auto complement_sampled = complement(sampled, pop_set);
-      return get_vector_pair(sampled, complement_sampled);
-    };
-    auto sample = SampleWithPartitionMinsImpl(
-        partition, sample_size, min_per_partition, vector_pair_provider);
-    return int_set(sample->begin(), sample->end());
+    return *SampleWithPartitionMinsImpl<int>(
+        partition, sample_size, min_per_partition, subset_provider);
   };
 
   auto final_distribution =

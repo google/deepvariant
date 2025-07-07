@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -117,7 +118,7 @@ int CalculatePileupImageHeight(const MakeExamplesOptions& options);
 // Returns a vector of vectors, where each inner vector represents a partition
 // of read indices supporting a single allele. The last partition is for reads
 // supporting the reference allele.
-std::vector<std::vector<int>> GetReadIndicesAllelePartition(
+absl::btree_set<absl::btree_set<int>> GetReadIndicesAllelePartition(
     const DeepVariantCall& dv_call,
     const std::vector<const ::nucleus::genomics::v1::Read*>& reads);
 

@@ -42,7 +42,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
+#include "absl/container/btree_map.h"
 
 namespace learning::genomics::deepvariant::distribution_functor {
 
@@ -54,7 +54,7 @@ class Distribution {
  public:
   using value_type = T;
 
-  using WeightMap = absl::flat_hash_map<value_type, uint64_t>;
+  using WeightMap = absl::btree_map<value_type, uint64_t>;
 
   const WeightMap& get_weight_map() const { return weight_map_; }
 
@@ -133,7 +133,7 @@ class DistributionTracer {
       return this->provide_next_response(std::forward<U>(u)...);
     };
 
-    absl::flat_hash_map<R, std::pair<uint64_t, uint64_t>> responses;
+    absl::btree_map<R, std::pair<uint64_t, uint64_t>> responses;
     R r = f_(callable_provider);
     // If f_ doesn't actually use the provider, the response is deterministic.
     if (current_node_ == nullptr) {
@@ -272,8 +272,8 @@ auto dist_bind(const Distribution<T>& dist, F f)
                     Distribution<typename OutputDistributionType::value_type>,
                     OutputDistributionType>,
                 "f must return a type convertible to Distribution<U>.");
-  absl::flat_hash_map<typename OutputDistributionType::value_type,
-                      std::pair<uint64_t, uint64_t>>
+  absl::btree_map<typename OutputDistributionType::value_type,
+                  std::pair<uint64_t, uint64_t>>
       new_probs;
   // F is a function from T to Distribution<U>.
   for (const auto& [t, p] : dist.get_weight_map()) {

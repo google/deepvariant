@@ -38,6 +38,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
@@ -53,40 +54,49 @@ namespace internal {
 // and returns the index of the element that should be swapped with the element
 // at that index.
 template <typename T>
-int InPlaceReservoirSampleImpl(int sample_size,
-                               std::function<size_t(size_t)> index_provider,
-                               std::vector<T>& population) {
-  // If the vector is already smaller than the sample size, return the size.
+absl::btree_set<T> ReservoirSampleImpl(
+    int sample_size, std::function<size_t(size_t)> index_provider,
+    const absl::btree_set<T>& population) {
+  // If the population is already smaller than the sample size, return the size.
   if (population.size() < sample_size) {
-    return population.size();
+    return absl::btree_set<T>(population);
   }
-  for (size_t index = sample_size; index < population.size(); ++index) {
+
+  std::vector<T> sampled(sample_size);
+  size_t index = 0;
+  auto it = population.begin();
+  for (; index < sample_size; ++it, ++index) {
+    sampled[index] = *it;
+  }
+
+  for (; it != population.end(); ++it, ++index) {
     size_t swap_index = index_provider(index);
     if (swap_index < sample_size) {
-      std::swap(population[swap_index], population[index]);
+      sampled[swap_index] = *it;
     }
   }
-  return sample_size;
+  return absl::btree_set<T>(sampled.begin(), sampled.end());
 }
 
 template <typename T>
-absl::StatusOr<std::vector<T>> SampleWithPartitionMinsImpl(
-    std::vector<std::vector<T>> partition, int sample_size,
+absl::StatusOr<absl::btree_set<T>> SampleWithPartitionMinsImpl(
+    const absl::btree_set<absl::btree_set<T>>& partition, int sample_size,
     int min_per_partition,
-    std::function<std::pair<std::vector<T>, std::vector<T>>(std::vector<T>&,
-                                                            size_t)>
+    std::function<absl::btree_set<T>(const absl::btree_set<T>&, size_t)>
         subset_provider) {
-  std::vector<T> sampled;
-  std::vector<T> unsampled;
+  absl::btree_set<T> sampled;
+  absl::btree_set<T> unsampled;
 
-  // First get min_per_partition from each partition.
-  for (auto& partition_elements : partition) {
-    auto [sampled_elements, unsampled_elements] =
+  // First get min_per_partition elements from each partition.
+  for (const auto& partition_elements : partition) {
+    auto sampled_elements =
         subset_provider(partition_elements, min_per_partition);
-    sampled.insert(sampled.end(), sampled_elements.begin(),
-                   sampled_elements.end());
-    unsampled.insert(unsampled.end(), unsampled_elements.begin(),
-                     unsampled_elements.end());
+    auto unsampled_elements = partition_elements;
+    for (const auto& element : sampled_elements) {
+      unsampled_elements.erase(element);
+    }
+    sampled.merge(sampled_elements);
+    unsampled.merge(unsampled_elements);
   }
 
   // Complete the rest of the sample from the unsampled elements.
@@ -98,9 +108,8 @@ absl::StatusOr<std::vector<T>> SampleWithPartitionMinsImpl(
         "Threshold of ", min_per_partition,
         " per partition results in more than sample_size elements."));
   }
-  auto [sampled_elements, _] = subset_provider(unsampled, remaining_to_sample);
-  sampled.insert(sampled.end(), sampled_elements.begin(),
-                 sampled_elements.end());
+  auto sampled_elements = subset_provider(unsampled, remaining_to_sample);
+  sampled.merge(sampled_elements);
   return sampled;
 }
 
@@ -111,13 +120,13 @@ absl::StatusOr<std::vector<T>> SampleWithPartitionMinsImpl(
 /// entire population is returned. Sampling is done in place, as a prefix of the
 /// population vector, and each possible sample is chosen uniformly at random.
 template <typename T>
-int InPlaceReservoirSample(int sample_size, std::mt19937_64& gen,
-                           std::vector<T>& population) {
+absl::btree_set<T> ReservoirSample(int sample_size, std::mt19937_64& gen,
+                                   const absl::btree_set<T>& population) {
   auto uniform_index_dist = [&gen](size_t max) {
     return absl::Uniform<size_t>(absl::IntervalClosed, gen, 0, max);
   };
-  return internal::InPlaceReservoirSampleImpl(sample_size, uniform_index_dist,
-                                              population);
+  return internal::ReservoirSampleImpl(sample_size, uniform_index_dist,
+                                       population);
 }
 
 //// Samples from a family of vectors, where each vector represents a partition.
@@ -135,22 +144,13 @@ int InPlaceReservoirSample(int sample_size, std::mt19937_64& gen,
 /// choose 2 elements from the union of the remaining 4 elements. This choice
 /// will be balanced 2/3 of the time.
 template <typename T>
-absl::StatusOr<std::vector<T>> SampleWithPartitionMins(
-    std::vector<std::vector<T>> partition, int sample_size,
+absl::StatusOr<absl::btree_set<T>> SampleWithPartitionMins(
+    absl::btree_set<absl::btree_set<T>> partition, int sample_size,
     int min_per_partition, std::mt19937_64& gen) {
-  std::function<std::pair<std::vector<T>, std::vector<T>>(std::vector<T>&,
-                                                          size_t)>
+  std::function<absl::btree_set<T>(const absl::btree_set<T>&, size_t)>
       uniform_subset_provider =
-          [&gen, min_per_partition](std::vector<T>& population,
-                                    size_t num_to_sample) {
-            std::vector<T> sampled;
-            std::vector<T> unsampled;
-            int index = InPlaceReservoirSample(num_to_sample, gen, population);
-            sampled.insert(sampled.end(), population.begin(),
-                           population.begin() + index);
-            unsampled.insert(unsampled.end(), population.begin() + index,
-                             population.end());
-            return std::make_pair(sampled, unsampled);
+          [&gen](const absl::btree_set<T>& population, size_t num_to_sample) {
+            return ReservoirSample(num_to_sample, gen, population);
           };
   return internal::SampleWithPartitionMinsImpl(
       partition, sample_size, min_per_partition, uniform_subset_provider);

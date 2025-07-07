@@ -1046,6 +1046,7 @@ cc_library(
     name = "sampling_util",
     hdrs = ["sampling_util.h"],
     deps = [
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/status",
@@ -1062,9 +1063,7 @@ cc_test(
     deps = [
         ":distribution_functor",
         ":sampling_util",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/container:btree",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
     ],
@@ -1073,11 +1072,7 @@ cc_test(
 cc_library(
     name = "distribution_functor",
     hdrs = ["distribution_functor.h"],
-    deps = [
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log",
-    ],
+    deps = ["@com_google_absl//absl/container:btree"],
 )
 
 cc_test(
@@ -1088,9 +1083,7 @@ cc_test(
     ],
     deps = [
         ":distribution_functor",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/container:btree",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",
     ],
@@ -1110,6 +1103,7 @@ cc_library(
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",
