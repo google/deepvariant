@@ -108,14 +108,10 @@ RUN apt-get -y update && \
   apt-get autoremove -y --purge && \
   rm -rf /var/lib/apt/lists/*
 
-# Since samtools/bcftools and models are relatively static, we copy them first.
+# Since samtools/bcftools is relatively static, we copy them first.
 # Copy over samtools and bcftools
 COPY --from=hts_utils /opt/conda/envs/bio/bin /opt/conda/envs/bio/bin
 COPY --from=hts_utils /opt/conda/envs/bio/lib /opt/conda/envs/bio/lib
-
-# Copy over models
-COPY --from=download_models /opt/models /opt/models
-COPY --from=download_models /opt/smallmodels /opt/smallmodels
 
 # Integrate everything.
 RUN echo "Acquire::http::proxy \"$http_proxy\";\n" \
@@ -194,6 +190,10 @@ RUN \
     '/usr/bin/python3 /opt/deepvariant/bin/train.zip "$@"' > \
     /opt/deepvariant/bin/train && \
   chmod -R +x /opt/deepvariant/bin
+
+# Copy over models
+COPY --from=download_models /opt/models /opt/models
+COPY --from=download_models /opt/smallmodels /opt/smallmodels
 
 ENV PATH="${PATH}":${DV_BIN_PATH}:/opt/conda/envs/bio/bin
 
