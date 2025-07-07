@@ -257,7 +257,7 @@ def int_tensor_to_string(x):
   """Python operations to encode a tensor of ints into string of bytes."""
   slen = x[0]
   v = x[1 : slen + 1]
-  return np.array(v, dtype=np.uint8).tostring()
+  return np.array(v, dtype=np.uint8).tobytes()
 
 
 def tpu_available(sess=None):
