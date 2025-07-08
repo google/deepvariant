@@ -733,7 +733,7 @@ function setup_args() {
       if [[ -n "${CUSTOMIZED_MODEL_JSON}" ]]; then
         run gcloud storage cp "${CUSTOMIZED_MODEL_JSON}" "${INPUT_DIR}/model.example_info.json"
       else
-        run gcloud storage cp "${CUSTOMIZED_MODEL}"/model.example_info.json "${INPUT_DIR}/model.example_info.json"
+        run gcloud storage cp "${CUSTOMIZED_MODEL_DIR}"/model.example_info.json "${INPUT_DIR}/model.example_info.json"
       fi
       extra_args+=( --customized_model "/input/model.ckpt")
     fi
