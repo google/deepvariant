@@ -105,7 +105,7 @@ class AlleleCounterTest : public ::testing::Test {
     return MakeCounter(chr_, start_, end_);
   }
 
-  const int min_base_quality() {
+  int min_base_quality() {
     return options_.read_requirements().min_base_quality();
   }
 
