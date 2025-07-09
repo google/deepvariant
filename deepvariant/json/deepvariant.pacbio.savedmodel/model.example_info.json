@@ -1,0 +1,26 @@
+{
+  "version": "UPDATE_ME",
+  "shape": [100, 147, 10],
+  "channels": [1, 2, 3, 4, 5, 6, 7, 26, 9, 10],
+  "flags_for_calling": {
+    "alt_aligned_pileup": "diff_channels",
+    "call_small_model_examples": true,
+    "keep_supplementary_alignments": true,
+    "max_reads_per_partition": 600,
+    "min_mapping_quality": 1,
+    "parse_sam_aux_fields": true,
+    "partition_size": 25000,
+    "phase_reads": true,
+    "pileup_image_height": 100,
+    "pileup_image_width": 147,
+    "realign_reads": false,
+    "small_model_indel_gq_threshold": 16,
+    "small_model_snp_gq_threshold": 15,
+    "small_model_vaf_context_window_size": 51,
+    "sort_by_haplotypes": true,
+    "track_ref_reads": true,
+    "trained_small_model_path": "/opt/smallmodels/pacbio",
+    "trim_reads_for_pileup": true,
+    "vsc_min_fraction_indels": 0.12
+  }
+}
