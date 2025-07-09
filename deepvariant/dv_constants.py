@@ -107,6 +107,7 @@ CHANNELS = [
     'base_methylation',
     'base_6ma',
     'read_supports_variant_fuzzy',
+    'supplementary_alignment',
 ]
 
 ALT_ALIGNED_PILEUP_CHANNELS = [
@@ -172,6 +173,7 @@ CHANNEL_ENUM_TO_STRING = {
     deepvariant_pb2.CH_READ_SUPPORTS_VARIANT_FUZZY: (
         'read_supports_variant_fuzzy'
     ),
+    deepvariant_pb2.CH_SUPPLEMENTARY_ALIGNMENT: 'supplementary_alignment',
 }
 
 # Create a reverse mapping

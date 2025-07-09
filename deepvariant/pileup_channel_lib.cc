@@ -62,6 +62,7 @@
 #include "deepvariant/channels/read_supports_variant_channel.h"
 #include "deepvariant/channels/read_supports_variant_fuzzy_channel.h"
 #include "deepvariant/channels/strand_channel.h"
+#include "deepvariant/channels/supplementary_alignment_channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -83,7 +84,6 @@ using learning::genomics::deepvariant::DeepVariantCall;
 namespace learning {
 namespace genomics {
 namespace deepvariant {
-
 
 bool Channels::CalculateChannels(
     std::vector<std::vector<unsigned char>>& data,
@@ -428,11 +428,12 @@ std::unique_ptr<Channel> Channels::ChannelEnumToObject(
       return std::unique_ptr<Channel>(
           new BaseMethylationChannel(width, options));
     case DeepVariantChannelEnum::CH_BASE_6MA:
+      return std::unique_ptr<Channel>(new Base6mAChannel(width, options));
+    case DeepVariantChannelEnum::CH_SUPPLEMENTARY_ALIGNMENT:
       return std::unique_ptr<Channel>(
-          new Base6mAChannel(width, options));
+          new SupplementaryAlignmentChannel(width, options));
     default:
-      LOG(FATAL) << "Channel '"
-                 << DeepVariantChannelEnum_Name(channel_enum)
+      LOG(FATAL) << "Channel '" << DeepVariantChannelEnum_Name(channel_enum)
                  << "' is unimplemented and should have a corresponding "
                     "implementation.";
   }
@@ -485,6 +486,9 @@ DeepVariantChannelEnum Channels::ChannelStrToEnum(const std::string& channel) {
   }
   if (channel == ch_base_6ma) {
     return DeepVariantChannelEnum::CH_BASE_6MA;
+  }
+  if (channel == ch_supplementary_alignment) {
+    return DeepVariantChannelEnum::CH_SUPPLEMENTARY_ALIGNMENT;
   }
   CHECK(false) << "Channel '" << channel << "' should have a corresponding "
                << "enum in DeepVariantChannelEnum.";
