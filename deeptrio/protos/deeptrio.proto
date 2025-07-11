@@ -31,5 +31,8 @@ edition = "2023";
 
 package learning.genomics.deeptrio;
 
+import "third_party/protobuf/cpp_features.proto";
+
+option features.(pb.cpp).string_type = VIEW;
 option features.utf8_validation = NONE;
 
