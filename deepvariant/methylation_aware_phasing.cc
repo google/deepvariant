@@ -298,7 +298,7 @@ std::vector<DeepVariantCall> IdentifyInformativeSitesAndUpdatePValues(
     }
 
     // Skip sites where methylation is highly variable within a haplotype
-    auto stddev = [](const std::vector<double>& values, double mean) {
+    auto stddev = [](absl::Span<const double> values, double mean) {
       double sum_sq = 0.0;
       for (double v : values) sum_sq += (v - mean) * (v - mean);
       return std::sqrt(sum_sq / values.size());
