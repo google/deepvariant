@@ -57,12 +57,12 @@ _CHECKPOINT = flags.DEFINE_string(
     ),
 )
 
-_EXAMPLE_INFO_JSON = flags.DEFINE_string(
-    'example_info_json',
+_MODEL_EXAMPLE_INFO_JSON = flags.DEFINE_string(
+    'model_example_info_json',
     None,
     (
-        'Path to json file containing example information. '
-        'For example: <path/to/model>/example.info.json.'
+        'Path to json containing example information associated with the model.'
+        ' For example: <path/to/model>/model.example.info.json.'
     ),
 )
 
@@ -70,27 +70,27 @@ _EXAMPLE_INFO_JSON = flags.DEFINE_string(
 def register_required_flags():
   flags.mark_flags_as_required([
       'checkpoint',
-      'example_info_json',
+      'model_example_info_json',
       'output',
   ])
 
 
 def initialize_model(
-    example_info_json: str, checkpoint_path: str
+    model_example_info_json: str, checkpoint_path: str
 ) -> Optional[tf.keras.Model]:
   """Initializes the model and gathers parameters.
 
   Args:
-    example_info_json: Path to json file containing example shape.
+    model_example_info_json: Path to json file containing example information.
     checkpoint_path: Path to model checkpoint.
 
   Returns:
     An initialized model.
   """
-  logging.info('Reading example shape from %s', example_info_json)
-  example_shape = dv_utils.get_shape_and_channels_from_json(example_info_json)[
-      0
-  ]
+  logging.info('Reading from %s', model_example_info_json)
+  example_shape = dv_utils.get_shape_and_channels_from_json(
+      model_example_info_json
+  )[0]
   logging.info('Loading %s', checkpoint_path)
   logging.info('Example shape %s', example_shape)
   # Load model
@@ -123,14 +123,16 @@ def convert_gs_to_bigstore(gs_path: str) -> str:
 def main(_):
   """Main entry point."""
   loaded_model = initialize_model(
-      example_info_json=_EXAMPLE_INFO_JSON.value,
+      model_example_info_json=_MODEL_EXAMPLE_INFO_JSON.value,
       checkpoint_path=_CHECKPOINT.value,
   )
   tf.saved_model.save(loaded_model, _OUTPUT.value)
   # Copy over the example_info.json.
   gfile.Copy(
-      convert_gs_to_bigstore(_EXAMPLE_INFO_JSON.value),
-      convert_gs_to_bigstore(os.path.join(_OUTPUT.value, 'example_info.json')),
+      convert_gs_to_bigstore(_MODEL_EXAMPLE_INFO_JSON.value),
+      convert_gs_to_bigstore(
+          os.path.join(_OUTPUT.value, 'model.example_info.json')
+      ),
       overwrite=True,
   )
 
