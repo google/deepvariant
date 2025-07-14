@@ -889,6 +889,93 @@ class PostprocessVariantsTest(parameterized.TestCase):
     np.testing.assert_almost_equal(norm_predictions, expected_predictions)
 
   @parameterized.parameters(
+      (
+          # 3 different candidates from single_locus_example.
+          # (np.array([0.03, 0.97, 0.0 ]), [1]),
+          # (np.array([0.23, 0.77, 0.0 ]), [2]),
+          # (np.array([0.03, 0.97, 0.0 ]), [3]),
+          # (np.array([0.01, 0.29, 0.70]), [1, 2]),
+          # (np.array([0.01, 0.36, 0.63]), [1, 3]),
+          # (np.array([0.0, 1.00, 0.00]), [2, 3]),
+          [
+              _create_call_variants_output(
+                  indices=[0],
+                  probabilities=[0.03, 0.97, 0.0],
+                  alts=['A', 'B', 'C'],
+              ),
+              _create_call_variants_output(
+                  indices=[1],
+                  probabilities=[0.23, 0.77, 0.0],
+                  alts=['A', 'B', 'C'],
+              ),
+              _create_call_variants_output(
+                  indices=[2],
+                  probabilities=[0.03, 0.97, 0.0],
+                  alts=['A', 'B', 'C'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 1],
+                  probabilities=[0.01, 0.29, 0.70],
+                  alts=['A', 'B', 'C'],
+              ),
+              _create_call_variants_output(
+                  indices=[0, 2],
+                  probabilities=[0.01, 0.36, 0.63],
+                  alts=['A', 'B', 'C'],
+              ),
+              _create_call_variants_output(
+                  indices=[1, 2],
+                  probabilities=[0.0, 1.00, 0.00],
+                  alts=['A', 'B', 'C'],
+              ),
+          ],
+          # Genotype map:
+          # {(0, 0): [0.03, 0.23, 0.03, 0.01, 0.01, 0.0],
+          # (0, 1): [0.97, 0.23, 0.03, 0.29, 0.36, 0.0],
+          # (0, 2): [0.03, 0.77, 0.03, 0.29, 0.01, 1.0],
+          # (0, 3): [0.03, 0.23, 0.97, 0.01, 0.36, 1.0],
+          # (1, 1): [0.0, 0.23, 0.03, 0.7, 0.63, 0.0],
+          # (1, 2): [0.97, 0.77, 0.03, 0.7, 0.36, 1.0],
+          # (1, 3): [0.97, 0.23, 0.97, 0.29, 0.63, 1.0],
+          # (2, 2): [0.03, 0.0, 0.03, 0.7, 0.01, 0.0],
+          # (2, 3): [0.03, 0.77, 0.97, 0.29, 0.36, 0.0],
+          # (3, 3): [0.03, 0.23, 0.0, 0.01, 0.63, 0.0]}
+          [
+              0.0,  # 0/0
+              0.0,  # 0/1
+              0.0,  # 1/1
+              4.44523e-05,  # 0/2
+              1.24896e-01,  # 1/2
+              0.0,  # 2/2
+              5.32950e-04,  # 0/3
+              8.74527e-01,  # 1/3
+              0.0,  # 2/3
+              0.0,  # 3/3
+          ],
+      ),
+  )
+  @flagsaver.flagsaver
+  def test_merge_predictions_multiallelics_probs_product(
+      self, inputs, expected_unnormalized_probs, qual_filter=None
+  ):
+    FLAGS.multiallelic_mode = 'product'
+    multiallelic_model = postprocess_variants.get_multiallelic_model(
+        use_multiallelic_model=False
+    )
+    denominator = sum(expected_unnormalized_probs)
+    for permuted_inputs in itertools.permutations(inputs):
+      _, predictions = postprocess_variants.merge_predictions(
+          permuted_inputs,
+          multiallelic_model=multiallelic_model,
+          qual_filter=qual_filter,
+      )
+      np.testing.assert_almost_equal(
+          predictions,
+          [x / denominator for x in expected_unnormalized_probs],
+          decimal=5,
+      )
+
+  @parameterized.parameters(
       # Example with 2 alternate_bases:
       # expected_unnormalized_probs is min of 0/0, 0/1, 1/1, 0/2, 1/2, 2/2
       (

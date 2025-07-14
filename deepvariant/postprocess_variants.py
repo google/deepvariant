@@ -169,6 +169,12 @@ _USE_MULTIALLELIC_MODEL = flags.DEFINE_boolean(
         ' multiallelic cases with two alts.'
     ),
 )
+_MULTIALLELIC_MODE = flags.DEFINE_enum(
+    'multiallelic_mode',
+    'min',
+    ['min', 'product'],
+    'The fusion rule for merging probabilities in multiallelic calling.',
+)
 _DEBUG_OUTPUT_ALL_CANDIDATES = flags.DEFINE_enum(
     'debug_output_all_candidates',
     None,
@@ -285,6 +291,9 @@ _LOG_EVERY_N = 100000
 # When outputting all alt alleles, use placeholder value to indicate genotype
 # will be soft-filtered.
 _FILTERED_ALT_PROB = -9.0
+
+# The number of genotype probabilities in a diploid sample.
+_NUM_GENOTYPE_PROBABILITIES = 3
 
 
 def _extract_single_sample_name(
@@ -1202,6 +1211,53 @@ def merge_predictions(
         call_variants_outputs, alt_alleles_to_remove
     )
     normalized_predictions = multiallelic_model(cvo_probs).numpy().tolist()[0]
+  elif _MULTIALLELIC_MODE.value == 'product':
+    # New logic: "overlap-count" with product fusion.
+    # 1. Collect information about each CVO's example.
+    example_info = []
+    original_variant = call_variants_outputs[0].variant
+    for cvo in call_variants_outputs:
+      example_alt_alleles = frozenset(
+          original_variant.alternate_bases[i]
+          for i in cvo.alt_allele_indices.indices
+      )
+      is_for_pruned_allele = bool(
+          alt_alleles_to_remove.intersection(example_alt_alleles)
+      )
+      if is_for_pruned_allele and debug_output_all_candidates != 'ALT':
+        continue
+      probs = (
+          (_FILTERED_ALT_PROB,) * _NUM_GENOTYPE_PROBABILITIES
+          if is_for_pruned_allele
+          else cvo.genotype_probabilities
+      )
+      example_info.append({'probs': probs, 'alts': example_alt_alleles})
+
+    # 2. Calculate raw probability for each possible genotype.
+    predictions = []
+    genotype_ordering = variant_utils.genotype_ordering_in_likelihoods(
+        canonical_variant
+    )
+    for _, _, allele1_str, allele2_str in genotype_ordering:
+      prob_list_for_genotype = []
+      for example in example_info:
+        # Check each allele of the diploid genotype independently against the
+        # example's alternate alleles. This correctly calculates an overlap of 2
+        # for homozygous alternate genotypes.
+        overlap = int(allele1_str in example['alts']) + int(
+            allele2_str in example['alts']
+        )
+        prob_list_for_genotype.append(example['probs'][overlap])
+
+      # 3. Fuse probabilities with product.
+      if _FILTERED_ALT_PROB in prob_list_for_genotype:
+        fused_prob = _FILTERED_ALT_PROB
+      else:
+        fused_prob = np.prod(prob_list_for_genotype)
+      predictions.append(fused_prob)
+
+    # 4. Normalize the final predictions.
+    normalized_predictions = normalize_predictions(predictions)
   else:
 
     def min_alt_filter(probs):
