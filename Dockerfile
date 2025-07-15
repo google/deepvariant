@@ -44,7 +44,13 @@ RUN apk add --no-cache wget parallel
 # ont_r104 --> ont
 RUN parallel --halt now,fail=1 --verbose --jobs 10 \
   "mkdir -p /opt/models/{1}/variables && wget -O /opt/models/{1}/{2} https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}-exp/savedmodels/deepvariant.{=1 s/_.*// =}.savedmodel/{2}" ::: \
-  wgs wes pacbio masseq ont_r104 hybrid_pacbio_illumina ::: \
+  wgs wes masseq ont_r104 hybrid_pacbio_illumina ::: \
+  fingerprint.pb saved_model.pb model.example_info.json variables/variables.data-00000-of-00001 variables/variables.index && \
+  chmod -R +r /opt/models/
+# TODO: Combine this back to the one above when finalizing release.
+RUN parallel --halt now,fail=1 --verbose --jobs 10 \
+  "mkdir -p /opt/models/{1}/variables && wget -O /opt/models/{1}/{2} https://storage.googleapis.com/brain-genomics/pichuan/xm_experiments/174507734/wu_1/best/deepvariant.{=1 s/_.*// =}.savedmodel/{2}" ::: \
+  pacbio ::: \
   fingerprint.pb saved_model.pb model.example_info.json variables/variables.data-00000-of-00001 variables/variables.index && \
   chmod -R +r /opt/models/
 
