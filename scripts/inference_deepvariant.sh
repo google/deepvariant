@@ -52,7 +52,7 @@ Flags:
 --make_examples_extra_args Flags for make_examples, specified as "flag1=param1,flag2=param2".
 --call_variants_extra_args Flags for call_variants, specified as "flag1=param1,flag2=param2".
 --postprocess_variants_extra_args Flags for postprocess_variants, specified as "flag1=param1,flag2=param2".
---model_preset Preset case study to run: WGS, WES, PACBIO, ONT_R104, WGS_PANGENOME, WES_PANGENOME, ONT_R104_DUPLEX_CHR20, or HYBRID_PACBIO_ILLUMINA. ONT_R104_DUPLEX_CHR20 will use the ONT_R104 model_type.
+--model_preset Preset case study to run: WGS, WES, PACBIO, ONT_R104, WGS_PANGENOME, WES_PANGENOME, or HYBRID_PACBIO_ILLUMINA.
 --par_regions_bed Path to BED containing Human Pseudoautosomal Region (PAR) regions. This is used in postprocess_variants. We separate it out as a flag because we need to copy data from gs://.
 --population_vcfs Path to VCFs containing population allele frequencies. Use wildcard pattern.
 --proposed_variants Path to VCF containing proposed variants. In make_examples_extra_args, you must also specify variant_caller=vcf_candidate_importer but not proposed_variants.
@@ -336,18 +336,9 @@ elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
   BASE="${HOME}/ont-case-study"
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-  BAM="${BAM:=${GCS_DATA_DIR}/ont-case-study-testdata/HG003_R104_sup_merged.80x.bam}"
+  BAM="${BAM:=${GCS_DATA_DIR}/ont-case-study-testdata/HG003_PAY87794.calls.sorted.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
-elif [[ "${MODEL_PRESET}" = "ONT_R104_DUPLEX_CHR20" ]]; then
-  MODEL_TYPE="ONT_R104"
-  BASE="${HOME}/ont-duplex-case-study"
-
-  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-  BAM="${BAM:=${GCS_DATA_DIR}/ont-case-study-testdata/HG002_R1041_Duplex_all_Dorado_v0.1.1_400bps_pass_2_GRCh38.chr20.bam}"
-  TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
-  TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
-  REGIONS="chr20"
 elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   MODEL_TYPE="WGS"
   BASE="${HOME}/wgs-case-study"
@@ -786,8 +777,8 @@ function setup_args() {
   fi
   if [[ -n "${REGIONS}" ]]; then
     if [[ "${REGIONS}" = http* ]] || [[ "${REGIONS}" = gs://* ]]; then
-      extra_args+=( --regions "/input/$(basename $REGIONS)")
-      happy_args+=( -T "${INPUT_DIR}/$(basename $REGIONS)")
+      extra_args+=( --regions "/input/$(basename "$REGIONS")")
+      happy_args+=( -T "${INPUT_DIR}/$(basename "$REGIONS")")
     else
       extra_args+=( --regions "${REGIONS}")
       happy_args+=( -l "${REGIONS}")
