@@ -169,7 +169,7 @@ class VariantCaller {
       nucleus::VcfReader* vcf_reader_ptr) const;
 
   std::vector<DeepVariantCall> CallsFromVcf(
-      const std::vector<AlleleCount>& allele_counts,
+      absl::Span<const AlleleCount> allele_counts,
       const nucleus::genomics::v1::Range& range,
       nucleus::VcfReader* vcf_reader_ptr) const;
 

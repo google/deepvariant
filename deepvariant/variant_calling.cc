@@ -173,11 +173,11 @@ int DeletionSize(const Allele& allele) {
 // AlleleCount. But if one of the alt_alleles is a deletion, we need to
 // use those bases as our reference.  And if there are multiple deletions
 // at a site, we need to use the longest deletion allele.
-string CalcRefBases(const string& ref_bases,
+string CalcRefBases(absl::string_view ref_bases,
                     absl::Span<const Allele> alt_alleles) {
   if (alt_alleles.empty()) {
     // We don't have any alternate alleles, so used the provided ref_bases.
-    return ref_bases;
+    return std::string(ref_bases);
   }
 
   const auto max_elt =
@@ -186,7 +186,7 @@ string CalcRefBases(const string& ref_bases,
                          return DeletionSize(allele1) < DeletionSize(allele2);
                        });
   if (max_elt->type() != AlleleType::DELETION) {
-    return ref_bases;
+    return std::string(ref_bases);
   } else {
     // Deletion alleles may have an anchor base that is the reference or some
     // other base, but a Variant must have a reference sequence that starts with
@@ -265,13 +265,13 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
 
 AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
                          absl::Span<const Allele> alt_alleles,
-                         const string& ref_bases) {
+                         absl::string_view ref_bases) {
   AlleleMap allele_map;
 
   // Compute the alt alleles, recording the mapping from each Allele to its
   // corresponding allele in the Variant format.
   for (const auto& alt_allele : alt_alleles) {
-    const string& alt_bases = alt_allele.bases();
+    const absl::string_view alt_bases = alt_allele.bases();
     switch (alt_allele.type()) {
       case AlleleType::SUBSTITUTION:
       case AlleleType::INSERTION:
@@ -309,7 +309,7 @@ AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
 // allele_map is needed to map between the Variant reference and alternate_bases
 // and the Alleles used in allele_count.
 void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
-                   const string& allele_map_refbases, Variant* variant) {
+                   absl::string_view allele_map_refbases, Variant* variant) {
   // Set the DP to the total good reads seen at this position.
   VariantCall* call = variant->mutable_calls(0);
   nucleus::SetInfoField(kDPFormatField, TotalAlleleCounts(allele_count), call);
@@ -391,8 +391,7 @@ bool is_uncalled_genotype(const Variant& variant) {
 }
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromVcf(
-    const std::vector<AlleleCount>& allele_counts,
-    const Range& range,
+    absl::Span<const AlleleCount> allele_counts, const Range& range,
     nucleus::VcfReader* vcf_reader_ptr) const {
   std::vector<Variant> variants_in_region;
   nucleus::StatusOr<std::shared_ptr<nucleus::VariantIterable>> status =
@@ -651,7 +650,7 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
 
   DeepVariantCall call;
   Variant* variant = call.mutable_variant();
-  string sample_name = options_.sample_name();
+  string sample_name(options_.sample_name());
   if (variant->calls_size() > 0 && !variant->calls(0).call_set_name().empty()) {
     sample_name = variant->calls(0).call_set_name();
   }
