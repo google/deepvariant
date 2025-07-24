@@ -542,16 +542,19 @@ def postprocess_variants_command(
 ) -> tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   cpus = _POSTPROCESS_CPUS.value
+  multiallelic_mode = 'product'
   if cpus is None:
     cpus = _NUM_SHARDS.value
     # WES does not benefit from multiprocessing.
     if ModelType(_MODEL_TYPE.value) == ModelType.WES:
       cpus = 0
+      multiallelic_mode = 'min'
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--cpus', '"{}"'.format(cpus)])
+  command.extend(['--multiallelic_mode', '"{}"'.format(multiallelic_mode)])
   if _use_small_model():
     command.extend(
         ['--small_model_cvo_records', '"{}"'.format(small_model_cvo_records)]

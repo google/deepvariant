@@ -21,11 +21,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    |  45m55.29s
-call_variants                    |  16m34.10s
-postprocess_variants (with gVCF) |  6m49.36s
-vcf_stats_report (optional)      |  5m30.57s (optional)
-total                            |  83m6.88s (1h23m6.88s)
+make_examples                    |  45m6.46s
+call_variants                    |  16m25.54s
+postprocess_variants (with gVCF) |  6m46.32s
+vcf_stats_report (optional)      |  5m14.59s (optional)
+total                            |  82m5.75s (1h22m5.75s)
 
 ### Accuracy
 
@@ -34,8 +34,8 @@ held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501527   | 2974     | 1262     | 0.994105      | 0.997591         | 0.995845        |
-| SNP   | 3306720  | 20776    | 4900     | 0.993756      | 0.998521         | 0.996133        |
+| INDEL | 501594   | 2907     | 1190     | 0.994238      | 0.997729         | 0.99598         |
+| SNP   | 3306720  | 20776    | 4880     | 0.993756      | 0.998527         | 0.996136        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/WGS/deepvariant.output.visual_report.html)
 
@@ -48,11 +48,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 2m58.39s
-call_variants                    | 0m34.54s
-postprocess_variants (with gVCF) | 0m39.29s
-vcf_stats_report (optional)      | 0m5.06s (optional)
-total                            | 5m3.19s
+make_examples                    | 2m58.54s
+call_variants                    | 0m33.96s
+postprocess_variants (with gVCF) | 0m39.10s
+vcf_stats_report (optional)      | 0m6.71s (optional)
+total                            | 5m1.55s
 
 ### Accuracy
 
@@ -88,11 +88,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 31m41.58s
-call_variants                    | 12m42.97s
-postprocess_variants (with gVCF) | 4m58.54s
-vcf_stats_report (optional)      | 5m46.53s (optional)
-total                            | 64m3.68s (1h04m3.68s)
+make_examples                    | 36m25.99s
+call_variants                    | 11m27.85s
+postprocess_variants (with gVCF) | 4m44.98s
+vcf_stats_report (optional)      | 5m24.03s (optional)
+total                            | 67m39.74s (1h07m39.74s)
 
 ### Accuracy
 
@@ -104,8 +104,8 @@ to run DeepVariant once.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501343   | 3158     | 3167     | 0.99374       | 0.993951         | 0.993846        |
-| SNP   | 3321731  | 5764     | 4061     | 0.998268      | 0.998781         | 0.998524        |
+| INDEL | 501410   | 3091     | 2969     | 0.993873      | 0.994327         | 0.9941          |
+| SNP   | 3321461  | 6034     | 3855     | 0.998187      | 0.998842         | 0.998514        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/PACBIO/deepvariant.output.visual_report.html)
 
@@ -118,11 +118,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | 52m15.03s
-call_variants                    | 16m42.26s
-postprocess_variants (with gVCF) | 5m49.54s
-vcf_stats_report (optional)      | 6m22.82s (optional)
-total                            | 89m32.02s (1h29m32.02s)
+make_examples                    | 47m44.53s
+call_variants                    | 58m42.49s
+postprocess_variants (with gVCF) | 11m11.15s
+vcf_stats_report (optional)      | 7m30.22s (optional)
+total                            | 133m33.89s (2h13m33.89s)
 
 ### Accuracy
 
@@ -131,8 +131,8 @@ truth), which was held out while training.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 450841   | 53660    | 40739    | 0.893637      | 0.91953          | 0.906399        |
-| SNP   | 3319365  | 8130     | 2964     | 0.997557      | 0.999108         | 0.998332        |
+| INDEL | 461818   | 42683    | 31344    | 0.915396      | 0.938385         | 0.926748        |
+| SNP   | 3321289  | 6206     | 5476     | 0.998135      | 0.998355         | 0.998245        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/ONT_R104/deepvariant.output.visual_report.html)
 
@@ -145,11 +145,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 84m23.11s
-call_variants                    | 103m22.48s
-postprocess_variants (with gVCF) | 5m31.07s
-vcf_stats_report (optional)      | 8m20.23s (optional)
-total                            | 209m0.92s (3h29m0.92s)
+make_examples                    | 63m29.95s
+call_variants                    | 65m14.15s
+postprocess_variants (with gVCF) | 4m3.75s
+vcf_stats_report (optional)      | 5m16.99s (optional)
+total                            | 168m42.48s (2h48m42.48s)
 
 ### Accuracy
 
@@ -158,8 +158,8 @@ out while training the hybrid model.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 503160   | 1341     | 2243     | 0.997342      | 0.99577          | 0.996555        |
-| SNP   | 3323907  | 3588     | 1981     | 0.998922      | 0.999405         | 0.999163        |
+| INDEL | 503264   | 1237     | 2052     | 0.997548      | 0.996129         | 0.996838        |
+| SNP   | 3324021  | 3474     | 1856     | 0.998956      | 0.999442         | 0.999199        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/HYBRID/deepvariant.output.visual_report.html)
 
