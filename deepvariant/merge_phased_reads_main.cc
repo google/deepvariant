@@ -48,6 +48,7 @@
 
 ABSL_FLAG(std::string, input_path, "", "Sharded input.");
 ABSL_FLAG(std::string, output_path, "", "Output path.");
+ABSL_FLAG(std::string, switches_output_path, "", "Switches output path.");
 
 int main(int argc, char* argv[]) {
   CHECK(!absl::GetFlag(FLAGS_input_path).empty() &&
@@ -56,7 +57,7 @@ int main(int argc, char* argv[]) {
 
   learning::genomics::deepvariant::Merger merger;
   merger.LoadFromFiles(absl::GetFlag(FLAGS_input_path));
-  merger.MergeReads();
+  merger.MergeReads(FLAGS_switches_output_path.CurrentValue());
   merger.CorrectAndPrintReadStats(absl::GetFlag(FLAGS_output_path));
 
   return 0;

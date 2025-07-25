@@ -39,6 +39,7 @@
 #include <array>
 #include <cstddef>
 #include <fstream>
+#include <ostream>
 #include <set>
 #include <sstream>
 #include <string>
@@ -253,7 +254,11 @@ void Merger::MergeGroup(const ShardRegion& group) {
 //    merged. If most phases are not matched then phase is reversed for the
 //    group.
 // 3. Group is merged into merged_reads_.
-void Merger::MergeReads() {
+void Merger::MergeReads(absl::string_view switches_output_path) {
+  std::ofstream csv_file_switches;
+  if (!switches_output_path.empty()) {
+    csv_file_switches.open(std::string(switches_output_path));
+  }
   GroupReads();
   int cur_region = 1;
   int processed_groups = 0;
@@ -264,8 +269,13 @@ void Merger::MergeReads() {
       if (cur_group_it == groups_.end()) {
         continue;
       }
-      if (CompareGroups(prev_group, {shard, cur_region})) {
+      const bool switched = CompareGroups(prev_group, {shard, cur_region});
+      if (switched) {
         ReversePhasing({shard, cur_region});
+      }
+      if (csv_file_switches.is_open()) {
+        csv_file_switches << shard << "\t" << cur_region << "\t"
+                          << (switched ? "1" : "0") << "\n";
       }
       MergeGroup({shard, cur_region});
       processed_groups++;
@@ -274,6 +284,7 @@ void Merger::MergeReads() {
     }
     cur_region++;
   }
+  csv_file_switches.close();
 }
 
 void MergerPeer::SetUnmergedReads(

@@ -109,7 +109,7 @@ class Merger {
   void LoadFromFiles(absl::string_view input_path);
 
   // Main API entry. Call it to merge reads.
-  void MergeReads();
+  void MergeReads(absl::string_view switches_output_path);
 
   // Corrects phasing of reads that have an inconsistent phasing.
   // Returns the number of corrected reads. As a result of correction the phase

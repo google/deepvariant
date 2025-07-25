@@ -137,7 +137,7 @@ TEST(MergeReads, MergeOneRead) {
       {{.fragment_name = "read_1", .phase = 1, .region_order = 1, .shard = 0},
        {.fragment_name = "read_1", .phase = 1, .region_order = 1, .shard = 1}});
 
-  merger.MergeReads();
+  merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger), testing::ElementsAreArray(
       std::vector<MergedPhaseRead>({
       {.fragment_name = "read_1", .phase = 1, .phase_dist = {{1, 2}}}})));
@@ -158,7 +158,7 @@ TEST(MergeReads, MergeReversePhase) {
       {.fragment_name = "read_2", .phase = 1, .phase_dist = {{1, 2}}},
       {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 1}, {2, 1}}}};
 
-  merger.MergeReads();
+  merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
               testing::ElementsAreArray(expected));
 }
@@ -182,7 +182,7 @@ TEST(MergeReads, MergeReversePhaseTwice) {
       {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 2}, {2, 1}}},
       {.fragment_name = "read_4", .phase = 1, .phase_dist = {{1, 1}}}};
 
-  merger.MergeReads();
+  merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
               testing::ElementsAreArray(expected));
 }
@@ -210,7 +210,7 @@ TEST(MergeReads, FullCycleShards) {
       {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 2}, {2, 1}}},
       {.fragment_name = "read_4", .phase = 1, .phase_dist = {{1, 1}}}};
 
-  merger.MergeReads();
+  merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
               testing::ElementsAreArray(expected));
 }
@@ -233,7 +233,7 @@ TEST(MergeReads, DisconnectedGroups) {
       {.fragment_name = "read_5", .phase = 2, .phase_dist = {{2, 1}}},
       {.fragment_name = "read_6", .phase = 2, .phase_dist = {{2, 1}}}};
 
-  merger.MergeReads();
+  merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
               testing::ElementsAreArray(expected));
 }
@@ -253,7 +253,7 @@ TEST(MergeReads, SkippedGroup) {
       {.fragment_name = "read_2", .phase = 1, .phase_dist = {{1, 2}}},
       {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 1}, {2, 1}}}};
 
-  merger.MergeReads();
+  merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
               testing::ElementsAreArray(expected));
 }
@@ -261,7 +261,7 @@ TEST(MergeReads, SkippedGroup) {
 TEST(MergeReads, EmptyInput) {
   Merger merger;
   MergerPeer::SetUnmergedReads(merger, {});
-  merger.MergeReads();
+  merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
               testing::ElementsAreArray(std::vector<MergedPhaseRead>({})));
 }
@@ -292,7 +292,7 @@ TEST(MergeReads, CorrectPhasing) {
       {.fragment_name = "read_3", .phase = 0, .phase_dist = {{1, 1}, {2, 1}}},
       {.fragment_name = "read_4", .phase = 2, .phase_dist = {{1, 1}, {2, 2}}}};
 
-  merger.MergeReads();
+  merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
               testing::ElementsAreArray(expected_after_phasing));
   EXPECT_EQ(merger.CorrectPhasing(), 2);
