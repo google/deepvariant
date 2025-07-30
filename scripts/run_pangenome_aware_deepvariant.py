@@ -475,23 +475,9 @@ def make_examples_pangenome_aware_dv_command(
 
   special_args = {}
   model_type = ModelType(_MODEL_TYPE.value)
-  if model_type == ModelType.WGS:
-    # Specific flags that are not default can be added here.
-    special_args['keep_only_window_spanning_haplotypes'] = True
-    special_args['keep_supplementary_alignments'] = True
-    special_args['sort_by_haplotypes'] = True
-    special_args['min_mapping_quality'] = 0
-    special_args['keep_legacy_allele_counter_behavior'] = True
-    special_args['normalize_reads'] = True
-    special_args['trim_reads_for_pileup'] = True
-  elif model_type == ModelType.WES:
-    special_args['keep_only_window_spanning_haplotypes'] = True
-    special_args['keep_supplementary_alignments'] = True
-    special_args['sort_by_haplotypes'] = True
-    special_args['trim_reads_for_pileup'] = True
-  else:
-    raise ValueError('Invalid model_type: %s' % _MODEL_TYPE.value)
-
+  # Starting from v1.10.0, the args for make_examples in calling mode are
+  # defined in the model.example_info.json file corresponding to each model
+  # type.
   _set_small_model_config(
       special_args, model_type, _CUSTOMIZED_SMALL_MODEL.value
   )
@@ -645,25 +631,24 @@ def check_or_create_intermediate_results_dir(
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
   if _CUSTOMIZED_MODEL.value is not None:
-    if not tf.io.gfile.exists(
-        _CUSTOMIZED_MODEL.value + '.data-00000-of-00001'
-    ) or not tf.io.gfile.exists(_CUSTOMIZED_MODEL.value + '.index'):
-      raise RuntimeError(
-          'The model files {}* do not exist. Potentially '
-          'relevant issue: '
-          'https://github.com/google/deepvariant/blob/r1.9/docs/'
-          'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
-          'could-not-open'.format(_CUSTOMIZED_MODEL.value)
-      )
     logging.info(
-        (
-            'You set --customized_model. Instead of using the default '
-            'model for %s, `call_variants` step will load %s* '
-            'instead.'
-        ),
-        _MODEL_TYPE.value,
+        'Loading from customized model %s and model type is %s',
         _CUSTOMIZED_MODEL.value,
+        _MODEL_TYPE.value,
     )
+    if tf.io.gfile.isdir(_CUSTOMIZED_MODEL.value):
+      model_dir = _CUSTOMIZED_MODEL.value
+    else:
+      model_dir = os.path.dirname(_CUSTOMIZED_MODEL.value)
+    if not tf.io.gfile.exists(f'{model_dir}/model.example_info.json'):
+      raise RuntimeError(
+          'Unable to find model.example_info.json in the model directory:'
+          ' Starting from v1.10.0, the model file needs to have a'
+          ' corresponding model.example_info.json file. You can see'
+          f' gs://deepvariant/models/DeepVariant/{DEEP_VARIANT_VERSION}/savedmodels/deepvariant.*.savedmodel/model.example_info.json'
+          ' as examples. The best way is to consult the people who trained the'
+          ' model to understand what flags should be used for make_examples.'
+      )
   if _CUSTOMIZED_SMALL_MODEL.value is not None:
     logging.info(
         (
