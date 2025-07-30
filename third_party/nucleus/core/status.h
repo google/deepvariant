@@ -34,7 +34,7 @@
 
 #include "absl/status/status.h"
 #include "absl/types/optional.h"
-#include "tensorflow/tsl/platform/macros.h"
+#include "third_party/nucleus/core/macros.h"
 
 namespace nucleus {
 
@@ -166,10 +166,10 @@ class Status {
 
   static const std::string& empty_string();
   struct State {
-    State() TF_ATTRIBUTE_NOINLINE = default;
-    ~State() TF_ATTRIBUTE_NOINLINE = default;
-    State(const State&) TF_ATTRIBUTE_NOINLINE = default;
-    State& operator=(const State&) TF_ATTRIBUTE_NOINLINE = default;
+    State() NUCLEUS_ATTRIBUTE_NOINLINE = default;
+    ~State() NUCLEUS_ATTRIBUTE_NOINLINE = default;
+    State(const State&) NUCLEUS_ATTRIBUTE_NOINLINE = default;
+    State& operator=(const State&) NUCLEUS_ATTRIBUTE_NOINLINE = default;
 
     absl::StatusCode code;
     std::string msg;

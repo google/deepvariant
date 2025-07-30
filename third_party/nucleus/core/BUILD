@@ -1,3 +1,5 @@
+# load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(
     #default_applicable_licenses = ["//third_party/nucleus:license"],
     default_visibility = [
@@ -14,10 +16,10 @@ cc_library(
         "status.h",
     ],
     deps = [
+        "//third_party/nucleus/core:macros",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
-        "@org_tensorflow//tensorflow/core:lib",
     ],
 )
 
@@ -74,4 +76,9 @@ cc_library(
         "//third_party/nucleus/core:status",
         "//third_party/nucleus/platform:types",
     ],
+)
+
+cc_library(
+    name = "macros",
+    hdrs = ["macros.h"],
 )
