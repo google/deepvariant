@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "deepvariant/channels/allele_frequency_channel.h"
+#include "deepvariant/channels/allele_sample_probability_channel.h"
 #include "deepvariant/channels/avg_base_quality_channel.h"
 #include "deepvariant/channels/blank_channel.h"
 #include "deepvariant/channels/channel.h"
@@ -61,7 +62,6 @@
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/struct.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
-#include "third_party/nucleus/util/utils.h"
 
 using nucleus::genomics::v1::Read;
 
@@ -640,6 +640,60 @@ TEST(SupplementaryAlignmentChannelTest, ReadIsNotSupplementary) {
   channel.FillReadBase(data, 0, 'A', 'A', 0, read, 0,
                        DeepVariantCall::default_instance(), {});
   EXPECT_EQ(data[0], 0);
+}
+
+TEST(AlleleSampleProbabilityChannelTest, ReadSupportsAlt) {
+  PileupImageOptions options;
+  AlleleSampleProbabilityChannel channel(/*width=*/1, options);
+  std::vector<unsigned char> data(1);
+  Read read = nucleus::MakeRead("chr1", 1, "A", {"1M"}, "read1");
+
+  DeepVariantCall dv_call;
+  (*dv_call.mutable_allele_support())["A"].add_read_names("read1/0");
+  (*dv_call.mutable_allele_support())["A"].add_read_names("read2/0");
+  dv_call.add_ref_support("read3/0");
+
+  channel.FillReadBase(data, 0, 'A', 'A', 0, read, 0, dv_call, {});
+  // 2 reads support alt "A", 1 read supports ref. Total reads = 3.
+  // The read "read1" supports alt "A", which has 2 supporting reads.
+  // So, the value should be sqrt(2/3) * 254 = 207.
+  EXPECT_EQ(data[0], 207);
+}
+
+TEST(AlleleSampleProbabilityChannelTest, ReadSupportsRef) {
+  PileupImageOptions options;
+  AlleleSampleProbabilityChannel channel(/*width=*/1, options);
+  std::vector<unsigned char> data(1);
+  Read read = nucleus::MakeRead("chr1", 1, "A", {"1M"}, "read3");
+
+  DeepVariantCall dv_call;
+  (*dv_call.mutable_allele_support())["A"].add_read_names("read1/0");
+  (*dv_call.mutable_allele_support())["A"].add_read_names("read2/0");
+  dv_call.add_ref_support("read3/0");
+
+  channel.FillReadBase(data, 0, 'A', 'A', 0, read, 0, dv_call, {});
+  // 2 reads support alt "A", 1 read supports ref. Total reads = 3.
+  // The read "read3" supports the ref, which has 1 supporting read.
+  // So, the value should be sqrt(1/3) * 254 = 146.
+  EXPECT_EQ(data[0], 146);
+}
+
+TEST(AlleleSampleProbabilityChannelTest, NoSupportingReads) {
+  PileupImageOptions options;
+  AlleleSampleProbabilityChannel channel(/*width=*/1, options);
+  std::vector<unsigned char> data(1);
+  Read read = nucleus::MakeRead("chr1", 1, "A", {"1M"}, "read4");
+
+  DeepVariantCall dv_call;
+  (*dv_call.mutable_allele_support())["A"].add_read_names("read1/0");
+  (*dv_call.mutable_allele_support())["A"].add_read_names("read2/0");
+  dv_call.add_ref_support("read3/0");
+
+  channel.FillReadBase(data, 0, 'A', 'A', 0, read, 0, dv_call, {});
+  // The read "read4" is not in the list of supporting reads.
+  // The current implementation defaults to ref support, which is 1.
+  // So, the value should be sqrt(1/3) * 254 = 146.
+  EXPECT_EQ(data[0], 146);
 }
 
 struct GetChannelDataTestData {

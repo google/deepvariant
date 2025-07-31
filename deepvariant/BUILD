@@ -1123,6 +1123,7 @@ cc_library(
     hdrs = ["pileup_channel_lib.h"],
     deps = [
         "//deepvariant/channels:allele_frequency_channel",
+        "//deepvariant/channels:allele_sample_probability_channel",
         "//deepvariant/channels:avg_base_quality_channel",
         "//deepvariant/channels:base_6ma_channel",
         "//deepvariant/channels:base_differs_from_ref_channel",
@@ -1165,6 +1166,7 @@ cc_test(
         ":pileup_channel_lib",
         ":testing_utils",
         "//deepvariant/channels:allele_frequency_channel",
+        "//deepvariant/channels:allele_sample_probability_channel",
         "//deepvariant/channels:avg_base_quality_channel",
         "//deepvariant/channels:blank_channel",
         "//deepvariant/channels:channel",
@@ -1186,7 +1188,6 @@ cc_test(
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/protos:struct_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
-        "//third_party/nucleus/util:cpp_utils",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",

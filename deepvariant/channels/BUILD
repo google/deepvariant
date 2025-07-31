@@ -36,6 +36,21 @@ cc_library(
 )
 
 cc_library(
+    name = "allele_sample_probability_channel",
+    srcs = ["allele_sample_probability_channel.cc"],
+    hdrs = ["allele_sample_probability_channel.h"],
+    deps = [
+        ":channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:cigar_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:struct_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+    ],
+)
+
+cc_library(
     name = "avg_base_quality_channel",
     srcs = ["avg_base_quality_channel.cc"],
     hdrs = ["avg_base_quality_channel.h"],

@@ -108,6 +108,7 @@ CHANNELS = [
     'base_6ma',
     'read_supports_variant_fuzzy',
     'supplementary_alignment',
+    'allele_sample_probability',
 ]
 
 ALT_ALIGNED_PILEUP_CHANNELS = [
@@ -174,6 +175,7 @@ CHANNEL_ENUM_TO_STRING = {
         'read_supports_variant_fuzzy'
     ),
     deepvariant_pb2.CH_SUPPLEMENTARY_ALIGNMENT: 'supplementary_alignment',
+    deepvariant_pb2.CH_ALLELE_SAMPLE_PROBABILITY: 'allele_sample_probability',
 }
 
 # Create a reverse mapping

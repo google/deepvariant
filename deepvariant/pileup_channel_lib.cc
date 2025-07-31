@@ -42,6 +42,7 @@
 #include <vector>
 
 #include "deepvariant/channels/allele_frequency_channel.h"
+#include "deepvariant/channels/allele_sample_probability_channel.h"
 #include "deepvariant/channels/avg_base_quality_channel.h"
 #include "deepvariant/channels/base_6ma_channel.h"
 #include "deepvariant/channels/base_differs_from_ref_channel.h"
@@ -432,6 +433,9 @@ std::unique_ptr<Channel> Channels::ChannelEnumToObject(
     case DeepVariantChannelEnum::CH_SUPPLEMENTARY_ALIGNMENT:
       return std::unique_ptr<Channel>(
           new SupplementaryAlignmentChannel(width, options));
+    case DeepVariantChannelEnum::CH_ALLELE_SAMPLE_PROBABILITY:
+      return std::unique_ptr<Channel>(
+          new AlleleSampleProbabilityChannel(width, options));
     default:
       LOG(FATAL) << "Channel '" << DeepVariantChannelEnum_Name(channel_enum)
                  << "' is unimplemented and should have a corresponding "
@@ -489,6 +493,9 @@ DeepVariantChannelEnum Channels::ChannelStrToEnum(const std::string& channel) {
   }
   if (channel == ch_supplementary_alignment) {
     return DeepVariantChannelEnum::CH_SUPPLEMENTARY_ALIGNMENT;
+  }
+  if (channel == ch_allele_sample_probability) {
+    return DeepVariantChannelEnum::CH_ALLELE_SAMPLE_PROBABILITY;
   }
   CHECK(false) << "Channel '" << channel << "' should have a corresponding "
                << "enum in DeepVariantChannelEnum.";
