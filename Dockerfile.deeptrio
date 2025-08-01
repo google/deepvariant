@@ -241,6 +241,8 @@ RUN chmod -R +r /opt/smallmodels/deeptrio/ont/parent/*
 
 
 ENV PATH="${PATH}":/opt/conda/bin:/opt/conda/envs/bio/bin:/opt/deepvariant/bin/deeptrio:/opt/deepvariant/bin
+# This to use Keras 2.x with TF 2.16.1 or higher.
+ENV TF_USE_LEGACY_KERAS=1
 
 RUN apt-get -y update && \
   apt-get install -y parallel python3-pip && \

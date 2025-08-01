@@ -199,7 +199,7 @@ fi
 # So, forcing a downgrade. This isn't the best solution, but we need it to get
 # our tests pass.
 pip3 install "${PIP_ARGS[@]}" --upgrade 'markupsafe==2.0.1'
-
+pip3 install "${PIP_ARGS[@]}"  "tf_keras==2.16.0"
 ################################################################################
 # CUDA
 ################################################################################

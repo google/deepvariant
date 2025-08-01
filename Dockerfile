@@ -196,7 +196,8 @@ COPY --from=download_models /opt/models /opt/models
 COPY --from=download_models /opt/smallmodels /opt/smallmodels
 
 ENV PATH="${PATH}":${DV_BIN_PATH}:/opt/conda/envs/bio/bin
-
+# This to use Keras 2.x with TF 2.16.1 or higher.
+ENV TF_USE_LEGACY_KERAS=1
 WORKDIR /opt/deepvariant
 
 CMD ["/opt/deepvariant/bin/run_deepvariant", "--help"]

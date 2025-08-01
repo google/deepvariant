@@ -40,7 +40,7 @@ export CUDNN_INSTALL_PATH="/usr/lib/x86_64-linux-gnu"
 
 # The version of bazel we want to build DeepVariant.
 # https://www.tensorflow.org/install/source#tested_build_configurations
-DV_BAZEL_VERSION="5.3.0"
+DV_BAZEL_VERSION="6.5.0" # Tested version for TF 2.16.1.
 
 # We need to make sure that $HOME/bin is first in the binary search path so that
 # `bazel` will find the latest version of bazel installed in the user's home
@@ -69,12 +69,15 @@ export DV_TF_NIGHTLY_BUILD="${DV_TF_NIGHTLY_BUILD:-0}"
 if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
   export DV_CPP_TENSORFLOW_TAG="master"
 else
-  export DV_CPP_TENSORFLOW_TAG="v2.13.1"
+  export DV_CPP_TENSORFLOW_TAG="v2.16.1"
 fi
 # These WHL_VERSIONs determine the Python version of TensorFlow we use.
-export DV_GCP_OPTIMIZED_TF_WHL_VERSION="2.13.1"
-export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="2.13.1"
-export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="2.13.1"
+export DV_GCP_OPTIMIZED_TF_WHL_VERSION="2.16.1"
+export DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION="2.16.1"
+export DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION="2.16.1"
+export TF_NEED_CLANG=0
+# This is needed for TF 2.16.1 to keep using Keras 2.x.
+export TF_USE_LEGACY_KERAS=1
 
 # Set this to 1 to use DeepVariant with GPUs. Set it to an already existing
 # value in the environment (allowing command line control of the build),

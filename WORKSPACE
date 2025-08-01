@@ -131,9 +131,19 @@ http_archive(
 
 http_archive(
     name = "rules_python",
-    sha256 = "9fcf91dbcc31fde6d1edb15f117246d912c33c36f44cf681976bd886538deba6",
-    strip_prefix = "rules_python-0.8.0",
-    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.8.0.tar.gz",
+    sha256 = "ca77768989a7f311186a29747e3e95c936a41dffac779aff6b443db22290d913",
+    strip_prefix = "rules_python-0.36.0",
+    url = "https://github.com/bazel-contrib/rules_python/releases/download/0.36.0/rules_python-0.36.0.tar.gz",
+)
+
+load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
+
+py_repositories()
+
+python_register_toolchains(
+    "python",
+    ignore_root_user_error = True,
+    python_version = "3.10",
 )
 
 http_archive(
@@ -158,11 +168,9 @@ http_archive(
 
 http_archive(
     name = "pybind11_protobuf",
-    sha256 = "21e0c32d81ece8039a3a8e6daafbd7f64cb0c2744492f3b00f11baa0e276d1a5",
-    strip_prefix = "pybind11_protobuf-de94308491982c32ddfe305a5dfc3c38bc9ff2bc",
-    urls = [
-        "https://github.com/pichuan/pybind11_protobuf/archive/de94308491982c32ddfe305a5dfc3c38bc9ff2bc.zip",
-    ],
+    sha256 = "fe2b8bf12a65997b853709a5e719f7561b2e86a4cdbb9d8b051e654dd0fd8d11",
+    strip_prefix = "pybind11_protobuf-a50899c2eb604fc5f25deeb8901eff6231b8b3c0",
+    url = "https://github.com/pybind/pybind11_protobuf/archive/a50899c2eb604fc5f25deeb8901eff6231b8b3c0.tar.gz",
 )
 
 # Import all of the tensorflow dependencies.
