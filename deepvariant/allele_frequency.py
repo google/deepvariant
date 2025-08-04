@@ -28,15 +28,16 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Functionality for including allele frequencies in DeepVariant pileups."""
 
+
 import collections
-from typing import DefaultDict, Sequence, Optional
+from typing import DefaultDict, Optional, Sequence
 
 from absl import logging
 
+from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import vcf
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
-from deepvariant.protos import deepvariant_pb2
 
 
 def get_allele_frequency(variant, index):
@@ -413,8 +414,8 @@ def add_allele_frequencies_to_candidates(
       for alt in candidate.variant.alternate_bases:
         dict_allele_frequency[alt] = 0
 
-    yield deepvariant_pb2.DeepVariantCall(
-        variant=candidate.variant,
-        allele_support=candidate.allele_support,
-        allele_frequency=dict_allele_frequency,
-    )
+    new_candidate = deepvariant_pb2.DeepVariantCall()
+    new_candidate.CopyFrom(candidate)
+    new_candidate.allele_frequency.clear()
+    new_candidate.allele_frequency.update(dict_allele_frequency)
+    yield new_candidate

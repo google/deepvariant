@@ -532,6 +532,39 @@ class AlleleFrequencyTest(parameterized.TestCase):
     for key in actual_frequency.keys():
       self.assertAlmostEqual(actual_frequency[key], expected_return[key])
 
+  def test_add_allele_frequencies_to_candidates_preserves_allele_support_ext(
+      self,
+  ):
+    variant = variants_pb2.Variant(
+        reference_name='chr20',
+        start=60168,
+        end=60169,
+        reference_bases='C',
+        alternate_bases=['T'],
+    )
+    candidate = deepvariant_pb2.DeepVariantCall(
+        variant=variant,
+        allele_support_ext={
+            'C': deepvariant_pb2.DeepVariantCall.SupportingReadsExt(),
+            'T': deepvariant_pb2.DeepVariantCall.SupportingReadsExt(),
+        },
+    )
+    candidates = [candidate]
+    pop_vcf_reader = vcf.VcfReader(testdata.VCF_WITH_ALLELE_FREQUENCIES)
+    ref_reader = fasta.IndexedFastaReader(testdata.GRCH38_FASTA)
+
+    updated_candidates = list(
+        allele_frequency.add_allele_frequencies_to_candidates(
+            candidates, pop_vcf_reader, ref_reader
+        )
+    )
+
+    self.assertLen(updated_candidates, 1)
+    updated_candidate = updated_candidates[0]
+    self.assertTrue(updated_candidate.allele_support_ext)
+    self.assertIn('C', updated_candidate.allele_support_ext)
+    self.assertIn('T', updated_candidate.allele_support_ext)
+
 
 if __name__ == '__main__':
   absltest.main()
