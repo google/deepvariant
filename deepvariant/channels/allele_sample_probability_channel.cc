@@ -38,6 +38,9 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/protos/deepvariant.pb.h"
+#include "third_party/nucleus/protos/reads.pb.h"
+
 namespace learning::genomics::deepvariant {
 
 using learning::genomics::deepvariant::DeepVariantCall;
