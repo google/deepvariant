@@ -38,45 +38,17 @@ APT_ARGS=(
 "-y"
 )
 
-# Installing nvidia docker to use deepvariant_gpu Docker image.
-# (1) Install nvidia driver:
-# https://linuxhint.com/install-cuda-ubuntu/
-sudo apt-get "${APT_ARGS[@]}" update
-sudo NEEDRESTART_MODE=a apt-get "${APT_ARGS[@]}" install \
-  build-essential \
-  curl \
-  "linux-headers-$(uname -r)" \
-  nvidia-cuda-toolkit
+# (1) Install Nvidia driver
 
-# See https://www.tensorflow.org/install/source#gpu for versions required.
-if ! dpkg-query -W cuda-11-8; then
-  echo "Installing CUDA..."
-  UBUNTU_VERSION="2204"
-  curl -O https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/cuda-ubuntu${UBUNTU_VERSION}.pin
-  sudo mv cuda-ubuntu${UBUNTU_VERSION}.pin /etc/apt/preferences.d/cuda-repository-pin-600
+# Ensure kernel headers are available
+sudo apt update
+sudo apt install -y linux-headers-"$(uname -r)"
 
-  curl https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub | gpg --dearmor | sudo tee /usr/share/keyrings/nvidia-cuda-archive-keyring.gpg > /dev/null
-  echo \
-    "deb [signed-by=/usr/share/keyrings/nvidia-cuda-archive-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" | \
-    sudo tee /etc/apt/sources.list.d/cuda.list > /dev/null
-  sudo -H NEEDRESTART_MODE=a apt-get update "${APT_ARGS[@]}"
-  sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get full-upgrade "${APT_ARGS[@]}"
-  sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" cuda-11-8
-fi
+# Download the installation script
+curl https://raw.githubusercontent.com/GoogleCloudPlatform/compute-gpu-installation/main/linux/install_gpu_driver.py --output install_gpu_driver.py
 
-echo "Checking for CUDNN..."
-if [[ ! -e /usr/local/cuda-11/include/cudnn.h ]]; then
-  echo "Installing CUDNN..."
-  CUDNN_TAR_FILE="cudnn-linux-x86_64-8.6.0.163_cuda11-archive.tar.xz"
-  wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v8.6.0/local_installers/11.8/${CUDNN_TAR_FILE}
-  tar -xvf ${CUDNN_TAR_FILE}
-  sudo cp -P cudnn-linux-x86_64-8.6.0.163_cuda11-archive/include/cudnn.h /usr/local/cuda-11/include
-  sudo cp -P cudnn-linux-x86_64-8.6.0.163_cuda11-archive/lib/libcudnn* /usr/local/cuda-11/lib64/
-  sudo chmod a+r /usr/local/cuda-11/lib64/libcudnn*
-  sudo ldconfig
-fi
-# Tensorflow says to do this.
-sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libcupti-dev > /dev/null
+# Run the script
+sudo python3 install_gpu_driver.py
 
 # (2) Install Docker CE:
 # https://docs.docker.com/engine/install/ubuntu/
@@ -113,4 +85,4 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
 #### Test nvidia-smi with the latest official CUDA image
-sudo docker run --gpus 1 nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04 nvidia-smi
+sudo docker run --gpus 1 nvidia/cuda:12.3.2-cudnn9-devel-ubuntu22.04 nvidia-smi
