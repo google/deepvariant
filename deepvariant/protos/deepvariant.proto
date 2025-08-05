@@ -845,6 +845,9 @@ message MakeExamplesOptions {
     // The labeling algorithm which labels the variants into customized classes
     // specified in the specified INFO field in the VCF file.
     CUSTOMIZED_CLASSES_LABELER = 3;
+    // The labeling algorithm which combines the positional and haplotype
+    // labelers.
+    COMBINED_LABELER = 4;
   }
   // The labeling algorithm we are using in this DeepVariant run. Only needed
   // when in CALLING mode.

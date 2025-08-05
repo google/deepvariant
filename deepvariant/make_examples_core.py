@@ -56,6 +56,7 @@ from deepvariant import sample as sample_lib
 from deepvariant import variant_caller as vc_base
 from deepvariant import vcf_candidate_importer
 from deepvariant import very_sensitive_caller
+from deepvariant.labeler import combined_labeler
 from deepvariant.labeler import customized_classes_labeler
 from deepvariant.labeler import haplotype_labeler
 from deepvariant.labeler import positional_labeler
@@ -1740,6 +1741,15 @@ class RegionProcessor:
         == deepvariant_pb2.MakeExamplesOptions.HAPLOTYPE_LABELER
     ):
       return haplotype_labeler.HaplotypeLabeler(
+          truth_vcf_reader=truth_vcf_reader,
+          ref_reader=self.ref_reader,
+          confident_regions=confident_regions,
+      )
+    elif (
+        self.options.labeler_algorithm
+        == deepvariant_pb2.MakeExamplesOptions.COMBINED_LABELER
+    ):
+      return combined_labeler.CombinedLabeler(
           truth_vcf_reader=truth_vcf_reader,
           ref_reader=self.ref_reader,
           confident_regions=confident_regions,

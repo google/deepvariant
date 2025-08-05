@@ -159,3 +159,47 @@ py_test(
         "@absl_py//absl/testing:parameterized",
     ],
 )
+
+py_library(
+    name = "combined_labeler",
+    srcs = ["combined_labeler.py"],
+    deps = [
+        ":haplotype_labeler",
+        ":positional_labeler",
+        ":variant_labeler",
+        "//third_party/nucleus/util:variant_utils",
+    ],
+)
+
+py_test(
+    name = "combined_labeler_test",
+    srcs = ["combined_labeler_test.py"],
+    deps = [
+        ":combined_labeler",
+        ":variant_labeler",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/nucleus/util:ranges",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
+# py_binary(
+#     name = "compare_labelers",
+#     srcs = [
+#         "compare_labelers.py",
+#     ],
+#     main = "compare_labelers.py",
+#     deps = [
+#         "//pyglib/contrib/g3_multiprocessing",
+#         "//third_party/nucleus/io:tfrecord",
+#         "//third_party/nucleus/protos:variants_py_pb2",
+#         "//third_party/nucleus/util:errors",
+#         "//third_party/nucleus/util:variant_utils",
+#         "@absl_py//absl/flags",
+#         "@absl_py//absl/logging",
+#     ],
+# )

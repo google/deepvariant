@@ -550,6 +550,7 @@ py_library(
         ":variant_caller",
         ":vcf_candidate_importer",
         ":very_sensitive_caller",
+        "//deepvariant/labeler:combined_labeler",
         "//deepvariant/labeler:customized_classes_labeler",
         "//deepvariant/labeler:haplotype_labeler",
         "//deepvariant/labeler:positional_labeler",
