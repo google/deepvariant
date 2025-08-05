@@ -39,19 +39,13 @@ zone="us-west1-b"
 gcloud compute instances create ${host} \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --maintenance-policy "TERMINATE" \
-  --accelerator="type=nvidia-tesla-p100,count=1" \
-  --image-family="common-cu124-ubuntu-2204-py310-conda" \
-  --image-project="deeplearning-platform-release" \
+  --accelerator=type=nvidia-tesla-p100,count=1 \
+  --image-family="ubuntu-2204-lts" \
+  --image-project="ubuntu-os-cloud" \
   --machine-type="n1-standard-16" \
   --boot-disk-size="300" \
-  --zone="us-west1-b" \
-  --metadata="install-nvidia-driver=True"
+  --zone="${zone}
 ```
-
-Because `--metadata="install-nvidia-driver=True"` is set, the machine will
-automatically start to install the drivers. However, it will take a few minutes
-to finish installing the drivers. You can use `nvidia-smi` to see whether it's
-done or not.
 
 After a minute or two, your VM should be ready and you can ssh into it using the
 following command:
@@ -119,6 +113,8 @@ gsutil -m cp -r "${DATA_BUCKET}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Io
 ```bash
 sudo apt -y update
 sudo apt -y install parallel
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.9/scripts/install_nvidia_docker.sh
+bash -x install_nvidia_docker.sh
 ```
 
 ## Run make_examples in “training” mode for training and validation sets.

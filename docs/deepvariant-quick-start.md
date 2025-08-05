@@ -169,7 +169,9 @@ If you are using GPUs, you can pull the GPU version, and make sure you run with
 `--gpus 1`. `call_variants` is the only step that uses the GPU, and can only use
 one at a time. `make_examples` and `postprocess_variants` do not run on GPU.
 
-```
+For an example to install GPU driver and docker, see [install_nvidia_docker.sh].
+
+```bash
 sudo docker run --gpus 1 \
   -v "${INPUT_DIR}":"/input" \
   -v "${OUTPUT_DIR}:/output" \
@@ -177,9 +179,6 @@ sudo docker run --gpus 1 \
   /opt/deepvariant/bin/run_deepvariant \
   ...
 ```
-
-For an example to get a VM with GPU drivers and Docker installed, see
-[Command for a GPU machine on Google Cloud Platform](deepvariant-details.md#command-for-a-gpu-machine-on-google-cloud-platform).
 
 ## Notes on Singularity
 
@@ -279,3 +278,4 @@ INDEL   PASS            4         4         0           13         0          9 
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [Quick Start in r0.7]: https://github.com/google/deepvariant/blob/r0.7/docs/deepvariant-quick-start.md
 [run_deepvariant.py]: ../scripts/run_deepvariant.py
+[install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh

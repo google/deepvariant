@@ -305,22 +305,16 @@ gcloud compute instances create "${USER}-cpu"  \
 We tested with P100 GPU, which is currently only available on N1 machines:
 
 ```shell
-gcloud compute instances create "${USER}-gpu-dlvm" \
+gcloud compute instances create "${USER}-gpu" \
   --scopes "compute-rw,storage-full,cloud-platform" \
   --maintenance-policy "TERMINATE" \
-  --accelerator="type=nvidia-tesla-p100,count=1" \
-  --image-family="common-cu124-ubuntu-2204-py310-conda" \
-  --image-project="deeplearning-platform-release" \
+  --accelerator=type=nvidia-tesla-p100,count=1 \
+  --image-family="ubuntu-2204-lts" \
+  --image-project="ubuntu-os-cloud" \
   --machine-type="n1-standard-16" \
   --boot-disk-size="300" \
-  --zone="us-west1-b" \
-  --metadata="install-nvidia-driver=True"
+  --zone "us-west1-b"
 ```
-
-Because `--metadata="install-nvidia-driver=True"` is set, the machine will
-automatically start to install the drivers. However, it will take a few minutes
-to finish installing the drivers. You can use `nvidia-smi` to see whether it's
-done or not.
 
 NOTE: Be sure to manage instances efficiently. Remember to delete the instances
 you're not using. You can find the instances at:
