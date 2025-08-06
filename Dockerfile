@@ -8,7 +8,7 @@
 # $ sudo docker build -t deepvariant .
 #
 # To build for GPU, use a command like:
-# $ sudo docker build --build-arg=FROM_IMAGE=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04 --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
+# $ sudo docker build --build-arg=FROM_IMAGE=nvidia/cuda:12.3.2-cudnn9-devel-ubuntu22.04 --build-arg=DV_GPU_BUILD=1 -t deepvariant_gpu .
 
 
 ARG FROM_IMAGE=ubuntu:22.04

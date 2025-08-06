@@ -183,7 +183,7 @@ else
     # Use the official TF release pip package.
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow ${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION} wheel"
-      pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
+      pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow[and-cuda]==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     else
       echo "Installing CPU TensorFlow ${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION} wheel"
       pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
@@ -206,12 +206,13 @@ pip3 install "${PIP_ARGS[@]}"  "tf_keras==2.16.0"
 
 note_build_stage "Install CUDA"
 
+# TF 2.16.1 requires CUDA 12.3 and CuDNN 8.9.
 # See https://www.tensorflow.org/install/source#gpu for versions required.
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
   if [[ "${DV_INSTALL_GPU_DRIVERS}" = "1" ]]; then
     # This script is only maintained for Ubuntu 22.04.
     echo "Checking for CUDA..."
-    if ! dpkg-query -W cuda-11-8; then
+    if ! dpkg-query -W cuda-12-3; then
       echo "Installing CUDA..."
       UBUNTU_VERSION="2204"
       curl -O https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/cuda-ubuntu${UBUNTU_VERSION}.pin
@@ -223,17 +224,17 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
         sudo tee /etc/apt/sources.list.d/cuda.list > /dev/null
       sudo -H NEEDRESTART_MODE=a apt-get update "${APT_ARGS[@]}"
       sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get full-upgrade "${APT_ARGS[@]}"
-      sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" cuda-11-8
+      sudo -H DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" cuda-12-3
     fi
     echo "Checking for CUDNN..."
-    if [[ ! -e /usr/local/cuda-11/include/cudnn.h ]]; then
+    if [[ ! -e /usr/local/cuda-12/include/cudnn.h ]]; then
       echo "Installing CUDNN..."
-      CUDNN_TAR_FILE="cudnn-linux-x86_64-8.6.0.163_cuda11-archive.tar.xz"
-      wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v8.6.0/local_installers/11.8/${CUDNN_TAR_FILE}
+      CUDNN_TAR_FILE="cudnn-linux-x86_64-8.9.0.131_cuda12-archive.tar.xz"
+      wget -q https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/${CUDNN_TAR_FILE}
       tar -xvf ${CUDNN_TAR_FILE}
-      sudo cp -P cudnn-linux-x86_64-8.6.0.163_cuda11-archive/include/cudnn.h /usr/local/cuda-11/include
-      sudo cp -P cudnn-linux-x86_64-8.6.0.163_cuda11-archive/lib/libcudnn* /usr/local/cuda-11/lib64/
-      sudo chmod a+r /usr/local/cuda-11/lib64/libcudnn*
+      sudo cp -P cudnn-linux-x86_64-8.9.0.131_cuda12-archive/include/cudnn.h /usr/local/cuda-12/include
+      sudo cp -P cudnn-linux-x86_64-8.9.0.131_cuda12-archive/lib/libcudnn* /usr/local/cuda-12/lib64/
+      sudo chmod a+r /usr/local/cuda-12/lib64/libcudnn*
       sudo ldconfig
     fi
     # Tensorflow says to do this.
@@ -290,5 +291,13 @@ pip3 install "${PIP_ARGS[@]}" 'protobuf==4.21.9'
 
 # internal#comment9
 pip3 install "${PIP_ARGS[@]}" "jax==0.4.35"
+
+note_build_stage "Linking Cuda and TF shared libraries"
+if [[ "${DV_GPU_BUILD}" = "1" ]]; then
+  echo "####### For debugging linking of shared libraries in GPU build:"
+  # Adding symbolic links to NVIDIA shared libraries. https://www.tensorflow.org/install/pip
+  TENSORFLOW_DIR=$(dirname "$(python3 -c 'print(__import__("tensorflow").__file__)')")
+  (cd "${TENSORFLOW_DIR}" && sudo ln -svf ../nvidia/*/lib/*.so* .)
+fi
 
 note_build_stage "run-prereq.sh complete"
