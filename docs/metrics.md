@@ -21,11 +21,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    |  45m6.46s
-call_variants                    |  16m25.54s
-postprocess_variants (with gVCF) |  6m46.32s
-vcf_stats_report (optional)      |  5m14.59s (optional)
-total                            |  82m5.75s (1h22m5.75s)
+make_examples                    |  47m4.92s
+call_variants                    |  15m56.52s
+postprocess_variants (with gVCF) |  7m0.99s
+vcf_stats_report (optional)      |  5m17.67s (optional)
+total                            |  83m57.12s (1h23m57.12s)
 
 ### Accuracy
 
@@ -48,11 +48,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 2m58.54s
-call_variants                    | 0m33.96s
-postprocess_variants (with gVCF) | 0m39.10s
-vcf_stats_report (optional)      | 0m6.71s (optional)
-total                            | 5m1.55s
+make_examples                    | 3m0.33s
+call_variants                    | 0m33.72s
+postprocess_variants (with gVCF) | 0m39.24s
+vcf_stats_report (optional)      | 0m5.10s (optional)
+total                            | 5m7.71s
 
 ### Accuracy
 
@@ -88,11 +88,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -------------------
-make_examples                    | 36m25.99s
-call_variants                    | 11m27.85s
-postprocess_variants (with gVCF) | 4m44.98s
-vcf_stats_report (optional)      | 5m24.03s (optional)
-total                            | 67m39.74s (1h07m39.74s)
+make_examples                    | 33m46.75s
+call_variants                    | 11m38.86s
+postprocess_variants (with gVCF) | 5m12.45s
+vcf_stats_report (optional)      | 5m34.81s (optional)
+total                            | 65m27.90s (1h05m27.90s)
 
 ### Accuracy
 
@@ -104,8 +104,8 @@ to run DeepVariant once.
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 501410   | 3091     | 2969     | 0.993873      | 0.994327         | 0.9941          |
-| SNP   | 3321461  | 6034     | 3855     | 0.998187      | 0.998842         | 0.998514        |
+| INDEL | 501455   | 3046     | 2986     | 0.993962      | 0.994296         | 0.994129        |
+| SNP   | 3321751  | 5744     | 4032     | 0.998274      | 0.998789         | 0.998532        |
 
 [See VCF stats report.](https://storage.googleapis.com/deepvariant/visual_reports/DeepVariant/1.9.0/PACBIO/deepvariant.output.visual_report.html)
 
@@ -118,11 +118,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | --------------------
-make_examples                    | 47m44.53s
-call_variants                    | 58m42.49s
-postprocess_variants (with gVCF) | 11m11.15s
-vcf_stats_report (optional)      | 7m30.22s (optional)
-total                            | 133m33.89s (2h13m33.89s)
+make_examples                    | 46m29.14s
+call_variants                    | 53m48.26s
+postprocess_variants (with gVCF) | 11m25.74s
+vcf_stats_report (optional)      | 7m22.90s (optional)
+total                            | 127m34.97s (2h07m34.97s)
 
 ### Accuracy
 
@@ -145,11 +145,11 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-make_examples                    | 63m29.95s
-call_variants                    | 65m14.15s
-postprocess_variants (with gVCF) | 4m3.75s
-vcf_stats_report (optional)      | 5m16.99s (optional)
-total                            | 168m42.48s (2h48m42.48s)
+make_examples                    | 60m4.06s
+call_variants                    | 62m23.86s
+postprocess_variants (with gVCF) | 4m10.56s
+vcf_stats_report (optional)      | 5m16.31s (optional)
+total                            | 162m45.17s (2h42m45.17s)
 
 ### Accuracy
 
