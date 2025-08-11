@@ -45,6 +45,7 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
@@ -754,23 +755,31 @@ void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
   }
 
   // Add alt alleles.
-  using AlleleSupportItem =
-      std::pair<std::string, DeepVariantCall_SupportingReadsExt>;
+  // using AlleleSupportItem =
+  //     std::pair<std::string, DeepVariantCall_SupportingReadsExt>;
+  struct AlleleSupportItem {
+    std::string allele;
+    DeepVariantCall_SupportingReadsExt read_support;
+    bool operator < (const AlleleSupportItem& other) const {
+      return allele < other.allele;
+    }
+  };
+
   // We need alleles sorted in order to make the algorithm deterministic.
   // Without it alleles order (and therefore phase assignment)
   // is random, but phasing is still correct.
-  std::vector<AlleleSupportItem> alleles(candidate.allele_support_ext().begin(),
-                                         candidate.allele_support_ext().end());
+  absl::btree_set<AlleleSupportItem> alleles;
+  for (const auto& [allele, read_support] : candidate.allele_support_ext()) {
+    if (allele != kUncalledAllele) {
+      alleles.insert(AlleleSupportItem({allele, read_support}));
+    }
+  }
 
-  std::sort(
-      alleles.begin(), alleles.end(),
-      [](const AlleleSupportItem& allele1, const AlleleSupportItem& allele2) {
-        return allele1.first < allele2.first;
-      });
-  for (const auto& [allele, read_support] : alleles) {
-    UpdateReadToAllelesMap(AddVertex(candidate.variant().start(),
-                                     AlleleTypeFromCandidate(allele, candidate),
-                                     allele, read_support.read_infos()));
+  for (const auto& allele_support : alleles) {
+    UpdateReadToAllelesMap(AddVertex(
+        candidate.variant().start(),
+        AlleleTypeFromCandidate(allele_support.allele, candidate),
+        allele_support.allele, allele_support.read_support.read_infos()));
   }
 }
 
@@ -778,15 +787,23 @@ void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
 bool CandidateFilter(const DeepVariantCall& candidate, uint32_t* indel_end)  {
   // If there is only one allele and not enough support for the ref then
   // empirically we can consider this candidate homozygous.
-  if (candidate.allele_support_ext().size() <= 1 &&
+  const int num_called_alleles = absl::c_count_if(
+      candidate.allele_support_ext(),
+      [](const auto& p) { return p.first != kUncalledAllele; });
+
+  if (num_called_alleles <= 1 &&
        candidate.ref_support_ext().read_infos_size() < kMinRefAlleleDepth) {
     return false;
   }
   // The test filters out all candidates containing indels.
   for (const auto& [allele, read_support] : candidate.allele_support_ext()) {
+    if (allele == kUncalledAllele) {
+      continue;
+    }
     // Allele must not be overlapped by an INDEL and allele has to be a SNP.
-    if (candidate.variant().end() <= *indel_end || allele.size() !=
-        candidate.variant().end() - candidate.variant().start()) {
+    if (candidate.variant().end() <= *indel_end
+        || allele.size() != candidate.variant().end()
+                            - candidate.variant().start()) {
       if (*indel_end < candidate.variant().end()) {
         *indel_end = candidate.variant().end();
       }
