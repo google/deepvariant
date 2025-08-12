@@ -187,19 +187,17 @@ py_test(
     ],
 )
 
-# py_binary(
-#     name = "compare_labelers",
-#     srcs = [
-#         "compare_labelers.py",
-#     ],
-#     main = "compare_labelers.py",
-#     deps = [
-#         "//pyglib/contrib/g3_multiprocessing",
-#         "//third_party/nucleus/io:tfrecord",
-#         "//third_party/nucleus/protos:variants_py_pb2",
-#         "//third_party/nucleus/util:errors",
-#         "//third_party/nucleus/util:variant_utils",
-#         "@absl_py//absl/flags",
-#         "@absl_py//absl/logging",
-#     ],
-# )
+py_binary(
+    name = "compare_labelers",
+    srcs = [
+        "compare_labelers.py",
+    ],
+    main = "compare_labelers.py",
+    deps = [
+        "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/util:errors",
+        "//third_party/nucleus/util:variant_utils",
+        "@absl_py//absl/flags",
+    ],
+)
