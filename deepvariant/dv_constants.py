@@ -188,3 +188,6 @@ STRING_TO_CHANNEL_ENUM = {
 # calculated over an extended region. Output examples are not affected by
 # this value.
 PHASE_READS_REGION_PADDING_PCT = 20
+PHASED_GENOTYPE = 'ALT_PS'
+VARIANT_PHASE_BLOCK = 'PS_CONTIG'
+FIRST_VARIANT_IN_BLOCK = 'FIRST_VARIANT_IN_BLOCK'

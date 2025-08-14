@@ -50,6 +50,7 @@ from deepvariant import dv_vcf_constants
 from deepvariant import haplotypes
 from deepvariant import logging_level
 from deepvariant.protos import deepvariant_pb2
+from deepvariant.python import merge_phased_reads as merge_phased_reads_lib
 from deepvariant.python import postprocess_variants as postprocess_variants_lib
 from deepvariant.small_model import inference as small_model_inference
 from absl import app
@@ -131,6 +132,33 @@ _NONVARIANT_SITE_TFRECORD_PATH = flags.DEFINE_string(
         'Optional. Path(s) to the non-variant sites protos in TFRecord format'
         ' to convert to gVCF file. This should be the complete set of outputs'
         ' from the --gvcf flag of make_examples.py.'
+    ),
+)
+_PHASED_READS_INPUT_PATH = flags.DEFINE_string(
+    'phased_reads_input_path',
+    None,
+    (
+        'Optional. Path to a TSV file containing phased read information, '
+        'typically an output of the make_examples step. This information '
+        'will be used to extend phase blocks in the output VCF.'
+    ),
+)
+_PHASED_READS_SWITCHES_OUTPUT_PATH = flags.DEFINE_string(
+    'phased_reads_switches_output_path',
+    '/tmp/phased_reads_switches.tsv',
+    (
+        'Optional. Path to a TSV file containing switches information, '
+        'typically an output of the make_examples step. This information '
+        'will be used to extend phase blocks in the output VCF.'
+    ),
+)
+_PHASED_READS_CORRECTED_OUTPUT_PATH = flags.DEFINE_string(
+    'phased_reads_corrected_output_path',
+    '/tmp/phased_reads_corrected.tsv',
+    (
+        'Optional. Path to a TSV file containing phased read information, '
+        'typically an output of the make_examples step. This information '
+        'will be used to extend phase blocks in the output VCF.'
     ),
 )
 _GVCF_OUTFILE = flags.DEFINE_string(
@@ -487,6 +515,9 @@ def uncall_homref_gt_if_lowqual(
 def maybe_phase_genotype(
     variant: variants_pb2.Variant,
     genotype: list[int],
+    should_switch_by_shard_and_region: (
+        dict[tuple[str, str], bool] | None
+    ) = None,
 ) -> tuple[bool, list[int]]:
   """Phases the genotype if phase information is available.
 
@@ -502,17 +533,21 @@ def maybe_phase_genotype(
   Args:
     variant: third_party.nucleus.protos.Variant proto.
     genotype: list of ints. The genotype indices to be written to the VCF.
+    should_switch_by_shard_and_region: optional map indicating if the phasing
+      should be switched for this PS contig.
 
   Returns:
     is_phased: bool. Whether it was possible to phase the genotype.
     genotype: genotype in the correct phasing order, if phased.
   """
   if not (
-      variant_utils.get_info(variant, 'PS_CONTIG')
-      and variant_utils.get_info(variant, 'ALT_PS')
+      variant_utils.get_info(variant, dv_constants.VARIANT_PHASE_BLOCK)
+      and variant_utils.get_info(variant, dv_constants.PHASED_GENOTYPE)
   ):
     return False, genotype
-  phase_info = [p.int_value for p in variant.info['ALT_PS'].values]
+  phase_info = [
+      p.int_value for p in variant.info[dv_constants.PHASED_GENOTYPE].values
+  ]
   if max(genotype) >= len(phase_info):
     logging.warning(
         (
@@ -536,6 +571,18 @@ def maybe_phase_genotype(
         genotype[allele_1_haplotype - 1],
         genotype[allele_2_haplotype - 1],
     ]
+  if is_phased and should_switch_by_shard_and_region:
+    shard_id, region_id = variant_utils.get_info(
+        variant, dv_constants.VARIANT_PHASE_BLOCK
+    ).split('-')
+    needs_switching = should_switch_by_shard_and_region.get(
+        (shard_id, region_id), False
+    )
+    if needs_switching:
+      genotype = [
+          genotype[1],
+          genotype[0],
+      ]
   return is_phased, genotype
 
 
@@ -544,7 +591,11 @@ def add_call_to_variant(
     predictions: Sequence[float],
     qual_filter: float = 0,
     sample_name: str | None = None,
-) -> variants_pb2.Variant:
+    should_switch_by_shard_and_region: (
+        dict[tuple[str, str], bool] | None
+    ) = None,
+    current_phase_block: str | None = None,
+) -> tuple[variants_pb2.Variant, str | None]:
   """Fills in Variant record using the prediction probabilities.
 
   This functions sets the call[0].genotype, call[0].info['GQ'],
@@ -561,9 +612,11 @@ def add_call_to_variant(
       be marked as FILTERed.
     sample_name: str. The name of the sample to assign to the Variant proto
       call_set_name field.
+    should_switch_by_shard_and_region: dict of (shard_id, region_id) -> bool.
+    current_phase_block: str. The current phase block.
 
   Returns:
-    A Variant record.
+    A tuple of the Variant record and the current phase block.
 
   Raises:
     ValueError: If variant doesn't have exactly one variant.call record.
@@ -573,9 +626,22 @@ def add_call_to_variant(
   index, genotype = most_likely_genotype(predictions, n_alleles=n_alleles)
   gq, variant.quality = compute_quals(predictions, index)
   call.call_set_name = sample_name
-  call.is_phased, genotype = maybe_phase_genotype(variant, genotype)
+  call.is_phased, genotype = maybe_phase_genotype(
+      variant, genotype, should_switch_by_shard_and_region
+  )
+  variant_phase_block = current_phase_block
   if call.is_phased:
-    variantcall_utils.set_ps(call, variant_utils.get_info(variant, 'PS_CONTIG'))
+    is_first_variant_in_block = variant_utils.get_info(
+        variant, dv_constants.FIRST_VARIANT_IN_BLOCK
+    )
+    if not variant_phase_block:
+      variant_phase_block = variant_utils.get_info(
+          variant, dv_constants.VARIANT_PHASE_BLOCK
+      )
+    elif is_first_variant_in_block:
+      shard_id, region_id = variant_phase_block.split('-')
+      variant_phase_block = f'{shard_id}-{int(region_id)+1}'
+    variantcall_utils.set_ps(call, variant_phase_block)
   if is_methylated(call):
     mf = variantcall_utils.get_mf(call)
     mt = variantcall_utils.determine_methylation_type(mf)
@@ -589,7 +655,7 @@ def add_call_to_variant(
   uncall_gt_if_no_ad(variant)
   variant.filter[:] = compute_filter_fields(variant, qual_filter)
   uncall_homref_gt_if_lowqual(variant, _CNN_HOMREF_CALL_MIN_GQ.value)
-  return variant
+  return variant, variant_phase_block
 
 
 def compute_quals(
@@ -1367,7 +1433,9 @@ def _transform_call_variant_group_to_output_variant(
     sample_name: str,
     use_multiallelic_model: bool,
     debug_output_all_candidates: str | None,
-) -> variants_pb2.Variant:
+    should_switch_by_shard_and_region: dict[tuple[str, str], bool],
+    current_phase_block: str | None,
+) -> tuple[variants_pb2.Variant, str | None]:
   """Transforms a group of CalVariantOutput to VariantOutput.
 
   The group of CVOs present in the call_variants_group are converted to the
@@ -1386,6 +1454,8 @@ def _transform_call_variant_group_to_output_variant(
       resolution of multiallelic cases with two alts.
     debug_output_all_candidates: if 'ALT', output all alleles considered by
       DeepVariant as ALT alleles.
+    should_switch_by_shard_and_region: dict[tuple[str, str], bool],
+    current_phase_block: str | None,
 
   Returns:
     Variant proto representing the group of CallVariantsOutput protos.
@@ -1405,12 +1475,15 @@ def _transform_call_variant_group_to_output_variant(
       predictions,
       qual_filter=qual_filter,
       sample_name=sample_name,
+      should_switch_by_shard_and_region=should_switch_by_shard_and_region,
+      current_phase_block=current_phase_block,
   )
 
 
 def _transform_call_variants_output_to_variants(
     input_sorted_tfrecord_path: str,
     sample_name: str,
+    should_switch_by_shard_and_region: dict[tuple[str, str], bool],
 ) -> Iterator[variants_pb2.Variant]:
   """Yields Variant protos in sorted order from CallVariantsOutput protos.
 
@@ -1418,21 +1491,29 @@ def _transform_call_variants_output_to_variants(
     input_sorted_tfrecord_path: str. TFRecord format file containing sorted
       CallVariantsOutput protos.
     sample_name: str. Sample name use in the output VCF and gVCF.
+    should_switch_by_shard_and_region: dict. Indicates if the ps contig should
+      swap phases.
 
   Yields:
     Variant protos in sorted order representing the CallVariantsOutput calls.
   """
+  current_phase_block = None
   for call_variant_group in group_call_variants_outputs(
       input_sorted_tfrecord_path, _GROUP_VARIANTS.value
   ):
-    yield _transform_call_variant_group_to_output_variant(
-        call_variant_group,
-        _QUAL_FILTER.value,
-        _MULT_ALLELIC_QUAL_FILTER.value,
-        sample_name,
-        _USE_MULTIALLELIC_MODEL.value,
-        _DEBUG_OUTPUT_ALL_CANDIDATES.value,
+    variant, current_phase_block = (
+        _transform_call_variant_group_to_output_variant(
+            call_variant_group,
+            _QUAL_FILTER.value,
+            _MULT_ALLELIC_QUAL_FILTER.value,
+            sample_name,
+            _USE_MULTIALLELIC_MODEL.value,
+            _DEBUG_OUTPUT_ALL_CANDIDATES.value,
+            should_switch_by_shard_and_region,
+            current_phase_block,
+        )
     )
+    yield variant
 
 
 def dump_variants_to_temp_file(
@@ -1512,10 +1593,31 @@ def process_contiguous_partition(
   if num_cvo_records == 0:
     return iter([])
 
+  should_switch_by_shard_and_region = {}
+  if _PHASED_READS_INPUT_PATH.value:
+    logging.info(
+        'Attempting to merge phasing blocks from %s',
+        _PHASED_READS_INPUT_PATH.value,
+    )
+    logging.info(
+        'Writing switches to %s',
+        _PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+    )
+    logging.info(
+        'Writing corrected reads to %s',
+        _PHASED_READS_CORRECTED_OUTPUT_PATH.value,
+    )
+    should_switch_by_shard_and_region = _merge_phasing_blocks(
+        _PHASED_READS_INPUT_PATH.value,
+        _PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+        _PHASED_READS_CORRECTED_OUTPUT_PATH.value,
+    )
+
   logging.info('Transforming call_variants_output to variants.')
   independent_variants = _transform_call_variants_output_to_variants(
       input_sorted_tfrecord_path=temp_file_name,
       sample_name=sample_name,
+      should_switch_by_shard_and_region=should_switch_by_shard_and_region,
   )
   variant_generator = haplotypes.maybe_resolve_conflicting_variants(
       independent_variants
@@ -1676,6 +1778,36 @@ def get_sample_name(cvo_paths: Sequence[str]) -> str:
         sample_name,
     )
   return sample_name
+
+
+def _merge_phasing_blocks(
+    input_path: str,
+    switches_output_path: str,
+    output_path: str,
+) -> dict[tuple[str, str], bool]:
+  """Reads the phased reads TSV file and loads them into a dictionary.
+
+  Args:
+    input_path: path to the phased reads TSV file.
+    switches_output_path: path to the switches output TSV file.
+    output_path: path to the output TSV file.
+
+  Returns:
+    A map from (shard, region) to a boolean indicating whether the phasing
+    blocks in the shard and region need to be switched.
+  """
+
+  merger = merge_phased_reads_lib.Merger()
+  merger.load_from_files(input_path)
+  merger.merge_reads(switches_output_path)
+  merger.correct_and_print_read_stats(output_path)
+
+  phasing_info = {}
+  with open(switches_output_path, 'r') as f:
+    for line in f:
+      shard, region, needs_to_switch = line.split('\t')
+      phasing_info[shard, region] = int(needs_to_switch) == 1
+  return phasing_info
 
 
 def run_postprocess_variants_on_region(

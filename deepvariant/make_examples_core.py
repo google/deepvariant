@@ -2583,7 +2583,7 @@ class RegionProcessor:
 
     This function populates the ALT_PS and PS_CONTIG info fields in the
     candidate variant protos. The ALT_PS field is a phased genotype.
-    The PS_CONTIG field is a string that identifies the continious contig
+    The PS_CONTIG field is a string that identifies the continuous contig
     within which the phasing is consistent.
 
     Returns:
@@ -2627,11 +2627,15 @@ class RegionProcessor:
         if alt_1_order and alt_2_order:
           phased_genotype[alt_1_order[0]] = 1
           phased_genotype[alt_2_order[0]] = 2
-          variant_utils.set_info(candidate.variant, 'ALT_PS', phased_genotype)
-          variant_utils.set_info(candidate.variant, 'PS_CONTIG', phase_contig)
+          variant_utils.set_info(
+              candidate.variant, dv_constants.PHASED_GENOTYPE, phased_genotype
+          )
+          variant_utils.set_info(
+              candidate.variant, dv_constants.VARIANT_PHASE_BLOCK, phase_contig
+          )
           variant_utils.set_info(
               candidate.variant,
-              'FIRST_VARIANT_IN_BLOCK',
+              dv_constants.FIRST_VARIANT_IN_BLOCK,
               phased_variants[phased_variants_index].is_first_in_block,
           )
         phased_variants_index += 1
@@ -2644,11 +2648,15 @@ class RegionProcessor:
             candidate.allele_support,
             read_id_to_phase,
         )
-        variant_utils.set_info(candidate.variant, 'ALT_PS', phased_genotype)
-        variant_utils.set_info(candidate.variant, 'PS_CONTIG', phase_contig)
+        variant_utils.set_info(
+            candidate.variant, dv_constants.PHASED_GENOTYPE, phased_genotype
+        )
+        variant_utils.set_info(
+            candidate.variant, dv_constants.VARIANT_PHASE_BLOCK, phase_contig
+        )
         variant_utils.set_info(
             candidate.variant,
-            'FIRST_VARIANT_IN_BLOCK',
+            dv_constants.FIRST_VARIANT_IN_BLOCK,
             False,
         )
     return len(phased_variants)

@@ -1611,7 +1611,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
         calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)],
     )
     variantcall_utils.set_ad(raw_variant.calls[0], [1, 1])
-    variant = postprocess_variants.add_call_to_variant(
+    variant, _ = postprocess_variants.add_call_to_variant(
         variant=raw_variant, predictions=probs, sample_name=_DEFAULT_SAMPLE_NAME
     )
     self.assertEqual(variant.reference_bases, expected.reference_bases)
@@ -1636,6 +1636,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_with_two_phased_alleles',
           genotype=[0, 1],
           phasing_info=[1, 2],
+          phased_reads_map={},
           expected_is_phased=True,
           expected_genotype=[0, 1],
       ),
@@ -1643,6 +1644,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_with_one_unphased_allele',
           genotype=[0, 1],
           phasing_info=[1, 0],
+          phased_reads_map={},
           expected_is_phased=False,
           expected_genotype=[0, 1],
       ),
@@ -1650,6 +1652,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_with_two_phased_alleles_reverse_order',
           genotype=[0, 1],
           phasing_info=[2, 1],
+          phased_reads_map={},
           expected_is_phased=True,
           expected_genotype=[1, 0],
       ),
@@ -1657,6 +1660,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='multi_allelic_het_different_phases',
           genotype=[0, 2],
           phasing_info=[2, 2, 1, 1],
+          phased_reads_map={},
           expected_is_phased=True,
           expected_genotype=[2, 0],
       ),
@@ -1664,19 +1668,57 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_ref_and_alt_same_phase',
           genotype=[0, 1],
           phasing_info=[2, 2, 1, 1],
+          phased_reads_map={},
           expected_is_phased=False,
           expected_genotype=[0, 1],
       ),
+      dict(
+          testcase_name='het_call_with_phase_extension_and_switch',
+          genotype=[0, 1],
+          phasing_info=[2, 1],  # Initially phased to [1, 0]
+          phased_reads_map={('1', '81'): True},  # Needs switching
+          expected_is_phased=True,
+          expected_genotype=[0, 1],  # Switched back to [0, 1]
+      ),
+      dict(
+          testcase_name='het_call_with_phase_extension_no_switch',
+          genotype=[0, 1],
+          phasing_info=[2, 1],  # Initially phased to [1, 0]
+          phased_reads_map={('1', '81'): False},  # No switch needed
+          expected_is_phased=True,
+          expected_genotype=[1, 0],  # Stays as [1, 0]
+      ),
+      dict(
+          testcase_name='het_call_with_no_matching_phase_extension',
+          genotype=[0, 1],
+          phasing_info=[2, 1],  # Initially phased to [1, 0]
+          phased_reads_map={('2', '100'): True},  # Different key
+          expected_is_phased=True,
+          expected_genotype=[1, 0],  # Stays as [1, 0]
+      ),
+      dict(
+          testcase_name='het_call_with_empty_phase_extension_map',
+          genotype=[0, 1],
+          phasing_info=[2, 1],  # Initially phased to [1, 0]
+          phased_reads_map={},
+          expected_is_phased=True,
+          expected_genotype=[1, 0],  # Stays as [1, 0]
+      ),
   )
   def test_maybe_phase_genotype(
-      self, genotype, phasing_info, expected_is_phased, expected_genotype
+      self,
+      genotype,
+      phasing_info,
+      phased_reads_map,
+      expected_is_phased,
+      expected_genotype,
   ):
     variant = variants_pb2.Variant()
     variant_utils.set_info(variant, 'PS_CONTIG', _DEFAULT_PS_CONTIG)
     variant_utils.set_info(variant, 'ALT_PS', phasing_info)
 
     is_phased, genotype = postprocess_variants.maybe_phase_genotype(
-        variant, genotype
+        variant, genotype, phased_reads_map
     )
 
     self.assertEqual(genotype, expected_genotype)
@@ -1719,7 +1761,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     assert 0 <= highest_prob_position <= len(probs)
     probs[highest_prob_position] = 0.995
     variantcall_utils.set_ad(raw_variant.calls[0], [1, 1, 1])
-    variant = postprocess_variants.add_call_to_variant(
+    variant, _ = postprocess_variants.add_call_to_variant(
         variant=raw_variant, predictions=probs, sample_name=_DEFAULT_SAMPLE_NAME
     )
     self.assertEqual(variant.calls[0].genotype, expected_best_genotype)

@@ -1211,6 +1211,7 @@ py_library(
         ":calling_regions_utils",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//deepvariant/python:postprocess_variants",
+        "//deepvariant/python:merge_phased_reads",
         "//deepvariant/small_model:inference",
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tabix",

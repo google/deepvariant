@@ -166,6 +166,18 @@ pybind_library(
 )
 
 pybind_extension(
+    name = "merge_phased_reads",
+    srcs = ["merge_phased_reads_pybind.cc"],
+    deps = [
+        "//deepvariant:merge_phased_reads_lib",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_extension(
     name = "methylation_aware_phasing",
     srcs = ["methylation_aware_phasing_pybind.cc"],
     deps = [
