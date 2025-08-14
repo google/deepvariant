@@ -31,6 +31,7 @@
 from deepvariant.labeler import haplotype_labeler
 from deepvariant.labeler import positional_labeler
 from deepvariant.labeler import variant_labeler
+from third_party.nucleus.util import variant_utils
 
 
 class CombinedLabeler(variant_labeler.VariantLabeler):
@@ -114,7 +115,11 @@ class CombinedLabeler(variant_labeler.VariantLabeler):
       if not positional_label and not haplotype_label:
         continue
 
-      if haplotype_label and haplotype_label.genotype != (0, 0):
-        yield haplotype_label
-      elif positional_label:
-        yield positional_label
+      if variant_utils.is_snp(variant):
+        if haplotype_label:
+          yield haplotype_label
+      else:
+        if haplotype_label and haplotype_label.genotype != (0, 0):
+          yield haplotype_label
+        elif positional_label:
+          yield positional_label

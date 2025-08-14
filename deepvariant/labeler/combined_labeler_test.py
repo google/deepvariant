@@ -90,8 +90,8 @@ class CombinedLabelerTest(parameterized.TestCase):
 
   # This is a real case from HG002 sample where the haplotype labeler cannot
   # correctly label 1 variant while positional labeler resolves it correctly.
-  def test_haplotype_labeler_over_positional(self):
-    """Tests that haplotype labeler is used when positional is hom-ref."""
+  def test_snp_prefers_haplotype_labeler(self):
+    """Tests SNP labeling prefers haplotype labeler even if incorrect."""
     self.assertGetsCorrectLabels(
         candidates=[
             _test_variant(start=3512103, alleles=['A', 'AT']),
@@ -107,8 +107,28 @@ class CombinedLabelerTest(parameterized.TestCase):
         expected_genotypes=[
             [0, 0],
             [0, 0],
+            [0, 0],
+            [0, 0],
+        ],
+    )
+
+  def test_indel_fallback_to_positional_labeler(self):
+    """Tests that indel labeling falls back to positional for hom-ref."""
+    self.assertGetsCorrectLabels(
+        candidates=[
+            _test_variant(start=3512103, alleles=['A', 'AT']),
+            _test_variant(start=3512104, alleles=['TA', 'T']),
+            _test_variant(start=3512105, alleles=['A', 'T']),
+        ],
+        true_variants=[
+            _test_variant(start=3512103, alleles=['A', 'AT'], gt=[0, 1]),
+            _test_variant(start=3512104, alleles=['TA', 'T'], gt=[1, 1]),
+        ],
+        ref=[('chr1', 3512100, 'TATATATATTTTTTTTTT')],
+        expected_genotypes=[
             [0, 1],
             [1, 1],
+            [0, 0],
         ],
     )
 
