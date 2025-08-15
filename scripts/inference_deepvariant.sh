@@ -331,6 +331,15 @@ if [[ "${MODEL_PRESET}" = "PACBIO" ]]; then
   BAM="${BAM:=${GCS_DATA_DIR}/pacbio-case-study-testdata/HG003.SPRQ.pacbio.GRCh38.nov2024.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+elif [[ "${MODEL_PRESET}" = "PACBIO_T2T" ]]; then
+  MODEL_TYPE="PACBIO"
+  BASE="${HOME}/pacbio-case-study"
+
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  # TODO: If we want to externalize this, we need to use a public BAM.
+  BAM="${BAM:=gs://brain-genomics/awcarroll/pacbio_training_2024/kudu/aligned.sorted.hg002.m84034_240730_194815_s1.hifi_reads.ccs.bam}"
+  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.vcf.gz"
+  TRUTH_BED="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.benchmark.bed"
 elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
   MODEL_TYPE="ONT_R104"
   BASE="${HOME}/ont-case-study"
@@ -339,6 +348,14 @@ elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
   BAM="${BAM:=${GCS_DATA_DIR}/ont-case-study-testdata/HG003_PAY87794.calls.sorted.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+elif [[ "${MODEL_PRESET}" = "ONT_R104_T2T" ]]; then
+  MODEL_TYPE="ONT_R104"
+  BASE="${HOME}/ont-case-study"
+
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=gs://deepvariant/ont-case-study-testdata/HG002_R104_sup_merged.50x.bam}"
+  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.vcf.gz"
+  TRUTH_BED="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.benchmark.bed"
 elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   MODEL_TYPE="WGS"
   BASE="${HOME}/wgs-case-study"
@@ -352,6 +369,19 @@ elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   else
     BAM="${BAM:=${GCS_DATA_DIR}/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
   fi
+elif [[ "${MODEL_PRESET}" = "WGS_T2T" ]]; then
+  MODEL_TYPE="WGS"
+  BASE="${HOME}/wgs-case-study"
+
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.vcf.gz"
+  TRUTH_BED="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.benchmark.bed"
+  if [[ "${MAIN_BINARY_NAME}" = "run_pangenome_aware_deepvariant" ]]; then
+    echo "Use VG BAM for pangenome-aware DeepVariant."
+    BAM="${BAM:=gs://deepvariant/vg-case-study/HG002.novaseq.pcr-free.35x.vg-1.55.0.bam}"
+  else
+    BAM="${BAM:=${GCS_DATA_DIR}/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam}"
+  fi
 elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   MODEL_TYPE="WES"
   BASE="${HOME}/wes-case-study"
@@ -360,6 +390,15 @@ elif [[ "${MODEL_PRESET}" = "WES" ]]; then
   BAM="${BAM:=${GCS_DATA_DIR}/exome-case-study-testdata/HG003.novaseq.wes_idt.100x.dedup.bam}"
   TRUTH_VCF="${TRUTH_VCF:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=${GCS_DATA_DIR}/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}"
+  CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed}"
+elif [[ "${MODEL_PRESET}" = "WES_T2T" ]]; then
+  MODEL_TYPE="WES"
+  BASE="${HOME}/wes-case-study"
+
+  REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
+  BAM="${BAM:=${GCS_DATA_DIR}/exome-case-study-testdata/HG002.novaseq.wes_idt.100x.dedup.bam}"
+  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.vcf.gz"
+  TRUTH_BED="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.benchmark.bed"
   CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed}"
 elif [[ "${MODEL_PRESET}" = "HYBRID_PACBIO_ILLUMINA" ]]; then
   MODEL_TYPE="HYBRID_PACBIO_ILLUMINA"
@@ -388,7 +427,7 @@ elif [[ "${MODEL_PRESET}" = "WES_PANGENOME" ]]; then
   CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed}"
 else
   if [[ -n "${MODEL_PRESET}" ]]; then
-    echo "Error: --model_preset must be one of WGS, WES, PACBIO, HYBRID_PACBIO_ILLUMINA." >&2
+    echo "Error: unrecognized --model_preset ${MODEL_PRESET}." >&2
     exit 1
   fi
 
