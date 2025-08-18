@@ -353,7 +353,13 @@ elif [[ "${MODEL_PRESET}" = "ONT_R104_T2T" ]]; then
   BASE="${HOME}/ont-case-study"
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-  BAM="${BAM:=gs://deepvariant/ont-case-study-testdata/HG002_R104_sup_merged.50x.bam}"
+  if [[ -z "${BAM:-}" ]]; then
+    if [[ "${REGIONS:-}" == "chr20" ]]; then
+      BAM="gs://deepvariant/ont-case-study-testdata/HG002_R104_sup_merged.50x.chr20.bam"
+    else
+      BAM="gs://deepvariant/ont-case-study-testdata/HG002_R104_sup_merged.50x.bam"
+    fi
+  fi
   TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.vcf.gz"
   TRUTH_BED="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.benchmark.bed"
 elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
