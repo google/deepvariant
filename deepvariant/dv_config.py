@@ -350,7 +350,7 @@ def get_deepsomatic_wgs_ffpe_config(
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = ''
   config.best_checkpoint_metric = 'tune/f1_homalt'
-  config.early_stopping_patience = 15
+  config.early_stopping_patience = 8
   config.num_epochs = 22
 
 
