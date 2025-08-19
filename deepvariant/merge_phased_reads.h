@@ -126,8 +126,18 @@ class Merger {
   // Groups reads.
   void GroupReads();
 
-  // Helper function to compare two reads.
-  bool CompareGroups(const ShardRegion& group_1,
+  // Helper function to compare two groups.
+  // Returns:
+  //  0 if group 1 and group 2 have the same phases
+  //  1 if group 1 and group 2 have different phases
+  //  2 If not enough overlap between group 1 and group 2 and phasing cannot
+  //  continue.
+  enum ComparisonResult {
+    MATCH = 0,
+    SWITCH = 1,
+    NOT_ENOUGH_OVERLAP = 2,
+  };
+  ComparisonResult CompareGroups(const ShardRegion& group_1,
                      const ShardRegion& group_2) const;
   void ReversePhasing(const ShardRegion& group);
   void MergeGroup(const ShardRegion& group);

@@ -38,6 +38,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <fstream>
 #include <ostream>
 #include <set>
@@ -180,14 +181,14 @@ void Merger::GroupReads() {
 
 // Returns true if number of reads with mismatched phases are greater than
 // number of reads with matching phases.
-bool Merger::CompareGroups(const ShardRegion& group_1,
-                           const ShardRegion& group_2) const {
+Merger::ComparisonResult Merger::CompareGroups(
+    const ShardRegion& group_1, const ShardRegion& group_2) const {
   int num_reads_not_matching_phase = 0;
   int num_reads_matching_phase = 0;
   auto group_1_it = groups_.find(group_1);
   auto group_2_it = groups_.find(group_2);
   if (group_1_it == groups_.end() || group_2_it == groups_.end()) {
-    return false;
+    return ComparisonResult::NOT_ENOUGH_OVERLAP;
   }
   // Iterate read ids in group_2.
   for (auto [merged_reads_idx_2, unmerged_reads_idx2] :
@@ -216,7 +217,12 @@ bool Merger::CompareGroups(const ShardRegion& group_1,
       num_reads_matching_phase++;
     }
   }
-  return num_reads_not_matching_phase > num_reads_matching_phase;
+  if (std::abs(num_reads_not_matching_phase - num_reads_matching_phase) < 2) {
+    return ComparisonResult::NOT_ENOUGH_OVERLAP;
+  }
+  return num_reads_not_matching_phase > num_reads_matching_phase
+             ? ComparisonResult::SWITCH
+             : ComparisonResult::MATCH;
 }
 
 // Reverses phase for the group. Phases are reversed as follow:
@@ -269,13 +275,14 @@ void Merger::MergeReads(absl::string_view switches_output_path) {
       if (cur_group_it == groups_.end()) {
         continue;
       }
-      const bool switched = CompareGroups(prev_group, {shard, cur_region});
-      if (switched) {
+      const ComparisonResult comparison_result =
+          CompareGroups(prev_group, {shard, cur_region});
+      if (comparison_result == ComparisonResult::SWITCH) {
         ReversePhasing({shard, cur_region});
       }
       if (csv_file_switches.is_open()) {
         csv_file_switches << shard << "\t" << cur_region << "\t"
-                          << (switched ? "1" : "0") << "\n";
+                          << static_cast<int>(comparison_result) << "\n";
       }
       MergeGroup({shard, cur_region});
       processed_groups++;

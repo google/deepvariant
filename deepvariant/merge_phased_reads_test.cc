@@ -146,17 +146,22 @@ TEST(MergeReads, MergeOneRead) {
 TEST(MergeReads, MergeReversePhase) {
   Merger merger;
   MergerPeer::SetUnmergedReads(merger, {
+      // Shard 0, region 1
       {.fragment_name = "read_1", .phase = 1, .region_order = 1, .shard = 0},
       {.fragment_name = "read_2", .phase = 1, .region_order = 1, .shard = 0},
       {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 0},
+      {.fragment_name = "read_4", .phase = 1, .region_order = 1, .shard = 0},
+      // Shard 1, region 1
       {.fragment_name = "read_1", .phase = 2, .region_order = 1, .shard = 1},
       {.fragment_name = "read_2", .phase = 2, .region_order = 1, .shard = 1},
       {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 1},
+      {.fragment_name = "read_4", .phase = 2, .region_order = 1, .shard = 1},
   });
   std::vector<MergedPhaseRead> expected = {
       {.fragment_name = "read_1", .phase = 1, .phase_dist = {{1, 2}}},
       {.fragment_name = "read_2", .phase = 1, .phase_dist = {{1, 2}}},
-      {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 1}, {2, 1}}}};
+      {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 1}, {2, 1}}},
+      {.fragment_name = "read_4", .phase = 1, .phase_dist = {{1, 2}}}};
 
   merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
@@ -166,21 +171,28 @@ TEST(MergeReads, MergeReversePhase) {
 TEST(MergeReads, MergeReversePhaseTwice) {
   Merger merger;
   MergerPeer::SetUnmergedReads(merger, {
+      // Shard 0, region 1
       {.fragment_name = "read_1", .phase = 1, .region_order = 1, .shard = 0},
       {.fragment_name = "read_2", .phase = 1, .region_order = 1, .shard = 0},
       {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 0},
+      {.fragment_name = "read_4", .phase = 1, .region_order = 1, .shard = 0},
+      // Shard 1, region 1
       {.fragment_name = "read_1", .phase = 2, .region_order = 1, .shard = 1},
       {.fragment_name = "read_2", .phase = 2, .region_order = 1, .shard = 1},
       {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 1},
+      {.fragment_name = "read_4", .phase = 2, .region_order = 1, .shard = 1},
+      // Shard 2, region 1
       {.fragment_name = "read_2", .phase = 1, .region_order = 1, .shard = 2},
       {.fragment_name = "read_3", .phase = 1, .region_order = 1, .shard = 2},
       {.fragment_name = "read_4", .phase = 1, .region_order = 1, .shard = 2},
+      {.fragment_name = "read_5", .phase = 2, .region_order = 1, .shard = 2},
   });
   std::vector<MergedPhaseRead> expected = {
       {.fragment_name = "read_1", .phase = 1, .phase_dist = {{1, 2}}},
       {.fragment_name = "read_2", .phase = 1, .phase_dist = {{1, 3}}},
       {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 2}, {2, 1}}},
-      {.fragment_name = "read_4", .phase = 1, .phase_dist = {{1, 1}}}};
+      {.fragment_name = "read_4", .phase = 1, .phase_dist = {{1, 3}}},
+      {.fragment_name = "read_5", .phase = 2, .phase_dist = {{2, 1}}}};
 
   merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
@@ -194,24 +206,39 @@ TEST(MergeReads, MergeReversePhaseTwice) {
 TEST(MergeReads, FullCycleShards) {
   Merger merger;
   MergerPeer::SetUnmergedReads(merger, {
+      // Shard 0, region 1
       {.fragment_name = "read_1", .phase = 1, .region_order = 1, .shard = 0},
       {.fragment_name = "read_2", .phase = 1, .region_order = 1, .shard = 0},
       {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 0},
+      // Shard 1, region 1
       {.fragment_name = "read_1", .phase = 2, .region_order = 1, .shard = 1},
       {.fragment_name = "read_2", .phase = 2, .region_order = 1, .shard = 1},
-      {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 1},
+      {.fragment_name = "read_3", .phase = 1, .region_order = 1, .shard = 1},
+      // Shard 0, region 2
       {.fragment_name = "read_2", .phase = 1, .region_order = 2, .shard = 0},
       {.fragment_name = "read_3", .phase = 1, .region_order = 2, .shard = 0},
-      {.fragment_name = "read_4", .phase = 1, .region_order = 2, .shard = 0},
+      {.fragment_name = "read_4", .phase = 2, .region_order = 2, .shard = 0},
   });
   std::vector<MergedPhaseRead> expected = {
       {.fragment_name = "read_1", .phase = 1, .phase_dist = {{1, 2}}},
       {.fragment_name = "read_2", .phase = 1, .phase_dist = {{1, 3}}},
-      {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 2}, {2, 1}}},
-      {.fragment_name = "read_4", .phase = 1, .phase_dist = {{1, 1}}}};
+      {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 1}, {2, 2}}},
+      {.fragment_name = "read_4", .phase = 2, .phase_dist = {{2, 1}}}};
 
   merger.MergeReads("");
-  EXPECT_THAT(MergerPeer::merged_reads(merger),
+  std::vector<MergedPhaseRead> merged_reads = MergerPeer::merged_reads(merger);
+  // Debugging output. Uncomment for debugging.
+  // for (auto& read : merged_reads) {
+  //   LOG(INFO) << "read: " << read.fragment_name << ", distribution: ";
+  //   LOG(INFO) << "     Phase:" << read.phase;
+  //   if (read.phase_dist.contains(1)) {
+  //       LOG(INFO) << "        Supporting phase 1: " << read.phase_dist.at(1);
+  //   }
+  //   if (read.phase_dist.contains(2)) {
+  //       LOG(INFO) << "        Supporting phase 2: " << read.phase_dist.at(2);
+  //   }
+  // }
+  EXPECT_THAT(merged_reads,
               testing::ElementsAreArray(expected));
 }
 
@@ -241,17 +268,22 @@ TEST(MergeReads, DisconnectedGroups) {
 TEST(MergeReads, SkippedGroup) {
   Merger merger;
   MergerPeer::SetUnmergedReads(merger, {
+      // Shard 0, region 1
       {.fragment_name = "read_1", .phase = 1, .region_order = 1, .shard = 0},
       {.fragment_name = "read_2", .phase = 1, .region_order = 1, .shard = 0},
       {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 0},
+      {.fragment_name = "read_4", .phase = 2, .region_order = 1, .shard = 0},
+      // Shard 1, region 1
       {.fragment_name = "read_1", .phase = 2, .region_order = 1, .shard = 2},
       {.fragment_name = "read_2", .phase = 2, .region_order = 1, .shard = 2},
       {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 2},
+      {.fragment_name = "read_4", .phase = 1, .region_order = 1, .shard = 2},
   });
   std::vector<MergedPhaseRead> expected = {
       {.fragment_name = "read_1", .phase = 1, .phase_dist = {{1, 2}}},
       {.fragment_name = "read_2", .phase = 1, .phase_dist = {{1, 2}}},
-      {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 1}, {2, 1}}}};
+      {.fragment_name = "read_3", .phase = 2, .phase_dist = {{1, 1}, {2, 1}}},
+      {.fragment_name = "read_4", .phase = 2, .phase_dist = {{2, 2}}}};
 
   merger.MergeReads("");
   EXPECT_THAT(MergerPeer::merged_reads(merger),
@@ -299,6 +331,33 @@ TEST(MergeReads, CorrectPhasing) {
   EXPECT_THAT(MergerPeer::merged_reads(merger),
               testing::ElementsAreArray(expected_after_correction));
 }
+
+TEST(MergeReads, NotEnoughOverlapBetweenGroups) {
+  Merger merger;
+  MergerPeer::SetUnmergedReads(merger, {
+      // Shard 0, region 1
+      {.fragment_name = "read_1", .phase = 1, .region_order = 1, .shard = 0},
+      {.fragment_name = "read_2", .phase = 1, .region_order = 1, .shard = 0},
+      {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 0},
+      // Shard 1, region 1
+      {.fragment_name = "read_2", .phase = 2, .region_order = 1, .shard = 1},
+      {.fragment_name = "read_3", .phase = 2, .region_order = 1, .shard = 1},
+      {.fragment_name = "read_4", .phase = 2, .region_order = 1, .shard = 1},
+  });
+  // Group 1 and group 2 have one match and one mismatch. We cannot stitch
+  // groups. Therefore, haplotag of read_2 is set to the first seen phase which
+  // is 1.
+  std::vector<MergedPhaseRead> expected = {
+      {.fragment_name = "read_1", .phase = 1, .phase_dist = {{1, 1}}},
+      {.fragment_name = "read_2", .phase = 1, .phase_dist = {{1, 1}, {2, 1}}},
+      {.fragment_name = "read_3", .phase = 2, .phase_dist = {{2, 2}}},
+      {.fragment_name = "read_4", .phase = 2, .phase_dist = {{2, 1}}}};
+
+  merger.MergeReads("");
+  EXPECT_THAT(MergerPeer::merged_reads(merger),
+              testing::ElementsAreArray(expected));
+}
+
 
 }  // namespace deepvariant
 }  // namespace genomics
