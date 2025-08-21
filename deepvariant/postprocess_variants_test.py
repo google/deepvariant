@@ -1611,7 +1611,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
         calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)],
     )
     variantcall_utils.set_ad(raw_variant.calls[0], [1, 1])
-    variant, _ = postprocess_variants.add_call_to_variant(
+    variant, _, _ = postprocess_variants.add_call_to_variant(
         variant=raw_variant, predictions=probs, sample_name=_DEFAULT_SAMPLE_NAME
     )
     self.assertEqual(variant.reference_bases, expected.reference_bases)
@@ -1761,7 +1761,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     assert 0 <= highest_prob_position <= len(probs)
     probs[highest_prob_position] = 0.995
     variantcall_utils.set_ad(raw_variant.calls[0], [1, 1, 1])
-    variant, _ = postprocess_variants.add_call_to_variant(
+    variant, _, _ = postprocess_variants.add_call_to_variant(
         variant=raw_variant, predictions=probs, sample_name=_DEFAULT_SAMPLE_NAME
     )
     self.assertEqual(variant.calls[0].genotype, expected_best_genotype)

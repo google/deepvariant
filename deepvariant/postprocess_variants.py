@@ -512,12 +512,11 @@ def uncall_homref_gt_if_lowqual(
     vcall.genotype[:] = [-1, -1]
 
 
+# TODO Implement ingration test to test phased output.
 def maybe_phase_genotype(
     variant: variants_pb2.Variant,
     genotype: list[int],
-    should_switch_by_shard_and_region: (
-        dict[tuple[str, str], bool] | None
-    ) = None,
+    should_switch_by_shard_and_region: dict[tuple[str, str], int] | None = None,
 ) -> tuple[bool, list[int]]:
   """Phases the genotype if phase information is available.
 
@@ -578,7 +577,7 @@ def maybe_phase_genotype(
     needs_switching = should_switch_by_shard_and_region.get(
         (shard_id, region_id), False
     )
-    if needs_switching:
+    if needs_switching == 1:
       genotype = [
           genotype[1],
           genotype[0],
@@ -591,11 +590,10 @@ def add_call_to_variant(
     predictions: Sequence[float],
     qual_filter: float = 0,
     sample_name: str | None = None,
-    should_switch_by_shard_and_region: (
-        dict[tuple[str, str], bool] | None
-    ) = None,
+    should_switch_by_shard_and_region: dict[tuple[str, str], int] | None = None,
     current_phase_block: str | None = None,
-) -> tuple[variants_pb2.Variant, str | None]:
+    first_var_in_region: bool = False,
+) -> tuple[variants_pb2.Variant, str | None, bool]:
   """Fills in Variant record using the prediction probabilities.
 
   This functions sets the call[0].genotype, call[0].info['GQ'],
@@ -614,6 +612,7 @@ def add_call_to_variant(
       call_set_name field.
     should_switch_by_shard_and_region: dict of (shard_id, region_id) -> bool.
     current_phase_block: str. The current phase block.
+    first_var_in_region: bool. Whether this is the first variant in the region.
 
   Returns:
     A tuple of the Variant record and the current phase block.
@@ -634,6 +633,19 @@ def add_call_to_variant(
     is_first_variant_in_block = variant_utils.get_info(
         variant, dv_constants.FIRST_VARIANT_IN_BLOCK
     )
+    if should_switch_by_shard_and_region and current_phase_block:
+      (
+          shard_id,
+          region_id,
+      ) = variant_utils.get_info(
+          variant, 'PS_CONTIG'
+      ).split('-')
+      stitching_status = should_switch_by_shard_and_region.get(
+          (shard_id, region_id), 0
+      )
+      if stitching_status == 2 and first_var_in_region:
+        is_first_variant_in_block = True
+
     if not variant_phase_block:
       variant_phase_block = variant_utils.get_info(
           variant, dv_constants.VARIANT_PHASE_BLOCK
@@ -655,7 +667,7 @@ def add_call_to_variant(
   uncall_gt_if_no_ad(variant)
   variant.filter[:] = compute_filter_fields(variant, qual_filter)
   uncall_homref_gt_if_lowqual(variant, _CNN_HOMREF_CALL_MIN_GQ.value)
-  return variant, variant_phase_block
+  return variant, variant_phase_block, call.is_phased
 
 
 def compute_quals(
@@ -756,6 +768,10 @@ def variants_are_equal(
   variant_2_vars = json_format.MessageToDict(variant_2)
   del variant_1_vars['calls']
   del variant_2_vars['calls']
+  if 'info' in variant_1_vars:
+    del variant_1_vars['info']
+  if 'info' in variant_2_vars:
+    del variant_2_vars['info']
   return variant_1_vars == variant_2_vars
 
 
@@ -1433,9 +1449,10 @@ def _transform_call_variant_group_to_output_variant(
     sample_name: str,
     use_multiallelic_model: bool,
     debug_output_all_candidates: str | None,
-    should_switch_by_shard_and_region: dict[tuple[str, str], bool],
+    should_switch_by_shard_and_region: dict[tuple[str, str], int],
     current_phase_block: str | None,
-) -> tuple[variants_pb2.Variant, str | None]:
+    first_var_in_region: bool = False,
+) -> tuple[variants_pb2.Variant, str | None, bool]:
   """Transforms a group of CalVariantOutput to VariantOutput.
 
   The group of CVOs present in the call_variants_group are converted to the
@@ -1454,8 +1471,9 @@ def _transform_call_variant_group_to_output_variant(
       resolution of multiallelic cases with two alts.
     debug_output_all_candidates: if 'ALT', output all alleles considered by
       DeepVariant as ALT alleles.
-    should_switch_by_shard_and_region: dict[tuple[str, str], bool],
+    should_switch_by_shard_and_region: dict[tuple[str, str], int],
     current_phase_block: str | None,
+    first_var_in_region: bool,
 
   Returns:
     Variant proto representing the group of CallVariantsOutput protos.
@@ -1477,13 +1495,48 @@ def _transform_call_variant_group_to_output_variant(
       sample_name=sample_name,
       should_switch_by_shard_and_region=should_switch_by_shard_and_region,
       current_phase_block=current_phase_block,
+      first_var_in_region=first_var_in_region,
   )
+
+
+def _get_ps_value_and_update_region(
+    call_variant_group: Sequence[deepvariant_pb2.CallVariantsOutput],
+    cur_region: tuple[str, str],
+    first_var_in_region: bool,
+    was_phased: bool,
+) -> tuple[str | None, tuple[str, str], bool]:
+  """Get PS value and update current region.
+
+  Args:
+    call_variant_group: list of CVOs.
+    cur_region: current region.
+    first_var_in_region: if first variant in region.
+    was_phased: if previous variant was phased.
+
+  Returns:
+    PS value, current region, and if first variant in region.
+  """
+  call_variant_group_local = list(call_variant_group)
+  ps_value = variant_utils.get_info(
+      call_variant_group_local[0].variant, 'PS_CONTIG'
+  )
+  if ps_value:
+    shard_id, region_id = ps_value.split('-')
+  if ps_value and cur_region != (shard_id, region_id):
+    cur_region = (shard_id, region_id)
+    first_var_in_region = True
+  # first_var_in_region can be reset only after the first phased variant was
+  # encountered. When new region starts it could be that first variants are not
+  # phased.
+  elif was_phased:
+    first_var_in_region = False
+  return ps_value, cur_region, first_var_in_region
 
 
 def _transform_call_variants_output_to_variants(
     input_sorted_tfrecord_path: str,
     sample_name: str,
-    should_switch_by_shard_and_region: dict[tuple[str, str], bool],
+    should_switch_by_shard_and_region: dict[tuple[str, str], int],
 ) -> Iterator[variants_pb2.Variant]:
   """Yields Variant protos in sorted order from CallVariantsOutput protos.
 
@@ -1498,10 +1551,16 @@ def _transform_call_variants_output_to_variants(
     Variant protos in sorted order representing the CallVariantsOutput calls.
   """
   current_phase_block = None
+  first_var_in_region = False
+  was_phased = False
+  cur_region = ('0', '0')
   for call_variant_group in group_call_variants_outputs(
       input_sorted_tfrecord_path, _GROUP_VARIANTS.value
   ):
-    variant, current_phase_block = (
+    _, cur_region, first_var_in_region = _get_ps_value_and_update_region(
+        call_variant_group, cur_region, first_var_in_region, was_phased
+    )
+    variant, current_phase_block, was_phased = (
         _transform_call_variant_group_to_output_variant(
             call_variant_group,
             _QUAL_FILTER.value,
@@ -1511,6 +1570,7 @@ def _transform_call_variants_output_to_variants(
             _DEBUG_OUTPUT_ALL_CANDIDATES.value,
             should_switch_by_shard_and_region,
             current_phase_block,
+            first_var_in_region,
         )
     )
     yield variant
@@ -1784,7 +1844,7 @@ def _merge_phasing_blocks(
     input_path: str,
     switches_output_path: str,
     output_path: str,
-) -> dict[tuple[str, str], bool]:
+) -> dict[tuple[str, str], int]:
   """Reads the phased reads TSV file and loads them into a dictionary.
 
   Args:
@@ -1805,8 +1865,8 @@ def _merge_phasing_blocks(
   phasing_info = {}
   with open(switches_output_path, 'r') as f:
     for line in f:
-      shard, region, needs_to_switch = line.split('\t')
-      phasing_info[shard, region] = int(needs_to_switch) == 1
+      shard, region, switch_status = line.split('\t')
+      phasing_info[shard, region] = int(switch_status)
   return phasing_info
 
 
