@@ -23,6 +23,7 @@ DeepVariant supports germline variant-calling in diploid organisms.
 *   Complete Genomics
     [T7 case study](docs/deepvariant-complete-t7-case-study.md);
     [G400 case study](docs/deepvariant-complete-g400-case-study.md).
+*   Roche [SBX case study](docs/sbx-case-study.md) for SBX-D and SBX-Fast data.
 *   Pangenome-mapping-based case-study:
     [vg case study](docs/deepvariant-vg-case-study.md).
 *   RNA data for
