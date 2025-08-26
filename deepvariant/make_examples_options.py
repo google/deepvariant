@@ -1037,6 +1037,26 @@ def shared_flags_to_options(
     options.pic_options.channels[:] = channel_set
     options.pic_options.num_channels += len(channel_set)
 
+    if 'read_supports_variant_fuzzy' in channel_set:
+      if not _OUTPUT_PHASE_INFO.value:
+        logging.info(
+            'Setting --output_phase_info=True because '
+            '"read_supports_variant_fuzzy" channel is used.'
+        )
+        options.output_phase_info = True
+      if not _PHASE_READS.value:
+        logging.info(
+            'Setting --phase_reads=True because '
+            '"read_supports_variant_fuzzy" channel is used.'
+        )
+        options.phase_reads = True
+      if not _TRACK_REF_READS.value:
+        logging.info(
+            'Setting --track_ref_reads=True because '
+            '"read_supports_variant_fuzzy" channel is used.'
+        )
+        options.allele_counter_options.track_ref_reads = True
+
     if _MULTI_ALLELIC_MODE.value:
       multi_allelic_enum = {
           'include_het_alt_images': (
