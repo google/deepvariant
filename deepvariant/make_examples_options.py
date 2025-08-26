@@ -673,6 +673,14 @@ _PHASE_READS = flags.DEFINE_bool(
     'Calculate phases and add HP tag to all reads on a fly. --phase_reads'
     ' requires --track_ref_reads=True.',
 )
+_MIN_ALLELES_TO_PHASE = flags.DEFINE_integer(
+    'min_alleles_to_phase',
+    2,
+    (
+        'The minimum number of alleles on a read that must support a phase to'
+        ' be assigned that phase.'
+    ),
+)
 _PHASE_MAX_CANDIDATES = flags.DEFINE_integer(
     'phase_max_candidates',
     5000,
@@ -1037,26 +1045,6 @@ def shared_flags_to_options(
     options.pic_options.channels[:] = channel_set
     options.pic_options.num_channels += len(channel_set)
 
-    if 'read_supports_variant_fuzzy' in channel_set:
-      if not _OUTPUT_PHASE_INFO.value:
-        logging.info(
-            'Setting --output_phase_info=True because '
-            '"read_supports_variant_fuzzy" channel is used.'
-        )
-        options.output_phase_info = True
-      if not _PHASE_READS.value:
-        logging.info(
-            'Setting --phase_reads=True because '
-            '"read_supports_variant_fuzzy" channel is used.'
-        )
-        options.phase_reads = True
-      if not _TRACK_REF_READS.value:
-        logging.info(
-            'Setting --track_ref_reads=True because '
-            '"read_supports_variant_fuzzy" channel is used.'
-        )
-        options.allele_counter_options.track_ref_reads = True
-
     if _MULTI_ALLELIC_MODE.value:
       multi_allelic_enum = {
           'include_het_alt_images': (
@@ -1107,6 +1095,9 @@ def shared_flags_to_options(
       options.phase_reads_region_padding_pct = phase_region_padding
     if _PHASE_MAX_CANDIDATES.value:
       options.phase_max_candidates = _PHASE_MAX_CANDIDATES.value
+    options.direct_phasing_options.min_alleles_to_phase = (
+        _MIN_ALLELES_TO_PHASE.value
+    )
 
     options.pic_options.alt_aligned_pileup = _ALT_ALIGNED_PILEUP.value
     options.pic_options.types_to_alt_align = _TYPES_TO_ALT_ALIGN.value

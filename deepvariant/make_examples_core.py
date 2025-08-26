@@ -1525,7 +1525,7 @@ class RegionProcessor:
     self._make_examples_native = make_examples_native
 
   def _make_direct_phasing_obj(self) -> direct_phasing.DirectPhasing:
-    return direct_phasing.DirectPhasing()
+    return direct_phasing.DirectPhasing(self.options.direct_phasing_options)
 
   def _make_allele_counter_for_region(
       self, region: range_pb2.Range, candidate_positions: Iterable[int]

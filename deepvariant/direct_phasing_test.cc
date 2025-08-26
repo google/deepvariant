@@ -67,6 +67,14 @@ using AlleleSupportMap =
     absl::flat_hash_map<std::string, std::vector<std::string>>;
 using RefSupport = std::vector<std::string>;
 
+namespace {
+DirectPhasing CreateDefaultDirectPhasing() {
+  DirectPhasingOptions options;
+  options.set_min_alleles_to_phase(2);
+  return DirectPhasing(options);
+}
+}  // namespace
+
 DeepVariantCall MakeCandidate(
     int64_t start, int64_t end,
     const AlleleSupportMap& allele_support = AlleleSupportMap(),
@@ -187,7 +195,7 @@ TEST(DirectPhasingTest, ReadSupportFromProtoSimple) {
       {1, false},
       {2, false},
   };
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
   google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport> read_support_proto;
   PopulateReadSupportInfo({{"read1", false}, {"read2", false}},
                           read_support_proto);
@@ -204,7 +212,7 @@ TEST(DirectPhasingTest, ReadSupportFromProtoLQReads) {
       {1, false},
       {2, false},
   };
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
   google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport> read_support_proto;
   PopulateReadSupportInfo({{"read1", false}, {"read2", false},
                           {"read3", true}},
@@ -233,7 +241,7 @@ CreateTestReads(int num_of_reads) {
 }
 
 TEST(DirectPhasingTest, BuildGraphSimple) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   std::vector<DeepVariantCall> candidates = {
@@ -356,7 +364,7 @@ bool operator==(const DirectPhasing::Score& score1,
 }
 
 TEST(DirectPhasingTest, CalculateScoreFirstIteration) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   std::vector<DeepVariantCall> candidates = {
@@ -404,7 +412,7 @@ TEST(DirectPhasingTest, CalculateScoreFirstIteration) {
 }
 
 TEST(DirectPhasingTest, CalculateScoreWithPreviousScore) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   std::vector<DeepVariantCall> candidates = {
@@ -481,7 +489,7 @@ TEST(DirectPhasingTest, CalculateScoreWithPreviousScore) {
 }
 
 TEST(DirectPhasingTest, PhaseReadSimpleTest) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   std::vector<DeepVariantCall> candidates = {
@@ -511,7 +519,7 @@ TEST(DirectPhasingTest, PhaseReadSimpleTest) {
 }
 
 TEST(DirectPhasingTest, PhaseReadWithErrorCorrection) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   // read3 supports phase 1 in the candidate at 100, but it also supports
@@ -548,7 +556,7 @@ TEST(DirectPhasingTest, PhaseReadWithErrorCorrection) {
 }
 
 TEST(DirectPhasingTest, PhaseReadChangedOrderOfAlleles) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   // read3 supports phase 1 in the candidate at 100, but it also supports
@@ -587,7 +595,7 @@ TEST(DirectPhasingTest, PhaseReadChangedOrderOfAlleles) {
 }
 
 TEST(DirectPhasingTest, PhaseReadUnphasedRead) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   // read 3 overlaps one allele phase1, one allele phase 2 and pne homozygous
@@ -620,7 +628,7 @@ TEST(DirectPhasingTest, PhaseReadUnphasedRead) {
 }
 
 TEST(DirectPhasingTest, PhaseReadBrokenPath) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   // No edge between A at 100 and G at 105
@@ -692,7 +700,7 @@ TEST(DirectPhasingTest, PhaseReadBrokenPath) {
 }
 
 TEST(DirectPhasingTest, PhaseReadBrokenPathNoConnection) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   // No edge between C at 105 and G at 110, and not edges between G at 105 and
@@ -742,7 +750,7 @@ TEST(DirectPhasingTest, PhaseReadBrokenPathNoConnection) {
 }
 
 TEST(DirectPhasingTest, NotPhasablePosition) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   // At position 110 all possible partitions yield the same score. In this case
@@ -812,7 +820,7 @@ TEST(DirectPhasingTest, NotPhasablePosition) {
 }
 
 TEST(DirectPhasingTest, PhaseReadFullyConnectedGraph) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   std::vector<DeepVariantCall> candidates = {
@@ -843,7 +851,7 @@ TEST(DirectPhasingTest, PhaseReadFullyConnectedGraph) {
 }
 
 TEST(DirectPhasingTest, PhaseReadUnorderedInputFail) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates that are not ordered by position.
   std::vector<DeepVariantCall> candidates = {
@@ -871,7 +879,7 @@ TEST(DirectPhasingTest, PhaseReadUnorderedInputFail) {
 }
 
 TEST(DirectPhasingTest, PhaseReadCandidateOutOfOrderInTheMiddle) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates that are not ordered by position.
   std::vector<DeepVariantCall> candidates = {
@@ -903,7 +911,7 @@ TEST(DirectPhasingTest, PhaseReadCandidateOutOfOrderInTheMiddle) {
 }
 
 TEST(DirectPhasingTest, PhaseReadTwoBlocksWithScoreTie) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // This test creates two separate phasing blocks. The score for the start of
   // the first block (pos 110) is the same as the score of the second block
@@ -957,7 +965,7 @@ TEST(DirectPhasingTest, PhaseReadTwoBlocksWithScoreTie) {
 // Test verifies that candidate that has only one allele and less than 3 reads
 // supporting reference is filtered out.
 TEST(DirectPhasingTest, FilterOneAlleleCandidate) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   std::vector<DeepVariantCall> candidates = {
       MakeCandidate(100, 101,
@@ -988,7 +996,7 @@ TEST(DirectPhasingTest, FilterOneAlleleCandidate) {
 
 // Test verifies that candidate containing INDEL is filtered out.
 TEST(DirectPhasingTest, FilterCandidateWithIndel) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   std::vector<DeepVariantCall> candidates = {
       MakeCandidate(
@@ -1022,7 +1030,7 @@ TEST(DirectPhasingTest, FilterCandidateWithIndel) {
 }
 
 TEST(DirectPhasingTest, DirectPhasingReuseObject) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   std::vector<DeepVariantCall> candidates = {
@@ -1071,7 +1079,7 @@ bool operator==(const PhasedVariant& a, const PhasedVariant& b) {
 }
 
 TEST(DirectPhasingTest, GetPhasedVariantsSanity) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   std::vector<DeepVariantCall> candidates = {
@@ -1117,7 +1125,7 @@ TEST(DirectPhasingTest, GetPhasedVariantsSanity) {
 
 
 TEST(DirectPhasingTest, GetPhasedVariantsWithBrokenPhase) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   std::vector<DeepVariantCall> candidates = {
@@ -1175,7 +1183,7 @@ TEST(DirectPhasingTest, GetPhasedVariantsWithBrokenPhase) {
 }
 
 TEST(DirectPhasingTest, GetPhasedVariantsBrokenPhaseNoConnection) {
-  DirectPhasing direct_phasing;
+  DirectPhasing direct_phasing = CreateDefaultDirectPhasing();
 
   // Create test candidates.
   std::vector<DeepVariantCall> candidates = {

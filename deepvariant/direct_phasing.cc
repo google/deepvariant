@@ -66,7 +66,6 @@ namespace genomics {
 namespace deepvariant {
 
 const int kMinRefAlleleDepth = 3;
-const int kMinAllelesToPhase = 2;
 constexpr absl::string_view kRef = "REF";
 const int kNumOfPhases = 2;
 const float kMinMethylationThreshold = 0.4;
@@ -443,10 +442,10 @@ std::vector<int> DirectPhasing::AssignPhasesToReads(
         read_phases[graph_[v].allele_info.phase]++;
       }
       if (read_phases[1] > read_phases[2] &&
-          read_phases[1] >= kMinAllelesToPhase) {
+          read_phases[1] >= options_.min_alleles_to_phase()) {
         phases[i] = 1;
       } else if (read_phases[2] > read_phases[1] &&
-                 read_phases[2] >= kMinAllelesToPhase) {
+                 read_phases[2] >= options_.min_alleles_to_phase()) {
         phases[i] = 2;
       } else {
         phases[i] = 0;

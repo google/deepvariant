@@ -56,7 +56,7 @@ PYBIND11_MODULE(direct_phasing, m) {
       .def_readwrite("is_first_in_block", &PhasedVariant::is_first_in_block);
 
   py::classh<DirectPhasing>(m, "DirectPhasing")
-      .def(py::init<>())
+      .def(py::init<const DirectPhasingOptions&>(), py::arg("options"))
       .def("graphviz", &DirectPhasing::GraphViz)
       .def("get_phased_variants", &DirectPhasing::GetPhasedVariants)
       .def("phase", &DirectPhasing::PhaseReadsPython, py::arg("candidates"),

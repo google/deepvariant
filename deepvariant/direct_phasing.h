@@ -108,6 +108,9 @@ inline bool operator==(const AlleleInfo& lhs, const AlleleInfo& rhs) {
 //              purposes.
 class DirectPhasing {
  public:
+  explicit DirectPhasing(const DirectPhasingOptions& options)
+      : options_(options) {}
+
   struct VertexInfo {
     AlleleInfo allele_info;
   };
@@ -284,6 +287,7 @@ class DirectPhasing {
   bool HasAtLeastOneIncomingEdge(const std::vector<Vertex>& vertecies) const;
 
  private:
+  DirectPhasingOptions options_;
   BoostGraph graph_;
   RawVertexIndexMap vertex_index_map_;  // This is needed for GraphViz.
   absl::flat_hash_set<int> hom_positions_;
