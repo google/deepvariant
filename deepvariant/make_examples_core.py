@@ -142,7 +142,7 @@ NUM_REGIONS_FOR_MEAN_COVERAGE = 1500
 # Number of loci to use for computing mean coverage.
 NUM_LOCI_FOR_MEAN_COVERAGE = 10
 
-# Minimum difference between number of reads for each phase of an allele.
+# Minimum difference between number of reads supporting each phase of an allele.
 # This constant is used to determine allele phase by counting the number of
 # supporting reads of each phase.
 MIN_DIFF_READS_FOR_ALLELE_PHASE = 3
@@ -150,7 +150,7 @@ MIN_DIFF_READS_FOR_ALLELE_PHASE = 3
 # Maximum number of reads supporting an opposite phase when allele phase is
 # calculated. If number of reads for an opposite phase is larger than this
 # value, we will assign phase 0 to the allele.
-MAX_NUM_READS_FOR_OPOSITE_PHASE = 2
+MAX_NUM_READS_FOR_OPPOSITE_PHASE = 2
 
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
@@ -2530,14 +2530,44 @@ class RegionProcessor:
       with epath.Path(dest_file).open('w') as f:
         f.write(graph.graphviz())
 
+  def _get_phased_genotype_from_counts(
+      self, phase_1_count: int, phase_2_count: int
+  ) -> int:
+    """Determines the phased genotype (1, 2, or 0) from phase counts.
+
+    Assigns phase to the allele that is supported by more reads. The difference
+    between the number of reads supporting each phase must be at least
+    MIN_DIFF_READS_FOR_ALLELE_PHASE, and the count of the opposite phase must
+    not exceed MAX_NUM_READS_FOR_OPPOSITE_PHASE. Returns 0 if no phase is
+    assigned.
+
+    Args:
+      phase_1_count: The number of reads supporting phase 1.
+      phase_2_count: The number of reads supporting phase 2.
+
+    Returns:
+      1 if phase 1 is confidently assigned, 2 if phase 2 is confidently
+      assigned, otherwise 0.
+    """
+    if (
+        phase_1_count > phase_2_count
+        and phase_1_count - phase_2_count > MIN_DIFF_READS_FOR_ALLELE_PHASE
+        and phase_2_count <= MAX_NUM_READS_FOR_OPPOSITE_PHASE
+    ):
+      return 1
+    elif (
+        phase_2_count > phase_1_count
+        and phase_2_count - phase_1_count > MIN_DIFF_READS_FOR_ALLELE_PHASE
+        and phase_1_count <= MAX_NUM_READS_FOR_OPPOSITE_PHASE
+    ):
+      return 2
+    else:
+      return 0
+
   def infer_allele_phase(
       self, alternate_bases, ref_support_ext, allele_support, read_id_to_phase
   ):
     """Infers allele phase from supporting reads."""
-    # Count the number of reads of each phase supporting the allele.
-    # Assign phase to the allele that is supported by more reads. The
-    # difference between the number of reads supporting each phase must be
-    # at least 2.
     phased_genotype = [0] * (len(alternate_bases) + 1)
     index = 0
     for allele_index in range(len(alternate_bases) + 1):
@@ -2559,18 +2589,9 @@ class RegionProcessor:
           if read_name in read_id_to_phase:
             phases[read_id_to_phase[read_name]] += 1
 
-      if (
-          phases[1] > phases[2]
-          and phases[1] - phases[2] > MIN_DIFF_READS_FOR_ALLELE_PHASE
-          and phases[2] <= MAX_NUM_READS_FOR_OPOSITE_PHASE
-      ):
-        phased_genotype[index] = 1
-      elif (
-          phases[2] > phases[1]
-          and phases[2] - phases[1] > MIN_DIFF_READS_FOR_ALLELE_PHASE
-          and phases[1] <= MAX_NUM_READS_FOR_OPOSITE_PHASE
-      ):
-        phased_genotype[index] = 2
+      phased_genotype[index] = self._get_phased_genotype_from_counts(
+          phases[1], phases[2]
+      )
       index += 1
     return phased_genotype
 
@@ -2660,6 +2681,50 @@ class RegionProcessor:
             False,
         )
     return len(phased_variants)
+
+  def assign_phase_from_normal(self, tumor_candidates, tumor_reads_to_phase):
+    """Use phase information from the normal sample to assign phase to tumor."""
+    normal_phased_variants = {
+        x.position: x for x in self.direct_phasing_cpp.get_phased_variants()
+    }
+    # Construct counters for each read.
+    phase_counter = collections.OrderedDict(
+        (f'{read.fragment_name}/{read.read_number}', collections.Counter())
+        for read in tumor_reads_to_phase
+    )
+
+    for tumor_candidate in tumor_candidates:
+      if tumor_candidate.variant.start in normal_phased_variants:
+        phased_variant = normal_phased_variants[tumor_candidate.variant.start]
+        allele_support_reads = {
+            k: v.read_names for k, v in tumor_candidate.allele_support.items()
+        }
+        allele_support_reads['REF'] = tumor_candidate.ref_support
+        for allele, read_set in allele_support_reads.items():
+          if allele == phased_variant.phase_1_bases:
+            phase_key = 1
+          elif allele == phased_variant.phase_2_bases:
+            phase_key = 2
+          else:
+            continue
+          for read_name in read_set:
+            if read_name in phase_counter:
+              phase_counter[read_name][phase_key] += 1
+
+    # Now assign phase information to reads.
+    read_phases = []
+    for read in tumor_reads_to_phase:
+      read_key = f'{read.fragment_name}/{read.read_number}'
+      read_phase_counter = phase_counter[read_key]
+      # Assign phase information.
+      phase_1_count = read_phase_counter.get(1, 0)
+      phase_2_count = read_phase_counter.get(2, 0)
+      phase = self._get_phased_genotype_from_counts(
+          phase_1_count, phase_2_count
+      )
+      read_phases.append(phase)
+
+    return read_phases
 
   def candidates_in_region(
       self,
@@ -2879,9 +2944,19 @@ class RegionProcessor:
               % (role, len(snp_candidates)),
           )
         else:
-          read_phases = self.direct_phasing_cpp.phase(
-              snp_candidates, reads_to_phase
-          )
+          # Assign phase information from normal to tumor.
+          if (
+              self.options.assign_phase_from_normal
+              and role == 'tumor'
+              and 'normal' in candidates
+          ):
+            read_phases = self.assign_phase_from_normal(
+                snp_candidates, reads_to_phase
+            )
+          else:
+            read_phases = self.direct_phasing_cpp.phase(
+                snp_candidates, reads_to_phase
+            )
 
           # If methylation-aware phasing is enabled, run it on unphased reads.
           if (

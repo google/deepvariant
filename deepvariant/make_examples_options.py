@@ -886,6 +886,13 @@ _OUTPUT_DEBUG_INFO = flags.DEFINE_bool(
     'If True, output debug info to the log.',
 )
 
+_ASSIGN_PHASE_FROM_NORMAL = flags.DEFINE_bool(
+    'assign_phase_from_normal',
+    False,
+    'If True, in a DeepSomatic run, use phase information from the normal '
+    'sample to assign phase to the tumor sample.',
+)
+
 
 def shared_flags_to_options(
     add_flags: bool,
@@ -946,6 +953,7 @@ def shared_flags_to_options(
       enable_methylation_calling=_ENABLE_METHYLATION_CALLING.value,
       methylation_calling_threshold=_METHYLATION_CALLING_THRESHOLD.value,
       enable_methylation_aware_phasing=_ENABLE_METHYLATION_AWARE_PHASING.value,
+      assign_phase_from_normal=_ASSIGN_PHASE_FROM_NORMAL.value,
   )
 
   if add_flags:

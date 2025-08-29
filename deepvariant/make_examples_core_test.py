@@ -1513,6 +1513,57 @@ class RegionProcessorTest(parameterized.TestCase):
         read_phasing = f.read()
       self.assertNotEmpty(read_phasing)
 
+  def test_assign_phase_from_normal(self):
+    processor = make_examples_core.RegionProcessor(self.options)
+    processor.direct_phasing_cpp = mock.Mock()
+
+    # Mock phased variants from the "normal" sample
+    processor.direct_phasing_cpp.get_phased_variants.return_value = []
+    for i in range(0, 4):
+      mock_phased_variant = mock.Mock()
+      mock_phased_variant.position = i * 100
+      mock_phased_variant.phase_1_bases = 'A'
+      mock_phased_variant.phase_2_bases = 'C'
+      processor.direct_phasing_cpp.get_phased_variants.return_value.append(
+          mock_phased_variant
+      )
+
+    # Mock tumor candidates
+    tumor_candidates = []
+    for i in range(0, 4):
+      mock_candidate = mock.Mock()
+      mock_candidate.variant.start = i * 100
+      mock_candidate.ref_support = ['read8/1']
+      mock_candidate.allele_support = {
+          'A': mock.Mock(
+              read_names=[
+                  'read1/1',
+                  'read2/1',
+                  'read3/1',
+                  'read4/1',
+                  'read5/1',
+                  'read6/1',
+              ]
+          ),
+          'C': mock.Mock(read_names=['read7/1']),
+      }
+      tumor_candidates.append(mock_candidate)
+
+    # Mock tumor reads
+    tumor_reads_to_phase = []
+    for i in range(1, 9):
+      read = mock.Mock()
+      read.fragment_name = f'read{i}'
+      read.read_number = 1
+      tumor_reads_to_phase.append(read)
+
+    read_phases = processor.assign_phase_from_normal(
+        tumor_candidates, tumor_reads_to_phase
+    )
+
+    expected_phases = [1, 1, 1, 1, 1, 1, 2, 0]
+    self.assertEqual(read_phases, expected_phases)
+
 
 if __name__ == '__main__':
   absltest.main()

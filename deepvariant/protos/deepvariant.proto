@@ -719,7 +719,7 @@ message DirectPhasingOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 96.
+// Next ID: 97.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -1038,6 +1038,10 @@ message MakeExamplesOptions {
   reserved 66;
 
   DirectPhasingOptions direct_phasing_options = 95;
+
+  // If True, in a DeepSomatic run, use phase information from the normal
+  // sample to assign phase to the tumor sample.
+  bool assign_phase_from_normal = 96;
 }
 
 // Config describe information needed for a dataset that can be used for
