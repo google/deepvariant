@@ -1,3 +1,4 @@
+# load("@rules_cc//cc:cc_library.bzl", "cc_library")
 # Placeholder: load py_test
 load("@org_tensorflow//tensorflow:tensorflow.default.bzl", "pybind_extension", "pybind_library")
 

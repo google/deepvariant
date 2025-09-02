@@ -1,6 +1,8 @@
 # Testing utilities that are temporarily located here until they can
 # be separately open source.
 
+# load("@rules_cc//cc:cc_library.bzl", "cc_library")
+# load("@rules_cc//cc:cc_test.bzl", "cc_test")
 # Placeholder: load py_library
 # Placeholder: load py_test
 
