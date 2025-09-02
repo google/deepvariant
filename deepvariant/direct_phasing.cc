@@ -139,9 +139,6 @@ nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
         // have at least one combination that advances the score.
         if (prev_score_it->second.score < score.score) {
           found_advancing_score = true;
-        } else {
-          // We cannot use the score because it does not advance.
-          continue;
         }
         // If the score for the given vertices already exists then we update
         // it if the new score is higher.
@@ -479,7 +476,6 @@ std::vector<absl::flat_hash_set<ReadIndex>> DirectPhasing::FindSupportingReads(
   // Find all reads supporting <vertex> vertex
   std::vector<absl::flat_hash_set<ReadIndex>> reads(2);
   int num_first_alleles = 0;
-  std::vector<std::string> read_support_names;
   for (const ReadSupportInfo& rs : graph_[vertex].allele_info.read_support) {
     if (rs.is_first_allele) {
       reads[1].insert(rs.read_index);
@@ -487,7 +483,6 @@ std::vector<absl::flat_hash_set<ReadIndex>> DirectPhasing::FindSupportingReads(
     }
     if (starting_score.read_support[phase].contains(rs.read_index)) {
       reads[0].insert(rs.read_index);
-      read_support_names.push_back(this->index_to_read_name_.at(rs.read_index));
     }
   }
   return reads;
