@@ -63,6 +63,7 @@ NOCHR20_BAM = None
 CHR20_CRAM = None
 CHR20_PACBIO_BAM = None
 GOLDEN_TRAINING_EXAMPLES = None
+GOLDEN_TRAINING_EXAMPLES_BAGZ = None
 GOLDEN_CALLING_CANDIDATES = None
 GOLDEN_CANDIDATE_POSITIONS = None
 GOLDEN_CALLING_EXAMPLES = None
@@ -132,6 +133,7 @@ def init():
   global CHR20_CRAM
   global CHR20_PACBIO_BAM
   global GOLDEN_TRAINING_EXAMPLES
+  global GOLDEN_TRAINING_EXAMPLES_BAGZ
   global GOLDEN_CALLING_CANDIDATES
   global GOLDEN_CANDIDATE_POSITIONS
   global GOLDEN_CALLING_EXAMPLES
@@ -209,6 +211,9 @@ def init():
   )
   GOLDEN_TRAINING_EXAMPLES = deepvariant_testdata(
       'golden.training_examples.tfrecord.gz'
+  )
+  GOLDEN_TRAINING_EXAMPLES_BAGZ = deepvariant_testdata(
+      'bagz/golden.training_examples@3.bagz'
   )
   GOLDEN_CALLING_CANDIDATES = deepvariant_testdata(
       'golden.calling_examples.tfrecord.gz'
