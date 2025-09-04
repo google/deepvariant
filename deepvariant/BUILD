@@ -33,7 +33,7 @@ filegroup(
     srcs = glob([
         "testdata/input/*",
         "testdata/obsolete/*",
-        "testdata/*",
+        "testdata/**",
         "multiallelic_model/**",
     ]),
 )
