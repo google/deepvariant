@@ -24,12 +24,12 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | ------------------
-load_gbz_into_shared_memory      | 1m8.27s
-make_examples                    | 86m22.54s
-call_variants                    | 164m3.54s
-postprocess_variants (with gVCF) | 7m6.81s
-vcf_stats_report (optional)      | 5m42.20s
-total                            | 272m29.09s (4h32m29.09s)
+load_gbz_into_shared_memory      | 1m8.93s
+make_examples                    | 86m42.90s
+call_variants                    | 158m15.02s
+postprocess_variants (with gVCF) | 7m28.88s
+vcf_stats_report (optional)      | 5m50.72s
+total                            | 268m16.91ss (~4h28m)
 
 ### Accuracy
 
@@ -50,12 +50,12 @@ Reported runtime is an average of 5 runs.
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-load_gbz_into_shared_memory      | 1m8.17s
-make_examples                    | 4m46.74s
-call_variants                    | 1m4.14s
-postprocess_variants (with gVCF) | 0m38.91s
-vcf_stats_report (optional)      | 0m4.95s
-total                            | 9m12.21s
+load_gbz_into_shared_memory      | 1m9.21s
+make_examples                    | 4m51.40s
+call_variants                    | 1m3.95s
+postprocess_variants (with gVCF) | 0m39.76s
+vcf_stats_report (optional)      | 0m5.08s
+total                            | 9m25.21s
 
 ### Accuracy
 
