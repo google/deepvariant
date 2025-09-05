@@ -892,13 +892,20 @@ _ASSIGN_PHASE_FROM_NORMAL = flags.DEFINE_bool(
     'If True, in a DeepSomatic run, use phase information from the normal '
     'sample to assign phase to the tumor sample.',
 )
-
 # TODO: Remove this flag once the better indel candidate filtering
 # is implemented.
 _VSC_REDUCE_MIN_INDEL_FRACTION_FOR_LARGE_INDELS = flags.DEFINE_bool(
     'vsc_reduce_min_indel_fraction_for_large_indels',
     False,
     'If True, reduces vsc_min_indel_allele_fraction for larger indels.',
+)
+
+_USE_REJECTED_ALLELES = flags.DEFINE_bool(
+    'use_rejected_alleles',
+    False,
+    'If True, use read support information from rejected alleles in pileup.'
+    'This flag is only used when read_supports_variant_fuzzy channel is '
+    'enabled.',
 )
 
 
@@ -965,6 +972,9 @@ def shared_flags_to_options(
   )
 
   if add_flags:
+    if _USE_REJECTED_ALLELES.value:
+      options.use_rejected_alleles = _USE_REJECTED_ALLELES.value
+
     options.mode = make_examples_core.parse_proto_enum_flag(
         deepvariant_pb2.MakeExamplesOptions.Mode, _MODE.value.upper()
     )

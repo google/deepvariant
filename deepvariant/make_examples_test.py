@@ -624,7 +624,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
 
   @flagsaver.flagsaver
   def test_make_examples_end2end_confirm_vsc_min_fraction_used(self):
-    """Set very low vsc_max_fraction_{snps,indels} and confirm they're used."""
+    """Set very high vsc_min_fraction_{snps,indels} and confirm they're used."""
     region = ranges.parse_literal('chr20:10,000,000-10,004,000')
     FLAGS.regions = [ranges.to_literal(region)]
     FLAGS.ref = testdata.CHR20_FASTA

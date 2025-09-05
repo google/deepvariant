@@ -241,6 +241,7 @@ def make_vc_options(
       enable_methylation_aware_phasing=flags_obj.enable_methylation_aware_phasing,
       exclude_contigs_for_methylation_phasing=flags_obj.exclude_contigs_for_methylation_phasing,
       enable_methylation_calling=flags_obj.enable_methylation_calling,
+      use_rejected_alleles=flags_obj.use_rejected_alleles,
   )
 
 

@@ -42,7 +42,7 @@ import "third_party/nucleus/protos/struct.proto";
 // Each of the calls on a variant represent a determination of genotype with
 // respect to that variant. For example, a call might assign probability of 0.32
 // to the occurrence of a SNP named rs1234 in a sample named NA12345.
-// NextID: 17
+// NextID: 18
 message Variant {
   reserved 1, 4, 5;
 
@@ -71,6 +71,8 @@ message Variant {
 
   // The bases that appear instead of the reference bases.
   repeated string alternate_bases = 7;
+
+  repeated string alternate_bases_rejected = 17;
 
   // A measure of how likely this variant is to be real.
   // A higher value is better.

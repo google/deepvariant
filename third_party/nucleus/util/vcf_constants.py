@@ -194,6 +194,10 @@ RESERVED_INFO_FIELDS = [
         id='ALT_PS', number='R', type=INTEGER_TYPE, description='Allele phases'
     ),
     variants_pb2.VcfInfo(
+        id='ALT_PS_EXT', number='R', type=INTEGER_TYPE,
+        description='Allele phases for rejected alleles'
+    ),
+    variants_pb2.VcfInfo(
         id='PS_CONTIG',
         number='1',
         type=STRING_TYPE,

@@ -293,7 +293,7 @@ TEST(ReadSupportsAltFuzzy, OtherAlleleSupporting) {
   std::vector<std::string> alt_alleles = {};
 
   std::uint8_t rsa = channel.ReadSupportsAlt(dv_call, read, alt_alleles);
-  EXPECT_EQ(rsa, 2);
+  EXPECT_EQ(rsa, 0);
 }
 
 TEST(ReadSupportsAltFuzzy, OtherAlleleFuzzySupporting) {
@@ -375,7 +375,7 @@ TEST(ReadSupportsAltFuzzy, OtherAlleleFuzzySupporting) {
   EXPECT_EQ(rsa, 10);
   // Read4 fuzzy supports the alt allele in the pileup but has different HP tag.
   rsa = channel.ReadSupportsAlt(dv_call, read_4, alt_alleles);
-  EXPECT_EQ(rsa, 2);
+  EXPECT_EQ(rsa, 0);
 }
 
 TEST(MatchesRefColor, BaseMatch) {

@@ -127,6 +127,7 @@ struct SelectAltAllelesInputOptions {
   int prev_deletion_end;  // This is the end position of the previous deletion.
   // It is used to skip complex variant creation for alleles that are
   // overlapped by the previous deletion.
+  bool use_rejected_alleles = false;
 };
 
 // Output options for SelectAltAlleles() function.
@@ -137,6 +138,7 @@ struct SelectAltAllelesResult {
   std::string ref_bases;
   std::vector<Allele> non_target_sample_alleles;
   std::vector<AlleleCount> non_target_allele_counts;
+  std::vector<Allele> rejected_alleles;
 };
 
 // Input options for SelectAltAllelesWithComplexVariant() function.
@@ -144,6 +146,7 @@ struct SelectAltAllelesWithComplexVariantInputOptions {
   const absl::node_hash_map<std::string,
                             AlleleCount>& allele_counts_by_sample;
   const std::vector<Allele>& alt_alleles;
+  const std::vector<Allele>& rejected_alleles;
 };
 
 
@@ -276,6 +279,12 @@ class VariantCaller {
 
   // Adds supporting reads to the DeepVariantCall.
   void AddSupportingReads(
+      const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
+      const AlleleMap& allele_map, absl::string_view target_sample,
+      DeepVariantCall* call) const;
+
+  // Adds supporting reads to the DeepVariantCall for rejected alleles.
+  void AddSupportingReadsForRejectedAlleles(
       const absl::node_hash_map<std::string, AlleleCount>& allele_counts,
       const AlleleMap& allele_map, absl::string_view target_sample,
       DeepVariantCall* call) const;

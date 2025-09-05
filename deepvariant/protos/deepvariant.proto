@@ -275,6 +275,7 @@ message DeepVariantCall {
     repeated string read_names = 1;
   }
   map<string, SupportingReads> allele_support = 2;
+  map<string, SupportingReads> rejected_allele_support = 10;
   map<string, float> allele_frequency = 3;
 
   // List of Read keys supporting red allele.
@@ -400,7 +401,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 26
+// Next ID: 27
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -475,8 +476,11 @@ message VariantCallerOptions {
 
   bool enable_methylation_calling = 24;
 
+  // If True, use read support information from rejected alleles in pileup.
+  bool use_rejected_alleles = 25;
+
   // If True, reduces vsc_min_indel_allele_fraction for larger indels.
-  bool vsc_reduce_min_indel_fraction_for_large_indels = 25;
+  bool vsc_reduce_min_indel_fraction_for_large_indels = 26;
 }
 
 // Options to control how we label variant calls.
@@ -1045,6 +1049,9 @@ message MakeExamplesOptions {
   // If True, in a DeepSomatic run, use phase information from the normal
   // sample to assign phase to the tumor sample.
   bool assign_phase_from_normal = 96;
+
+  // If true, use read support information from rejected alleles in pileup.
+  bool use_rejected_alleles = 97;
 }
 
 // Config describe information needed for a dataset that can be used for
