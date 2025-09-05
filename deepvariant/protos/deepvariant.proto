@@ -400,7 +400,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 25
+// Next ID: 26
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -474,6 +474,9 @@ message VariantCallerOptions {
   repeated string exclude_contigs_for_methylation_phasing = 23;
 
   bool enable_methylation_calling = 24;
+
+  // If True, reduces vsc_min_indel_allele_fraction for larger indels.
+  bool vsc_reduce_min_indel_fraction_for_large_indels = 25;
 }
 
 // Options to control how we label variant calls.
@@ -719,7 +722,7 @@ message DirectPhasingOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 97.
+// Next ID: 98.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to

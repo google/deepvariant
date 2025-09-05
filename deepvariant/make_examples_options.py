@@ -893,6 +893,14 @@ _ASSIGN_PHASE_FROM_NORMAL = flags.DEFINE_bool(
     'sample to assign phase to the tumor sample.',
 )
 
+# TODO: Remove this flag once the better indel candidate filtering
+# is implemented.
+_VSC_REDUCE_MIN_INDEL_FRACTION_FOR_LARGE_INDELS = flags.DEFINE_bool(
+    'vsc_reduce_min_indel_fraction_for_large_indels',
+    False,
+    'If True, reduces vsc_min_indel_allele_fraction for larger indels.',
+)
+
 
 def shared_flags_to_options(
     add_flags: bool,

@@ -346,9 +346,14 @@ class VariantCaller {
                : options_.min_count_indels();
   }
   double min_fraction(const Allele& allele) const {
-    return allele.type() == AlleleType::SUBSTITUTION
-               ? options_.min_fraction_snps()
-               : options_.min_fraction_indels();
+    if (allele.type() == AlleleType::SUBSTITUTION) {
+      return options_.min_fraction_snps();
+    }
+    if (options_.vsc_reduce_min_indel_fraction_for_large_indels() &&
+        allele.bases().size() > 2) {
+      return options_.min_fraction_indels() / 2;
+    }
+    return options_.min_fraction_indels();
   }
 
   SelectAltAllelesResult SelectAltAlleles(
