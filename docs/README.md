@@ -22,7 +22,7 @@
     [Mapped with VG](pangenome-aware-wgs-vg-case-study.md)
 *   Pangenome-aware DeepVariant WES:
     [Mapped with BWA](pangenome-aware-wes-bwa-case-study.md)
-*   [SBX case study](sbx-case-study.md)
+*   [Roche SBX case study](roche-sbx-case-study.md)
 
 ## Visualization and analysis
 
