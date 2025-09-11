@@ -3806,7 +3806,7 @@ def apply_flags_for_calling(flags_obj: flags.FlagValues):
     flag = flags_obj[flag_name]
     if flag.present:
       logging.warning(
-          'Flag %s is specified in make.example_info.json [%s] but overridden'
+          'Flag %s is specified in model.example_info.json [%s] but overridden'
           ' by command line with value [%s]',
           flag_name,
           flags_map[flag_name],
