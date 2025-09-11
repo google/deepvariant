@@ -99,7 +99,9 @@ CALLING_EXAMPLES_TEMP=${TESTDATA_DIR}/tmp.examples.tfrecord.gz
 GOLDEN_CANDIDATE_POSITIONS="${TESTDATA_DIR}"/golden.candidate_positions
 GOLDEN_POSTPROCESS_INPUT=${TESTDATA_DIR}/golden.postprocess_single_site_input.tfrecord.gz
 GOLDEN_POSTPROCESS_INPUT_EMPTY=${TESTDATA_DIR}/golden.postprocess_empty_input.tfrecord.gz
+GOLDEN_POSTPROCESS_INPUT_PACBIO=${TESTDATA_DIR}/golden.postprocess_single_site_input_pacbio.tfrecord.gz
 GOLDEN_POSTPROCESS_OUTPUT=${TESTDATA_DIR}/golden.postprocess_single_site_output.vcf
+GOLDEN_POSTPROCESS_OUTPUT_PACBIO=${TESTDATA_DIR}/golden.postprocess_single_site_output_pacbio.vcf
 GOLDEN_POSTPROCESS_OUTPUT_PASS_ONLY=${TESTDATA_DIR}/golden.postprocess_single_site_output.pass_only.vcf
 GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL=${TESTDATA_DIR}/golden.postprocess_single_site_output_with_small_model.vcf
 GOLDEN_POSTPROCESS_OUTPUT_EMPTY=${TESTDATA_DIR}/golden.postprocess_empty_output.vcf.gz
@@ -108,6 +110,7 @@ GOLDEN_POSTPROCESS_GVCF_OUTPUT=${TESTDATA_DIR}/golden.postprocess_gvcf_output.g.
 GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES=${TESTDATA_DIR}/golden.vcf_candidate_importer.training_examples.tfrecord.gz
 
 MODEL=gs://deepvariant/models/DeepVariant/1.6.0/savedmodels/deepvariant.wgs.savedmodel
+MODEL_PACBIO=gs://deepvariant/models/DeepVariant/1.9.0/savedmodels/deepvariant.pacbio.savedmodel
 # Speed up by copying to /tmp/
 rm -rf /tmp/deepvariant.wgs.savedmodel
 gsutil -m cp -R ${MODEL} /tmp/
@@ -252,6 +255,11 @@ time ./bazel-bin/deepvariant/call_variants \
   --examples "${GOLDEN_CALLING_EXAMPLES}" \
   --checkpoint "${MODEL}"
 
+time ./bazel-bin/deepvariant/call_variants \
+  --outfile "${GOLDEN_POSTPROCESS_INPUT_PACBIO}" \
+  --examples "${GOLDEN_CALLING_EXAMPLES_PACBIO}" \
+  --checkpoint "${MODEL_PACBIO}"
+
 # Finally, we run `postprocess_variants`.
 time ./bazel-bin/deepvariant/postprocess_variants \
   --infile "${GOLDEN_POSTPROCESS_INPUT}" \
@@ -268,6 +276,16 @@ time ./bazel-bin/deepvariant/postprocess_variants \
   --small_model_cvo_records "${GOLDEN_POSTPROCESS_INPUT_EMPTY}" \
   --outfile "${GOLDEN_POSTPROCESS_OUTPUT_SMALL_MODEL}.gz" \
   --ref "${REF}" \
+  --novcf_stats_report \
+  --cpus 0
+
+time ./bazel-bin/deepvariant/postprocess_variants \
+  --infile "${GOLDEN_POSTPROCESS_INPUT_PACBIO}" \
+  --outfile "${GOLDEN_POSTPROCESS_OUTPUT_PACBIO}.gz" \
+  --ref "${REF}" \
+  --nonvariant_site_tfrecord_path "${GOLDEN_POSTPROCESS_PACBIO_GVCF_INPUT}" \
+  --gvcf_outfile "${GOLDEN_POSTPROCESS_PACBIO_GVCF_OUTPUT}" \
+  --multiallelic_mode "product" \
   --novcf_stats_report \
   --cpus 0
 

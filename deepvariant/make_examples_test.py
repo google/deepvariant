@@ -798,21 +798,23 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_PACBIO_BAM
     FLAGS.examples = test_utils.test_tmpfile('examples.tfrecord')
     FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['haplotype']
+        dv_constants.PILEUP_DEFAULT_CHANNELS + ['haplotype', 'base_methylation']
     )
     FLAGS.mode = 'calling'
+    FLAGS.split_skip_reads = False
     FLAGS.realign_reads = False
     FLAGS.alt_aligned_pileup = 'diff_channels'
     FLAGS.min_mapping_quality = 1
     FLAGS.parse_sam_aux_fields = True
     FLAGS.partition_size = 25000
     FLAGS.phase_reads = True
-    FLAGS.pileup_image_width = 199
+    FLAGS.pileup_image_width = 147
     FLAGS.sort_by_haplotypes = True
     FLAGS.track_ref_reads = True
     FLAGS.trim_reads_for_pileup = True
     FLAGS.vsc_min_fraction_indels = 0.12
     FLAGS.output_phase_info = True
+    FLAGS.call_small_model_examples = False
     options = make_examples.default_options(add_flags=True)
     # Run make_examples with the flags above.
     make_examples_core.make_examples_runner(options)
@@ -1055,9 +1057,12 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       actual_example = decode_example(actual[i])
       expected_example = decode_example(expected[i])
       self.assertEqual(actual_example.keys(), expected_example.keys())
+      current_locus = actual_example['locus'].decode('utf-8')
       for key in actual_example:
         self.assertEqual(
-            actual_example[key], expected_example[key], 'Failed on %s' % key
+            actual_example[key],
+            expected_example[key],
+            'Failed on %s, for example at locus %s' % (key, current_locus),
         )
 
   def assertVariantIsPresent(self, to_find, variants):

@@ -3460,7 +3460,7 @@ options {
     min_base_quality_mode: ENFORCED_BY_CLIENT
   }
   reference_filename: "deepvariant/testdata/input/ucsc.hg19.chr20.unittest.fasta.gz"
-  examples_filename: "deepvariant/testdata/golden.training_examples-00001-of-00003.bagz"
+  examples_filename: "deepvariant/testdata/bagz/golden.training_examples-00001-of-00003.bagz"
   confident_regions_filename: "deepvariant/testdata/input/test_nist.b37_chr20_100kbp_at_10mb.bed"
   truth_variants_filename: "deepvariant/testdata/input/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz"
   mode: TRAINING
@@ -3510,7 +3510,7 @@ options {
   }
   max_reads_per_partition: 1500
   labeler_algorithm: HAPLOTYPE_LABELER
-  run_info_filename: "deepvariant/testdata/golden.training_examples-00001-of-00003.bagz.run_info.pbtxt"
+  run_info_filename: "deepvariant/testdata/bagz/golden.training_examples-00001-of-00003.bagz.run_info.pbtxt"
   variant_caller: VERY_SENSITIVE_CALLER
   use_ref_for_cram: true
   hts_block_size: 134217728
@@ -3583,13 +3583,13 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 24
-  cpu_frequency_mhz: 2600.0259999999985
-  total_memory_mb: 120739
-  wall_time_seconds: 0.5156095027923584
-  cpu_user_time_seconds: 3.10169
-  cpu_system_time_seconds: 1.610601
-  memory_peak_rss_mb: 683
+  physical_core_count: 12
+  cpu_frequency_mhz: 3973.0777916666666
+  total_memory_mb: 128667
+  wall_time_seconds: 0.5196924209594727
+  cpu_user_time_seconds: 3.449201
+  cpu_system_time_seconds: 3.011207
+  memory_peak_rss_mb: 696
   write_bytes: 151552
 }
 stats {
