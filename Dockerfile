@@ -15,8 +15,7 @@ ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
-ARG VERSION=1.10.0-rc1
-ENV VERSION=${VERSION}
+ARG VERSION=1.10.0-rc0
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
 #======================================#
@@ -33,6 +32,9 @@ RUN conda create -n bio \
 # Stage 2: Download Models #
 #==========================#
 FROM alpine:latest AS download_models
+
+ARG VERSION=1.10.0-rc1
+ENV VERSION=${VERSION}
 
 RUN apk add --no-cache wget parallel
 
