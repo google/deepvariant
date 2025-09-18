@@ -1655,22 +1655,8 @@ def process_contiguous_partition(
 
   should_switch_by_shard_and_region = {}
   if _PHASED_READS_INPUT_PATH.value:
-    logging.info(
-        'Attempting to merge phasing blocks from %s',
-        _PHASED_READS_INPUT_PATH.value,
-    )
-    logging.info(
-        'Writing switches to %s',
+    should_switch_by_shard_and_region = _load_phasing_info(
         _PHASED_READS_SWITCHES_OUTPUT_PATH.value,
-    )
-    logging.info(
-        'Writing corrected reads to %s',
-        _PHASED_READS_CORRECTED_OUTPUT_PATH.value,
-    )
-    should_switch_by_shard_and_region = _merge_phasing_blocks(
-        _PHASED_READS_INPUT_PATH.value,
-        _PHASED_READS_SWITCHES_OUTPUT_PATH.value,
-        _PHASED_READS_CORRECTED_OUTPUT_PATH.value,
     )
 
   logging.info('Transforming call_variants_output to variants.')
@@ -1844,17 +1830,13 @@ def _merge_phasing_blocks(
     input_path: str,
     switches_output_path: str,
     output_path: str,
-) -> dict[tuple[str, str], int]:
+) -> None:
   """Reads the phased reads TSV file and loads them into a dictionary.
 
   Args:
     input_path: path to the phased reads TSV file.
     switches_output_path: path to the switches output TSV file.
     output_path: path to the output TSV file.
-
-  Returns:
-    A map from (shard, region) to a boolean indicating whether the phasing
-    blocks in the shard and region need to be switched.
   """
 
   merger = merge_phased_reads_lib.Merger()
@@ -1862,6 +1844,19 @@ def _merge_phasing_blocks(
   merger.merge_reads(switches_output_path)
   merger.correct_and_print_read_stats(output_path)
 
+
+def _load_phasing_info(
+    switches_output_path: str,
+) -> dict[tuple[str, str], int]:
+  """Loads the phasing info from the merge_reads output.
+
+  Args:
+    switches_output_path: path to the switches output TSV file.
+
+  Returns:
+    A map from (shard, region) to a boolean indicating whether the phasing
+    blocks in the shard and region need to be switched.
+  """
   phasing_info = {}
   with open(switches_output_path, 'r') as f:
     for line in f:
@@ -2043,6 +2038,25 @@ def main(argv=()):
               id=dv_vcf_constants.DEEP_VARIANT_PON,
               description='Filtered by Panel of Normals (PON)',
           )
+      )
+
+    if _PHASED_READS_INPUT_PATH.value:
+      logging.info(
+          'Attempting to merge phasing blocks from %s',
+          _PHASED_READS_INPUT_PATH.value,
+      )
+      logging.info(
+          'Writing switches to %s',
+          _PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+      )
+      logging.info(
+          'Writing corrected reads to %s',
+          _PHASED_READS_CORRECTED_OUTPUT_PATH.value,
+      )
+      _merge_phasing_blocks(
+          _PHASED_READS_INPUT_PATH.value,
+          _PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+          _PHASED_READS_CORRECTED_OUTPUT_PATH.value,
       )
 
     is_empty = get_first_cvo_record(all_cvo_paths) is None
