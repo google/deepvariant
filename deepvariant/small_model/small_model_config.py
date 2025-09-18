@@ -107,6 +107,9 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.prefetch_buffer_size = 12
   config.read_ahead_buffer = "128M"
   config.map_parallel_calls = 100
+  config.k_folds = 1
+  config.current_k_folds = 0
+  config.k_folds_seed = 42
 
   # Training data
   config.train_tfrecord_directory = ""
