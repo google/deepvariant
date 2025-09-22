@@ -113,15 +113,12 @@ void ReadSupportsVariantFuzzyChannel::FillRefBase(
 }
 
 int CalculateReadSupport(
-  const ::google::protobuf::RepeatedPtrField<std::string>& all_alt_alleles,
-  const ::google::protobuf::Map<std::string, DeepVariantCall_SupportingReads>&
-    allele_support,
-  absl::string_view alt_allele,
-  absl::Span<const std::string> alt_alleles,
-  absl::string_view key,
-  const Read& read,
-  absl::string_view alt_ps_key,
-  const std::vector<int>& alt_allele_phases) {
+    const ::google::protobuf::RepeatedPtrField<std::string>& all_alt_alleles,
+    const ::google::protobuf::Map<std::string, DeepVariantCall_SupportingReads>&
+        allele_support,
+    absl::string_view alt_allele, absl::Span<const std::string> alt_alleles,
+    absl::string_view key, const Read& read, absl::string_view alt_ps_key,
+    absl::Span<const int> alt_allele_phases) {
   // Candidate may have many alt alleles, but pileup image is created with only
   // one or two alt alleles. Here we try to find alt alleles from the candidate
   // that are close to the alt alleles in the pileup image.
