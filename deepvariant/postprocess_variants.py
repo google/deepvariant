@@ -643,8 +643,15 @@ def add_call_to_variant(
       stitching_status = should_switch_by_shard_and_region.get(
           (shard_id, region_id), 0
       )
+      # stitching_status == 2 means that we couldn't merge 2 consecutive
+      # regions. first_var_in_region is required to make sure that phasing block
+      # is switched only at the first phased variant in the region.
       if stitching_status == 2 and first_var_in_region:
         is_first_variant_in_block = True
+      #  stitching_status < 2 means that we could merge 2 consecutive regions.
+      # Therefore we continue with the current phase block.
+      if stitching_status < 2:
+        is_first_variant_in_block = False
 
     if not variant_phase_block:
       variant_phase_block = variant_utils.get_info(
