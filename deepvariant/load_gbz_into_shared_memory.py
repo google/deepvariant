@@ -47,6 +47,18 @@ _PANGENOME_GBZ = flags.DEFINE_string(
     ),
 )
 
+_REF_NAME_PANGENOME = flags.DEFINE_string(
+    'ref_name_pangenome',
+    'GRCh38',
+    (
+        'The name of the reference genome in the pangenome gbz file.'
+        'This reference should match the reference used for the reads. This'
+        'flag is added since the exact name assigned to the pangenome reference'
+        'can be different from the name of the reference fasta used for '
+        'the reads.'
+    ),
+)
+
 _NUM_SHARDS = flags.DEFINE_integer(
     'num_shards',
     None,
@@ -77,12 +89,13 @@ _SHARED_MEMORY_SIZE_GB = flags.DEFINE_integer(
 
 def load_gbz_into_shared_memory(
     pangenome_gbz: str,
+    *,
+    ref_name_pangenome: str,
     shared_memory_name: str,
     shared_memory_size_gb: int,
     num_shards: int,
 ):
   """Loads a GBZ file into a shared memory segment."""
-  sample_name = 'GRCh38'
   context = 1000
   chrom_prefix = ''
   create_shared_memory = True
@@ -105,7 +118,7 @@ def load_gbz_into_shared_memory(
   ## after calling ~GbzReader() here).
   gbz_reader.GbzReader(
       pangenome_gbz,
-      sample_name,
+      ref_name_pangenome,
       context,
       chrom_prefix,
       shared_memory_name,
@@ -132,10 +145,11 @@ def main(argv=()):
     hts_verbose.set(hts_verbose.htsLogLevel.HTS_LOG_WARNING)
 
     load_gbz_into_shared_memory(
-        _PANGENOME_GBZ.value,
-        _SHARED_MEMORY_NAME.value,
-        _SHARED_MEMORY_SIZE_GB.value,
-        _NUM_SHARDS.value,
+        pangenome_gbz=_PANGENOME_GBZ.value,
+        ref_name_pangenome=_REF_NAME_PANGENOME.value,
+        shared_memory_name=_SHARED_MEMORY_NAME.value,
+        shared_memory_size_gb=_SHARED_MEMORY_SIZE_GB.value,
+        num_shards=_NUM_SHARDS.value,
     )
 
 

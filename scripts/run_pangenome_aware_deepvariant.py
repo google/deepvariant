@@ -196,6 +196,17 @@ _SAMPLE_NAME_PANGENOME = flags.DEFINE_string(
         'The default here is corresponding to the default for --pangenome.'
     ),
 )
+_REF_NAME_PANGENOME = flags.DEFINE_string(
+    'ref_name_pangenome',
+    'GRCh38',
+    (
+        'The name of the reference genome in the pangenome gbz file.'
+        'This reference should match the reference used for the reads. This'
+        'flag is added since the exact name assigned to the pangenome reference'
+        'can be different from the name of the reference fasta used for '
+        'the reads.'
+    ),
+)
 _MAKE_EXAMPLES_EXTRA_ARGS = flags.DEFINE_string(
     'make_examples_extra_args',
     None,
@@ -401,6 +412,8 @@ def _set_small_model_config(
 
 def load_gbz_into_shared_memory_command(
     gbz: str,
+    *,
+    ref_name_pangenome: str,
     gbz_shared_memory_name: str | None,
     gbz_shared_memory_size_gb: int,
 ) -> tuple[str, Optional[str]]:
@@ -408,6 +421,7 @@ def load_gbz_into_shared_memory_command(
 
   Args:
     gbz: Input pangenome GBZ file(s).
+    ref_name_pangenome: Reference name to use for the GBZ file.
     gbz_shared_memory_name: Name of the shared memory region to create.
     gbz_shared_memory_size_gb: Size of the shared memory region to create.
 
@@ -416,6 +430,7 @@ def load_gbz_into_shared_memory_command(
   """
   command = ['time', '/opt/deepvariant/bin/load_gbz_into_shared_memory']
   command.extend(['--pangenome_gbz', '"{}"'.format(gbz)])
+  command.extend(['--ref_name_pangenome', '"{}"'.format(ref_name_pangenome)])
   if gbz_shared_memory_name is not None:
     command.extend(
         ['--shared_memory_name', '"{}"'.format(gbz_shared_memory_name)]
@@ -721,6 +736,7 @@ def create_all_commands_and_logfiles(
     commands.append(
         load_gbz_into_shared_memory_command(
             gbz=_PANGENOME.value,
+            ref_name_pangenome=_REF_NAME_PANGENOME.value,
             gbz_shared_memory_name=_GBZ_SHARED_MEMORY_NAME.value,
             gbz_shared_memory_size_gb=_GBZ_SHARED_MEMORY_SIZE_GB.value,
         )
@@ -741,6 +757,7 @@ def create_all_commands_and_logfiles(
           sample_name_reads=_SAMPLE_NAME_READS.value,
           sample_name_pangenome=_SAMPLE_NAME_PANGENOME.value,
           gbz_shared_memory_name=_GBZ_SHARED_MEMORY_NAME.value,
+          ref_name_pangenome=_REF_NAME_PANGENOME.value,
       )
   )
 

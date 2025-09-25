@@ -68,6 +68,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' %s'
+        ' --ref_name_pangenome "GRCh38"'
         ' --sample_name_pangenome "hprc_v1.1"'
         ' --task {}'
         % (extra_args_plus_gvcf),
@@ -145,6 +146,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --examples'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
+        ' --ref_name_pangenome "GRCh38"'
         '%s'
         ' --task {}' % extra_sample_name_flag,
     )
@@ -172,33 +174,45 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
       # pyformat: disable
       (
           'keep_secondary_alignments=true',
-          '--keep_secondary_alignments'
-          + ' --sample_name_pangenome "hprc_v1.1"'
+          (
+              ' --keep_secondary_alignments'
+              ' --ref_name_pangenome "GRCh38"'
+              ' --sample_name_pangenome "hprc_v1.1"'
+          ),
       ),
       (
           'keep_secondary_alignments=false',
-          '--nokeep_secondary_alignments'
-          + ' --sample_name_pangenome "hprc_v1.1"',
+          (
+              ' --nokeep_secondary_alignments'
+              ' --ref_name_pangenome "GRCh38"'
+              ' --sample_name_pangenome "hprc_v1.1"'
+          ),
       ),
       (
           'keep_secondary_alignments=true,keep_supplementary_alignments=true',
-          '--keep_secondary_alignments'
-          + ' --keep_supplementary_alignments'
-          + ' --sample_name_pangenome "hprc_v1.1"',
+          (
+              ' --keep_secondary_alignments'
+              ' --keep_supplementary_alignments'
+              ' --ref_name_pangenome "GRCh38"'
+              ' --sample_name_pangenome "hprc_v1.1"'
+          ),
       ),
       (
           'use_ref_for_cram=true,keep_secondary_alignments=true,'
           + 'keep_supplementary_alignments=false',
-          '--keep_secondary_alignments'
-          + ' --nokeep_supplementary_alignments'
-          + ' --sample_name_pangenome "hprc_v1.1"'
-          + ' --use_ref_for_cram',
+          (
+              ' --keep_secondary_alignments'
+              ' --nokeep_supplementary_alignments'
+              ' --ref_name_pangenome "GRCh38"'
+              ' --sample_name_pangenome "hprc_v1.1"'
+              ' --use_ref_for_cram'
+          ),
       ),
       # pyformat: enable
   )
   @flagsaver.flagsaver
   def test_make_examples_extra_args_boolean(
-      self, make_examples_extra_args, full_expected_args
+      self, make_examples_extra_args, expected_extra_args_str
   ):
     FLAGS.model_type = 'WGS'
     FLAGS.ref = 'your_ref'
@@ -223,8 +237,8 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' --gvcf'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
-        ' %s'
-        ' --task {}' % full_expected_args,
+        '%s'
+        ' --task {}' % expected_extra_args_str,
     )
     # pyformat: enable
 
@@ -255,6 +269,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
             ' --checkpoint "/opt/models/wgs/model.ckpt"'
             ' --gvcf'
             ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
+            ' --ref_name_pangenome "GRCh38"'
             ' --sample_name_pangenome "hprc_v1.1"'
             ' --task {}'
         ),
@@ -272,6 +287,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     FLAGS.output_vcf = 'your_vcf'
     FLAGS.num_shards = 64
     FLAGS.gbz_shared_memory_name = 'NEW_SHARED_MEMORY_NAME'
+    FLAGS.ref_name_pangenome = 'CHM13'
     commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
         '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
     )
@@ -283,6 +299,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         (
             'time /opt/deepvariant/bin/load_gbz_into_shared_memory'
             ' --pangenome_gbz "your_pangenome_bam.gbz"'
+            ' --ref_name_pangenome "CHM13"'
             ' --shared_memory_name "NEW_SHARED_MEMORY_NAME"'
             ' --shared_memory_size_gb 12'
             ' --num_shards "64"'
@@ -299,6 +316,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
             ' "/tmp/pangenome_aware_deepvariant_tmp_output/make_examples_pangenome_aware_dv.tfrecord@64.gz"'
             ' --checkpoint "/opt/models/pangenome_aware_deepvariant/wgs"'
             ' --gbz_shared_memory_name "NEW_SHARED_MEMORY_NAME"'
+            ' --ref_name_pangenome "CHM13"'
             ' --sample_name_pangenome "hprc_v1.1"'
             ' --use_loaded_gbz_shared_memory'
             ' --task {}'
@@ -337,6 +355,7 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' --gvcf'
         ' "/tmp/pangenome_aware_deepvariant_tmp_output/gvcf.tfrecord@64.gz"'
+        ' --ref_name_pangenome "GRCh38"'
         ' %s'
         ' --sample_name_pangenome "hprc_v1.1"'
         ' --task {}'
