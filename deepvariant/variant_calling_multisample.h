@@ -358,11 +358,17 @@ class VariantCaller {
     if (allele.type() == AlleleType::SUBSTITUTION) {
       return options_.min_fraction_snps();
     }
-    if (options_.vsc_reduce_min_indel_fraction_for_large_indels() &&
-        allele.bases().size() > 2) {
-      return options_.min_fraction_indels() / 2;
+    if (options_.vsc_small_indel_threshold() > 0 &&
+        options_.vsc_min_indel_fraction_for_small_indels() > 0.0 &&
+        options_.vsc_min_indel_fraction_for_large_indels() > 0.0) {
+      if (allele.bases().size() <= options_.vsc_small_indel_threshold() + 1) {
+        return options_.vsc_min_indel_fraction_for_small_indels();
+      } else {
+        return options_.vsc_min_indel_fraction_for_large_indels();
+      }
+    } else {
+      return options_.min_fraction_indels();
     }
-    return options_.min_fraction_indels();
   }
 
   SelectAltAllelesResult SelectAltAlleles(

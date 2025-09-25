@@ -223,9 +223,9 @@ def make_vc_options(
       min_fraction_multiplier=flags_obj.vsc_min_fraction_multiplier,
       max_fraction_indels_for_non_target_sample=flags_obj.vsc_max_fraction_indels_for_non_target_sample,
       max_fraction_snps_for_non_target_sample=flags_obj.vsc_max_fraction_snps_for_non_target_sample,
-      # TODO: Remove this flag once the better indel candidate
-      # filtering is implemented.
-      vsc_reduce_min_indel_fraction_for_large_indels=flags_obj.vsc_reduce_min_indel_fraction_for_large_indels,
+      vsc_min_indel_fraction_for_small_indels=flags_obj.vsc_min_indel_fraction_for_small_indels,
+      vsc_min_indel_fraction_for_large_indels=flags_obj.vsc_min_indel_fraction_for_large_indels,
+      vsc_small_indel_threshold=flags_obj.vsc_small_indel_threshold,
       # Not specified by default: fraction_reference_sites_to_emit,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=1400605801,

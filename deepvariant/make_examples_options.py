@@ -892,12 +892,24 @@ _ASSIGN_PHASE_FROM_NORMAL = flags.DEFINE_bool(
     'If True, in a DeepSomatic run, use phase information from the normal '
     'sample to assign phase to the tumor sample.',
 )
-# TODO: Remove this flag once the better indel candidate filtering
-# is implemented.
-_VSC_REDUCE_MIN_INDEL_FRACTION_FOR_LARGE_INDELS = flags.DEFINE_bool(
-    'vsc_reduce_min_indel_fraction_for_large_indels',
-    False,
-    'If True, reduces vsc_min_indel_allele_fraction for larger indels.',
+_VSC_MIN_INDEL_FRACTION_FOR_SMALL_INDELS = flags.DEFINE_float(
+    'vsc_min_indel_fraction_for_small_indels',
+    0.0,
+    'If > 0, this flag along with vsc_min_indel_fraction_for_large_indels and '
+    'vsc_small_indel_threshold determines allele fraction for indels.',
+)
+_VSC_MIN_INDEL_FRACTION_FOR_LARGE_INDELS = flags.DEFINE_float(
+    'vsc_min_indel_fraction_for_large_indels',
+    0.0,
+    'If > 0, this flag along with vsc_min_indel_fraction_for_small_indels and '
+    'vsc_small_indel_threshold determines allele fraction for indels.',
+)
+_VSC_SMALL_INDEL_THRESHOLD = flags.DEFINE_integer(
+    'vsc_small_indel_threshold',
+    0,
+    'If > 0, this flag along with vsc_min_indel_fraction_for_small_indels and '
+    'vsc_min_indel_fraction_for_large_indels determines allele fraction for '
+    'indels.',
 )
 
 _USE_REJECTED_ALLELES = flags.DEFINE_bool(
@@ -1445,6 +1457,37 @@ def check_options_are_valid(
             ),
             errors.CommandLineError,
         )
+
+  small_indels_frac = _VSC_MIN_INDEL_FRACTION_FOR_SMALL_INDELS.value
+  large_indels_frac = _VSC_MIN_INDEL_FRACTION_FOR_LARGE_INDELS.value
+  threshold = _VSC_SMALL_INDEL_THRESHOLD.value
+  new_flags_present = [
+      small_indels_frac > 0,
+      large_indels_frac > 0,
+      threshold > 0,
+  ]
+  if any(new_flags_present) and not all(new_flags_present):
+    errors.log_and_raise(
+        '--vsc_min_indel_fraction_for_small_indels, '
+        '--vsc_min_indel_fraction_for_large_indels, and '
+        '--vsc_small_indel_threshold must be specified together.'
+    )
+  if all(new_flags_present):
+    if not 0 < small_indels_frac < 1.0:
+      errors.log_and_raise(
+          '--vsc_min_indel_fraction_for_small_indels must be between 0 and 1.'
+      )
+    if not 0 < large_indels_frac < 1.0:
+      errors.log_and_raise(
+          '--vsc_min_indel_fraction_for_large_indels must be between 0 and 1.'
+      )
+    if threshold < 1:
+      errors.log_and_raise('--vsc_small_indel_threshold must be >= 1.')
+  if _VSC_MIN_FRACTION_INDELS.present and threshold > 0:
+    logging.warning(
+        'vsc_min_fraction_indels is ignored when vsc_small_indel_threshold is'
+        ' set.'
+    )
 
   multiplier = _VSC_MIN_FRACTION_MULTIPLIER.value
   if (multiplier <= 0 or multiplier > 1.0) and multiplier != float('inf'):

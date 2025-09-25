@@ -401,7 +401,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 27
+// Next ID: 30
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -479,8 +479,15 @@ message VariantCallerOptions {
   // If True, use read support information from rejected alleles in pileup.
   bool use_rejected_alleles = 25;
 
-  // If True, reduces vsc_min_indel_allele_fraction for larger indels.
-  bool vsc_reduce_min_indel_fraction_for_large_indels = 26;
+  // If allele indel size is less than or equal to
+  // vsc_small_indel_threshold then vsc_min_indel_fraction_for_small_indels
+  // will be used as allele fraction threshold, otherwise
+  // vsc_min_indel_fraction_for_large_indels will be used.
+  float vsc_min_indel_fraction_for_small_indels = 27;
+  float vsc_min_indel_fraction_for_large_indels = 28;
+  int32 vsc_small_indel_threshold = 29;
+
+  reserved 26;
 }
 
 // Options to control how we label variant calls.
