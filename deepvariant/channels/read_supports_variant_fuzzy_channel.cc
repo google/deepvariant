@@ -52,8 +52,9 @@
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "absl/strings/str_join.h"
+#include "google/protobuf/repeated_ptr_field.h"
 namespace learning {
 namespace genomics {
 namespace deepvariant {
