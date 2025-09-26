@@ -825,27 +825,6 @@ def call_variants(
     )
     paths = sharded_file_utils.maybe_generate_sharded_filenames(output_file)
 
-  writer_queues = []
-  for _ in range(total_writer_process):
-    writer_queues.append(multiprocessing.Queue())
-  writer_queues_iterator = itertools.cycle(writer_queues)
-
-  all_processes = []
-  for process_id in range(0, total_writer_process):
-    post_processing_process = multiprocessing.get_context().Process(
-        target=post_processing,
-        args=(
-            paths[process_id],
-            writer_queues[process_id],
-            include_debug_info,
-            debugging_true_label_mode,
-        ),
-    )
-    all_processes.append(post_processing_process)
-    post_processing_process.start()
-
-  logging.info('Total %d writing processes started.', len(all_processes))
-
   if kmp_blocktime:
     os.environ['KMP_BLOCKTIME'] = kmp_blocktime
     logging.vlog(
@@ -951,6 +930,27 @@ def call_variants(
         optional_label_list,
         layer_outputs,
     )
+
+  writer_queues = []
+  for _ in range(total_writer_process):
+    writer_queues.append(multiprocessing.Queue())
+  writer_queues_iterator = itertools.cycle(writer_queues)
+
+  all_processes = []
+  for process_id in range(0, total_writer_process):
+    post_processing_process = multiprocessing.get_context().Process(
+        target=post_processing,
+        args=(
+            paths[process_id],
+            writer_queues[process_id],
+            include_debug_info,
+            debugging_true_label_mode,
+        ),
+    )
+    all_processes.append(post_processing_process)
+    post_processing_process.start()
+
+  logging.info('Total %d writing processes started.', len(all_processes))
 
   batch_no = 0
   n_examples = 0
