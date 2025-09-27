@@ -2656,11 +2656,11 @@ class RegionProcessor:
               candidate.variant, dv_constants.PHASED_GENOTYPE, phased_genotype
           )
           variant_utils.set_info(
-              candidate.variant, dv_constants.VARIANT_PHASE_BLOCK, phase_contig
+              candidate.variant, dv_constants.VARIANT_PHASE_SET, phase_contig
           )
           variant_utils.set_info(
               candidate.variant,
-              dv_constants.FIRST_VARIANT_IN_BLOCK,
+              dv_constants.FIRST_VARIANT_IN_PHASE_SET,
               phased_variants[phased_variants_index].is_first_in_block,
           )
         phased_variants_index += 1
@@ -2677,11 +2677,11 @@ class RegionProcessor:
             candidate.variant, dv_constants.PHASED_GENOTYPE, phased_genotype
         )
         variant_utils.set_info(
-            candidate.variant, dv_constants.VARIANT_PHASE_BLOCK, phase_contig
+            candidate.variant, dv_constants.VARIANT_PHASE_SET, phase_contig
         )
         variant_utils.set_info(
             candidate.variant,
-            dv_constants.FIRST_VARIANT_IN_BLOCK,
+            dv_constants.FIRST_VARIANT_IN_PHASE_SET,
             False,
         )
     return len(phased_variants)

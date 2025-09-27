@@ -1066,3 +1066,13 @@ def major_allele_frequency(variant):
     return float(numer) / denom
   else:
     return 0
+
+
+def get_shard_and_region_from_ps_contig(
+    variant,
+) -> tuple[bool, tuple[int | None, int | None]]:
+  """Returns the shard and region from the PS_CONTIG info field."""
+  ps_contig = get_info(variant, 'PS_CONTIG')
+  if not ps_contig:
+    return False, (None, None)
+  return True, tuple(ps_contig.split('-'))

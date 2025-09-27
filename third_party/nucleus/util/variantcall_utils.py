@@ -32,6 +32,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import vcf_constants
 
@@ -255,11 +256,9 @@ def set_bam_fname(variant_call, bam_fname):
   )
 
 
-def set_ps(variant_call, ps):
+def set_ps(variant_call, first_variant_in_phase_set: variants_pb2.Variant):
   """Sets the 'PS' field of the VariantCall."""
-  task_id, region_n = ps.split('-')
-  phase_set = int(task_id) * _MAX_REGIONS_INSIDE_SHARD + int(region_n)
-  set_format(variant_call, 'PS', phase_set)
+  set_format(variant_call, 'PS', first_variant_in_phase_set.start + 1)
 
 
 def has_genotypes(variant_call):

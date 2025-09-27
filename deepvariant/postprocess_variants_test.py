@@ -203,6 +203,16 @@ def _create_nonvariant(ref_name, start, end, ref_base):
   )
 
 
+def _default_variant_phase_info():
+  return postprocess_variants.VariantPhaseInformation(
+      phase_set_shard_id=-1,
+      phase_set_region_id=-1,
+      phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+      is_first_variant_in_phase_set=False,
+      first_variant_in_phase_set=None,
+  )
+
+
 def make_golden_dataset(compressed_inputs=False):
   if compressed_inputs:
     # Call variants now produce sharded outputs so the golden test has been
@@ -237,6 +247,19 @@ def create_outfile(file_name, compressed_outputs=False, only_keep_pass=False):
   if compressed_outputs:
     file_name += '.gz'
   return test_utils.test_tmpfile(file_name)
+
+
+def _create_cvo_with_variant_info(info_map=None, start=0):
+  """Helper to create a CallVariantsOutput with a variant having info fields."""
+  variant = _create_variant_with_alleles(ref='A', alts=['C'], start=start)
+  if info_map:
+    for key, value in info_map.items():
+      variant_utils.set_info(variant, key, value)
+      # if isinstance(value, bool):
+      #   if value:
+      # else:
+      #   variant_utils.set_info(variant, key, value)
+  return [_create_call_variants_output(indices=[0], variant=variant)]
 
 
 class AlleleRemapperTest(parameterized.TestCase):
@@ -1611,8 +1634,12 @@ class PostprocessVariantsTest(parameterized.TestCase):
         calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)],
     )
     variantcall_utils.set_ad(raw_variant.calls[0], [1, 1])
-    variant, _, _ = postprocess_variants.add_call_to_variant(
-        variant=raw_variant, predictions=probs, sample_name=_DEFAULT_SAMPLE_NAME
+    variant, _ = postprocess_variants.add_call_to_variant(
+        variant=raw_variant,
+        predictions=probs,
+        qual_filter=0.0,
+        sample_name=_DEFAULT_SAMPLE_NAME,
+        variant_phase_info=_default_variant_phase_info(),
     )
     self.assertEqual(variant.reference_bases, expected.reference_bases)
     self.assertEqual(variant.alternate_bases, expected.alternate_bases)
@@ -1636,7 +1663,13 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_with_two_phased_alleles',
           genotype=[0, 1],
           phasing_info=[1, 2],
-          phased_reads_map={},
+          variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=None,
+          ),
           expected_is_phased=True,
           expected_genotype=[0, 1],
       ),
@@ -1644,7 +1677,13 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_with_one_unphased_allele',
           genotype=[0, 1],
           phasing_info=[1, 0],
-          phased_reads_map={},
+          variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=None,
+          ),
           expected_is_phased=False,
           expected_genotype=[0, 1],
       ),
@@ -1652,7 +1691,13 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_with_two_phased_alleles_reverse_order',
           genotype=[0, 1],
           phasing_info=[2, 1],
-          phased_reads_map={},
+          variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=None,
+          ),
           expected_is_phased=True,
           expected_genotype=[1, 0],
       ),
@@ -1660,7 +1705,13 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='multi_allelic_het_different_phases',
           genotype=[0, 2],
           phasing_info=[2, 2, 1, 1],
-          phased_reads_map={},
+          variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=None,
+          ),
           expected_is_phased=True,
           expected_genotype=[2, 0],
       ),
@@ -1668,7 +1719,13 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_ref_and_alt_same_phase',
           genotype=[0, 1],
           phasing_info=[2, 2, 1, 1],
-          phased_reads_map={},
+          variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=None,
+          ),
           expected_is_phased=False,
           expected_genotype=[0, 1],
       ),
@@ -1676,7 +1733,13 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_with_phase_extension_and_switch',
           genotype=[0, 1],
           phasing_info=[2, 1],  # Initially phased to [1, 0]
-          phased_reads_map={('1', '81'): True},  # Needs switching
+          variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.SWITCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=None,
+          ),
           expected_is_phased=True,
           expected_genotype=[0, 1],  # Switched back to [0, 1]
       ),
@@ -1684,23 +1747,13 @@ class PostprocessVariantsTest(parameterized.TestCase):
           testcase_name='het_call_with_phase_extension_no_switch',
           genotype=[0, 1],
           phasing_info=[2, 1],  # Initially phased to [1, 0]
-          phased_reads_map={('1', '81'): False},  # No switch needed
-          expected_is_phased=True,
-          expected_genotype=[1, 0],  # Stays as [1, 0]
-      ),
-      dict(
-          testcase_name='het_call_with_no_matching_phase_extension',
-          genotype=[0, 1],
-          phasing_info=[2, 1],  # Initially phased to [1, 0]
-          phased_reads_map={('2', '100'): True},  # Different key
-          expected_is_phased=True,
-          expected_genotype=[1, 0],  # Stays as [1, 0]
-      ),
-      dict(
-          testcase_name='het_call_with_empty_phase_extension_map',
-          genotype=[0, 1],
-          phasing_info=[2, 1],  # Initially phased to [1, 0]
-          phased_reads_map={},
+          variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=None,
+          ),
           expected_is_phased=True,
           expected_genotype=[1, 0],  # Stays as [1, 0]
       ),
@@ -1709,20 +1762,262 @@ class PostprocessVariantsTest(parameterized.TestCase):
       self,
       genotype,
       phasing_info,
-      phased_reads_map,
+      variant_phase_info,
       expected_is_phased,
       expected_genotype,
   ):
     variant = variants_pb2.Variant()
-    variant_utils.set_info(variant, 'PS_CONTIG', _DEFAULT_PS_CONTIG)
-    variant_utils.set_info(variant, 'ALT_PS', phasing_info)
+    variant_utils.set_info(
+        variant, dv_constants.VARIANT_PHASE_SET, _DEFAULT_PS_CONTIG
+    )
+    variant_utils.set_info(variant, dv_constants.PHASED_GENOTYPE, phasing_info)
 
     is_phased, genotype = postprocess_variants.maybe_phase_genotype(
-        variant, genotype, phased_reads_map
+        variant, genotype, variant_phase_info
     )
 
     self.assertEqual(genotype, expected_genotype)
     self.assertEqual(is_phased, expected_is_phased)
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='no_ps_contig',
+          call_variant_group=_create_cvo_with_variant_info(),
+          stitching_status_by_phase_set={},
+          previous_variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id=-1,
+              phase_set_region_id=-1,
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=None,
+              was_phased_successfully=False,
+          ),
+          expected_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id=-1,
+              phase_set_region_id=-1,
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=None,
+              was_phased_successfully=False,
+          ),
+      ),
+      dict(
+          testcase_name='same_phase_set_was_phased_successfully',
+          call_variant_group=_create_cvo_with_variant_info(
+              {'PS_CONTIG': '1-81'}
+          ),
+          stitching_status_by_phase_set={},
+          previous_variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=_create_variant_with_alleles(),
+              was_phased_successfully=True,
+          ),
+          expected_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=_create_variant_with_alleles(),
+              was_phased_successfully=True,
+          ),
+      ),
+      dict(
+          testcase_name='same_phase_set_not_phased_successfully',
+          call_variant_group=_create_cvo_with_variant_info(
+              {'PS_CONTIG': '1-81'}
+          ),
+          stitching_status_by_phase_set={},
+          previous_variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=_create_variant_with_alleles(),
+              was_phased_successfully=False,
+          ),
+          expected_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=_create_variant_with_alleles(),
+              was_phased_successfully=False,
+          ),
+      ),
+      dict(
+          testcase_name='new_phase_set_first_in_phase_set_flag',
+          call_variant_group=_create_cvo_with_variant_info(
+              {
+                  'PS_CONTIG': '1-82',
+                  dv_constants.FIRST_VARIANT_IN_PHASE_SET: True,
+              },
+              start=1,
+          ),
+          stitching_status_by_phase_set={('1', '82'): 0},
+          previous_variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=_create_variant_with_alleles(
+                  start=100
+              ),
+              was_phased_successfully=False,
+          ),
+          expected_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='82',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=_create_cvo_with_variant_info(
+                  {
+                      'PS_CONTIG': '1-82',
+                      dv_constants.FIRST_VARIANT_IN_PHASE_SET: True,
+                  },
+                  start=1,
+              )[0].variant,
+              was_phased_successfully=False,
+          ),
+      ),
+      dict(
+          testcase_name='new_phase_set_not_enough_overlap',
+          call_variant_group=_create_cvo_with_variant_info(
+              {
+                  'PS_CONTIG': '1-82',
+                  dv_constants.FIRST_VARIANT_IN_PHASE_SET: False,
+              },
+              start=2,
+          ),
+          stitching_status_by_phase_set={('1', '82'): 2},
+          previous_variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=_create_variant_with_alleles(
+                  start=100
+              ),
+              was_phased_successfully=False,
+          ),
+          expected_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='82',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.NOT_ENOUGH_OVERLAP,
+              is_first_variant_in_phase_set=True,
+              first_variant_in_phase_set=_create_cvo_with_variant_info(
+                  {
+                      'PS_CONTIG': '1-82',
+                      dv_constants.FIRST_VARIANT_IN_PHASE_SET: False,
+                  },
+                  start=2,
+              )[0].variant,
+              was_phased_successfully=False,
+          ),
+      ),
+      dict(
+          testcase_name='new_phase_set_stitch_match',
+          call_variant_group=_create_cvo_with_variant_info(
+              {'PS_CONTIG': '1-82'}
+          ),
+          stitching_status_by_phase_set={('1', '82'): 0},
+          previous_variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=_create_variant_with_alleles(
+                  start=100
+              ),
+              was_phased_successfully=False,
+          ),
+          expected_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=_create_variant_with_alleles(
+                  start=100
+              ),
+              was_phased_successfully=False,
+          ),
+      ),
+      dict(
+          testcase_name='new_phase_set_stitch_switch',
+          call_variant_group=_create_cvo_with_variant_info(
+              {'PS_CONTIG': '1-82'}
+          ),
+          stitching_status_by_phase_set={('1', '82'): 1},
+          previous_variant_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.MATCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=_create_variant_with_alleles(
+                  start=100
+              ),
+              was_phased_successfully=False,
+          ),
+          expected_phase_info=postprocess_variants.VariantPhaseInformation(
+              phase_set_shard_id='1',
+              phase_set_region_id='81',
+              phase_set_stitching_status=postprocess_variants.PhaseSetStitchingStatus.SWITCH,
+              is_first_variant_in_phase_set=False,
+              first_variant_in_phase_set=_create_variant_with_alleles(
+                  start=100
+              ),
+              was_phased_successfully=False,
+          ),
+      ),
+  )
+  def test_get_variant_phase_information(
+      self,
+      call_variant_group,
+      stitching_status_by_phase_set,
+      previous_variant_phase_info,
+      expected_phase_info,
+  ):
+    # The function under test can modify previous_variant_phase_info, so we copy
+    # it to avoid side effects between test cases.
+    previous_variant_phase_info_copy = postprocess_variants.VariantPhaseInformation(
+        phase_set_shard_id=previous_variant_phase_info.phase_set_shard_id,
+        phase_set_region_id=previous_variant_phase_info.phase_set_region_id,
+        phase_set_stitching_status=previous_variant_phase_info.phase_set_stitching_status,
+        is_first_variant_in_phase_set=previous_variant_phase_info.is_first_variant_in_phase_set,
+        first_variant_in_phase_set=previous_variant_phase_info.first_variant_in_phase_set,
+        was_phased_successfully=previous_variant_phase_info.was_phased_successfully,
+    )
+    result = postprocess_variants._get_variant_phase_information(
+        call_variant_group,
+        stitching_status_by_phase_set,
+        previous_variant_phase_info_copy,
+    )
+
+    # Compare field by field to handle proto comparison correctly.
+    self.assertEqual(
+        result.phase_set_shard_id, expected_phase_info.phase_set_shard_id
+    )
+    self.assertEqual(
+        result.phase_set_region_id, expected_phase_info.phase_set_region_id
+    )
+    self.assertEqual(
+        result.phase_set_stitching_status,
+        expected_phase_info.phase_set_stitching_status,
+    )
+    self.assertEqual(
+        result.is_first_variant_in_phase_set,
+        expected_phase_info.is_first_variant_in_phase_set,
+    )
+    self.assertEqual(
+        result.first_variant_in_phase_set,
+        expected_phase_info.first_variant_in_phase_set,
+    )
+    self.assertEqual(
+        result.was_phased_successfully,
+        expected_phase_info.was_phased_successfully,
+    )
 
   @parameterized.parameters(
       (
@@ -1761,8 +2056,12 @@ class PostprocessVariantsTest(parameterized.TestCase):
     assert 0 <= highest_prob_position <= len(probs)
     probs[highest_prob_position] = 0.995
     variantcall_utils.set_ad(raw_variant.calls[0], [1, 1, 1])
-    variant, _, _ = postprocess_variants.add_call_to_variant(
-        variant=raw_variant, predictions=probs, sample_name=_DEFAULT_SAMPLE_NAME
+    variant, _ = postprocess_variants.add_call_to_variant(
+        variant=raw_variant,
+        predictions=probs,
+        qual_filter=0.0,
+        sample_name=_DEFAULT_SAMPLE_NAME,
+        variant_phase_info=_default_variant_phase_info(),
     )
     self.assertEqual(variant.calls[0].genotype, expected_best_genotype)
 
