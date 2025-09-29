@@ -193,8 +193,9 @@ class VariantcallUtilsTests(parameterized.TestCase):
 
   def test_set_ps(self):
     vc = variants_pb2.VariantCall()
-    variantcall_utils.set_ps(vc, '1-81')
-    self.assertEqual(vc.info['PS'].values[0].int_value, 100_081)
+    variant = variants_pb2.Variant(start=100)
+    variantcall_utils.set_ps(vc, variant)
+    self.assertEqual(vc.info['PS'].values[0].int_value, 101)
 
   @parameterized.parameters(
       dict(genotype=[], expected=False),
