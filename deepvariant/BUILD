@@ -1679,7 +1679,6 @@ cc_library(
     hdrs = ["make_examples_native.h"],
     deps = [
         ":alt_aligned_pileup_lib",
-        ":fast_pipeline_utils",
         ":pileup_image_native",
         ":stream_examples",
         "//deepvariant/protos:deepvariant_cc_pb2",
