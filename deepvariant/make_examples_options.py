@@ -675,7 +675,7 @@ _PHASE_READS = flags.DEFINE_bool(
 )
 _MIN_ALLELES_TO_PHASE = flags.DEFINE_integer(
     'min_alleles_to_phase',
-    2,
+    1,
     (
         'The minimum number of alleles on a read that must support a phase to'
         ' be assigned that phase.'

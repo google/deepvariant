@@ -3638,7 +3638,7 @@ options {
   exclude_contigs_for_methylation_phasing: "chrY"
   max_read_length_to_realign: 500
   direct_phasing_options {
-    min_alleles_to_phase: 2
+    min_alleles_to_phase: 1
   }
 }
 labeling_metrics {
@@ -3658,12 +3658,12 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 12
-  cpu_frequency_mhz: 3909.4932499999995
+  cpu_frequency_mhz: 3525.7214999999997
   total_memory_mb: 128667
-  wall_time_seconds: 2.2163476943969727
-  cpu_user_time_seconds: 5.179927
-  cpu_system_time_seconds: 2.7821949999999998
-  memory_peak_rss_mb: 708
+  wall_time_seconds: 2.8525888919830322
+  cpu_user_time_seconds: 4.928012
+  cpu_system_time_seconds: 4.94024
+  memory_peak_rss_mb: 731
   write_bytes: 540672
 }
 stats {
