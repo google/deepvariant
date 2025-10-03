@@ -44,6 +44,7 @@
 #include "deepvariant/pileup_channel_lib.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/sampling_util.h"
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -401,7 +402,8 @@ PileupImageEncoderNative::BuildPileupForOneSample(
                                  std::move(image_row));
   }
 
-  std::sort(pileup_of_reads.begin(), pileup_of_reads.end(), SortImageRows);
+  absl::c_stable_sort(pileup_of_reads,
+                   SortImageRows);
   for (auto& [hap_idx, allele_group, pos, read_ptr, row_ptr] :
        pileup_of_reads) {
     rows.push_back(std::move(row_ptr));
