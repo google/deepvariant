@@ -29,6 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "pybind11/cast.h"
 #if true  // Trick to stop tooling from moving the #include around.
 // MUST appear before any standard headers are included.
