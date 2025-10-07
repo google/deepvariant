@@ -821,6 +821,7 @@ def main(_):
       'ref',
       'reads',
       'output_vcf',
+      'pangenome',
   ]:
     if FLAGS.get_flag_value(flag_key, None) is None:
       sys.stderr.write('--{} is required.\n'.format(flag_key))
@@ -864,11 +865,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  flags.mark_flags_as_required([
-      'model_type',
-      'output_vcf',
-      'pangenome',
-      'reads',
-      'ref',
-  ])
   app.run(main)
