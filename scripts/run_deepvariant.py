@@ -256,6 +256,12 @@ _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
         ' boolean, it has to be flag_name=true or flag_name=false.'
     ),
 )
+_PHASE_VCF = flags.DEFINE_boolean(
+    'phase_vcf',
+    False,
+    'Optional. If true, emit phasing information in the VCF output. Available'
+    ' for long-read models (PacBio, ONT) only.',
+)
 
 # Optional flags for postprocess_variants.
 _OUTPUT_GVCF = flags.DEFINE_string(
@@ -449,6 +455,7 @@ def make_examples_command(
     model_ckpt_json,
     extra_args,
     runtime_by_region_path=None,
+    output_local_read_phasing=None,
     **kwargs,
 ):
   """Returns a make_examples (command, logfile) for subprocess.
@@ -461,6 +468,7 @@ def make_examples_command(
     model_ckpt_json: Path to the model.example_info.json file, or None.
     extra_args: Comma-separated list of flag_name=flag_value.
     runtime_by_region_path: Output path for runtime by region metrics.
+    output_local_read_phasing: Output path for local read phasing TSV files.
     **kwargs: Additional arguments to pass in for make_examples.
 
   Returns:
@@ -484,6 +492,12 @@ def make_examples_command(
     command.extend(
         ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)]
     )
+  if output_local_read_phasing is not None:
+    command.extend([
+        '--output_local_read_phasing',
+        '"{}"'.format(output_local_read_phasing),
+    ])
+    command.extend(['--output_phase_info'])
 
   special_args = {}
   # Starting from v1.10.0, the args for make_examples in calling mode are
@@ -687,6 +701,15 @@ def check_flags():
         _MODEL_TYPE.value,
         _CUSTOMIZED_SMALL_MODEL.value,
     )
+  if _PHASE_VCF.value:
+    if ModelType(_MODEL_TYPE.value) not in [
+        ModelType.PACBIO,
+        ModelType.ONT_R104,
+    ]:
+      raise RuntimeError(
+          'Emiting phasing information is only supported for PacBio and ONT'
+          ' models.'
+      )
 
 
 def get_model_ckpt(model_type: str, customized_model: str) -> str:
@@ -719,6 +742,11 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           _NUM_SHARDS.value
       ),
   )
+  local_read_phasing_tsv_files = None
+  if _PHASE_VCF.value:
+    local_read_phasing_tsv_files = os.path.join(
+        intermediate_results_dir, f'read-phasing_debug@{_NUM_SHARDS.value}.tsv'
+    )
 
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
     runtime_directory = os.path.join(
@@ -754,6 +782,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           sample_name=_SAMPLE_NAME.value,
           haploid_contigs=_HAPLOID_CONTIGS.value,
           par_regions_bed=_PAR_REGIONS.value,
+          output_local_read_phasing=local_read_phasing_tsv_files,
       )
   )
 
@@ -786,6 +815,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
               regions=_REGIONS.value,
               resolve_call_variants_outputs_by_model=True,
               small_model_gq_threshold=gq,
+              phased_reads_input_path=local_read_phasing_tsv_files,
           )
       )
   else:
@@ -802,6 +832,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
             haploid_contigs=_HAPLOID_CONTIGS.value,
             par_regions_bed=_PAR_REGIONS.value,
             regions=_REGIONS.value,
+            phased_reads_input_path=local_read_phasing_tsv_files,
         )
     )
     # vcf_stats_report
