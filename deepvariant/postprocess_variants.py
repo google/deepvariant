@@ -29,8 +29,6 @@
 """Postprocess output from call_variants to produce a VCF file."""
 # TODO: Add type annotations to this module
 import collections
-import dataclasses
-import enum
 import functools
 import itertools
 import os
@@ -326,30 +324,6 @@ _FILTERED_ALT_PROB = -9.0
 _NUM_GENOTYPE_PROBABILITIES = 3
 
 
-class PhaseSetStitchingStatus(enum.Enum):
-  """The stitching status of a phase set."""
-
-  MATCH = 0
-  SWITCH = 1
-  NOT_ENOUGH_OVERLAP = 2
-
-
-@dataclasses.dataclass()
-class VariantPhaseInformation:
-  """A class to hold phasing information for a variant."""
-
-  phase_set_shard_id: int
-  phase_set_region_id: int
-  phase_set_stitching_status: PhaseSetStitchingStatus
-  is_first_variant_in_phase_set: bool
-  first_variant_in_phase_set: variants_pb2.Variant | None
-  was_phased_successfully: bool = False
-
-  @property
-  def phase_set(self) -> tuple[int, int]:
-    return self.phase_set_shard_id, self.phase_set_region_id
-
-
 def _extract_single_sample_name(
     record: deepvariant_pb2.CallVariantsOutput,
 ) -> str:
@@ -542,7 +516,6 @@ def uncall_homref_gt_if_lowqual(
 def maybe_phase_genotype(
     variant: variants_pb2.Variant,
     genotype: list[int],
-    variant_phase_info: VariantPhaseInformation,
 ) -> tuple[bool, list[int]]:
   """Phases the genotype if phase information is available.
 
@@ -558,7 +531,6 @@ def maybe_phase_genotype(
   Args:
     variant: third_party.nucleus.protos.Variant proto.
     genotype: list of ints. The genotype indices to be written to the VCF.
-    variant_phase_info: VariantPhaseInformation of the current variant.
 
   Returns:
     is_phased: bool. Whether it was possible to phase the genotype.
@@ -595,14 +567,6 @@ def maybe_phase_genotype(
         genotype[allele_1_haplotype - 1],
         genotype[allele_2_haplotype - 1],
     ]
-    if (
-        variant_phase_info.phase_set_stitching_status
-        == PhaseSetStitchingStatus.SWITCH
-    ):
-      genotype = [
-          genotype[1],
-          genotype[0],
-      ]
   return is_phased, genotype
 
 
@@ -611,8 +575,7 @@ def add_call_to_variant(
     predictions: Sequence[float],
     qual_filter: float,
     sample_name: str | None,
-    variant_phase_info: VariantPhaseInformation,
-) -> tuple[variants_pb2.Variant, VariantPhaseInformation]:
+) -> variants_pb2.Variant:
   """Fills in Variant record using the prediction probabilities.
 
   This functions sets the call[0].genotype, call[0].info['GQ'],
@@ -629,7 +592,6 @@ def add_call_to_variant(
       be marked as FILTERed.
     sample_name: str. The name of the sample to assign to the Variant proto
       call_set_name field.
-    variant_phase_info: VariantPhaseInformation of the current variant.
 
   Returns:
     A tuple of the Variant record and its phase information.
@@ -643,13 +605,9 @@ def add_call_to_variant(
   gq, variant.quality = compute_quals(predictions, index)
   call.call_set_name = sample_name
   call.is_phased, genotype = maybe_phase_genotype(
-      variant, genotype, variant_phase_info
+      variant,
+      genotype,
   )
-  if call.is_phased:
-    variantcall_utils.set_ps(
-        call, variant_phase_info.first_variant_in_phase_set
-    )
-    variant_phase_info.was_phased_successfully = True
   if is_methylated(call):
     mf = variantcall_utils.get_mf(call)
     mt = variantcall_utils.determine_methylation_type(mf)
@@ -663,7 +621,7 @@ def add_call_to_variant(
   uncall_gt_if_no_ad(variant)
   variant.filter[:] = compute_filter_fields(variant, qual_filter)
   uncall_homref_gt_if_lowqual(variant, _CNN_HOMREF_CALL_MIN_GQ.value)
-  return variant, variant_phase_info
+  return variant
 
 
 def compute_quals(
@@ -1446,8 +1404,7 @@ def _transform_call_variant_group_to_output_variant(
     sample_name: str,
     use_multiallelic_model: bool,
     debug_output_all_candidates: str | None,
-    variant_phase_info: VariantPhaseInformation,
-) -> tuple[variants_pb2.Variant, VariantPhaseInformation]:
+) -> variants_pb2.Variant:
   """Transforms a group of CalVariantOutput to VariantOutput.
 
   The group of CVOs present in the call_variants_group are converted to the
@@ -1466,10 +1423,9 @@ def _transform_call_variant_group_to_output_variant(
       resolution of multiallelic cases with two alts.
     debug_output_all_candidates: if 'ALT', output all alleles considered by
       DeepVariant as ALT alleles.
-    variant_phase_info: VariantPhaseInformation for this variant.
 
   Returns:
-    A tuple of the Variant proto and its phase set information.
+    the Variant proto.
   """
   multiallelic_model = get_multiallelic_model(
       use_multiallelic_model=use_multiallelic_model
@@ -1486,85 +1442,12 @@ def _transform_call_variant_group_to_output_variant(
       predictions,
       qual_filter=qual_filter,
       sample_name=sample_name,
-      variant_phase_info=variant_phase_info,
-  )
-
-
-def _get_variant_phase_information(
-    call_variant_group: Sequence[deepvariant_pb2.CallVariantsOutput],
-    stitching_status_by_phase_set: dict[tuple[str, str], int],
-    previous_variant_phase_info: VariantPhaseInformation,
-) -> VariantPhaseInformation:
-  """Updates the phase information by comparing against the previous variant.
-
-  Args:
-    call_variant_group: list of CVOs grouped by variant.
-    stitching_status_by_phase_set: dict. Indicates if the PS_CONTIG (phase set)
-      should swap phases.
-    previous_variant_phase_info: phase information of the previous variant.
-
-  Returns:
-    VariantPhaseInformation corresponding to the current variant.
-  """
-  variant = list(call_variant_group)[0].variant
-  has_ps_contig, phase_set = variant_utils.get_shard_and_region_from_ps_contig(
-      variant
-  )
-  # Variant is not phased. Continue
-  if not has_ps_contig:
-    return previous_variant_phase_info
-
-  phase_set_shard_id, phase_set_region_id = phase_set
-  stitching_status_integer = stitching_status_by_phase_set.get(
-      (phase_set_shard_id, phase_set_region_id), 0
-  )
-  stitching_status = PhaseSetStitchingStatus(stitching_status_integer)
-
-  # Variant is the very first variant being considered.
-  if previous_variant_phase_info.phase_set == dv_constants.NULL_PHASE_SET:
-    return VariantPhaseInformation(
-        phase_set_shard_id=phase_set_shard_id,
-        phase_set_region_id=phase_set_region_id,
-        phase_set_stitching_status=stitching_status,
-        is_first_variant_in_phase_set=True,
-        first_variant_in_phase_set=variant,
-    )
-
-  # Phase set is the same as the previous variant. Continue.
-  if phase_set == previous_variant_phase_info.phase_set:
-    if previous_variant_phase_info.was_phased_successfully:
-      previous_variant_phase_info.is_first_variant_in_phase_set = False
-    return previous_variant_phase_info
-
-  # We can have a phasing break in two cases:
-  # A) We encountered the first variant in the phase set.
-  # B) We encountered a phase set that cannot be merged with the previous one.
-  if (
-      variant_utils.get_info(variant, dv_constants.FIRST_VARIANT_IN_PHASE_SET)
-      or stitching_status == PhaseSetStitchingStatus.NOT_ENOUGH_OVERLAP
-  ):
-    return VariantPhaseInformation(
-        phase_set_shard_id=phase_set_shard_id,
-        phase_set_region_id=phase_set_region_id,
-        phase_set_stitching_status=stitching_status,
-        is_first_variant_in_phase_set=True,
-        first_variant_in_phase_set=variant,
-    )
-  # Otherwise, we can stitch together the previous phase set with the current
-  # one.
-  return VariantPhaseInformation(
-      phase_set_shard_id=previous_variant_phase_info.phase_set_shard_id,
-      phase_set_region_id=previous_variant_phase_info.phase_set_region_id,
-      phase_set_stitching_status=stitching_status,
-      is_first_variant_in_phase_set=False,
-      first_variant_in_phase_set=previous_variant_phase_info.first_variant_in_phase_set,
   )
 
 
 def _transform_call_variants_output_to_variants(
     input_sorted_tfrecord_path: str,
     sample_name: str,
-    stitching_status_by_phase_set: dict[tuple[str, str], int],
 ) -> Iterator[variants_pb2.Variant]:
   """Yields Variant protos in sorted order from CallVariantsOutput protos.
 
@@ -1572,39 +1455,21 @@ def _transform_call_variants_output_to_variants(
     input_sorted_tfrecord_path: str. TFRecord format file containing sorted
       CallVariantsOutput protos.
     sample_name: str. Sample name use in the output VCF and gVCF.
-    stitching_status_by_phase_set: dict. Indicates if the PS_CONTIG (phase set)
-      should swap phases.
 
   Yields:
     Variant protos in sorted order representing the CallVariantsOutput calls.
   """
-  previous_variant_phase_info = VariantPhaseInformation(
-      phase_set_shard_id=dv_constants.NULL_PHASE_SET_SHARD_ID,
-      phase_set_region_id=dv_constants.NULL_PHASE_SET_REGION_ID,
-      phase_set_stitching_status=PhaseSetStitchingStatus.MATCH,
-      is_first_variant_in_phase_set=False,
-      first_variant_in_phase_set=None,
-  )
   for call_variant_group in group_call_variants_outputs(
       input_sorted_tfrecord_path, _GROUP_VARIANTS.value
   ):
-    variant_phase_info = _get_variant_phase_information(
+    yield _transform_call_variant_group_to_output_variant(
         call_variant_group,
-        stitching_status_by_phase_set,
-        previous_variant_phase_info,
+        _QUAL_FILTER.value,
+        _MULT_ALLELIC_QUAL_FILTER.value,
+        sample_name,
+        _USE_MULTIALLELIC_MODEL.value,
+        _DEBUG_OUTPUT_ALL_CANDIDATES.value,
     )
-    variant, previous_variant_phase_info = (
-        _transform_call_variant_group_to_output_variant(
-            call_variant_group,
-            _QUAL_FILTER.value,
-            _MULT_ALLELIC_QUAL_FILTER.value,
-            sample_name,
-            _USE_MULTIALLELIC_MODEL.value,
-            _DEBUG_OUTPUT_ALL_CANDIDATES.value,
-            variant_phase_info,
-        )
-    )
-    yield variant
 
 
 def dump_variants_to_temp_file(
@@ -1684,17 +1549,10 @@ def process_contiguous_partition(
   if num_cvo_records == 0:
     return iter([])
 
-  stitching_status_by_phase_set = {}
-  if _PHASED_READS_INPUT_PATH.value:
-    stitching_status_by_phase_set = _load_phasing_info(
-        _PHASED_READS_SWITCHES_OUTPUT_PATH.value,
-    )
-
   logging.info('Transforming call_variants_output to variants.')
   independent_variants = _transform_call_variants_output_to_variants(
       input_sorted_tfrecord_path=temp_file_name,
       sample_name=sample_name,
-      stitching_status_by_phase_set=stitching_status_by_phase_set,
   )
   variant_generator = haplotypes.maybe_resolve_conflicting_variants(
       independent_variants
@@ -1905,6 +1763,8 @@ def run_postprocess_variants_on_region(
     header: variants_pb2.VcfHeader,
     is_empty: bool,
     sample_name: str,
+    emit_variants_as_tfrecords: bool,
+    output_tfrecord_file: str,
 ) -> None:
   """Runs postprocess_variants on the given partition.
 
@@ -1920,6 +1780,8 @@ def run_postprocess_variants_on_region(
     header: the VCF header
     is_empty: if the partition is empty.
     sample_name: the sample name to use for the output VCF and gVCF.
+    emit_variants_as_tfrecords: if True, emit variants as TFRecords.
+    output_tfrecord_file: path to the output TFRecord file.
 
   Returns:
     None (the output is written to the output_vcf and output_gvcf files).
@@ -1946,12 +1808,51 @@ def run_postprocess_variants_on_region(
       (time.time() - start_time) / 60,
   )
 
+  if emit_variants_as_tfrecords:
+    tfrecord.write_tfrecords(
+        variant_generator,
+        output_tfrecord_file,
+        compression_type='',
+    )
+  else:
+    emit_variants_to_vcf(
+        output_vcf,
+        output_gvcf,
+        header,
+        partition,
+        variant_generator,
+    )
+  temp.close()
+
+
+def emit_variants_to_vcf(
+    output_vcf: str,
+    output_gvcf: str,
+    header: variants_pb2.VcfHeader,
+    partition: Sequence[range_pb2.Range],
+    variant_generator: Iterator[variants_pb2.Variant],
+    variant_tfrecord_path: str = '',
+) -> None:
+  """Writes variants either from an iterator or a TFRecord file to VCF/gVCF.
+
+  Args:
+    output_vcf: path to the output VCF file.
+    output_gvcf: path to the output gVCF file.
+    header: the VCF header
+    partition: a list of nucleus.genomics.v1.Range protos.
+    variant_generator: an iterator of variants to write to the VCF file.
+    variant_tfrecord_path: path to the variant TFRecord file.
+  """
   start_time = time.time()
   if not _NONVARIANT_SITE_TFRECORD_PATH.value:
     if _PROCESS_SOMATIC.value:
       logging.info('Writing variants to somatic VCF.')
     else:
       logging.info('Writing variants to VCF.')
+    if variant_tfrecord_path:
+      variant_generator = tfrecord.read_tfrecords(
+          variant_tfrecord_path, variants_pb2.Variant
+      )
     write_variants_to_vcf(
         variant_iterable=variant_generator,
         output_vcf_path=output_vcf,
@@ -1961,10 +1862,14 @@ def run_postprocess_variants_on_region(
         'VCF creation took %s minutes', (time.time() - start_time) / 60
     )
   else:
-    tmp_variant_file = dump_variants_to_temp_file(variant_generator)
+    tmp_variant_file = None
+    if not variant_tfrecord_path:
+      tmp_variant_file = dump_variants_to_temp_file(variant_generator)
+      variant_tfrecord_path = tmp_variant_file.name
+
     merge_variants.merge_and_write_variants_and_nonvariants(
         _ONLY_KEEP_PASS.value,
-        tmp_variant_file.name,
+        variant_tfrecord_path,
         tfrecord.expanded_paths_if_sharded(
             _NONVARIANT_SITE_TFRECORD_PATH.value
         ),
@@ -1975,12 +1880,325 @@ def run_postprocess_variants_on_region(
         partition,
         _PROCESS_SOMATIC.value,
     )
-    tmp_variant_file.close()
+    if tmp_variant_file:
+      tmp_variant_file.close()
     logging.info(
         'VCF and gVCF creation took %s minutes.',
         (time.time() - start_time) / 60,
     )
-  temp.close()
+
+
+def stitch_phase_sets(
+    *,
+    tfrecord_paths: Sequence[str],
+    switches_output_path: str,
+    output_tfrecord_paths: Sequence[str],
+) -> None:
+  """Stitches the phase sets of the variants in the tfrecord files."""
+  postprocess_variants_lib.stitch_phase_sets(
+      tfrecord_paths, switches_output_path, output_tfrecord_paths
+  )
+
+
+def _process_partitions_in_parallel(
+    *,
+    contigs: Sequence[reference_pb2.ContigInfo],
+    all_cvo_paths: Sequence[str],
+    header: variants_pb2.VcfHeader,
+    is_empty: bool,
+    sample_name: str,
+    emit_variants_as_tfrecords: bool,
+    temp_vcf_files: Sequence[tempfile._TemporaryFileWrapper],
+    temp_gvcf_files: Sequence[tempfile._TemporaryFileWrapper],
+    temp_tfrecord_files: Sequence[tempfile._TemporaryFileWrapper],
+    temp_tfrecord_output_files: Sequence[tempfile._TemporaryFileWrapper],
+    partitions: Sequence[Sequence[range_pb2.Range]],
+    num_partitions: int,
+):
+  """Processes multiple partitions in parallel.
+
+  Args:
+    contigs: all contigs from ref
+    all_cvo_paths: paths to all CVO files
+    header: the VCF header
+    is_empty: if the partition is empty.
+    sample_name: the sample name to use for the output VCF and gVCF.
+    emit_variants_as_tfrecords: if True, emit variants as TFRecords.
+    temp_vcf_files: temporary VCF files.
+    temp_gvcf_files: temporary gVCF files.
+    temp_tfrecord_files: temporary TFRecord files.
+    temp_tfrecord_output_files: temporary TFRecord output files.
+    partitions: the partitions to process.
+    num_partitions: the number of partitions.
+
+  Returns:
+    None (the output is written to the output_vcf and output_gvcf files).
+  """
+  logging.info(
+      'Running postprocess_variants with parallelism using %s CPUs over'
+      ' %s partitions.',
+      _CPUS.value,
+      num_partitions,
+  )
+  with multiprocessing.Pool(_CPUS.value) as pool:
+    tasks = []
+    for task_id in range(num_partitions):
+      tasks.append(
+          (
+              temp_vcf_files[task_id].name,
+              temp_gvcf_files[task_id].name,
+              partitions[task_id],
+              contigs,
+              all_cvo_paths,
+              header,
+              is_empty,
+              sample_name,
+              emit_variants_as_tfrecords,
+              temp_tfrecord_files[task_id].name,
+          ),
+      )
+    async_result = pool.starmap_async(run_postprocess_variants_on_region, tasks)
+    async_result.get()
+
+    if emit_variants_as_tfrecords:
+      stitch_phase_sets(
+          tfrecord_paths=[t.name for t in temp_tfrecord_files],
+          switches_output_path=_PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+          output_tfrecord_paths=[t.name for t in temp_tfrecord_output_files],
+      )
+      tasks = []
+      for task_id in range(num_partitions):
+        tasks.append((
+            temp_vcf_files[task_id].name,
+            temp_gvcf_files[task_id].name,
+            header,
+            partitions[task_id],
+            iter([]),
+            temp_tfrecord_output_files[task_id].name,
+        ))
+      async_result = pool.starmap_async(emit_variants_to_vcf, tasks)
+      async_result.get()
+
+
+def _process_partitions_sequentially(
+    *,
+    contigs: Sequence[reference_pb2.ContigInfo],
+    all_cvo_paths: Sequence[str],
+    header: variants_pb2.VcfHeader,
+    is_empty: bool,
+    sample_name: str,
+    emit_variants_as_tfrecords: bool,
+    temp_vcf_files: Sequence[tempfile._TemporaryFileWrapper],
+    temp_gvcf_files: Sequence[tempfile._TemporaryFileWrapper],
+    temp_tfrecord_files: Sequence[tempfile._TemporaryFileWrapper],
+    temp_tfrecord_output_files: Sequence[tempfile._TemporaryFileWrapper],
+    partitions: Sequence[Sequence[range_pb2.Range]],
+    num_partitions: int,
+):
+  """Processes multiple partitions sequentially.
+
+  This mode minimizes the memory usage.
+
+  Args:
+    contigs: all contigs from ref
+    all_cvo_paths: paths to all CVO files
+    header: the VCF header
+    is_empty: if the partition is empty.
+    sample_name: the sample name to use for the output VCF and gVCF.
+    emit_variants_as_tfrecords: if true, emit variants as TFRecords.
+    temp_vcf_files: temporary VCF files.
+    temp_gvcf_files: temporary gVCF files.
+    temp_tfrecord_files: temporary TFRecord files.
+    temp_tfrecord_output_files: temporary TFRecord output files.
+    partitions: the partitions to process.
+    num_partitions: the number of partitions.
+
+  Returns:
+    None (the output is written to the output_vcf and output_gvcf files).
+  """
+  logging.info(
+      'Running postprocess_variants sequentially over %s partitions.',
+      num_partitions,
+  )
+  for task_id in range(num_partitions):
+    run_postprocess_variants_on_region(
+        temp_vcf_files[task_id].name,
+        temp_gvcf_files[task_id].name,
+        partitions[task_id],
+        contigs,
+        all_cvo_paths,
+        header,
+        is_empty,
+        sample_name,
+        emit_variants_as_tfrecords,
+        temp_tfrecord_files[task_id].name,
+    )
+  if emit_variants_as_tfrecords:
+    stitch_phase_sets(
+        tfrecord_paths=[t.name for t in temp_tfrecord_files],
+        switches_output_path=_PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+        output_tfrecord_paths=[t.name for t in temp_tfrecord_output_files],
+    )
+    for task_id in range(num_partitions):
+      emit_variants_to_vcf(
+          temp_vcf_files[task_id].name,
+          temp_gvcf_files[task_id].name,
+          header,
+          partitions[task_id],
+          iter([]),
+          temp_tfrecord_output_files[task_id].name,
+      )
+
+
+def run_postprocessing_over_multiple_partitions(
+    *,
+    contigs: Sequence[reference_pb2.ContigInfo],
+    all_cvo_paths: Sequence[str],
+    header: variants_pb2.VcfHeader,
+    is_empty: bool,
+    sample_name: str,
+) -> None:
+  """Runs postprocessing over multiple partitions.
+
+  Args:
+    contigs: all contigs from ref
+    all_cvo_paths: paths to all CVO files
+    header: the VCF header
+    is_empty: if the partition is empty.
+    sample_name: the sample name to use for the output VCF and gVCF.
+
+  Returns:
+    None (the output is written to the output_vcf and output_gvcf files).
+  """
+  calling_regions = calling_regions_utils.build_calling_regions(
+      contigs=contigs,
+      regions_to_include=calling_regions_utils.parse_regions_flag(
+          _REGIONS.value
+      ),
+      regions_to_exclude=[],
+      ref_n_regions=[],
+  )
+  num_partitions = max(_NUM_PARTITIONS.value, _CPUS.value)
+  partitions = calling_regions_utils.partition_calling_regions(
+      calling_regions, num_partitions=num_partitions
+  )
+  temp_vcf_files = [
+      tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
+  ]
+  temp_gvcf_files = [
+      tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
+  ]
+  temp_tfrecord_files = [
+      tempfile.NamedTemporaryFile(suffix='.tfrecord') for _ in partitions
+  ]
+  temp_tfrecord_output_files = [
+      tempfile.NamedTemporaryFile(suffix='.tfrecord') for _ in partitions
+  ]
+  emit_variants_as_tfrecords = bool(_PHASED_READS_INPUT_PATH.value)
+
+  if _CPUS.value > 1:
+    _process_partitions_in_parallel(
+        contigs=contigs,
+        all_cvo_paths=all_cvo_paths,
+        header=header,
+        is_empty=is_empty,
+        sample_name=sample_name,
+        emit_variants_as_tfrecords=emit_variants_as_tfrecords,
+        temp_vcf_files=temp_vcf_files,
+        temp_gvcf_files=temp_gvcf_files,
+        temp_tfrecord_files=temp_tfrecord_files,
+        temp_tfrecord_output_files=temp_tfrecord_output_files,
+        partitions=partitions,
+        num_partitions=num_partitions,
+    )
+  else:
+    _process_partitions_sequentially(
+        contigs=contigs,
+        all_cvo_paths=all_cvo_paths,
+        header=header,
+        is_empty=is_empty,
+        sample_name=sample_name,
+        emit_variants_as_tfrecords=emit_variants_as_tfrecords,
+        temp_vcf_files=temp_vcf_files,
+        temp_gvcf_files=temp_gvcf_files,
+        temp_tfrecord_files=temp_tfrecord_files,
+        temp_tfrecord_output_files=temp_tfrecord_output_files,
+        partitions=partitions,
+        num_partitions=num_partitions,
+    )
+
+  _concat_vcf(_OUTFILE.value, temp_vcf_files)
+  if _NONVARIANT_SITE_TFRECORD_PATH.value:
+    _concat_vcf(_GVCF_OUTFILE.value, temp_gvcf_files)
+  for temp_vcf_file in temp_vcf_files:
+    temp_vcf_file.close()
+  for temp_gvcf_file in temp_gvcf_files:
+    temp_gvcf_file.close()
+  for temp_tfrecord_file in temp_tfrecord_files:
+    temp_tfrecord_file.close()
+  for temp_tfrecord_output_file in temp_tfrecord_output_files:
+    temp_tfrecord_output_file.close()
+
+
+def run_postprocessing_without_partitioning(
+    *,
+    contigs: Sequence[reference_pb2.ContigInfo],
+    all_cvo_paths: Sequence[str],
+    header: variants_pb2.VcfHeader,
+    is_empty: bool,
+    sample_name: str,
+) -> None:
+  """Runs postprocessing without any partitioning.
+
+  Args:
+    contigs: all contigs from ref
+    all_cvo_paths: paths to all CVO files
+    header: the VCF header
+    is_empty: if the partition is empty.
+    sample_name: the sample name to use for the output VCF and gVCF.
+
+  Returns:
+    None (the output is written to the output_vcf and output_gvcf files).
+  """
+  logging.info(
+      'Running postprocess_variants without parallelism or partitions.'
+  )
+  emit_variants_as_tfrecords = bool(_PHASED_READS_INPUT_PATH.value)
+  tmp_tfrecord_file = None
+  tmp_tfrecord_file_name = ''
+  if emit_variants_as_tfrecords:
+    tmp_tfrecord_file = tempfile.NamedTemporaryFile(suffix='.tfrecord')
+    tmp_tfrecord_file_name = tmp_tfrecord_file.name
+  run_postprocess_variants_on_region(
+      _OUTFILE.value,
+      _GVCF_OUTFILE.value,
+      [],
+      contigs,
+      all_cvo_paths,
+      header,
+      is_empty,
+      sample_name,
+      emit_variants_as_tfrecords,
+      tmp_tfrecord_file_name,
+  )
+  if emit_variants_as_tfrecords:
+    output_tfrecord_file = tempfile.NamedTemporaryFile(suffix='.tfrecord')
+    stitch_phase_sets(
+        tfrecord_paths=[tmp_tfrecord_file_name],
+        switches_output_path=_PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+        output_tfrecord_paths=[output_tfrecord_file.name],
+    )
+    emit_variants_to_vcf(
+        _OUTFILE.value,
+        _GVCF_OUTFILE.value,
+        header,
+        [],
+        iter([]),
+        output_tfrecord_file.name,
+    )
+    output_tfrecord_file.close()
+    if tmp_tfrecord_file:
+      tmp_tfrecord_file.close()
 
 
 def main(argv=()):
@@ -2093,96 +2311,21 @@ def main(argv=()):
     is_empty = get_first_cvo_record(all_cvo_paths) is None
     # Run sequentially in the absence of multiple CPUs or partitions.
     if _CPUS.value < 1 and _NUM_PARTITIONS.value < 1:
-      logging.info(
-          'Running postprocess_variants without parallelism or partitions.'
-      )
-      run_postprocess_variants_on_region(
-          _OUTFILE.value,
-          _GVCF_OUTFILE.value,
-          [],
-          contigs,
-          all_cvo_paths,
-          header,
-          is_empty,
-          sample_name,
+      run_postprocessing_without_partitioning(
+          contigs=contigs,
+          all_cvo_paths=all_cvo_paths,
+          header=header,
+          is_empty=is_empty,
+          sample_name=sample_name,
       )
     else:
-      # Otherwise run over multiple partitions, in parallel if cpus > 1.
-      calling_regions = calling_regions_utils.build_calling_regions(
+      run_postprocessing_over_multiple_partitions(
           contigs=contigs,
-          regions_to_include=calling_regions_utils.parse_regions_flag(
-              _REGIONS.value
-          ),
-          regions_to_exclude=[],
-          ref_n_regions=[],
+          all_cvo_paths=all_cvo_paths,
+          header=header,
+          is_empty=is_empty,
+          sample_name=sample_name,
       )
-      num_partitions = max(_NUM_PARTITIONS.value, _CPUS.value)
-      partitions = calling_regions_utils.partition_calling_regions(
-          calling_regions, num_partitions=num_partitions
-      )
-      temp_vcf_files = [
-          tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
-      ]
-      temp_gvcf_files = [
-          tempfile.NamedTemporaryFile(suffix='.gz') for _ in partitions
-      ]
-
-      if _CPUS.value > 1:
-        logging.info(
-            'Running postprocess_variants with parallelism using %s CPUs over'
-            ' %s partitions.',
-            _CPUS.value,
-            num_partitions,
-        )
-        with multiprocessing.Pool(_CPUS.value) as pool:
-          tasks = []
-          for task_id in range(num_partitions):
-            tasks.append(
-                (
-                    temp_vcf_files[task_id].name,
-                    temp_gvcf_files[task_id].name,
-                    partitions[task_id],
-                    contigs,
-                    all_cvo_paths,
-                    header,
-                    is_empty,
-                    sample_name,
-                ),
-            )
-          async_result = pool.starmap_async(
-              run_postprocess_variants_on_region, tasks
-          )
-          pool.close()
-          pool.join()
-          try:
-            async_result.get()
-          except Exception as e:
-            logging.exception('A worker process failed: %s', e)
-            raise e
-      else:
-        logging.info(
-            'Running postprocess_variants sequentially over %s partitions.',
-            num_partitions,
-        )
-        for task_id in range(num_partitions):
-          run_postprocess_variants_on_region(
-              temp_vcf_files[task_id].name,
-              temp_gvcf_files[task_id].name,
-              partitions[task_id],
-              contigs,
-              all_cvo_paths,
-              header,
-              is_empty,
-              sample_name,
-          )
-
-      _concat_vcf(_OUTFILE.value, temp_vcf_files)
-      if _NONVARIANT_SITE_TFRECORD_PATH.value:
-        _concat_vcf(_GVCF_OUTFILE.value, temp_gvcf_files)
-      for temp_vcf_file in temp_vcf_files:
-        temp_vcf_file.close()
-      for temp_gvcf_file in temp_gvcf_files:
-        temp_gvcf_file.close()
 
     start_time = time.time()
     use_csi = _decide_to_use_csi(contigs)

@@ -130,10 +130,11 @@ cc_library(
     hdrs = ["postprocess_variants.h"],
     deps = [
         "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:range_cc_pb2",
         "//third_party/nucleus/protos:reference_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",
-        "@com_google_absl//absl/strings:cord",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core/platform/cloud:gcs_file_system",
     ],

@@ -32,6 +32,7 @@
 #ifndef LEARNING_GENOMICS_DEEPVARIANT_POSTPROCESS_VARIANTS_H_
 #define LEARNING_GENOMICS_DEEPVARIANT_POSTPROCESS_VARIANTS_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -44,6 +45,32 @@ namespace deepvariant {
 
 using std::string;
 
+constexpr char kPhaseSetContigTag[] = "PS_CONTIG";
+constexpr char kAltPhaseSetTag[] = "ALT_PS";
+constexpr char kFirstVariantInPhaseSetTag[] = "FIRST_VARIANT_IN_BLOCK";
+constexpr char kPhaseSetTag[] = "PS";
+constexpr int kNullPhaseSetId = -1;
+
+enum class PhaseSetStitchingStatus {
+  MATCH = 0,
+  SWITCH = 1,
+  NOT_ENOUGH_OVERLAP = 2
+};
+
+struct VariantPhaseInformation {
+  std::string phase_set_shard_id;
+  std::string phase_set_region_id;
+  PhaseSetStitchingStatus phase_set_stitching_status;
+  bool is_first_variant_in_phase_set;
+  int64_t first_variant_in_phase_set_start_position;
+  bool was_phased_successfully = false;
+
+  bool is_null() const {
+    return phase_set_shard_id == std::to_string(kNullPhaseSetId) &&
+           phase_set_region_id == std::to_string(kNullPhaseSetId);
+  }
+};
+
 // Reads TFRecord of CallVariantsOutput protos, sort them based
 // on the mapping of chromosome names to positions in FASTA in `contigs`,
 // and then outputs the sorted TFRecord of CallVariantsOutput protos to
@@ -53,6 +80,19 @@ std::uint64_t ProcessSingleSiteCallTfRecords(
     const std::vector<std::string>& tfrecord_paths,
     const string& output_tfrecord_path,
     const std::vector<nucleus::genomics::v1::Range>& ranges);
+
+// If the variant is phased, and the phase set stitching status is SWITCH,
+// and the genotypes are not the same, swap the genotypes.
+void MaybeSwapPhase(nucleus::genomics::v1::Variant* variant,
+                    const VariantPhaseInformation& variant_phase_info);
+
+// Reads TFRecord of Variant protos, stitch phase sets by maybe swapping the
+// genotypes, and setting the PS field, which indicates the contiguous phase
+// set. The output Variants are written to the output TFRecord files. The number
+// of input files must match the number of output files.
+void StitchPhaseSets(const std::vector<std::string>& tfrecord_paths,
+                     const std::string& switches_output_path,
+                     const std::vector<std::string>& output_tfrecord_paths);
 
 }  // namespace deepvariant
 }  // namespace genomics

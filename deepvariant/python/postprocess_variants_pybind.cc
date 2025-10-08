@@ -52,4 +52,7 @@ PYBIND11_MODULE(postprocess_variants, m) {
   m.def("process_single_sites_tfrecords", &ProcessSingleSiteCallTfRecords,
         py::arg("contigs"), py::arg("tfrecord_paths"),
         py::arg("output_tfrecord_path"), py::arg("partitions"));
+
+  m.def("stitch_phase_sets", &StitchPhaseSets, py::arg("tfrecord_paths"),
+        py::arg("switches_output_path"), py::arg("output_tfrecord_paths"));
 }
