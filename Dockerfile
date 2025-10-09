@@ -33,7 +33,7 @@ RUN conda create -n bio \
 #==========================#
 FROM alpine:latest AS download_models
 
-ARG VERSION=1.10.0-rc1
+ARG VERSION=1.10.0-beta
 ENV VERSION=${VERSION}
 
 RUN apk add --no-cache wget parallel
