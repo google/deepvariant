@@ -156,6 +156,7 @@ cc_test(
         "//third_party/nucleus/testing:cpp_test_utils",
         "//third_party/nucleus/util:cpp_utils",
         "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/types:span",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:test",

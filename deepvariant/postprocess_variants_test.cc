@@ -43,6 +43,7 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -83,7 +84,7 @@ CallVariantsOutput CreateSingleSiteCalls(absl::string_view reference_name,
 
 // region Phasing tests helpers
 void WriteSwitchesFile(const std::string& path,
-                       const std::vector<std::string>& lines) {
+                       absl::Span<const std::string> lines) {
   std::ofstream outfile(path);
   for (const auto& line : lines) {
     outfile << line << "\n";
