@@ -85,7 +85,7 @@ struct KmerOffset {
 
 // Used in Reads kmer index
 struct KmerOccurrence {
-  KmerOccurrence() {}
+  KmerOccurrence() = default;
   KmerOccurrence(ReadId read_id, KmerOffset pos)
       : read_id(read_id), read_pos(pos) {}
 

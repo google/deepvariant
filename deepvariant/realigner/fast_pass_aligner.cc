@@ -166,8 +166,8 @@ FastPassAligner::AlignReads(
   // reference. From all read to haplotype alignments the best one is picked.
   // In the case where read alignments are equally good to ref haplotype and
   // non-ref haplotype, a non-ref haplotype is preferred.
-  std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> realigned_reads(
-      new std::vector<nucleus::genomics::v1::Read>());
+  std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> realigned_reads =
+      std::make_unique<std::vector<nucleus::genomics::v1::Read>>();
   RealignReadsToReference(reads_param, &realigned_reads);
 
   return realigned_reads;
@@ -521,12 +521,13 @@ void FastPassAligner::RealignReadsToReference(
     if (GetBestReadAlignment(read_index, &best_hap_index)) {
       const HaplotypeReadsAlignment& bestHaplotypeAlignments =
           read_to_haplotype_alignments_[best_hap_index];
-      std::unique_ptr<LinearAlignment> new_alignment(new LinearAlignment());
+      std::unique_ptr<LinearAlignment> new_alignment =
+          std::make_unique<LinearAlignment>();
       new_alignment->MergeFrom(read.alignment());
       new_alignment->clear_cigar();
       // Calculate new alignment position.
-      std::unique_ptr<nucleus::genomics::v1::Position> new_position(
-          new nucleus::genomics::v1::Position());
+      std::unique_ptr<nucleus::genomics::v1::Position> new_position =
+          std::make_unique<nucleus::genomics::v1::Position>();
       new_position->MergeFrom(read.alignment().position());
       auto read_to_hap_pos = bestHaplotypeAlignments
           .read_alignment_scores[read_index]
