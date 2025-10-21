@@ -109,6 +109,9 @@ CHANNELS = [
     'read_supports_variant_fuzzy',
     'supplementary_alignment',
     'allele_sample_probability',
+    'homopolymer_insertion_quality',
+    'homopolymer_deletion_quality',
+    'inter_homopolymer_insertion_quality',
 ]
 
 ALT_ALIGNED_PILEUP_CHANNELS = [
@@ -176,6 +179,15 @@ CHANNEL_ENUM_TO_STRING = {
     ),
     deepvariant_pb2.CH_SUPPLEMENTARY_ALIGNMENT: 'supplementary_alignment',
     deepvariant_pb2.CH_ALLELE_SAMPLE_PROBABILITY: 'allele_sample_probability',
+    deepvariant_pb2.CH_HOMOPOLYMER_INSERTION_QUALITY: (
+        'homopolymer_insertion_quality'
+    ),
+    deepvariant_pb2.CH_HOMOPOLYMER_DELETION_QUALITY: (
+        'homopolymer_deletion_quality'
+    ),
+    deepvariant_pb2.CH_INTER_HOMOPOLYMER_INSERTION_QUALITY: (
+        'inter_homopolymer_insertion_quality'
+    ),
 }
 
 # Create a reverse mapping

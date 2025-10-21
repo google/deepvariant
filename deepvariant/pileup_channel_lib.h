@@ -94,6 +94,12 @@ static const auto& ch_base_methylation = "base_methylation";
 static const auto& ch_base_6ma = "base_6ma";
 static const auto& ch_supplementary_alignment = "supplementary_alignment";
 static const auto& ch_allele_sample_probability = "allele_sample_probability";
+static const auto& ch_homopolymer_insertion_quality =
+    "homopolymer_insertion_quality";
+static const auto& ch_homopolymer_deletion_quality =
+    "homopolymer_deletion_quality";
+static const auto& ch_inter_homopolymer_insertion_quality =
+    "inter_homopolymer_insertion_quality";
 
 //-------------------//
 // Channels Accessor //
@@ -107,6 +113,7 @@ static const constexpr int MaxGapCompressedIdentity = 100;
 static const constexpr int MaxGcContent = 100;
 static const constexpr int MaxIsHomoPolymer = 1;
 static const constexpr int MaxHomoPolymerWeighted = 30;
+static const constexpr int MaxHomoPolymerQuality = 93;
 
 //-------//
 // Utils //
