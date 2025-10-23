@@ -368,14 +368,25 @@ cc_library(
 )
 
 cc_library(
+    name = "homopolymer_indel_quality_channel",
+    srcs = ["homopolymer_indel_quality_channel.cc"],
+    hdrs = ["homopolymer_indel_quality_channel.h"],
+    deps = [
+        ":channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+    ],
+)
+
+cc_library(
     name = "homopolymer_deletion_quality_channel",
     srcs = ["homopolymer_deletion_quality_channel.cc"],
     hdrs = ["homopolymer_deletion_quality_channel.h"],
     deps = [
         ":channel",
+        ":homopolymer_indel_quality_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
-        "@com_google_absl//absl/log",
     ],
 )
 
@@ -385,9 +396,9 @@ cc_library(
     hdrs = ["homopolymer_insertion_quality_channel.h"],
     deps = [
         ":channel",
+        ":homopolymer_indel_quality_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
-        "@com_google_absl//absl/log",
     ],
 )
 

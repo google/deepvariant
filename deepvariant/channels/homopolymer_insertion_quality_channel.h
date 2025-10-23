@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "deepvariant/channels/channel.h"
+#include "deepvariant/channels/homopolymer_indel_quality_channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 
@@ -48,7 +49,8 @@ namespace deepvariant {
 using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::Read;
 
-class HomopolymerInsertionQualityChannel : public Channel {
+class HomopolymerInsertionQualityChannel
+    : public HomopolymerInDelQualityChannel {
  public:
   HomopolymerInsertionQualityChannel(
       int width,
@@ -62,23 +64,7 @@ class HomopolymerInsertionQualityChannel : public Channel {
   void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
                    const std::string& ref_bases) override;
 
-  // Public for testing
-  std::vector<std::uint8_t> HomoPolymerInDelQuality(const Read& read,
-                                                    bool is_deletion);
-
  private:
-  // Helper functions for reading and processing tags from reads
-  std::vector<int8_t> GetTPValues(const Read& read);
-  std::vector<std::uint8_t> HomoPolymerWeighted(const Read& read);
-  std::uint8_t BaseQualityColor(int base_qual);
-
-  // Scales an input vector to pixel range 0-254
-  std::vector<std::uint8_t> ScaleColorVector(
-      std::vector<std::uint8_t>& channel_values, float max_val);
-
-  static const constexpr int kMaxQScore = 93;
-  static const constexpr int kMaxHomoPolymerWeighted = 30;
-
   std::optional<std::vector<unsigned char>>
       homopolymer_insertion_quality_vector_;
 };

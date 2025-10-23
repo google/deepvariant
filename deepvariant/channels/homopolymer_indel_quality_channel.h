@@ -29,16 +29,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_HOMOPOLYMER_DELETION_QUALITY_CHANNEL_H_
-#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_HOMOPOLYMER_DELETION_QUALITY_CHANNEL_H_
+#ifndef LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_HOMOPOLYMER_INDEL_QUALITY_CHANNEL_H_
+#define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_HOMOPOLYMER_INDEL_QUALITY_CHANNEL_H_
 
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <vector>
 
 #include "deepvariant/channels/channel.h"
-#include "deepvariant/channels/homopolymer_indel_quality_channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 
@@ -49,28 +47,32 @@ namespace deepvariant {
 using learning::genomics::deepvariant::DeepVariantCall;
 using nucleus::genomics::v1::Read;
 
-class HomopolymerDeletionQualityChannel
-    : public HomopolymerInDelQualityChannel {
+class HomopolymerInDelQualityChannel : public Channel {
  public:
-  HomopolymerDeletionQualityChannel(
+  HomopolymerInDelQualityChannel(
       int width,
       const learning::genomics::deepvariant::PileupImageOptions& options);
 
-  void FillReadBase(std::vector<unsigned char>& data, int col, char read_base,
-                    char ref_base, int base_quality, const Read& read,
-                    int read_index, const DeepVariantCall& dv_call,
-                    const std::vector<std::string>& alt_alleles) override;
+  // Public for testing
+  std::vector<std::uint8_t> HomoPolymerInDelQuality(const Read& read,
+                                                    bool is_deletion);
 
-  void FillRefBase(std::vector<unsigned char>& ref_data, int col, char ref_base,
-                   const std::string& ref_bases) override;
+ protected:
+  // Helper functions for reading and processing tags from reads
+  std::vector<int8_t> GetTPValues(const Read& read);
+  std::vector<std::uint8_t> HomoPolymerWeighted(const Read& read);
+  std::uint8_t BaseQualityColor(int base_qual);
 
- private:
-  std::optional<std::vector<unsigned char>>
-      homopolymer_deletion_quality_vector_;
+  // Scales an input vector to pixel range 0-254
+  std::vector<std::uint8_t> ScaleColorVector(
+      std::vector<std::uint8_t>& channel_values, float max_val);
+
+  static const constexpr int kMaxQScore = 93;
+  static const constexpr int kMaxHomoPolymerWeighted = 30;
 };
 
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning
 
-#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_HOMOPOLYMER_DELETION_QUALITY_CHANNEL_H_
+#endif  // LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_HOMOPOLYMER_INDEL_QUALITY_CHANNEL_H_

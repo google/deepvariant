@@ -52,6 +52,7 @@
 #include "deepvariant/channels/gc_content_channel.h"
 #include "deepvariant/channels/haplotype_tag_channel.h"
 #include "deepvariant/channels/homopolymer_deletion_quality_channel.h"
+#include "deepvariant/channels/homopolymer_indel_quality_channel.h"
 #include "deepvariant/channels/homopolymer_insertion_quality_channel.h"
 #include "deepvariant/channels/homopolymer_weighted_channel.h"
 #include "deepvariant/channels/identity_channel.h"

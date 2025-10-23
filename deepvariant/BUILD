@@ -1139,6 +1139,7 @@ cc_library(
         "//deepvariant/channels:gc_content_channel",
         "//deepvariant/channels:haplotype_tag_channel",
         "//deepvariant/channels:homopolymer_deletion_quality_channel",
+        "//deepvariant/channels:homopolymer_indel_quality_channel",
         "//deepvariant/channels:homopolymer_insertion_quality_channel",
         "//deepvariant/channels:homopolymer_weighted_channel",
         "//deepvariant/channels:identity_channel",
