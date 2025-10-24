@@ -1307,7 +1307,6 @@ void VariantCaller::AddSupportingReadsForRejectedAlleles(
   const std::string unknown_allele = kSupportingUncalledAllele;
   absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>>
       alt_allele_support;
-  absl::flat_hash_set<std::string> ref_support;
   for (const auto& [sample_name, allele_count] : allele_counts) {
     for (const auto& [read_name, allele] : allele_count.read_alleles()) {
       // Skip reference supporting reads, as they aren't included in the
