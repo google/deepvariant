@@ -442,6 +442,7 @@ class VariantCaller {
               TestCallVariantAddAdjacentAlleleFractionsAtPositionSize0);
   FRIEND_TEST(VariantCallingTest, TestRefSitesFraction);
   FRIEND_TEST(VariantCallingTest, TestCallVariantNew);
+  FRIEND_TEST(IndelAlleleFractionTest, IndelAlleleFractionTestCases);
   friend class VariantCallingTest;
 };
 

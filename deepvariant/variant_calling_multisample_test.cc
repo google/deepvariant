@@ -1167,6 +1167,112 @@ INSTANTIATE_TEST_SUITE_P(
     },
     })));
 
+namespace {
+std::vector<std::string> SupportingReadNames(int n, int start_index = 0) {
+  std::vector<std::string> read_names;
+  for (int i = 0; i < n; ++i) {
+    read_names.push_back(std::to_string(start_index + i));
+  }
+  return read_names;
+}
+}  // namespace
+
+struct IndelAlleleFractionTestData {
+  AlleleCount allele_count;
+  float vsc_min_indel_fraction_for_small_indels = 0.0;
+  float vsc_min_indel_fraction_for_large_indels = 0.0;
+  int vsc_small_indel_threshold = 0;
+  float min_fraction_indels = 0.0;
+  std::vector<Allele> expected_alleles;
+};
+
+class IndelAlleleFractionTest
+    : public testing::TestWithParam<IndelAlleleFractionTestData> {};
+
+TEST_P(IndelAlleleFractionTest, IndelAlleleFractionTestCases) {
+  const IndelAlleleFractionTestData& param = GetParam();
+  VariantCallerOptions options = BasicOptions();
+  options.set_vsc_min_indel_fraction_for_small_indels(
+      param.vsc_min_indel_fraction_for_small_indels);
+  options.set_vsc_min_indel_fraction_for_large_indels(
+      param.vsc_min_indel_fraction_for_large_indels);
+  options.set_vsc_small_indel_threshold(param.vsc_small_indel_threshold);
+
+  // The following options are set to avoid filtering alleles based on
+  // min_count options.
+  options.set_min_count_snps(1);
+  options.set_min_count_indels(1);
+  options.set_min_fraction_snps(0);
+  options.set_min_fraction_indels(param.min_fraction_indels);
+  options.set_min_fraction_multiplier(1.0);
+
+  std::unique_ptr<VariantCaller> caller =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          options, {param.allele_count}, "sample");
+  SelectAltAllelesResult ret = caller->SelectAltAlleles({
+      .allele_counts_by_sample = {{"sample", param.allele_count}},
+      .create_complex_alleles = false,
+  });
+  EXPECT_THAT(ret.alt_alleles,
+              testing::UnorderedPointwise(nucleus::EqualsProto(),
+                                          param.expected_alleles));
+  caller->Clear();
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    IndelAlleleFractionTests, IndelAlleleFractionTest,
+    testing::ValuesIn(std::vector<IndelAlleleFractionTestData>({
+        {
+            // 100 reads total.
+            // Small indel, threshold is 0.12, so this allele should be
+            // filtered.
+            // Allele "AT": 1bp insertion, 8 reads support, AF=0.08
+            //
+            // Large indel, threshold is 0.05, so this allele should be kept.
+            // Allele "ATT": 2bp insertion, 12 reads support, AF=0.12
+            //
+            // Large indel, threshold is 0.05, so this allele should be kept.
+            // Allele "ATTT": 3bp insertion, 6 reads support, AF=0.06
+            // vsc_small_indel_threshold = 2
+            // vsc_min_indel_fraction_for_small_indels = 0.10
+            // vsc_min_indel_fraction_for_large_indels = 0.05
+            // Expected alleles:
+            // "ATT" with count 12, because 0.12 >= 0.10
+            // "ATTT" with count 6, because 0.06 >= 0.05
+            .allele_count = MakeTestMultiAlleleCount(
+                100, "sample", "A",
+                {
+                    {"AT", SupportingReadNames(8, 0)},
+                    {"ATT", SupportingReadNames(12, 8)},
+                    {"ATTT", SupportingReadNames(6, 20)},
+                },
+                10),
+            .vsc_min_indel_fraction_for_small_indels = 0.10,
+            .vsc_min_indel_fraction_for_large_indels = 0.05,
+            .vsc_small_indel_threshold = 2,
+            .min_fraction_indels = 0.0,
+            .expected_alleles = {
+                                 MakeAllele("ATT", AlleleType::INSERTION, 12),
+                                 MakeAllele("ATTT", AlleleType::INSERTION, 6)},
+        },
+        {
+            // If vsc_small_indel_threshold == 0, min_fraction_indels is used.
+            .allele_count = MakeTestMultiAlleleCount(
+                100, "sample", "A",
+                {
+                    {"AT", SupportingReadNames(8, 0)},
+                    {"ATT", SupportingReadNames(12, 8)},
+                    {"ATTT", SupportingReadNames(8, 20)},
+                },
+                10),
+            .vsc_min_indel_fraction_for_small_indels = 0.10,
+            .vsc_min_indel_fraction_for_large_indels = 0.05,
+            .vsc_small_indel_threshold = 0,
+            .min_fraction_indels = 0.11,
+            .expected_alleles = {MakeAllele("ATT", AlleleType::INSERTION, 12)},
+        },
+    })));
+
 TEST(VariantCallingTest, TumorOnlySomaticCalling) {
   // Test the Tumor-only: where target_role is "tumor" but there are no
   // non-target (i.e., normal) samples.
