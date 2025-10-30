@@ -41,7 +41,7 @@ import tensorflow as tf
 # continuation to break this into separate lines makes the code more readable.
 # pylint: disable=g-backslash-continuation
 
-OLD_LIB_BASE_URL = 'https://cdn.jsdelivr.net/npm//'
+OLD_LIB_BASE_URL = 'https://cdn.jsdelivr.net/npm/'
 NEW_LIB_BASE_URL = 'https://storage.googleapis.com/deepvariant/lib/vega/'
 
 VEGA_VERSION = '5'

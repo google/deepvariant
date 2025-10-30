@@ -108,8 +108,11 @@ echo "$(pip3 --version)"
 
 note_build_stage "Install python3 packages"
 
+# Altair version 5.5.0 requires typing-extensions>=4.10.0.
+pip3 install "${PIP_ARGS[@]}" 'typing-extensions>=4.10.0'
 pip3 install "${PIP_ARGS[@]}" contextlib2
-pip3 install "${PIP_ARGS[@]}" etils typing_extensions importlib_resources
+pip3 install "${PIP_ARGS[@]}" etils
+pip3 install "${PIP_ARGS[@]}" 'importlib_resources'
 pip3 install "${PIP_ARGS[@]}" 'enum34==1.1.8'
 pip3 install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
 pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.1.0'
@@ -138,13 +141,8 @@ pip3 install "${PIP_ARGS[@]}" joblib
 pip3 install "${PIP_ARGS[@]}" psutil
 pip3 install "${PIP_ARGS[@]}" --upgrade google-api-python-client
 pip3 install "${PIP_ARGS[@]}" 'pandas==1.3.4'
-# We manually install jsonschema here to pin it to v3.2.0, since
-# the latest v4.0.1 has issues with Altair v4.1.0.
-# See https://github.com/altair-viz/altair/issues/2496
-# If Altair version is updated below, the jsonschema version
-# should also be updated accordingly.
-pip3 install "${PIP_ARGS[@]}" 'jsonschema==3.2.0'
-pip3 install "${PIP_ARGS[@]}" 'altair==4.1.0'
+pip3 install "${PIP_ARGS[@]}" 'altair==5.5.0'
+pip3 install "${PIP_ARGS[@]}" "jsonschema==4.17.3"
 pip3 install "${PIP_ARGS[@]}" 'Pillow==9.5.0'
 pip3 install "${PIP_ARGS[@]}" 'ipython==8.22.2'
 pip3 install "${PIP_ARGS[@]}" 'pysam==0.20.0'
