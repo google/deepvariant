@@ -87,8 +87,7 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
  public:
   explicit StreamExamplesResource(tensorflow::Env* env) : env_(env) {}
 
-  virtual absl::Status Init(const tensorflow::string& shm_prefix,
-                            int num_shards) {
+  virtual absl::Status Init(const std::string& shm_prefix, int num_shards) {
     tensorflow::mutex_lock l(mu_);
     shm_buffer_.resize(num_shards);
     shm_.resize(num_shards);
@@ -144,9 +143,9 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
           tensorflow::Tensor** variant, tensorflow::Tensor** alt_allele_idx)>
           allocate_func) {
     int shard = index % num_shards_;
-    std::vector<tensorflow::string> variant_records;
-    std::vector<tensorflow::string> alt_allele_idx_records;
-    std::vector<tensorflow::string> image_records;
+    std::vector<std::string> variant_records;
+    std::vector<std::string> alt_allele_idx_records;
+    std::vector<std::string> image_records;
     bool shard_is_completed = false;
     int num_shards_completed = 0;
     {
@@ -238,7 +237,7 @@ class StreamExamplesResource : public tensorflow::ResourceBase {
     return absl::Status();
   }
 
-  tensorflow::string DebugString() const override {
+  std::string DebugString() const override {
     return "StreamFromShmFilesResource";
   }
 
@@ -277,7 +276,7 @@ class StreamExamplesInitOp
 
     const tensorflow::Tensor* num_shards_tensor;
     OP_REQUIRES_OK(context, context->input("num_shards", &num_shards_tensor));
-    int num_shards = num_shards_tensor->scalar<tensorflow::int32>()();
+    int num_shards = num_shards_tensor->scalar<int32_t>()();
 
     OP_REQUIRES_OK(context, get_resource()->Init(shm_dir, num_shards));
   }
