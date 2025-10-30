@@ -64,6 +64,9 @@ namespace deepvariant {
 float kReadSupportAltWithinOneBase = 0.90;
 float kReadSupportAltWithinTwoBases = 0.80;
 float kReadSupportAltWithinThreeBases = 0.70;
+int kFuzzySupportValueOneBaseDifference = 10;
+int kFuzzySupportValueTwoBasesDifference = 9;
+int kFuzzySupportValueThreeBasesDifference = 8;
 
 ReadSupportsVariantFuzzyChannel::ReadSupportsVariantFuzzyChannel(
     int width,
@@ -170,11 +173,11 @@ int CalculateReadSupport(
           // same phase.
           if (std::abs((int)alt_alleles[image_alt_allele_index].size() -
                       (int)alt_allele.size()) == 1) {
-            return 10;
+            return kFuzzySupportValueOneBaseDifference;
           }
           if (std::abs((int)alt_alleles[image_alt_allele_index].size() -
                       (int)alt_allele.size()) == 2) {
-            return 9;
+            return kFuzzySupportValueTwoBasesDifference;
           }
         }
       }
@@ -233,7 +236,9 @@ int ReadSupportsVariantFuzzyChannel::ReadSupportsAlt(
           read,
           "ALT_PS",
           alt_allele_phases);
-      if (read_support == 1 || read_support == 10 || read_support == 9) {
+      if (read_support == 1 ||
+        read_support == kFuzzySupportValueOneBaseDifference ||
+        read_support == kFuzzySupportValueTwoBasesDifference) {
         return read_support;
       }
     }
@@ -258,6 +263,23 @@ int ReadSupportsVariantFuzzyChannel::ReadSupportsAlt(
           }
         }
   }
+  // Check reads supporting reference allele for fuzzy match.
+  if (!dv_call.ref_support().empty()) {
+    ::google::protobuf::Map<std::string, DeepVariantCall_SupportingReads>
+        ref_allele_support_map;
+    *ref_allele_support_map[dv_call.variant().reference_bases()]
+         .mutable_read_names() = dv_call.ref_support();
+    int read_support =
+        CalculateReadSupport(dv_call.variant().alternate_bases(),
+                                ref_allele_support_map,
+                                dv_call.variant().reference_bases(),
+                                alt_alleles, key, read,
+                                "ALT_PS", alt_allele_phases);
+    if (read_support == kFuzzySupportValueOneBaseDifference
+      || read_support == kFuzzySupportValueTwoBasesDifference) {
+      return read_support;
+    }
+  }
   return 0;
 }
 
@@ -268,15 +290,19 @@ int ReadSupportsVariantFuzzyChannel::SupportsAltColor(
     alpha = options_.allele_unsupporting_read_alpha();
   } else if (read_supports_alt == 1) {
     alpha = options_.allele_supporting_read_alpha();
-  } else if (read_supports_alt == 10) {
+  } else if (read_supports_alt == kFuzzySupportValueOneBaseDifference) {
     alpha = kReadSupportAltWithinOneBase;
-  } else if (read_supports_alt == 9) {
+  } else if (read_supports_alt == kFuzzySupportValueTwoBasesDifference) {
     alpha = kReadSupportAltWithinTwoBases;
-  } else if (read_supports_alt == 8) {
+  } else if (read_supports_alt == kFuzzySupportValueThreeBasesDifference) {
     alpha = kReadSupportAltWithinThreeBases;
   } else {
     CHECK_EQ(read_supports_alt, 2)
-        << "read_supports_alt can only be 0/1/8/9/10/2.";
+        << "read_supports_alt can only be 0/1/"
+        << kFuzzySupportValueThreeBasesDifference << "/"
+        << kFuzzySupportValueTwoBasesDifference << "/"
+        << kFuzzySupportValueOneBaseDifference << "/"
+        << "/2.";
     alpha = options_.other_allele_supporting_read_alpha();
   }
   return static_cast<int>(kMaxPixelValueAsFloat * alpha);
