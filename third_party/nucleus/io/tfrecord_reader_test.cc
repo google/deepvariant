@@ -50,7 +50,7 @@ TEST(TFRecordReaderTest, Simple) {
   std::string s = reader->record();
 
   nucleus::genomics::v1::Variant v;
-  v.ParseFromArray(s.data(), s.size());
+  v.ParseFromString(s);
 
   ASSERT_EQ("Chr1", v.reference_name());
 

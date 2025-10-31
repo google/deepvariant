@@ -92,8 +92,7 @@ bool VariantReader::GetNext() { return internal_reader_->GetNext(); }
 IndexedVariant VariantReader::ReadRecord() {
   std::string data = internal_reader_->record();
   std::unique_ptr<Variant> proto = std::make_unique<Variant>();
-  CHECK(proto->ParseFromArray(data.data(), data.length()))
-      << "Failed to parse proto";
+  CHECK(proto->ParseFromString(data)) << "Failed to parse proto";
   uint32_t contig_index = contig_index_map_[proto->reference_name()];
   return {.variant = std::move(proto), .contig_map_index = contig_index};
 }
