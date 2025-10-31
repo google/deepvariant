@@ -623,7 +623,7 @@ def split_reads(reads):
   for read in reads:
     # Check for SKIP operations within the Cigar String
     if not any(
-        [c.operation == cigar_pb2.CigarUnit.SKIP for c in read.alignment.cigar]
+        c.operation == cigar_pb2.CigarUnit.SKIP for c in read.alignment.cigar
     ):
       read_split.append(read)
       continue
