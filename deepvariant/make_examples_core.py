@@ -3744,7 +3744,7 @@ def get_model_example_info_json_path(
 
 
 def apply_flags_for_calling(flags_obj: flags.FlagValues):
-  """Read flags for calling from the example_info.json file and apply them to the flag values object.
+  """Read flags for calling from the model.example_info.json file and apply them to the flag values object.
 
   Flag values are resolved in the following order:
   1. Command Line: User-provided flags take the highest priority.
@@ -3752,6 +3752,9 @@ def apply_flags_for_calling(flags_obj: flags.FlagValues):
      file are applied next.
   3. Default Values: If a flag is not specified elsewhere,
      its default value is used.
+
+  This function will also check that the partition_size and
+  max_reads_per_partition flags are both set or not set at all.
 
   Args:
     flags_obj: The flag values object.
@@ -3815,3 +3818,12 @@ def apply_flags_for_calling(flags_obj: flags.FlagValues):
       continue
 
     flag.value = flags_map[flag_name]
+
+  if (
+      flags_obj['partition_size'].present
+      != flags_obj['max_reads_per_partition'].present
+  ):
+    raise ValueError(
+        'Both --partition_size and --max_reads_per_partition must be set '
+        'together, or not at all.'
+    )

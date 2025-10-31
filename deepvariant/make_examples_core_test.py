@@ -209,6 +209,46 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
 
     self.assertEqual(FLAGS.pileup_image_height, 200)
 
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_partition_flags_both_set(self):
+    FLAGS.mode = 'calling'
+    FLAGS.partition_size = 1000
+    FLAGS['partition_size'].present = True
+    FLAGS.max_reads_per_partition = 200
+    FLAGS['max_reads_per_partition'].present = True
+    # This should not raise an error.
+    make_examples_core.apply_flags_for_calling(FLAGS)
+
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_partition_flags_neither_set(self):
+    FLAGS.mode = 'calling'
+    # This should not raise an error.
+    make_examples_core.apply_flags_for_calling(FLAGS)
+
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_partition_flags_only_partition_size(self):
+    FLAGS.mode = 'calling'
+    FLAGS.partition_size = 1000
+    FLAGS['partition_size'].present = True
+    with self.assertRaisesRegex(
+        ValueError,
+        'Both --partition_size and --max_reads_per_partition must be set '
+        'together, or not at all.',
+    ):
+      make_examples_core.apply_flags_for_calling(FLAGS)
+
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_partition_flags_only_max_reads(self):
+    FLAGS.mode = 'calling'
+    FLAGS.max_reads_per_partition = 200
+    FLAGS['max_reads_per_partition'].present = True
+    with self.assertRaisesRegex(
+        ValueError,
+        'Both --partition_size and --max_reads_per_partition must be set '
+        'together, or not at all.',
+    ):
+      make_examples_core.apply_flags_for_calling(FLAGS)
+
   def test_no_example_info_json_path_with_saved_model(self):
     with self.assertRaises(ValueError):
       make_examples_core.get_model_example_info_json_path('')
