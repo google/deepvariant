@@ -376,6 +376,11 @@ void DirectPhasing::AssignPhasesToVertices() {
         prev_score = max_score_it;
         break;
       }
+      if (max_score_it == next_max_score_it) {
+        LOG(WARNING) << "Loop detected at position " << positions_[i];
+        i--;
+        break;
+      }
       prev_score = max_score_it;
       max_score_it = next_max_score_it;
       i--;
