@@ -63,8 +63,7 @@ namespace deepvariant {
 
 inline constexpr absl::string_view kUncalledAllele = "UNCALLED_ALLELE";
 
-// TODO Add an overflow check when read indices are generated.
-using ReadIndex = uint16_t;
+using ReadIndex = int;
 
 // Data type storing read id and mapping quality. It is used in AlleleInfo.
 struct ReadSupportInfo {
