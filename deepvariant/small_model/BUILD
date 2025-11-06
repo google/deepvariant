@@ -23,7 +23,6 @@ py_test(
         ":make_small_model_examples",
         "//deepvariant/labeler:variant_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
-        "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
