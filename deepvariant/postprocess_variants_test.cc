@@ -95,8 +95,7 @@ void WriteSwitchesFile(const std::string& path,
 Variant CreatePhasedVariant(std::string chrom, int start, int end,
                             std::string ps_contig,
                             bool is_first_variant_in_phase_set, bool is_phased,
-                            const std::vector<int>& gt,
-                            bool add_alt_ps = true) {
+                            absl::Span<const int> gt, bool add_alt_ps = true) {
   Variant variant;
   variant.set_reference_name(chrom);
   variant.set_start(start);
