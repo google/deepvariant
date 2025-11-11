@@ -201,7 +201,7 @@ _PARTITION_SIZE = flags.DEFINE_integer(
     1000,
     (
         'The maximum number of basepairs we will allow in a region before'
-        ' splittingit into multiple smaller subregions.'
+        ' splitting it into multiple smaller subregions.'
     ),
 )
 _MAX_READS_PER_PARTITION = flags.DEFINE_integer(
@@ -242,7 +242,7 @@ _MAX_READ_LENGTH_TO_REALIGN = flags.DEFINE_integer(
         ' are never realigned.'
     ),
 )
-_TRIM_READS_FOR_PILUP = flags.DEFINE_bool(
+_TRIM_READS_FOR_PILEUP = flags.DEFINE_bool(
     'trim_reads_for_pileup',
     False,
     (
@@ -349,7 +349,7 @@ _VSC_MIN_FRACTION_MULTIPLIER = flags.DEFINE_float(
         ' allele fraction thresholds (vsc_min_fraction_snps and'
         ' vsc_min_fraction_indels) to adapt thresholds for multi-sample'
         ' calling. This has to in the (0, 1] interval. It can also be set to'
-        ' float("inf") programmaticaly to only use candidates from the target'
+        ' float("inf") programmatically to only use candidates from the target'
         ' sample in multi-sample calling.'
     ),
 )
@@ -1250,7 +1250,7 @@ def shared_flags_to_options(
 
     options.realigner_enabled = _REALIGN_READS.value
     options.max_read_length_to_realign = _MAX_READ_LENGTH_TO_REALIGN.value
-    options.trim_reads_for_pileup = _TRIM_READS_FOR_PILUP.value
+    options.trim_reads_for_pileup = _TRIM_READS_FOR_PILEUP.value
     if _ALT_ALIGNED_PILEUP.value and not options.trim_reads_for_pileup:
       logging.warning(
           'Automatically setting --trim_reads_for_pileup to True '
