@@ -187,6 +187,31 @@ py_test(
     ],
 )
 
+py_library(
+    name = "soft_labeler",
+    srcs = ["soft_labeler.py"],
+    deps = [
+        ":variant_labeler",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/util:ranges",
+        "//third_party/nucleus/util:variant_utils",
+        "//third_party/nucleus/util:variantcall_utils",
+        "@absl_py//absl/logging",
+    ],
+)
+
+py_test(
+    name = "soft_labeler_test",
+    srcs = ["soft_labeler_test.py"],
+    deps = [
+        ":soft_labeler",
+        "//third_party/nucleus/testing:py_test_utils",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",
+    ],
+)
+
 py_binary(
     name = "compare_labelers",
     srcs = [
