@@ -194,6 +194,29 @@ def get_hybrid_config(config: ml_collections.ConfigDict):
   config.use_mixed_precision = False
 
 
+def get_rnaseq_config(config: ml_collections.ConfigDict):
+  """Config parameters for rnaseq training."""
+  get_wgs_config(config)
+  config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
+  config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
+  config.init_checkpoint = '/path/to/warmstart/checkpoint'
+  config.num_validation_examples = 0
+  config.batch_size = 16384
+  config.learning_rate = 0.01
+  config.learning_rate_num_epochs_per_decay = 3
+  config.learning_rate_decay_rate = 0.7
+  config.num_epochs = 20
+
+  config.best_checkpoint_metric = 'tune/categorical_accuracy'
+  config.optimizer = 'adam'
+  config.beta_1 = 0.9651804083266324
+  config.beta_2 = 0.9665259112630292
+  config.adaptive_epsilon = True
+  config.weight_decay = 0.00004
+  config.optimizer_weight_decay = 0.0
+  config.tune_every_steps = 1_280
+
+
 # ====================================#
 # Pangenome-aware DeepVariant Configs #
 # ====================================#
@@ -468,6 +491,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Placeholder value for limiting training examples. 0=No limit.
   config.limit = 0
 
+  config.adaptive_epsilon = True
+
   if config_name and '+' in config_name:
     config_name, alt_mode = config_name.split('+')
   else:
@@ -485,6 +510,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
     get_ont_config(config)
   elif config_name == 'hybrid':
     get_hybrid_config(config)
+  elif config_name == 'rnaseq':
+    get_rnaseq_config(config)
   elif config_name == 'pangenome_wgs':
     get_pangenome_wgs_config(config)
   elif config_name == 'deepsomatic_wgs':
