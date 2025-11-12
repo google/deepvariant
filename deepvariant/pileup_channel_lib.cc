@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright 2017 Google LLC.
  *
@@ -53,9 +51,13 @@
 #include "deepvariant/channels/gap_compressed_identity_channel.h"
 #include "deepvariant/channels/gc_content_channel.h"
 #include "deepvariant/channels/haplotype_tag_channel.h"
+#include "deepvariant/channels/homopolymer_deletion_quality_channel.h"
+#include "deepvariant/channels/homopolymer_indel_quality_channel.h"
+#include "deepvariant/channels/homopolymer_insertion_quality_channel.h"
 #include "deepvariant/channels/homopolymer_weighted_channel.h"
 #include "deepvariant/channels/identity_channel.h"
 #include "deepvariant/channels/insert_size_channel.h"
+#include "deepvariant/channels/inter_homopolymer_insertion_quality_channel.h"
 #include "deepvariant/channels/is_homopolymer_channel.h"
 #include "deepvariant/channels/mapping_quality_channel.h"
 #include "deepvariant/channels/read_base_channel.h"
@@ -436,6 +438,15 @@ std::unique_ptr<Channel> Channels::ChannelEnumToObject(
     case DeepVariantChannelEnum::CH_ALLELE_SAMPLE_PROBABILITY:
       return std::unique_ptr<Channel>(
           new AlleleSampleProbabilityChannel(width, options));
+    case DeepVariantChannelEnum::CH_HOMOPOLYMER_INSERTION_QUALITY:
+      return std::unique_ptr<Channel>(
+          new HomopolymerInsertionQualityChannel(width, options));
+    case DeepVariantChannelEnum::CH_HOMOPOLYMER_DELETION_QUALITY:
+      return std::unique_ptr<Channel>(
+          new HomopolymerDeletionQualityChannel(width, options));
+    case DeepVariantChannelEnum::CH_INTER_HOMOPOLYMER_INSERTION_QUALITY:
+      return std::unique_ptr<Channel>(
+          new InterHomopolymerInsertionQualityChannel(width, options));
     default:
       LOG(FATAL) << "Channel '" << DeepVariantChannelEnum_Name(channel_enum)
                  << "' is unimplemented and should have a corresponding "
@@ -496,6 +507,15 @@ DeepVariantChannelEnum Channels::ChannelStrToEnum(const std::string& channel) {
   }
   if (channel == ch_allele_sample_probability) {
     return DeepVariantChannelEnum::CH_ALLELE_SAMPLE_PROBABILITY;
+  }
+  if (channel == ch_homopolymer_insertion_quality) {
+    return DeepVariantChannelEnum::CH_HOMOPOLYMER_INSERTION_QUALITY;
+  }
+  if (channel == ch_homopolymer_deletion_quality) {
+    return DeepVariantChannelEnum::CH_HOMOPOLYMER_DELETION_QUALITY;
+  }
+  if (channel == ch_inter_homopolymer_insertion_quality) {
+    return DeepVariantChannelEnum::CH_INTER_HOMOPOLYMER_INSERTION_QUALITY;
   }
   CHECK(false) << "Channel '" << channel << "' should have a corresponding "
                << "enum in DeepVariantChannelEnum.";

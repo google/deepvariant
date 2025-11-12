@@ -1269,7 +1269,7 @@ message MakeExamplesRunInfo {
   MakeExamplesStats stats = 4;
 }
 
-// Next ID: 28.
+// Next ID: 31.
 enum DeepVariantChannelEnum {
   // Default should be unspecified.
   CH_UNSPECIFIED = 0;
@@ -1319,4 +1319,10 @@ enum DeepVariantChannelEnum {
   CH_BASE_6MA = 24;
   CH_SUPPLEMENTARY_ALIGNMENT = 26;
   CH_ALLELE_SAMPLE_PROBABILITY = 27;
+
+  // Homopolymer quality channels that use 'tp' and 't0' tags from reads.
+  // These tags encode quality scores for homopolymer-related errors.
+  CH_HOMOPOLYMER_INSERTION_QUALITY = 28;
+  CH_HOMOPOLYMER_DELETION_QUALITY = 29;
+  CH_INTER_HOMOPOLYMER_INSERTION_QUALITY = 30;
 }
