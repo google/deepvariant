@@ -129,7 +129,7 @@ END_OF_REGION = -1
 END_OF_PARTITION = -2
 
 # Maximum length of partition in bases. It is limited by available memory.
-# TODO: For better flexibility it may be benefitial to expose it as a
+# TODO: For better flexibility it may be beneficial to expose it as a
 # flag.
 MAX_PARTITION_LEN = 1000000
 
@@ -1056,8 +1056,8 @@ def reservoir_sample_reads(
     k: The number of elements to sample.
     region: The region we're sampling from. This can be used to determine how
       many bases are covered in the region.
-    max_bases_to_cover: If this maximum number of bases is reached, the
-      samplling will stop.
+    max_bases_to_cover: If this maximum number of bases is reached, the sampling
+      will stop.
     random_generator: A random number generator or None.
 
   Returns:
@@ -1727,7 +1727,7 @@ class RegionProcessor:
     ):
       logging.info(
           'For --variant_caller=vcf_candidate_importer, we '
-          'default the labeler_algorithm to positional_labler.'
+          'default the labeler_algorithm to positional_labeler.'
       )
       return positional_labeler.PositionalVariantLabeler(
           truth_vcf_reader=truth_vcf_reader, confident_regions=confident_regions
@@ -2754,7 +2754,7 @@ class RegionProcessor:
       A 3-tuple of (candidates, gvcfs, read_phases).
       The first value, candidates, is a dict keyed by sample role, where each
       item is a list of deepvariant_pb2.DeepVariantCalls objects, in
-      coordidate order.
+      coordinate order.
       The second value, gvcfs, is a dict keyed by sample role, where
       each item is a list of nucleus.genomics.v1.Variant protos containing gVCF
       information for all reference sites, if gvcf generation is enabled,
@@ -3274,12 +3274,9 @@ def processing_regions_from_options(
     ValueError: if the regions to call is empty.
 
   Returns:
-    A tuple of three values, (regions, sample_regions, calling_regions).
+    A tuple of two values, (regions, calling_regions).
     regions: a list of nucleus.genomics.v1.Range protos of the regions we should
     process.
-    sample_regions: a list of nucleus.genomics.v1.Range protos of the regions we
-    should sample on to calculate global information over the genome such as
-    mean coverage.
     calling_regions: a RangeSet containing the calling regions calculated from
     intersection of input regions, confident regions and regions to exclude.
   """
