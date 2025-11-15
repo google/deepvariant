@@ -2775,6 +2775,8 @@ class RegionProcessor:
       # we need to return the gVCF records calculated by the caller below.
       return {}, {}, {}, 0
 
+    effective_region = padded_region or region
+
     allele_counters = {}
     candidate_positions = []
     if self.options.allele_counter_options.track_ref_reads:
@@ -2782,14 +2784,9 @@ class RegionProcessor:
       for sample in self.samples:
         if sample.options.reads_filenames:
           # Calculate potential candidate positions from allele counts
-          if padded_region is not None:
-            sample.allele_counter = self._make_allele_counter_for_region(
-                padded_region, []
-            )
-          else:
-            sample.allele_counter = self._make_allele_counter_for_region(
-                region, []
-            )
+          sample.allele_counter = self._make_allele_counter_for_region(
+              effective_region, []
+          )
 
           for read in sample.reads:
             sample.allele_counter.add(read, sample.options.name)
@@ -2825,27 +2822,15 @@ class RegionProcessor:
           )
           sample.reads = sample.in_memory_sam_reader.query(region)
 
-          if padded_region is not None:
-            sample.allele_counter = (
-                self._make_allele_counter_for_read_overlap_region(
-                    padded_region, full_range, candidate_positions
-                )
-            )
-          else:
-            sample.allele_counter = (
-                self._make_allele_counter_for_read_overlap_region(
-                    region, full_range, candidate_positions
-                )
-            )
+          sample.allele_counter = (
+              self._make_allele_counter_for_read_overlap_region(
+                  effective_region, full_range, candidate_positions
+              )
+          )
         else:
-          if padded_region is not None:
-            sample.allele_counter = self._make_allele_counter_for_region(
-                padded_region, candidate_positions
-            )
-          else:
-            sample.allele_counter = self._make_allele_counter_for_region(
-                region, candidate_positions
-            )
+          sample.allele_counter = self._make_allele_counter_for_region(
+              effective_region, candidate_positions
+          )
 
         for read in sample.reads:
           if (
@@ -2920,12 +2905,9 @@ class RegionProcessor:
       snp_candidates = candidates[role][snp_candidate_idx]
 
       if self.options.phase_reads and not sample.options.skip_phasing:
-        if padded_region is not None:
-          reads_to_phase = list(
-              sample.in_memory_sam_reader.query(padded_region)
-          )
-        else:
-          reads_to_phase = list(sample.in_memory_sam_reader.query(region))
+        reads_to_phase = list(
+            sample.in_memory_sam_reader.query(effective_region)
+        )
 
         # We need to delete phasing tag here if phasing cannot be done for the
         # region we don't want to use the existing phasing if it exists in the
