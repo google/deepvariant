@@ -38,6 +38,7 @@
 
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "tensorflow/core/platform/test.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/utils.h"
