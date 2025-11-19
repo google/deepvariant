@@ -41,6 +41,7 @@
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/channels/channel_utils.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 
 namespace learning {
@@ -92,7 +93,7 @@ std::vector<std::uint8_t> HomopolymerInDelQualityChannel::HomoPolymerWeighted(
   // Generates a vector reflecting the number of repeats observed
   std::vector<std::uint8_t> homopolymer_weighted(read.aligned_sequence().size(),
                                                  1);
-  const std::string& seq = read.aligned_sequence();
+  const absl::string_view seq = read.aligned_sequence();
 
   if (seq.empty()) {
     return homopolymer_weighted;
@@ -135,7 +136,7 @@ HomopolymerInDelQualityChannel::HomoPolymerInDelQuality(const Read& read,
       read.aligned_sequence().size(),
       channels::internal::BaseQualityColor(kMaxQScore));
 
-  auto seq = read.aligned_sequence();
+  std::string seq(read.aligned_sequence());
   auto hmer_lengths = HomoPolymerWeighted(read);
   auto tps = GetTPValues(read);
 

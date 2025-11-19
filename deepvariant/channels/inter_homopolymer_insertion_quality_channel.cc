@@ -38,6 +38,7 @@
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/channels/channel_utils.h"
 #include "absl/log/log.h"
+#include "absl/strings/string_view.h"
 
 namespace learning {
 namespace genomics {
@@ -95,7 +96,7 @@ std::vector<std::uint8_t> InterHomopolymerInsertionQualityChannel::GetT0Values(
     LOG(WARNING) << "Read contains more than one t0 tag.";
   }
 
-  const auto& t0 = t0_values[0].string_value();
+  const absl::string_view t0 = t0_values[0].string_value();
 
   if (t0.empty()) {
     return int_t0s;
