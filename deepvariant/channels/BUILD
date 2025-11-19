@@ -379,13 +379,7 @@ cc_library(
     deps = [
         ":channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
-        "//third_party/nucleus/protos:cigar_cc_pb2",
-        "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
-        "//third_party/nucleus/protos:struct_cc_pb2",
-        "//third_party/nucleus/protos:variants_cc_pb2",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/types:span",
     ],
 )
 
