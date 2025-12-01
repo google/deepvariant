@@ -36,6 +36,7 @@
 
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/channels/homopolymer_indel_quality_channel.h"
+#include "deepvariant/protos/deepvariant.pb.h"
 
 namespace learning {
 namespace genomics {

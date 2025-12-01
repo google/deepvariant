@@ -37,6 +37,7 @@
 
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/channels/channel_utils.h"
+#include "deepvariant/protos/deepvariant.pb.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 
