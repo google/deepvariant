@@ -147,9 +147,6 @@ class Channels {
       DeepVariantChannelEnum channel_enum, int width,
       const learning::genomics::deepvariant::PileupImageOptions& options);
 
-  // Scales an input value to pixel range 0-254.
-  std::uint8_t ScaleColor(int value, float max_val);
-
   // Scales an input vector to pixel range 0-254
   std::vector<std::uint8_t> ScaleColorVector(
       std::vector<std::uint8_t>& channel_values, float max_val);

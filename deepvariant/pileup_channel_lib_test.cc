@@ -71,16 +71,6 @@ namespace deepvariant {
 
 using ::testing::ValuesIn;
 
-TEST(ScaleColor, BasicCase) {
-  PileupImageOptions options{};
-  Channels channel_set{options};
-  EXPECT_EQ(channel_set.ScaleColor(50, 100), 127);
-  EXPECT_EQ(channel_set.ScaleColor(127, kMaxPixelValueAsFloat), 127);
-  // Beyond max scales to max.
-  EXPECT_EQ(channel_set.ScaleColor(500, kMaxPixelValueAsFloat),
-            kMaxPixelValueAsFloat);
-}
-
 TEST(ScaleColorVector, BasicCase) {
   PileupImageOptions options{};
   Channels channel_set{options};
