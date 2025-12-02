@@ -3422,11 +3422,11 @@ options {
     base_color_offset_a_and_g: 40
     base_color_offset_t_and_c: 30
     base_color_stride: 70
-    reference_alpha: 0.4000000059604645
+    reference_alpha: 0.4
     reference_base_quality: 60
     allele_supporting_read_alpha: 1.0
-    allele_unsupporting_read_alpha: 0.6000000238418579
-    reference_matching_read_alpha: 0.20000000298023224
+    allele_unsupporting_read_alpha: 0.6
+    reference_matching_read_alpha: 0.2
     reference_mismatching_read_alpha: 1.0
     indel_anchoring_base_char: "*"
     positive_strand_color: 70
@@ -3443,8 +3443,8 @@ options {
     random_seed: 2101079370
     num_channels: 7
     alt_aligned_pileup: "none"
-    other_allele_supporting_read_alpha: 0.6000000238418579
-    min_non_zero_allele_frequency: 9.999999747378752e-06
+    other_allele_supporting_read_alpha: 0.6
+    min_non_zero_allele_frequency: 1e-05
     types_to_alt_align: "indels"
     channels: "read_base"
     channels: "base_quality"
@@ -3464,7 +3464,7 @@ options {
   confident_regions_filename: "deepvariant/testdata/input/test_nist.b37_chr20_100kbp_at_10mb.bed"
   truth_variants_filename: "deepvariant/testdata/input/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz"
   mode: TRAINING
-  min_shared_contigs_basepairs: 0.8999999761581421
+  min_shared_contigs_basepairs: 0.9
   num_shards: 3
   realigner_enabled: true
   realigner_options {
@@ -3498,7 +3498,7 @@ options {
       gap_open: 8
       gap_extend: 2
       k: 23
-      error_rate: 0.009999999776482582
+      error_rate: 0.01
       read_size: 101
       kmer_size: 32
       max_num_of_mismatches: 2
@@ -3520,11 +3520,11 @@ options {
     variant_caller_options {
       min_count_snps: 2
       min_count_indels: 2
-      min_fraction_snps: 0.11999999731779099
-      min_fraction_indels: 0.05999999865889549
+      min_fraction_snps: 0.12
+      min_fraction_indels: 0.06
       random_seed: 1400605801
       sample_name: "NA12878"
-      p_error: 0.0010000000474974513
+      p_error: 0.001
       max_gq: 50
       gq_resolution: 5
       ploidy: 2
@@ -3555,7 +3555,7 @@ options {
   deterministic_serialization: true
   trim_reads_for_pileup: true
   shm_buffer_size: 10485760
-  exclude_variants_af_threshold: 0.05000000074505806
+  exclude_variants_af_threshold: 0.05
   small_model_inference_batch_size: 128
   small_model_vaf_context_window_size: 51
   methylation_calling_threshold: 0.5
@@ -3584,13 +3584,13 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 12
-  cpu_frequency_mhz: 3581.4040000000005
-  total_memory_mb: 128667
-  wall_time_seconds: 0.4477107524871826
-  cpu_user_time_seconds: 3.154161
-  cpu_system_time_seconds: 2.339481
-  memory_peak_rss_mb: 716
+  physical_core_count: 6
+  cpu_frequency_mhz: 2916.659333333333
+  total_memory_mb: 63892
+  wall_time_seconds: 0.6156322956085205
+  cpu_user_time_seconds: 5.476154
+  cpu_system_time_seconds: 1.844258
+  memory_peak_rss_mb: 685
   write_bytes: 147456
 }
 stats {

@@ -508,7 +508,7 @@ def write_make_examples_run_info(run_info_proto, path):
         '# proto-file: learning/genomics/deepvariant/protos/deepvariant.proto\n'
         '# proto-message: MakeExamplesRunInfo\n'
     )
-    writer.write(text_format.MessageToString(run_info_proto, float_format=''))
+    writer.write(text_format.MessageToString(run_info_proto))
 
 
 # ---------------------------------------------------------------------------

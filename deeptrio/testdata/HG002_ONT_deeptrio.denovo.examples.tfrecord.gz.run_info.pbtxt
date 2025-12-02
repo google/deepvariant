@@ -3423,11 +3423,11 @@ options {
     base_color_offset_a_and_g: 40
     base_color_offset_t_and_c: 30
     base_color_stride: 70
-    reference_alpha: 0.4000000059604645
+    reference_alpha: 0.4
     reference_base_quality: 60
     allele_supporting_read_alpha: 1.0
-    allele_unsupporting_read_alpha: 0.6000000238418579
-    reference_matching_read_alpha: 0.20000000298023224
+    allele_unsupporting_read_alpha: 0.6
+    reference_matching_read_alpha: 0.2
     reference_mismatching_read_alpha: 1.0
     indel_anchoring_base_char: "*"
     positive_strand_color: 70
@@ -3446,8 +3446,8 @@ options {
     sequencing_type: TRIO
     alt_aligned_pileup: "diff_channels"
     sort_by_haplotypes: true
-    other_allele_supporting_read_alpha: 0.6000000238418579
-    min_non_zero_allele_frequency: 9.999999747378752e-06
+    other_allele_supporting_read_alpha: 0.6
+    min_non_zero_allele_frequency: 1e-05
     types_to_alt_align: "indels"
     channels: "read_base"
     channels: "base_quality"
@@ -3469,7 +3469,7 @@ options {
   confident_regions_filename: "deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.bed"
   truth_variants_filename: "deeptrio/testdata/input/HG002_GRCh38_1_22_v4.2.1_benchmark.chr20.vcf.gz"
   mode: TRAINING
-  min_shared_contigs_basepairs: 0.8999999761581421
+  min_shared_contigs_basepairs: 0.9
   realigner_options {
     ws_config {
       min_mapq: 20
@@ -3501,7 +3501,7 @@ options {
       gap_open: 8
       gap_extend: 2
       k: 23
-      error_rate: 0.009999999776482582
+      error_rate: 0.01
       kmer_size: 32
       max_num_of_mismatches: 2
       realignment_similarity_threshold: 0.16934
@@ -3523,15 +3523,15 @@ options {
     variant_caller_options {
       min_count_snps: 2
       min_count_indels: 2
-      min_fraction_snps: 0.10000000149011612
-      min_fraction_indels: 0.11999999731779099
+      min_fraction_snps: 0.1
+      min_fraction_indels: 0.12
       random_seed: 1400605801
       sample_name: "HG003"
-      p_error: 0.0010000000474974513
+      p_error: 0.001
       max_gq: 50
       gq_resolution: 5
       ploidy: 2
-      min_fraction_multiplier: 0.6700000166893005
+      min_fraction_multiplier: 0.67
       skip_uncalled_genotypes: true
       track_ref_reads: true
       phase_reads_region_padding_pct: 20
@@ -3560,15 +3560,15 @@ options {
     variant_caller_options {
       min_count_snps: 2
       min_count_indels: 2
-      min_fraction_snps: 0.10000000149011612
-      min_fraction_indels: 0.11999999731779099
+      min_fraction_snps: 0.1
+      min_fraction_indels: 0.12
       random_seed: 1400605801
       sample_name: "HG002"
-      p_error: 0.0010000000474974513
+      p_error: 0.001
       max_gq: 50
       gq_resolution: 5
       ploidy: 2
-      min_fraction_multiplier: 0.6700000166893005
+      min_fraction_multiplier: 0.67
       skip_uncalled_genotypes: true
       track_ref_reads: true
       phase_reads_region_padding_pct: 20
@@ -3596,15 +3596,15 @@ options {
     variant_caller_options {
       min_count_snps: 2
       min_count_indels: 2
-      min_fraction_snps: 0.10000000149011612
-      min_fraction_indels: 0.11999999731779099
+      min_fraction_snps: 0.1
+      min_fraction_indels: 0.12
       random_seed: 1400605801
       sample_name: "HG004"
-      p_error: 0.0010000000474974513
+      p_error: 0.001
       max_gq: 50
       gq_resolution: 5
       ploidy: 2
-      min_fraction_multiplier: 0.6700000166893005
+      min_fraction_multiplier: 0.67
       skip_uncalled_genotypes: true
       track_ref_reads: true
       phase_reads_region_padding_pct: 20
@@ -3637,7 +3637,7 @@ options {
   deterministic_serialization: true
   trim_reads_for_pileup: true
   shm_buffer_size: 10485760
-  exclude_variants_af_threshold: 0.05000000074505806
+  exclude_variants_af_threshold: 0.05
   small_model_inference_batch_size: 128
   small_model_vaf_context_window_size: 51
   methylation_calling_threshold: 0.5
@@ -3666,13 +3666,13 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 12
-  cpu_frequency_mhz: 3458.765041666667
-  total_memory_mb: 128667
-  wall_time_seconds: 12.542783737182617
-  cpu_user_time_seconds: 15.131706
-  cpu_system_time_seconds: 2.520301
-  memory_peak_rss_mb: 1230
+  physical_core_count: 6
+  cpu_frequency_mhz: 3520.249
+  total_memory_mb: 63892
+  wall_time_seconds: 14.980739116668701
+  cpu_user_time_seconds: 19.33422
+  cpu_system_time_seconds: 2.37133
+  memory_peak_rss_mb: 1187
   write_bytes: 8929280
 }
 stats {
