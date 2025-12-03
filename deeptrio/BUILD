@@ -83,7 +83,6 @@ py_test(
         "//deepvariant:dv_constants",
         "//deepvariant:dv_utils",
         "//deepvariant:make_examples_core",
-        "//deepvariant/labeler:variant_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
         # BEGIN_INTERNAL
         "//net/proto2/contrib/pyutil:compare",
@@ -91,7 +90,6 @@ py_test(
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/io:vcf",
-        "//third_party/nucleus/protos:reads_py_pb2",
         "//third_party/nucleus/protos:reference_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
