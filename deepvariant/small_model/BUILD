@@ -10,6 +10,7 @@ py_library(
     name = "make_small_model_examples",
     srcs = ["make_small_model_examples.py"],
     deps = [
+        "//deepvariant/labeler:customized_classes_labeler",
         "//deepvariant/labeler:variant_labeler",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/util:variant_utils",

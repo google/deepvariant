@@ -35,6 +35,7 @@ import itertools
 
 import tensorflow as tf
 
+from deepvariant.labeler import customized_classes_labeler
 from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.protos import variants_pb2
@@ -512,7 +513,10 @@ class FeatureEncoder:
 
   def encode_label(
       self,
-      label: variant_labeler.VariantLabel,
+      label: (
+          variant_labeler.VariantLabel
+          | customized_classes_labeler.CustomizedClassesVariantLabel
+      ),
   ) -> Sequence[int]:
     """Returns a one-hot encoded genotype.
 
@@ -522,10 +526,32 @@ class FeatureEncoder:
     Returns:
       A one-hot encoded genotype.
     """
-    genotype_encoding = self._genotype_label(label)
+    if isinstance(
+        label, customized_classes_labeler.CustomizedClassesVariantLabel
+    ):
+      encoded_class = label.get_class()
+    else:
+      encoded_class = self._genotype_label(label)
+
     value = [0 for _ in GenotypeEncoding]
-    value[genotype_encoding] = 1
+    value[encoded_class] = 1
     return value
+
+  def encode_genotype(
+      self,
+      label: (
+          variant_labeler.VariantLabel
+          | customized_classes_labeler.CustomizedClassesVariantLabel
+      ),
+  ) -> Sequence[int]:
+    """Returns a one-hot encoded genotype."""
+    if isinstance(
+        label, customized_classes_labeler.CustomizedClassesVariantLabel
+    ):
+      # Class can serve as a proxy for genotype.
+      return [label.get_class()]
+    else:
+      return label.genotype
 
 
 @dataclasses.dataclass
@@ -720,7 +746,9 @@ class SmallModelExampleFactory:
                     )
                 ),
                 GENOTYPE_ENCODED: tf.train.Feature(
-                    int64_list=tf.train.Int64List(value=label.genotype)
+                    int64_list=tf.train.Int64List(
+                        value=feature_encoder.encode_genotype(label)
+                    )
                 ),
             }
         )
