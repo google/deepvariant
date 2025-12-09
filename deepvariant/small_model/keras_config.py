@@ -150,7 +150,8 @@ def load_keras_model(
     checkpoint_path: str, compile_model: bool = True
 ) -> tf.keras.Model:
   """Loads a Keras model from the given checkpoint path."""
-  return tf.keras.models.load_model(checkpoint_path, compile=compile_model)
+  model = tf.keras.models.load_model(checkpoint_path, compile=compile_model)
+  return model
 
 
 class LegacyFormatModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
