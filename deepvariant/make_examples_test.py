@@ -1407,6 +1407,56 @@ class DefaultOptionsTest(parameterized.TestCase):
     )
 
 
+class ResolveSamAuxFieldsTest(parameterized.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    self._saved_flags = flagsaver.save_flag_values()
+    FLAGS.use_original_quality_scores = False
+
+  def tearDown(self):
+    flagsaver.restore_flag_values(self._saved_flags)
+    super().tearDown()
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='no_channels',
+          channels=[],
+          expected=[],
+      ),
+      dict(
+          testcase_name='homopolymer_insertion_quality',
+          channels=['homopolymer_insertion_quality'],
+          expected=['tp'],
+      ),
+      dict(
+          testcase_name='homopolymer_deletion_quality',
+          channels=['homopolymer_deletion_quality'],
+          expected=['tp'],
+      ),
+      dict(
+          testcase_name='inter_homopolymer_insertion_quality',
+          channels=['inter_homopolymer_insertion_quality'],
+          expected=['t0'],
+      ),
+      dict(
+          testcase_name='all_quality_channels',
+          channels=[
+              'homopolymer_insertion_quality',
+              'homopolymer_deletion_quality',
+              'inter_homopolymer_insertion_quality',
+          ],
+          expected=['tp', 't0'],
+      ),
+  )
+  def test_resolve_sam_aux_fields(
+      self, channels: list[str], expected: list[str]
+  ) -> None:
+    self.assertCountEqual(
+        expected, make_examples_core.resolve_sam_aux_fields(FLAGS, channels)
+    )
+
+
 class MainTest(parameterized.TestCase):
 
   def test_catches_bad_argv(self):

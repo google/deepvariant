@@ -335,6 +335,23 @@ def resolve_sam_aux_fields(
     aux_fields.add('OQ')
 
   # Add fields required for channels.
+  if (
+      'homopolymer_insertion_quality' in provided_channels
+      or 'homopolymer_deletion_quality' in provided_channels
+  ):
+    logging.info(
+        'Parsing tp AUX tag because homopolymer_insertion_quality or '
+        'homopolymer_deletion_quality channel is present.'
+    )
+    aux_fields.add('tp')
+
+  if 'inter_homopolymer_insertion_quality' in provided_channels:
+    logging.info(
+        'Parsing t0 AUX tag because inter_homopolymer_insertion_quality '
+        'channel is present.'
+    )
+    aux_fields.add('t0')
+
   for base_mod_channel in ['base_methylation', 'base_6ma']:
     if base_mod_channel in provided_channels:
       logging.info(
