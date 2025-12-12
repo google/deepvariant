@@ -150,7 +150,19 @@ def load_keras_model(
     checkpoint_path: str, compile_model: bool = True
 ) -> tf.keras.Model:
   """Loads a Keras model from the given checkpoint path."""
+  # Monkey-patch from_config to handle a bug in older Keras versions.
+  # TODO: Remove this monkey-patch.
+  original_from_config = tf.keras.layers.InputLayer.from_config
+
+  @classmethod
+  def from_config_patched(cls, config):  # pylint: disable=unused-argument
+    config.pop("optional", None)
+    return original_from_config(config)
+
+  tf.keras.layers.InputLayer.from_config = from_config_patched
   model = tf.keras.models.load_model(checkpoint_path, compile=compile_model)
+  # Restore the original from_config to avoid side-effects.
+  tf.keras.layers.InputLayer.from_config = original_from_config
   return model
 
 
