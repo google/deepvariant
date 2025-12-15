@@ -66,7 +66,7 @@ chromosome (e.g. for chromosomeX, only the mother and son samples and for
 chromosomeY only the father and son samples).
 
 If needed, DeepTrio can be built from source. For more details please refer to
-[Building DeeepTrio](deeptrio-build-test.md).
+[Building DeepTrio](deeptrio-build-test.md).
 
 ## DeepTrio Input assumptions
 
