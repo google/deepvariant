@@ -55,10 +55,11 @@ void HomopolymerInsertionQualityChannel::FillReadBase(
     homopolymer_insertion_quality_vector_ =
         HomoPolymerInDelQuality(read, false);  // false = insertion
   }
-  if (col >= 0 && col < homopolymer_insertion_quality_vector_->size()) {
-    data.push_back((*homopolymer_insertion_quality_vector_)[col]);
+  if (read_index >= 0 &&
+      read_index < homopolymer_insertion_quality_vector_->size()) {
+    data[col] = (*homopolymer_insertion_quality_vector_)[read_index];
   } else {
-    data.push_back(0);
+    data[col] = 0;
   }
 }
 

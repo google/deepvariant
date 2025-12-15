@@ -58,10 +58,11 @@ void InterHomopolymerInsertionQualityChannel::FillReadBase(
   if (!inter_homopolymer_insertion_quality_vector_.has_value()) {
     inter_homopolymer_insertion_quality_vector_ = GetT0QualityValues(read);
   }
-  if (col >= 0 && col < inter_homopolymer_insertion_quality_vector_->size()) {
-    data.push_back((*inter_homopolymer_insertion_quality_vector_)[col]);
+  if (read_index >= 0 &&
+      read_index < inter_homopolymer_insertion_quality_vector_->size()) {
+    data[col] = (*inter_homopolymer_insertion_quality_vector_)[read_index];
   } else {
-    data.push_back(0);
+    data[col] = 0;
   }
 }
 
