@@ -137,6 +137,11 @@ _CANDIDATE_POSITIONS = flags.DEFINE_string(
     '',
     'Path to the binary file containing candidate positions.',
 )
+_TRAINED_SMALL_MODEL_PATH = flags.DEFINE_string(
+    'trained_small_model_path',
+    '',
+    'Path to a small model checkpoint directory.',
+)
 
 # Change any flag defaults that differ for DeepSomatic.
 # I'm setting this to float('inf') because we don't want to include any
@@ -187,6 +192,7 @@ def tumor_normal_samples_from_flags(flags_obj):
       sample_options.non_uniform_downsampling_threshold = (
           flags_obj.non_uniform_downsampling_threshold
       )
+      sample_options.small_model_path = flags_obj.trained_small_model_path
 
       if flags_obj.reads_normal and flags_obj.reads_tumor:
         sample_options.order.extend([0, 1])

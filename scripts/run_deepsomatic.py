@@ -40,7 +40,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from absl import app
 from absl import flags
@@ -153,6 +153,20 @@ _CUSTOMIZED_MODEL = flags.DEFINE_string(
     (
         'Optional. A path to a model checkpoint to load for the `call_variants`'
         ' step. If not set, the default for each --model_type will be used'
+    ),
+)
+_DISABLE_SMALL_MODEL = flags.DEFINE_boolean(
+    'disable_small_model',
+    False,
+    'Optional. Disable the use of the small model to call variants during '
+    'the `make_examples` step.',
+)
+_CUSTOMIZED_SMALL_MODEL = flags.DEFINE_string(
+    'customized_small_model',
+    None,
+    (
+        'Optional. A path to a small model checkpoint to call variants during '
+        'the `make_examples` step.'
     ),
 )
 # Optional flags for make_examples_somatic.
@@ -393,6 +407,26 @@ def _update_kwargs_with_warning(kwargs, extra_args):
   return kwargs
 
 
+def _use_small_model() -> bool:
+  """Determines if the small model is enabled based on flags and model type."""
+  if _DISABLE_SMALL_MODEL.value:
+    return False
+  if _CUSTOMIZED_SMALL_MODEL.value:
+    return True
+  return False
+
+
+def _set_small_model_config(
+    special_args: Dict[str, Any],
+    customized_small_model: str | None,
+) -> None:
+  """Sets small model config parameters."""
+  if not _use_small_model():
+    return
+  special_args['call_small_model_examples'] = True
+  special_args['trained_small_model_path'] = customized_small_model
+
+
 def make_examples_somatic_command(
     ref,
     reads_tumor,
@@ -609,6 +643,8 @@ def make_examples_somatic_command(
     special_args['max_reads_per_partition'] = 0
     special_args['max_reads_for_dynamic_bases_per_region'] = 1500
 
+  _set_small_model_config(special_args, _CUSTOMIZED_SMALL_MODEL.value)
+
   if special_args:
     kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
@@ -658,6 +694,7 @@ def postprocess_variants_command(
     ref: str,
     infile: str,
     outfile: str,
+    small_model_cvo_records: str,
     process_somatic: bool,
     pon_filtering: str,
     extra_args: str,
@@ -672,6 +709,11 @@ def postprocess_variants_command(
     command.extend(['--process_somatic=true'])
   else:
     command.extend(['--noprocess_somatic'])
+
+  if _use_small_model():
+    command.extend(
+        ['--small_model_cvo_records', '"{}"'.format(small_model_cvo_records)]
+    )
 
   # Use this if-else block only for PON filtering.
   if pon_filtering:
@@ -906,11 +948,18 @@ def create_all_commands_and_logfiles(
   )
 
   # postprocess_variants
+  small_model_cvo_records = os.path.join(
+      intermediate_results_dir,
+      'make_examples_somatic_call_variant_outputs.tfrecord@{}.gz'.format(
+          _NUM_SHARDS.value
+      ),
+  )
   commands.append(
       postprocess_variants_command(
           ref=_REF.value,
           infile=call_variants_output,
           outfile=_OUTPUT_VCF.value,
+          small_model_cvo_records=small_model_cvo_records,
           process_somatic=_PROCESS_SOMATIC.value,
           pon_filtering=_PON_FILTERING.value,
           extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,

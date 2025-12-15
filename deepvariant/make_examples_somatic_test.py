@@ -125,6 +125,32 @@ class MakeExamplesSomaticEnd2EndTest(parameterized.TestCase):
     result = make_examples_somatic.tumor_normal_samples_from_flags(FLAGS)
     self.assertEqual(result[0][1].order, [0, 1])
 
+  @flagsaver.flagsaver
+  def test_small_model_path(self):
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads_normal = testdata.CHR20_BAM
+    FLAGS.reads_tumor = testdata.CHR20_BAM
+    FLAGS.sample_name_normal = 'NORMAL'
+    FLAGS.sample_name_tumor = 'TUMOR'
+    FLAGS.mode = 'calling'
+    FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.trained_small_model_path = '/path/to/small_model'
+
+    options = make_examples_somatic.default_options(
+        main_sample_index=1, add_flags=True
+    )
+
+    tumor_sample_options = options.sample_options[1]
+    normal_sample_options = options.sample_options[
+        make_examples_somatic.NORMAL_SAMPLE_INDEX
+    ]
+
+    self.assertEqual(
+        tumor_sample_options.small_model_path, '/path/to/small_model'
+    )
+    self.assertEmpty(normal_sample_options.small_model_path)
+
 
 if __name__ == '__main__':
   absltest.main()
