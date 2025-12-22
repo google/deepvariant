@@ -919,6 +919,31 @@ _USE_REJECTED_ALLELES = flags.DEFINE_bool(
     'This flag is only used when read_supports_variant_fuzzy channel is '
     'enabled.',
 )
+_FILTER_LOW_VAF_CANDIDATES = flags.DEFINE_bool(
+    'filter_low_vaf_candidates',
+    False,
+    'If True, enables filtering of low VAF candidates based on quality '
+    'metrics and strand support, provided they have zero support in '
+    'non-target samples.',
+)
+_LOW_VAF_THRESHOLD = flags.DEFINE_float(
+    'low_vaf_threshold',
+    0.05,
+    'VAF threshold below which the low-VAF filter may be applied (if other '
+    'conditions are met).',
+)
+_LOW_VAF_MAX_BASE_QUALITY = flags.DEFINE_integer(
+    'low_vaf_max_base_quality',
+    30,
+    'If filtering low VAF candidates, filter candidate if average base quality '
+    'is less than this value.',
+)
+_LOW_VAF_MAX_MAPPING_QUALITY = flags.DEFINE_integer(
+    'low_vaf_max_mapping_quality',
+    30,
+    'If filtering low VAF candidates, filter candidate if average mapping '
+    'quality is less than this value.',
+)
 
 
 def shared_flags_to_options(
@@ -981,6 +1006,10 @@ def shared_flags_to_options(
       methylation_calling_threshold=_METHYLATION_CALLING_THRESHOLD.value,
       enable_methylation_aware_phasing=_ENABLE_METHYLATION_AWARE_PHASING.value,
       assign_phase_from_normal=_ASSIGN_PHASE_FROM_NORMAL.value,
+      filter_low_vaf_candidates=_FILTER_LOW_VAF_CANDIDATES.value,
+      low_vaf_threshold=_LOW_VAF_THRESHOLD.value,
+      low_vaf_max_base_quality=_LOW_VAF_MAX_BASE_QUALITY.value,
+      low_vaf_max_mapping_quality=_LOW_VAF_MAX_MAPPING_QUALITY.value,
   )
 
   if add_flags:

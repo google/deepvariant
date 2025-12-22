@@ -733,7 +733,7 @@ message DirectPhasingOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 98.
+// Next ID: 102.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -1059,6 +1059,20 @@ message MakeExamplesOptions {
 
   // If true, use read support information from rejected alleles in pileup.
   bool use_rejected_alleles = 97;
+
+  // If true, enables filtering of low VAF candidates based on quality
+  // metrics and strand support, provided they have zero support in
+  // non-target samples.
+  bool filter_low_vaf_candidates = 98;
+  // VAF threshold below which the low-VAF filter may be applied (if other
+  // conditions are met).
+  double low_vaf_threshold = 99;
+  // If filtering low VAF candidates, only filter if average base quality
+  // is less than this value.
+  int32 low_vaf_max_base_quality = 100;
+  // If filtering low VAF candidates, only filter if average mapping
+  // quality is less than this value.
+  int32 low_vaf_max_mapping_quality = 101;
 }
 
 // Config describe information needed for a dataset that can be used for

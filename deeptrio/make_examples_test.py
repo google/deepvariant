@@ -1469,7 +1469,7 @@ class RegionProcessorTest(parameterized.TestCase):
   ])
   def test_process_keeps_ordering_of_candidates_and_examples(self, mode):
     self.processor.options.mode = mode
-
+    n_stats = {'n_filtered_low_vaf': 0}
     r1, r2 = mock.Mock(), mock.Mock()
     c1, c2 = mock.Mock(), mock.Mock()
     self.add_mock('region_reads_norealign', retval=[r1, r2])
@@ -1477,7 +1477,7 @@ class RegionProcessorTest(parameterized.TestCase):
         'candidates_in_region', retval=({'child': [c1, c2]}, {}, {}, 2)
     )
     candidates_dict, gvcfs_dict, runtimes, read_phases, phased_reads_count = (
-        self.processor.process(self.region)
+        self.processor.process(self.region, n_stats)
     )
     self.assertEqual({'child': [c1, c2]}, candidates_dict)
     self.assertEqual({}, gvcfs_dict)

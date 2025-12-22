@@ -415,6 +415,10 @@ def log_summary_stats(
     )
   if options.call_small_model_examples:
     stat_to_description['n_small_model_calls'] = 'small model examples called'
+  if options.filter_low_vaf_candidates:
+    stat_to_description['n_filtered_low_vaf'] = (
+        'candidates filtered due to low VAF'
+    )
 
   stats_to_log = {k: v for k, v in n_stats.items() if k in stat_to_description}
   longest_stat = max((len(str(x)) for x in stats_to_log.values()))
@@ -1649,10 +1653,71 @@ class RegionProcessor:
         and candidate.variant.alternate_bases[0] == '.'
     )
 
+  def _should_filter_low_vaf(
+      self,
+      candidate: deepvariant_pb2.DeepVariantCall,
+      target_sample_name: str,
+  ) -> bool:
+    """Returns True if the candidate should be filtered based on low VAF criteria."""
+    if not self.options.filter_low_vaf_candidates:
+      return False
+
+    target_ref_reads = [
+        r
+        for r in candidate.ref_support_ext.read_infos
+        if r.sample_name == target_sample_name
+    ]
+
+    # Loop through all alt alleles and check if any of them are valid based on
+    # VAF, quality, and strand support.
+    for alt_allele in candidate.variant.alternate_bases:
+      if alt_allele not in candidate.allele_support_ext:
+        continue
+
+      # Get all reads for the alt allele that are from the target sample.
+      target_alt_reads = [
+          r
+          for r in candidate.allele_support_ext[alt_allele].read_infos
+          if r.sample_name == target_sample_name
+      ]
+
+      if not target_alt_reads:
+        continue
+
+      dp = len(target_alt_reads) + len(target_ref_reads)
+      if dp == 0:
+        continue
+
+      vaf = len(target_alt_reads) / dp
+      if vaf > self.options.low_vaf_threshold:
+        return False
+
+      # If VAF is low, check quality and strand support.
+      avg_bq = sum(r.average_base_quality for r in target_alt_reads) / len(
+          target_alt_reads
+      )
+      avg_mapq = sum(r.mapping_quality for r in target_alt_reads) / len(
+          target_alt_reads
+      )
+
+      if (
+          avg_bq >= self.options.low_vaf_max_base_quality
+          and avg_mapq >= self.options.low_vaf_max_mapping_quality
+      ):
+        return False
+
+    # If we are here, no allele was found to be valid.
+    return True
+
   def _initialize(self):
     """Initialize the resources needed for this work in the current env."""
     if self.initialized:
       raise ValueError('Cannot initialize this object twice')
+
+    if self.options.filter_low_vaf_candidates:
+      logging_with_options(
+          self.options, 'Low VAF candidate filtering is enabled.'
+      )
 
     self.ref_reader = fasta.IndexedFastaReader(self.options.reference_filename)
 
@@ -2148,7 +2213,10 @@ class RegionProcessor:
     )
 
   def process(
-      self, region: range_pb2.Range, region_n: Optional[int] = None
+      self,
+      region: range_pb2.Range,
+      n_stats: Dict[str, int],
+      region_n: Optional[int] = None,
   ) -> Tuple[
       Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]],
       Dict[str, Sequence[variants_pb2.Variant]],
@@ -2161,6 +2229,7 @@ class RegionProcessor:
     Args:
       region: A nucleus.genomics.v1.Range proto. Specifies the region on the
         genome we should process.
+      n_stats: A dictionary for collecting statistics.
       region_n: Order number of the region being processed by this process.
 
     Returns:
@@ -2276,6 +2345,19 @@ class RegionProcessor:
         candidates = list(
             filter_candidates(candidates, self.options.select_variant_types)
         )
+
+      if self.options.filter_low_vaf_candidates and len(self.samples) > 1:
+        candidates_before_filtering = len(candidates)
+        candidates = [
+            c
+            for c in candidates
+            if not self._should_filter_low_vaf(c, sample.options.name)
+        ]
+        candidates_after_filtering = len(candidates)
+        num_filtered = candidates_before_filtering - candidates_after_filtering
+        if num_filtered > 0:
+          n_stats['n_filtered_low_vaf'] += num_filtered
+        candidates_by_sample[role] = candidates
 
       if (
           hasattr(self, 'exclude_variants_vcf_reader')
@@ -3492,6 +3574,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       'n_small_model_examples': 0,
       'n_small_model_calls': 0,
       'n_phased_candidates': 0,
+      'n_filtered_low_vaf': 0,
   }
   example_shape = None
   region_n = 0
@@ -3527,7 +3610,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
         runtimes,
         read_phases_by_sample,
         phased_candidates_count,
-    ) = region_processor.process(region, region_n)
+    ) = region_processor.process(region, n_stats, region_n)
     for sample in samples_that_need_writers:
       role = sample.options.role
       if role not in candidates_by_sample:
