@@ -49,6 +49,7 @@ from absl import logging
 from deepvariant import dv_utils
 from deepvariant import dv_vcf_constants
 from third_party.nucleus.io import fasta
+from third_party.nucleus.io import tabix
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.io import vcf
 from third_party.nucleus.util import variant_utils
@@ -151,10 +152,15 @@ def examples_to_variants(examples_path, max_records=None):
         )
         if label == 0:
           gt = (0, 0)
-        if label == 1:
+        elif label == 1:
           gt = (0, 1)
-        if label == 2:
+        elif label == 2:
           gt = (1, 1)
+        else:
+          raise ValueError(
+              'Variant {} has an invalid label: {}. Label must be 0, 1, or 2.'
+              .format(variant_utils.variant_key(variant), label)
+          )
         call = variant.calls[0] if variant.calls else variant.calls.add()
         variantcall_utils.set_gt(call, gt)
       elif _ALLOW_UNLABELED_EXAMPLES.value:
@@ -215,6 +221,7 @@ def main(argv):
           variant_utils.variant_key(variant),
       )
       writer.write(variant)
+  tabix.build_index(_OUTPUT_VCF.value)
 
 
 if __name__ == '__main__':

@@ -26,6 +26,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+import gzip
+
 from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
@@ -49,23 +51,24 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
   def test_end2end(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES + '@3'  # Sharded.
-    FLAGS.output_vcf = test_utils.test_tmpfile('examples_to_vcf.vcf')
+    FLAGS.output_vcf = test_utils.test_tmpfile('examples_to_vcf.vcf.gz')
 
     labeled_examples_to_vcf.main(0)
 
-    self.assertEqual(
-        open(FLAGS.output_vcf).readlines(),
-        open(
-            testdata.deepvariant_testdata('golden.training_examples.vcf')
-        ).readlines(),
-    )
+    with gzip.open(FLAGS.output_vcf, 'rt') as f:
+      vcf_lines = f.readlines()
+    with open(
+        testdata.deepvariant_testdata('golden.training_examples.vcf')
+    ) as f:
+      golden_lines = f.readlines()
+    self.assertEqual(vcf_lines, golden_lines)
 
   @flagsaver.flagsaver
   def test_sample_name_flag(self):
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.examples = testdata.GOLDEN_TRAINING_EXAMPLES
     FLAGS.sample_name = 'sample_name'
-    FLAGS.output_vcf = test_utils.test_tmpfile('no_sample_name.vcf')
+    FLAGS.output_vcf = test_utils.test_tmpfile('no_sample_name.vcf.gz')
 
     labeled_examples_to_vcf.main(0)
 

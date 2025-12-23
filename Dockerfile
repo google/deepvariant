@@ -136,6 +136,7 @@ COPY --from=builder \
       /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/train.zip \
       /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/fast_pipeline \
       /opt/deepvariant/scripts/run_deepvariant.py \
+      /opt/deepvariant/scripts/run_oracle_inference.py \
       /opt/deepvariant/bin/
 
 # Create shell wrappers for python zip files for easier use.
@@ -185,6 +186,10 @@ RUN \
     "${BASH_HEADER}" \
     '/usr/bin/python3 -u /opt/deepvariant/bin/run_deepvariant.py "$@"' > \
     /opt/deepvariant/bin/run_deepvariant && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    '/usr/bin/python3 -u /opt/deepvariant/bin/run_oracle_inference.py "$@"' > \
+    /opt/deepvariant/bin/run_oracle_inference && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
     '/usr/bin/python3 /opt/deepvariant/bin/train.zip "$@"' > \

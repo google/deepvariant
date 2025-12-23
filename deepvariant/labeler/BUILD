@@ -26,6 +26,7 @@ py_library(
         "//deepvariant:dv_utils",
         "//deepvariant:dv_vcf_constants",
         "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/io:tabix",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/util:variant_utils",
