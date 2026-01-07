@@ -296,15 +296,8 @@ class SmallModelConfig:
   indel_gq_threshold: int
   vaf_context_window: int
 
-
-SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
-    ModelType.WGS: SmallModelConfig(
-        small_model_checkpoint='/opt/smallmodels/wgs',
-        snp_gq_threshold=25,
-        indel_gq_threshold=30,
-        vaf_context_window=51,
-    ),
-}
+# Currently, we do not have default PG-aware small models.
+SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {}
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
