@@ -51,7 +51,7 @@ RUN parallel --halt now,fail=1 --verbose --jobs 10 \
 # Download small models
 RUN parallel --halt now,fail=1 --verbose --jobs 10 \
   "mkdir -p /opt/smallmodels/{1}/variables && wget -O /opt/smallmodels/{1}/{2} https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.{=1 s/_.*// =}.smallmodel/{2}" ::: \
-  wgs pacbio ont_r104 ::: \
+  wgs pacbio ont ::: \
   model.keras && \
   chmod -R +r /opt/smallmodels/
 
