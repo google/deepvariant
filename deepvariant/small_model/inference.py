@@ -29,11 +29,10 @@
 """Module for calling variants on examples using a trained keras model."""
 from collections.abc import Sequence
 import os
-import numpy as np
 # pylint: disable=g-import-not-at-top
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-import tensorflow as tf
-
+import keras
+import numpy as np
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.small_model import keras_config
 from deepvariant.small_model import make_small_model_examples
@@ -76,7 +75,7 @@ class SmallModelVariantCaller:
 
   def __init__(
       self,
-      classifier: tf.keras.Model,
+      classifier: keras.Model,
       snp_gq_threshold: float,
       indel_gq_threshold: float,
       batch_size: int,

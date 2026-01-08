@@ -780,8 +780,8 @@ function setup_args() {
     echo "Using customized small model"
     run mkdir -p "${INPUT_DIR}/smallmodel"
     run echo "Copy from gs:// path ${CUSTOMIZED_SMALL_MODEL} to ${INPUT_DIR}/smallmodel"
-    run gcloud storage cp -R "${CUSTOMIZED_SMALL_MODEL}"/'*' "${INPUT_DIR}"/smallmodel/
-    extra_args+=( --customized_small_model "/input/smallmodel")
+    run gcloud storage cp -R "${CUSTOMIZED_SMALL_MODEL}"/'*.keras' "${INPUT_DIR}"/smallmodel/model.keras
+    extra_args+=( --customized_small_model "/input/smallmodel/model.keras")
   fi
   if [[ -n "${POPULATION_VCFS}" ]]; then
     MAKE_EXAMPLES_ARGS="${MAKE_EXAMPLES_ARGS:+${MAKE_EXAMPLES_ARGS},}population_vcfs=/input/$(basename "$POPULATION_VCFS")"

@@ -35,7 +35,6 @@ py_library(
     srcs = ["keras_config.py"],
     deps = [
         ":make_small_model_examples",
-        "//deepvariant:metrics",
     ],
 )
 

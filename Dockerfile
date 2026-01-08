@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
-ARG VERSION=1.10.0-beta
+ARG VERSION=1.10.0-rc3
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
 #======================================#
@@ -33,7 +33,7 @@ RUN conda create -n bio \
 #==========================#
 FROM alpine:latest AS download_models
 
-ARG VERSION=1.10.0-beta
+ARG VERSION=1.10.0-rc3
 ENV VERSION=${VERSION}
 
 RUN apk add --no-cache wget parallel
@@ -52,7 +52,7 @@ RUN parallel --halt now,fail=1 --verbose --jobs 10 \
 RUN parallel --halt now,fail=1 --verbose --jobs 10 \
   "mkdir -p /opt/smallmodels/{1}/variables && wget -O /opt/smallmodels/{1}/{2} https://storage.googleapis.com/deepvariant/models/DeepVariant/${VERSION}/smallmodels/deepvariant.{=1 s/_.*// =}.smallmodel/{2}" ::: \
   wgs pacbio ont_r104 ::: \
-  fingerprint.pb saved_model.pb keras_metadata.pb variables/variables.data-00000-of-00001 variables/variables.index && \
+  model.keras && \
   chmod -R +r /opt/smallmodels/
 
 #===================#

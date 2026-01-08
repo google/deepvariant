@@ -31,18 +31,19 @@
 This module is used by the training and inference libraries.
 """
 import os
+import keras
 import ml_collections
 import tensorflow as tf
-from deepvariant import metrics
 from deepvariant.small_model import make_small_model_examples
 
 
-class LearningRateMetric(tf.keras.metrics.Metric):
+@keras.saving.register_keras_serializable(package="CustomMetrics")
+class LearningRateMetric(keras.metrics.Metric):
   """Reports the learning rate of the optimizer."""
 
   def __init__(
       self,
-      optimizer: tf.keras.optimizers.Optimizer,
+      optimizer: keras.optimizers.Optimizer,
       name="learning_rate",
       **kwargs,
   ):
@@ -60,42 +61,55 @@ class LearningRateMetric(tf.keras.metrics.Metric):
     self.learning_rate.assign(0.0)
 
 
-def keras_model_metrics() -> list[tf.keras.metrics.Metric]:
+@keras.saving.register_keras_serializable(package="CustomMetrics")
+class F1ScorePerClass(keras.metrics.F1Score):
+  """Reports F1 Score for a target class."""
+
+
+  def __init__(self, target_class: int, name: str):
+    self.target_class = target_class
+    super().__init__(name=name)
+
+  def result(self) -> tf.Tensor:
+    return super().result()[self.target_class]
+
+
+def keras_model_metrics() -> list[keras.metrics.Metric]:
   """Returns a list of Keras model metrics."""
   return [
-      tf.keras.metrics.CategoricalAccuracy(),
-      tf.keras.metrics.CategoricalCrossentropy(),
-      tf.keras.metrics.TruePositives(),
-      tf.keras.metrics.TrueNegatives(),
-      tf.keras.metrics.FalsePositives(),
-      tf.keras.metrics.FalseNegatives(),
-      tf.keras.metrics.Precision(),
-      tf.keras.metrics.Precision(name="precision_homref", class_id=0),
-      tf.keras.metrics.Precision(name="precision_het", class_id=1),
-      tf.keras.metrics.Precision(name="precision_homalt", class_id=2),
-      tf.keras.metrics.Recall(),
-      tf.keras.metrics.Recall(name="recall_homref", class_id=0),
-      tf.keras.metrics.Recall(name="recall_het", class_id=1),
-      tf.keras.metrics.Recall(name="recall_homalt", class_id=2),
-      tf.keras.metrics.F1Score(average="weighted", name="f1_weighted"),
-      tf.keras.metrics.F1Score(average="micro", name="f1_micro"),
-      tf.keras.metrics.F1Score(average="macro", name="f1_macro"),
-      metrics.F1ScorePerClass(target_class=0, name="f1_homref"),
-      metrics.F1ScorePerClass(target_class=1, name="f1_het"),
-      metrics.F1ScorePerClass(target_class=2, name="f1_homalt"),
+      keras.metrics.CategoricalAccuracy(),
+      keras.metrics.CategoricalCrossentropy(),
+      keras.metrics.TruePositives(),
+      keras.metrics.TrueNegatives(),
+      keras.metrics.FalsePositives(),
+      keras.metrics.FalseNegatives(),
+      keras.metrics.Precision(),
+      keras.metrics.Precision(name="precision_homref", class_id=0),
+      keras.metrics.Precision(name="precision_het", class_id=1),
+      keras.metrics.Precision(name="precision_homalt", class_id=2),
+      keras.metrics.Recall(),
+      keras.metrics.Recall(name="recall_homref", class_id=0),
+      keras.metrics.Recall(name="recall_het", class_id=1),
+      keras.metrics.Recall(name="recall_homalt", class_id=2),
+      keras.metrics.F1Score(average="weighted", name="f1_weighted"),
+      keras.metrics.F1Score(average="micro", name="f1_micro"),
+      keras.metrics.F1Score(average="macro", name="f1_macro"),
+      F1ScorePerClass(target_class=0, name="f1_homref"),
+      F1ScorePerClass(target_class=1, name="f1_het"),
+      F1ScorePerClass(target_class=2, name="f1_homalt"),
   ]
 
 
 def get_learning_rate(
     config: ml_collections.ConfigDict,
-) -> tf.keras.optimizers.schedules.ExponentialDecay:
+) -> keras.optimizers.schedules.ExponentialDecay:
   """Returns an exponential decay learning rate for the model."""
   model_params = config.model_params
   steps_per_epoch = config.num_train_samples // config.batch_size
   decay_steps = int(
       steps_per_epoch * model_params.learning_rate_num_epochs_per_decay
   )
-  return tf.keras.optimizers.schedules.ExponentialDecay(
+  return keras.optimizers.schedules.ExponentialDecay(
       initial_learning_rate=model_params.learning_rate,
       decay_steps=decay_steps,
       decay_rate=model_params.learning_rate_decay_rate,
@@ -103,10 +117,10 @@ def get_learning_rate(
   )
 
 
-def keras_mlp_model(config: ml_collections.ConfigDict) -> tf.keras.Model:
+def keras_mlp_model(config: ml_collections.ConfigDict) -> keras.Model:
   """Creates a Keras MLP model."""
   model_params = config.model_params
-  model = tf.keras.Sequential()
+  model = keras.Sequential()
   input_shape = len(
       make_small_model_examples.SmallModelExampleFactory(
           vaf_context_window_size=model_params.vaf_context_window_size,
@@ -118,7 +132,7 @@ def keras_mlp_model(config: ml_collections.ConfigDict) -> tf.keras.Model:
     input_shape = len(model_params.features)
   hidden_layers = model_params.hidden_layer_sizes
   model.add(
-      tf.keras.layers.Dense(
+      keras.layers.Dense(
           hidden_layers[0],
           activation=model_params.activation,
           input_shape=(input_shape,),
@@ -127,12 +141,12 @@ def keras_mlp_model(config: ml_collections.ConfigDict) -> tf.keras.Model:
   if len(hidden_layers) > 1:
     for layer_size in hidden_layers[1:]:
       model.add(
-          tf.keras.layers.Dense(layer_size, activation=model_params.activation)
+          keras.layers.Dense(layer_size, activation=model_params.activation)
       )
   output_shape = len(make_small_model_examples.GenotypeEncoding)
-  model.add(tf.keras.layers.Dense(output_shape, activation="softmax"))
+  model.add(keras.layers.Dense(output_shape, activation="softmax"))
 
-  optimizer = tf.keras.optimizers.Adam(
+  optimizer = keras.optimizers.Adam(
       learning_rate=get_learning_rate(config),
       weight_decay=model_params.weight_decay,
   )
@@ -148,37 +162,9 @@ def keras_mlp_model(config: ml_collections.ConfigDict) -> tf.keras.Model:
 
 def load_keras_model(
     checkpoint_path: str, compile_model: bool = True
-) -> tf.keras.Model:
+) -> keras.Model:
   """Loads a Keras model from the given checkpoint path."""
-  # Monkey-patch from_config to handle a bug in older Keras versions.
-  # TODO: Remove this monkey-patch.
-  original_from_config = tf.keras.layers.InputLayer.from_config
-
-  @classmethod
-  def from_config_patched(cls, config):  # pylint: disable=unused-argument
-    config.pop("optional", None)
-    return original_from_config(config)
-
-  tf.keras.layers.InputLayer.from_config = from_config_patched
-  model = tf.keras.models.load_model(checkpoint_path, compile=compile_model)
-  # Restore the original from_config to avoid side-effects.
-  tf.keras.layers.InputLayer.from_config = original_from_config
-  return model
-
-
-class LegacyFormatModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
-  """Checkpoint callback that saves the model in the legacy format.
-
-  This is required while we are on Keras 2.11.
-  """
-
-  def _save_handler(self, filepath):
-    if filepath.endswith(".keras"):
-      raise ValueError(
-          "The filepath cannot end in .keras in Keras 2.11. Please remove the "
-          "suffix and leave the file extension empty."
-      )
-    tf.keras.models.save_model(self.model, filepath, save_format="tf")
+  return keras.models.load_model(checkpoint_path, compile=compile_model)
 
 
 def get_keras_training_callbacks(
@@ -188,13 +174,13 @@ def get_keras_training_callbacks(
     logging_frequency: int,
     batch_size: int,
     num_train_samples: int,
-) -> list[tf.keras.callbacks.Callback]:
+) -> list[keras.callbacks.Callback]:
   """If provisioned, provides a callback to log metrics to Xmanager/TB."""
   metric_loggers = []
   checkpoint_path_template = (
-      "%s_epoch:{epoch:02d}_val_loss:{val_loss:.5f}" % checkpoint_filepath
+      "%s_epoch:{epoch:02d}_val_loss:{val_loss:.5f}.keras" % checkpoint_filepath
   )
-  model_checkpoint_callback = LegacyFormatModelCheckpoint(
+  model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
       filepath=checkpoint_path_template,
       monitor="val_accuracy",
       mode="max",
