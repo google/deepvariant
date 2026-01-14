@@ -139,7 +139,10 @@ pip3 install "${PIP_ARGS[@]}" 'crcmod>=1.7'
 pip3 install "${PIP_ARGS[@]}" 'six>=1.11.0'
 pip3 install "${PIP_ARGS[@]}" joblib
 pip3 install "${PIP_ARGS[@]}" psutil
-pip3 install "${PIP_ARGS[@]}" --upgrade google-api-python-client
+pip3 install "${PIP_ARGS[@]}" 'google-api-python-client==2.187.0'
+pip3 install "${PIP_ARGS[@]}" 'google-auth==2.47.0'
+pip3 install "${PIP_ARGS[@]}" 'google-auth-httplib2==0.3.0'
+pip3 install "${PIP_ARGS[@]}" 'httplib2==0.31.0'
 pip3 install "${PIP_ARGS[@]}" 'pandas==1.3.4'
 pip3 install "${PIP_ARGS[@]}" 'altair==5.5.0'
 pip3 install "${PIP_ARGS[@]}" "jsonschema==4.17.3"
