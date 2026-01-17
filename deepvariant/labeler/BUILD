@@ -71,6 +71,8 @@ py_test(
         ":variant_labeler",
         "//deepvariant:py_testdata",
         "//third_party/nucleus/io:vcf",
+        "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
