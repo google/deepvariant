@@ -1200,7 +1200,11 @@ def run_commands(
       if not dry_run:
         try:
           subprocess.check_call(
-              command, shell=True, executable='/bin/bash', env=env
+              command,
+              shell=True,
+              executable='/bin/bash',
+              env=env,
+              stderr=subprocess.STDOUT,
           )
         except subprocess.CalledProcessError as e:
           logging.info(e.output)
@@ -1210,7 +1214,13 @@ def run_commands(
       print('\n***** Running the command:*****\n{}\n'.format(command))
     if not _DRY_RUN.value:
       tasks = [
-          subprocess.Popen(command, shell=True, executable='/bin/bash', env=env)
+          subprocess.Popen(
+              command,
+              shell=True,
+              executable='/bin/bash',
+              env=env,
+              stderr=subprocess.STDOUT,
+          )
           for command in commands
       ]
       failed_task_indices = [
