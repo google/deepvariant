@@ -85,7 +85,7 @@ class SmallModelVariantCallerTest(parameterized.TestCase):
   def setUp(self):
     super().setUp()
     self.mock_classifier = mock.MagicMock()
-    self.mock_classifier.predict_on_batch.return_value = [
+    self.mock_classifier.predict.return_value = [
         (0.0, 0.999, 0.0),
         (0.0, 0.0, 0.1),
         (0.0, 0.0, 0.999),

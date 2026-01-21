@@ -31,6 +31,7 @@ from collections.abc import Sequence
 import os
 # pylint: disable=g-import-not-at-top
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["KERAS_BACKEND"] = "jax"
 import keras
 import numpy as np
 from deepvariant.protos import deepvariant_pb2
@@ -62,6 +63,13 @@ def passes_confidence_threshold(
       )
       >= threshold
   )
+
+
+@keras.utils.register_keras_serializable()
+def classify(
+    classifier: keras.Model, examples: np.ndarray, batch_size: int
+) -> np.ndarray:
+  return classifier.predict(examples, batch_size=batch_size, verbose=0)
 
 
 class SmallModelVariantCaller:
@@ -144,17 +152,6 @@ class SmallModelVariantCaller:
         ),
     )
 
-  def classify(self, examples: np.ndarray) -> list[tuple[float, ...]]:
-    """Classifies the given example."""
-    predictions = []
-    for i in range(0, len(examples), self.batch_size):
-      batch = examples[i : i + self.batch_size]
-      if len(batch) < self.batch_size:
-        predictions.extend(self.classifier(batch, training=False))
-      else:
-        predictions.extend(self.classifier.predict_on_batch(batch))
-    return predictions
-
   def call_variants(
       self,
       candidates_with_alt_allele_indices: Sequence[
@@ -166,7 +163,9 @@ class SmallModelVariantCaller:
       list[deepvariant_pb2.DeepVariantCall],
   ]:
     """Calls variants on the given examples."""
-    genotype_probabilities = self.classify(np.array(examples))
+    genotype_probabilities = classify(
+        self.classifier, np.array(examples), self.batch_size
+    )
 
     call_variant_outputs = []
     candidates_not_called_by_id = {}
