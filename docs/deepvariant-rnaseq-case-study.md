@@ -154,17 +154,6 @@ We now have a bed file of CDS regions intersected with 3x coverage regions
 called `data/chr20_CDS_3x.bed`. You can exit the docker container now. Type
 `exit` and hit enter.
 
-### Download the RNA-seq model
-
-Finally, lets download the RNA-seq model that we will use to call variants.
-
-```bash
-curl https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0+data-rnaseq_standard/model.ckpt.data-00000-of-00001 > model/model.ckpt.data-00000-of-00001
-curl https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0+data-rnaseq_standard/model.ckpt.example_info.json > model/model.ckpt.example_info.json
-curl https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0+data-rnaseq_standard/model.ckpt.index > model/model.ckpt.index
-curl https://storage.googleapis.com/deepvariant/models/DeepVariant/1.4.0/DeepVariant-inception_v3-1.4.0+data-rnaseq_standard/model.ckpt.meta > model/model.ckpt.meta
-```
-
 ### Directory Structure
 
 After you have run the steps above, your directory structure should look like
@@ -205,21 +194,20 @@ The command below will run the DeepVariant RNA-seq model and produce an output
 VCF (`output/out.vcf.gz`).
 
 ```bash
-BIN_VERSION="1.4.0"
+BIN_VERSION="1.10.0"
 
 sudo docker run \
   -v "$(pwd):$(pwd)" \
   -w $(pwd) \
   google/deepvariant:"${BIN_VERSION}" \
   run_deepvariant \
-    --model_type=WES \
-    --customized_model=model/model.ckpt \
+    --model_type=RNASEQ \
     --ref=reference/GRCh38_no_alt_analysis_set.fasta \
     --reads=data/hg005_gm26107.mrna.grch38.bam \
     --output_vcf=output/HG005.output.vcf.gz \
+    --disable_small_model \
     --num_shards=$(nproc) \
     --regions=data/chr20_CDS_3x.bed \
-    --make_examples_extra_args="split_skip_reads=true,channels=''" \
     --intermediate_results_dir output/intermediate_results_dir
 ```
 
@@ -234,14 +222,14 @@ sudo docker run \
 *   `--num_shards` - Sets the number of shards to the number of available
     processors (`$(nproc)`). This is used to perform parallelization.
 *   `--regions` - Restricts analysis to 3x chr20 CDS regions only.
+*   `--disable_small_model` - Disables the small model from running.
 *   `--make_examples_extra_args=` - Passes additional arguments to
     make_examples.
     *   `split_skip_reads=true` - *Important!* This flag is critical for RNA-seq
         variant calling to work properly. It enables RNA-seq data to be
         processed efficiently.
     *   `channels=''` - Resets the channel list to be appropriate for the
-        RNA-seq model.
-        model.
+        RNA-seq model. model.
 *   `--intermediate_results_dir` - Outputs results to an intermediate directory.
 
 For running on GPU machines, or using Singularity instead of Docker, see
@@ -284,8 +272,8 @@ The above command should output the following results:
 
 ```
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL            9         6         3           11         1          4      1      0       0.666667          0.857143        0.363636          0.75000                     NaN                     NaN                   0.800000                   1.200000
-INDEL   PASS            9         6         3           11         1          4      1      0       0.666667          0.857143        0.363636          0.75000                     NaN                     NaN                   0.800000                   1.200000
-  SNP    ALL          287       275        12          314         6         33      3      2       0.958188          0.978648        0.105096          0.96831                   4.125                3.984127                   1.141791                   1.093333
-  SNP   PASS          287       275        12          314         6         33      3      2       0.958188          0.978648        0.105096          0.96831                   4.125                3.984127                   1.141791                   1.093333
+INDEL    ALL            9         7         2           13         1          5      0      0       0.777778          0.875000        0.384615         0.823529                     NaN                     NaN                   0.800000                   1.166667
+INDEL   PASS            9         7         2           13         1          5      0      0       0.777778          0.875000        0.384615         0.823529                     NaN                     NaN                   0.800000                   1.166667
+  SNP    ALL          287       276        11          327         7         44      2      0       0.961672          0.975265        0.134557         0.968421                   4.125                3.954545                   1.141791                   1.194631
+  SNP   PASS          287       276        11          327         7         44      2      0       0.961672          0.975265        0.134557         0.968421                   4.125                3.954545                   1.141791                   1.194631
 ```
