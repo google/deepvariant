@@ -254,7 +254,9 @@ std::unique_ptr<DeBruijnGraph> DeBruijnGraph::Build(
     if (graph->HasCycle()) {
       continue;
     } else {
-      graph->Prune();
+      if (!options.disable_graph_pruning()) {
+        graph->Prune();
+      }
       return graph;
     }
   }

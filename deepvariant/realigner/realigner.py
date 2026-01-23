@@ -256,6 +256,11 @@ _ALLELE_COUNT_LINEAR_MODEL_DEFAULT = realigner_pb2.WindowSelectorModel(
         decision_boundary=3,
     ),
 )
+_DBG_DISABLE_GRAPH_PRUNING = flags.DEFINE_bool(
+    'dbg_disable_graph_pruning',
+    False,
+    'If True, graph pruning will be disabled.',
+)
 
 # Minimum length of read to retain following splitting with --split_skip_reads.
 _MIN_SPLIT_LEN = 15
@@ -383,6 +388,7 @@ def realigner_config(flags_obj):
       min_base_quality=flags_obj.dbg_min_base_quality,
       min_edge_weight=flags_obj.dbg_min_edge_weight,
       max_num_paths=flags_obj.dbg_max_num_paths,
+      disable_graph_pruning=flags_obj.dbg_disable_graph_pruning,
   )
 
   aln_config = realigner_pb2.AlignerOptions(
