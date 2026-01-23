@@ -338,7 +338,7 @@ elif [[ "${MODEL_PRESET}" = "PACBIO_T2T" ]]; then
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
   # TODO: If we want to externalize this, we need to use a public BAM.
   BAM="${BAM:=gs://brain-genomics/awcarroll/pacbio_training_2024/kudu/aligned.sorted.hg002.m84034_240730_194815_s1.hifi_reads.ccs.bam}"
-  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.vcf.gz"
+  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.20250117.vcf.gz"
   TRUTH_BED="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.benchmark.bed"
 elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
   MODEL_TYPE="ONT_R104"
@@ -360,7 +360,7 @@ elif [[ "${MODEL_PRESET}" = "ONT_R104_T2T" ]]; then
       BAM="gs://deepvariant/ont-case-study-testdata/HG002_R104_sup_merged.50x.bam"
     fi
   fi
-  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.vcf.gz"
+  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.20250117.vcf.gz"
   TRUTH_BED="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.benchmark.bed"
 elif [[ "${MODEL_PRESET}" = "WGS" ]]; then
   MODEL_TYPE="WGS"
@@ -380,7 +380,7 @@ elif [[ "${MODEL_PRESET}" = "WGS_T2T" ]]; then
   BASE="${HOME}/wgs-case-study"
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.vcf.gz"
+  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.20250117.vcf.gz"
   TRUTH_BED="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.benchmark.bed"
   if [[ "${MAIN_BINARY_NAME}" = "run_pangenome_aware_deepvariant" ]]; then
     echo "Use VG BAM for pangenome-aware DeepVariant."
@@ -403,7 +403,7 @@ elif [[ "${MODEL_PRESET}" = "WES_T2T" ]]; then
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
   BAM="${BAM:=${GCS_DATA_DIR}/exome-case-study-testdata/HG002.novaseq.wes_idt.100x.dedup.bam}"
-  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.vcf.gz"
+  TRUTH_VCF="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.20250117.vcf.gz"
   TRUTH_BED="gs://deepvariant/case-study-testdata/GRCh38_HG2-T2TQ100-V1.1_smvar.benchmark.bed"
   CAPTURE_BED="${CAPTURE_BED:=${GCS_DATA_DIR}/exome-case-study-testdata/idt_capture_novogene.grch38.bed}"
 elif [[ "${MODEL_PRESET}" = "HYBRID_PACBIO_ILLUMINA" ]]; then
