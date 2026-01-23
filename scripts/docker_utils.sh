@@ -34,7 +34,7 @@
 #
 # Arguments:
 #   DOCKER_SOURCE: The base name of the repository (e.g., google/deepsomatic).
-#   BIN_VERSION: The version tag (e.g., 1.9.0).
+#   BIN_VERSION: The version tag (e.g., 1.10.0).
 #   USE_GPU: Boolean ('true' or 'false') indicating if a GPU image is needed.
 # Returns:
 #   Prints the constructed Docker image name to stdout.

@@ -3640,6 +3640,9 @@ options {
   direct_phasing_options {
     min_alleles_to_phase: 1
   }
+  low_vaf_threshold: 0.05
+  low_vaf_max_base_quality: 30
+  low_vaf_max_mapping_quality: 30
 }
 labeling_metrics {
   n_truth_variant_sites: 48
@@ -3657,14 +3660,14 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 6
-  cpu_frequency_mhz: 3149.9915
-  total_memory_mb: 63892
-  wall_time_seconds: 3.3159027099609375
-  cpu_user_time_seconds: 7.459957
-  cpu_system_time_seconds: 3.022427
-  memory_peak_rss_mb: 687
-  write_bytes: 540672
+  physical_core_count: 12
+  cpu_frequency_mhz: 3827.0293333333334
+  total_memory_mb: 128665
+  wall_time_seconds: 2.1062240600585938
+  cpu_user_time_seconds: 6.300126
+  cpu_system_time_seconds: 3.97771
+  memory_peak_rss_mb: 927
+  write_bytes: 548864
 }
 stats {
   num_examples: 50

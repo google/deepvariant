@@ -78,7 +78,7 @@ class BuildProtoCommand(Command):
 
 setup(
     name='deepvariant',
-    version='1.9.0',
+    version='1.10.0',
     packages=find_packages(),
     package_dir={'deepvariant': 'deepvariant', 'third_party': 'third_party'},
     install_requires=[],

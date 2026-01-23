@@ -374,7 +374,7 @@ SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
 
 # Current release version of DeepTrio.
 # Should be the same in dv_vcf_constants.py.
-DEEP_TRIO_VERSION = '1.9.0'
+DEEP_TRIO_VERSION = '1.10.0'
 GLNEXUS_VERSION = 'v1.2.7'
 
 DEEP_TRIO_WGS_PILEUP_HEIGHT_CHILD = 60
@@ -877,7 +877,7 @@ def check_flags():
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
-          'https://github.com/google/deepvariant/blob/r1.9/docs/'
+          'https://github.com/google/deepvariant/blob/r1.10/docs/'
           'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
           'could-not-open'.format(_CUSTOMIZED_MODEL_PARENT.value)
       )
@@ -896,7 +896,7 @@ def check_flags():
       raise RuntimeError(
           'The model files {}* do not exist. Potentially '
           'relevant issue: '
-          'https://github.com/google/deepvariant/blob/r1.9/docs/'
+          'https://github.com/google/deepvariant/blob/r1.10/docs/'
           'FAQ.md#why-cant-it-find-one-of-the-input-files-eg-'
           'could-not-open'.format(_CUSTOMIZED_MODEL_CHILD.value)
       )

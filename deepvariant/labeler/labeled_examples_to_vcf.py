@@ -221,7 +221,8 @@ def main(argv):
           variant_utils.variant_key(variant),
       )
       writer.write(variant)
-  tabix.build_index(_OUTPUT_VCF.value)
+  if _OUTPUT_VCF.value.endswith('.gz'):
+    tabix.build_index(_OUTPUT_VCF.value)
 
 
 if __name__ == '__main__':

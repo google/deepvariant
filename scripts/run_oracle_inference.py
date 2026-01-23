@@ -196,7 +196,7 @@ _MAKE_EXAMPLES_EXTRA_ARGS = flags.DEFINE_string(
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
-DEEP_VARIANT_VERSION = '1.9.0'
+DEEP_VARIANT_VERSION = '1.10.0'
 
 
 def _is_quoted(value):

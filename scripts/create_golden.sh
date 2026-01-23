@@ -110,7 +110,7 @@ GOLDEN_POSTPROCESS_GVCF_OUTPUT=${TESTDATA_DIR}/golden.postprocess_gvcf_output.g.
 GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES=${TESTDATA_DIR}/golden.vcf_candidate_importer.training_examples.tfrecord.gz
 
 MODEL=gs://deepvariant/models/DeepVariant/1.6.0/savedmodels/deepvariant.wgs.savedmodel
-MODEL_PACBIO=gs://deepvariant/models/DeepVariant/1.9.0/savedmodels/deepvariant.pacbio.savedmodel
+MODEL_PACBIO=gs://deepvariant/models/DeepVariant/1.10.0/savedmodels/deepvariant.pacbio.savedmodel
 # Speed up by copying to /tmp/
 rm -rf /tmp/deepvariant.wgs.savedmodel
 gsutil -m cp -R ${MODEL} /tmp/

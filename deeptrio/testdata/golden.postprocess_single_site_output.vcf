@@ -17,7 +17,7 @@
 ##FORMAT=<ID=MT,Number=1,Type=String,Description="Methylation type: 0/0=Unmethylated, 0/1=Heterozygous, 1/1=Methylated">
 ##FORMAT=<ID=MI,Number=1,Type=Float,Description="Allele-specific methylation score: p-value for Wilcoxon Rank-Sum test based on the observed difference in methylation between haplotypes.">
 ##FORMAT=<ID=MED_DP,Number=1,Type=Integer,Description="Median DP observed within the GVCF block rounded to the nearest integer.">
-##DeepVariant_version=1.9.0
+##DeepVariant_version=1.10.0
 ##contig=<ID=20,length=63025520>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	child
 20	10000117	.	C	T	67.9	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:60:18:6,12:0.666667:67,0,60
@@ -85,7 +85,7 @@
 20	10008458	.	T	G	59.8	PASS	.	GT:GQ:DP:AD:VAF:PL	1/1:56:26:0,26:1:59,59,0
 20	10008742	.	G	T	63	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:55:21:6,15:0.714286:63,0,55
 20	10008758	.	C	CA	56.4	PASS	.	GT:GQ:DP:AD:VAF:PL	1/1:44:20:1,19:0.95:56,43,0
-20	10008921	.	C	CA	26.2	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:26:23:15,4:0.173913:26,0,44
+20	10008921	.	C	CA	26.2	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:26:23:15,4:0.173913:26,0,45
 20	10008948	.	TA	T	48.8	PASS	.	GT:GQ:DP:AD:VAF:PL	1/1:42:30:0,30:1:48,42,0
 20	10008952	.	CACACACACACA	C,CCACACACACA	51.2	PASS	.	GT:GQ:DP:AD:VAF:PL	1/2:34:28:0,16,12:0.571429,0.428571:51,37,48,37,0,45
 20	10009227	.	A	G	82.1	PASS	.	GT:GQ:DP:AD:VAF:PL	0/1:64:31:14,17:0.548387:99,0,63
