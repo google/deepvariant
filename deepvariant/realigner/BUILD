@@ -81,9 +81,9 @@ py_test(
     srcs = ["window_selector_test.py"],
     deps = [
         ":window_selector",
-        "//deepvariant:py_testdata",
         "//deepvariant/protos:realigner_py_pb2",
         "//third_party/nucleus/io:fasta",
+        "//third_party/nucleus/testing:py_test_utils",
         "//third_party/nucleus/util:ranges",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
