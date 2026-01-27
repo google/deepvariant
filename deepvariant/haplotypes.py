@@ -43,10 +43,12 @@ is not possible, the haplotypes are left unmodified.
 
 import copy
 import itertools
+
 from absl import flags
 from absl import logging
 import numpy as np
 
+from deepvariant import dv_vcf_constants
 from third_party.nucleus.util import genomics_math
 from third_party.nucleus.util import variant_utils
 
@@ -64,7 +66,7 @@ flags.DEFINE_bool(
 _MAX_OVERLAPPING_VARIANTS_TO_RESOLVE = 12
 
 
-def maybe_resolve_conflicting_variants(sorted_variants):
+def maybe_resolve_conflicting_variants(sorted_variants, qual_filter):
   """Yields Variant protos in sorted order after fixing conflicting haplotypes.
 
   The input is an iterable of Variants in chromosome and position sorted order,
@@ -76,6 +78,7 @@ def maybe_resolve_conflicting_variants(sorted_variants):
   Args:
     sorted_variants: Iterable of Variant protos. Sorted in coordinate order, but
       with potentially incompatible haplotypes.
+    qual_filter: The quality filter to use for the variants.
 
   Yields:
     Variant protos in coordinate-sorted order with no incompatible haplotypes.
@@ -90,7 +93,7 @@ def maybe_resolve_conflicting_variants(sorted_variants):
   else:
     for overlapping_candidates in _group_overlapping_variants(sorted_variants):
       for resolved_candidate in _maybe_resolve_mixed_calls(
-          overlapping_candidates
+          overlapping_candidates, qual_filter
       ):
         yield resolved_candidate
 
@@ -123,7 +126,7 @@ def _group_overlapping_variants(sorted_variants):
     yield curr_variants
 
 
-def _maybe_resolve_mixed_calls(overlapping_candidates):
+def _maybe_resolve_mixed_calls(overlapping_candidates, qual_filter):
   """Yields variants with compatible genotype calls in order.
 
   This function differs from `_resolve_overlapping_variants` below in that the
@@ -138,6 +141,7 @@ def _maybe_resolve_mixed_calls(overlapping_candidates):
   Args:
     overlapping_candidates: list(Variant). A non-empty list of Variant protos in
       coordinate-sorted order that overlap on the reference genome.
+    qual_filter: float. The minimum quality score for a variant to be called.
 
   Yields:
     Variant protos in coordinate-sorted order that try to resolve incompatible
@@ -157,7 +161,9 @@ def _maybe_resolve_mixed_calls(overlapping_candidates):
 
   resolved_variant_calls = []
   for variant_group in _group_overlapping_variants(variant_calls):
-    resolved_variant_calls.extend(_resolve_overlapping_variants(variant_group))
+    resolved_variant_calls.extend(
+        _resolve_overlapping_variants(variant_group, qual_filter)
+    )
 
   # Merge the reference and resolved variants back together in sorted order.
   # Note: This could be done in an interleaving fashion, but since the total
@@ -288,13 +294,14 @@ class _LikelihoodAggregator(object):
     )
 
 
-def _resolve_overlapping_variants(overlapping_variants):
+def _resolve_overlapping_variants(overlapping_variants, qual_filter):
   """Yields variants with compatible haplotypes, if possible.
 
   Args:
     overlapping_variants: list(Variant). A non-empty list of Variant protos in
       coordinate-sorted order that overlap on the reference genome and are
       predicted to contain alternate allele genotypes.
+    qual_filter: float. The minimum quality score for a variant to be called.
 
   Yields:
     Variant protos in coordinate-sorted order that try to resolve incompatible
@@ -447,6 +454,9 @@ def _resolve_overlapping_variants(overlapping_variants):
       call = variant_utils.only_call(newvariant)
       call.genotype[:] = allele_indices
       call.genotype_likelihood[:] = gls
+      newvariant.filter[:] = dv_vcf_constants.compute_filter_fields(
+          newvariant, qual_filter
+      )
       yield newvariant
   else:
     logging.vlog(

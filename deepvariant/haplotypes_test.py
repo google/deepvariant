@@ -39,6 +39,8 @@ from deepvariant import haplotypes
 
 FLAGS = flags.FLAGS
 
+_MIN_QUAL_FILTER = 1.0
+
 
 def _var(
     chrom='1',
@@ -47,6 +49,7 @@ def _var(
     ref=None,
     alt=None,
     qual=50,
+    filters=None,
     genotype=None,
     likelihoods=None,
     sample_name='NA12878',
@@ -60,6 +63,7 @@ def _var(
     ref: reference base(s)
     alt: list(str). alternate base(s)
     qual: PHRED scaled detection probability
+    filters: list(str). filter field(s)
     genotype: list of integers corresponding to the called genotype
     likelihoods: genotype likelihoods for this variant
     sample_name: sample name for the single call in the variant
@@ -88,7 +92,7 @@ def _var(
       start=start,
       alleles=[ref] + alt,
       qual=qual,
-      filters=None,
+      filters=filters,
       gt=genotype,
       gls=likelihoods,
       sample_name=sample_name,
@@ -122,6 +126,7 @@ def _resolved_compatible_outputs():
           start=20,
           ref='ACCCCC',
           alt=['A'],
+          filters=['PASS'],
           genotype=[0, 1],
           likelihoods=[
               -1.658964842664435,
@@ -133,6 +138,7 @@ def _resolved_compatible_outputs():
           start=23,
           ref='C',
           alt=['T'],
+          filters=['PASS'],
           genotype=[0, 1],
           likelihoods=[
               -1.658964842664435,
@@ -174,7 +180,9 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
         + independent_hom_alts
         + _resolved_compatible_outputs()
     )
-    actual = haplotypes.maybe_resolve_conflicting_variants(variants)
+    actual = haplotypes.maybe_resolve_conflicting_variants(
+        variants, _MIN_QUAL_FILTER
+    )
     self._assert_generator_of_variants_equals_expected(actual, expected)
 
   @parameterized.parameters(
@@ -194,7 +202,9 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
       self, disable_haplotype_resolution, variants, expected
   ):
     FLAGS.disable_haplotype_resolution = disable_haplotype_resolution
-    actual = haplotypes.maybe_resolve_conflicting_variants(variants)
+    actual = haplotypes.maybe_resolve_conflicting_variants(
+        variants, _MIN_QUAL_FILTER
+    )
     self._assert_generator_of_variants_equals_expected(actual, expected)
 
   @parameterized.parameters(
@@ -373,6 +383,7 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
                   start=20,
                   ref='ACCCCC',
                   alt=['A'],
+                  filters=['PASS'],
                   genotype=[0, 1],
                   likelihoods=[
                       -1.658964842664435,
@@ -384,6 +395,7 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
                   start=23,
                   ref='C',
                   alt=['T'],
+                  filters=['PASS'],
                   genotype=[0, 1],
                   likelihoods=[
                       -1.658964842664435,
@@ -422,6 +434,7 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
                   start=20,
                   ref='ACCCCC',
                   alt=['A'],
+                  filters=['PASS'],
                   genotype=[0, 1],
                   likelihoods=[
                       -1.315550534421905,
@@ -433,6 +446,7 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
                   start=23,
                   ref='C',
                   alt=['T', 'G'],
+                  filters=['PASS'],
                   genotype=[0, 2],
                   likelihoods=[
                       -1.315550534421905,
@@ -441,6 +455,55 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
                       -0.319915339824355,
                       -1.7970365945440174,
                       -1.9176105257498672,
+                  ],
+              ),
+          ],
+      ),
+      # LowQual variants.
+      dict(
+          variants=[
+              _var(
+                  start=20,
+                  ref='ACCCCC',
+                  alt=['A'],
+                  qual=0.5,
+                  genotype=[0, 1],
+                  likelihoods=[-2.0, -0.0506099933550872, -1.0],
+              ),
+              _var(
+                  start=23,
+                  ref='C',
+                  alt=['T'],
+                  qual=0.5,
+                  genotype=[1, 1],
+                  likelihoods=[-2.0, -0.3098039199714863, -0.3010299956639812],
+              ),
+          ],
+          expected=[
+              _var(
+                  start=20,
+                  ref='ACCCCC',
+                  alt=['A'],
+                  qual=0.5,
+                  filters=['LowQual'],
+                  genotype=[0, 1],
+                  likelihoods=[
+                      -1.658964842664435,
+                      -0.010604831683503404,
+                      -2.6589648426644352,
+                  ],
+              ),
+              _var(
+                  start=23,
+                  ref='C',
+                  alt=['T'],
+                  qual=0.5,
+                  filters=['LowQual'],
+                  genotype=[0, 1],
+                  likelihoods=[
+                      -1.658964842664435,
+                      -0.014526253196596468,
+                      -1.9599948383284163,
                   ],
               ),
           ],
@@ -551,7 +614,9 @@ class ResolveOverlappingVariantsTest(parameterized.TestCase):
       ),
   )
   def test_resolve_overlapping_variants(self, variants, expected):
-    actual = haplotypes._resolve_overlapping_variants(variants)
+    actual = haplotypes._resolve_overlapping_variants(
+        variants, _MIN_QUAL_FILTER
+    )
     self._assert_generator_of_variants_equals_expected(actual, expected)
 
   @parameterized.parameters(

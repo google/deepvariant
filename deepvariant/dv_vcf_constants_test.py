@@ -26,10 +26,13 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
-from third_party.nucleus.protos import reference_pb2
 from deepvariant import dv_vcf_constants
+from third_party.nucleus.protos import reference_pb2
+from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import variantcall_utils
 
 
 class DvVcfConstantsTest(parameterized.TestCase):
@@ -54,9 +57,47 @@ class DvVcfConstantsTest(parameterized.TestCase):
     )
     self.assertCountEqual(header.contigs, contigs)
     self.assertCountEqual(header.sample_names, sample_names)
-    self.assertGreater(len(header.filters), 0)
-    self.assertGreater(len(header.infos), 0)
-    self.assertGreater(len(header.formats), 0)
+    self.assertNotEmpty(header.filters)
+    self.assertNotEmpty(header.infos)
+    self.assertNotEmpty(header.formats)
+
+  def test_compute_filter_fields(self):
+    # This generates too many tests as a parameterized test.
+    for qual, min_qual in itertools.product(range(100), range(100)):
+      # First test with no alleleic depth.
+      variant = variants_pb2.Variant()
+      variant.quality = qual
+      expected = []
+      expected.append(dv_vcf_constants.DEEP_VARIANT_NO_CALL)
+      self.assertEqual(
+          dv_vcf_constants.compute_filter_fields(variant, min_qual),
+          expected,
+      )
+      # Now add hom ref genotype and AD --> qual shouldn't affect filter field
+      del variant.filter[:]
+      variant.calls.add(genotype=[0, 0])
+      variantcall_utils.set_ad(variant.calls[0], [1, 1])
+      expected = []
+      expected.append(dv_vcf_constants.DEEP_VARIANT_REF_FILTER)
+      self.assertEqual(
+          dv_vcf_constants.compute_filter_fields(variant, min_qual),
+          expected,
+      )
+      # Now add variant genotype --> qual filter should matter again
+      del variant.filter[:]
+      del variant.calls[:]
+      variant.calls.add(genotype=[0, 1])
+      variantcall_utils.set_ad(variant.calls[0], [1, 1])
+      expected = []
+      expected.append(
+          dv_vcf_constants.DEEP_VARIANT_PASS
+          if qual >= min_qual
+          else dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER
+      )
+      self.assertEqual(
+          dv_vcf_constants.compute_filter_fields(variant, min_qual),
+          expected,
+      )
 
 
 if __name__ == '__main__':

@@ -350,31 +350,6 @@ def _extract_single_sample_name(
   return name
 
 
-def compute_filter_fields(
-    variant: variants_pb2.Variant, min_quality: float
-) -> list[str]:
-  """Computes the filter fields for this variant.
-
-  Variant filters are generated based on its quality score value and particular
-  genotype call.
-
-  Args:
-    variant: Variant to filter.
-    min_quality: Minimum acceptable phred scaled variant detection probability.
-
-  Returns:
-    Filter field strings to be added to the variant.
-  """
-  if variant_utils.genotype_type(variant) == variant_utils.GenotypeType.no_call:
-    return [dv_vcf_constants.DEEP_VARIANT_NO_CALL]
-  if variant_utils.genotype_type(variant) == variant_utils.GenotypeType.hom_ref:
-    return [dv_vcf_constants.DEEP_VARIANT_REF_FILTER]
-  elif variant.quality < min_quality:
-    return [dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER]
-  else:
-    return [dv_vcf_constants.DEEP_VARIANT_PASS]
-
-
 def _pysam_resolve_file_path(file_path: str) -> str:
   """Prepends a prefix to the file_path when accessing Google files.
 
@@ -510,6 +485,7 @@ def uncall_homref_gt_if_lowqual(
       and variantcall_utils.get_gq(vcall) < min_homref_gq
   ):
     vcall.genotype[:] = [-1, -1]
+    variant.filter[:] = [dv_vcf_constants.DEEP_VARIANT_NO_CALL]
 
 
 # TODO Implement ingration test to test phased output.
@@ -619,7 +595,9 @@ def add_call_to_variant(
   gls = [genomics_math.perror_to_bounded_log10_perror(gp) for gp in predictions]
   variantcall_utils.set_gl(call, gls)
   uncall_gt_if_no_ad(variant)
-  variant.filter[:] = compute_filter_fields(variant, qual_filter)
+  variant.filter[:] = dv_vcf_constants.compute_filter_fields(
+      variant, qual_filter
+  )
   uncall_homref_gt_if_lowqual(variant, _CNN_HOMREF_CALL_MIN_GQ.value)
   return variant
 
@@ -1555,7 +1533,7 @@ def process_contiguous_partition(
       sample_name=sample_name,
   )
   variant_generator = haplotypes.maybe_resolve_conflicting_variants(
-      independent_variants
+      independent_variants, qual_filter=_QUAL_FILTER.value
   )
   logging.info('Processed %s variants.', num_cvo_records)
   return variant_generator

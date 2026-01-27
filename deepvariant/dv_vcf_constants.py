@@ -29,6 +29,7 @@
 """Library for generating VCF information created by DeepVariant."""
 
 from third_party.nucleus.protos import variants_pb2
+from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import vcf_constants
 
 # Current release version of DeepVariant.
@@ -199,3 +200,28 @@ def deepvariant_header(
       sample_names=sample_names,
       extras=[version],
   )
+
+
+def compute_filter_fields(
+    variant: variants_pb2.Variant, min_quality: float
+) -> list[str]:
+  """Computes the filter fields for this variant.
+
+  Variant filters are generated based on its quality score value and particular
+  genotype call.
+
+  Args:
+    variant: Variant to filter.
+    min_quality: Minimum acceptable phred scaled variant detection probability.
+
+  Returns:
+    Filter field strings to be added to the variant.
+  """
+  if variant_utils.genotype_type(variant) == variant_utils.GenotypeType.no_call:
+    return [DEEP_VARIANT_NO_CALL]
+  if variant_utils.genotype_type(variant) == variant_utils.GenotypeType.hom_ref:
+    return [DEEP_VARIANT_REF_FILTER]
+  elif variant.quality < min_quality:
+    return [DEEP_VARIANT_QUAL_FILTER]
+  else:
+    return [DEEP_VARIANT_PASS]

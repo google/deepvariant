@@ -1343,6 +1343,7 @@ py_library(
     name = "haplotypes",
     srcs = ["haplotypes.py"],
     deps = [
+        ":dv_vcf_constants",
         "//third_party/nucleus/util:genomics_math",
         "//third_party/nucleus/util:variant_utils",
         "@absl_py//absl/flags",
@@ -1449,6 +1450,7 @@ py_library(
     srcs = ["dv_vcf_constants.py"],
     deps = [
         "//third_party/nucleus/protos:variants_py_pb2",
+        "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:vcf_constants",
     ],
 )

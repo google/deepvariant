@@ -1833,44 +1833,6 @@ class PostprocessVariantsTest(parameterized.TestCase):
     with self.assertRaises(NotImplementedError):
       postprocess_variants.most_likely_genotype([1, 0, 0], ploidy=bad_ploidy)
 
-  def test_compute_filter_fields(self):
-    # This generates too many tests as a parameterized test.
-    for qual, min_qual in itertools.product(range(100), range(100)):
-      # First test with no alleleic depth.
-      variant = variants_pb2.Variant()
-      variant.quality = qual
-      expected = []
-      expected.append(dv_vcf_constants.DEEP_VARIANT_NO_CALL)
-      self.assertEqual(
-          postprocess_variants.compute_filter_fields(variant, min_qual),
-          expected,
-      )
-      # Now add hom ref genotype and AD --> qual shouldn't affect filter field
-      del variant.filter[:]
-      variant.calls.add(genotype=[0, 0])
-      variantcall_utils.set_ad(variant.calls[0], [1, 1])
-      expected = []
-      expected.append(dv_vcf_constants.DEEP_VARIANT_REF_FILTER)
-      self.assertEqual(
-          postprocess_variants.compute_filter_fields(variant, min_qual),
-          expected,
-      )
-      # Now add variant genotype --> qual filter should matter again
-      del variant.filter[:]
-      del variant.calls[:]
-      variant.calls.add(genotype=[0, 1])
-      variantcall_utils.set_ad(variant.calls[0], [1, 1])
-      expected = []
-      expected.append(
-          dv_vcf_constants.DEEP_VARIANT_PASS
-          if qual >= min_qual
-          else dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER
-      )
-      self.assertEqual(
-          postprocess_variants.compute_filter_fields(variant, min_qual),
-          expected,
-      )
-
   @parameterized.parameters(
       (
           [
