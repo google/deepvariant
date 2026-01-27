@@ -200,21 +200,30 @@ def get_rnaseq_config(config: ml_collections.ConfigDict):
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
   config.init_checkpoint = '/path/to/warmstart/checkpoint'
-  config.num_validation_examples = 0
-  config.batch_size = 16384
-  config.learning_rate = 0.01
+  config.num_validation_examples = 150_000
+  config.batch_size = (
+      8192  # Use a smaller batch size because we are fine-tuning.
+  )
+  config.learning_rate = 0.0001
   config.learning_rate_num_epochs_per_decay = 3
-  config.learning_rate_decay_rate = 0.7
-  config.num_epochs = 20
+  config.num_epochs = 5
+  config.log_every_steps = 512
+  config.tune_every_steps = 2048
+  config.best_checkpoint_metric = 'tune/f1_weighted'
+  # Optimizer hparams
+  config.optimizer = 'sgd'
+  config.momentum = 0.9
+  config.use_ema = True
+  config.ema_momentum = 0.99
+  config.optimizer_weight_decay = 0.0001
 
-  config.best_checkpoint_metric = 'tune/categorical_accuracy'
-  config.optimizer = 'adam'
-  config.beta_1 = 0.9651804083266324
-  config.beta_2 = 0.9665259112630292
-  config.adaptive_epsilon = True
-  config.weight_decay = 0.00004
-  config.optimizer_weight_decay = 0.0
-  config.tune_every_steps = 1_280
+  config.learning_rate = 0.00001
+  config.learning_rate_decay_rate = 0.9999
+  config.warmup_steps = 0
+  config.weight_decay = 0.0001
+
+  config.label_smoothing = 0.01
+  config.backbone_dropout_rate = 0.2
 
 
 # ====================================#
