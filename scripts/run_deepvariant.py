@@ -61,6 +61,7 @@ class ModelType(enum.Enum):
   ONT_R104 = 'ONT_R104'
   HYBRID_PACBIO_ILLUMINA = 'HYBRID_PACBIO_ILLUMINA'
   MASSEQ = 'MASSEQ'
+  RNASEQ = 'RNASEQ'
 
 
 # Required flags.
@@ -303,6 +304,7 @@ MODEL_TYPE_MAP = {
     ModelType.ONT_R104: '/opt/models/ont_r104',
     ModelType.HYBRID_PACBIO_ILLUMINA: '/opt/models/hybrid_pacbio_illumina',
     ModelType.MASSEQ: '/opt/models/masseq',
+    ModelType.RNASEQ: '/opt/models/rnaseq',
 }
 
 
