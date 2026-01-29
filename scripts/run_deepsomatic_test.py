@@ -26,6 +26,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+import json
+
 from absl import flags
 from absl.testing import absltest
 from absl.testing import flagsaver
@@ -66,10 +68,6 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' %s'
-        ' --sort_by_alt_allele_support'
-        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
-        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
-        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
         ' --task {}' % (extra_args_plus_gvcf),
     )
     call_variants_bin = 'call_variants'
@@ -97,6 +95,79 @@ class RunDeepSomaticTest(parameterized.TestCase):
             '"/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
         ),
     )
+
+  @flagsaver.flagsaver
+  def test_customized_model_json(self):
+    FLAGS.model_type = 'WGS'
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads_tumor = 'your_tumor_bam'
+    FLAGS.reads_normal = 'your_normal_bam'
+    FLAGS.output_vcf = 'your_vcf'
+    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.num_shards = 64
+    FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    FLAGS.customized_model_json = '/opt/models/wgs/model.json'
+    commands = run_deepsomatic.create_all_commands_and_logfiles(
+        '/tmp/deepsomatic_tmp_output', used_in_test=True
+    )
+
+    extra_args_plus_gvcf = (
+        '--gvcf "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
+    )
+
+    self.assertEqual(
+        commands[0][0],
+        'time seq 0 63 | parallel -q --halt 2 --line-buffer'
+        ' /opt/deepvariant/bin/make_examples_somatic --mode calling --ref'
+        ' "your_ref" --reads_tumor "your_tumor_bam" --reads_normal'
+        ' "your_normal_bam" --examples'
+        ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+        ' --checkpoint "/opt/models/wgs/model.ckpt"'
+        ' --checkpoint_json "/opt/models/wgs/model.json"'
+        ' %s'
+        ' --task {}' % (extra_args_plus_gvcf),
+    )
+
+  @flagsaver.flagsaver
+  def test_small_model_enabled_via_json(self):
+    FLAGS.model_type = 'WGS'
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads_tumor = 'your_tumor_bam'
+    FLAGS.reads_normal = 'your_normal_bam'
+    FLAGS.output_vcf = 'your_vcf'
+    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.num_shards = 64
+    FLAGS.customized_model = '/opt/models/wgs/model.ckpt'
+    json_path = '/opt/models/wgs/model.json'
+    FLAGS.customized_model_json = json_path
+
+    # Content that enables small model
+    json_content = {
+        'flags_for_calling': {
+            'trained_small_model_path': '/path/to/small_model'
+        }
+    }
+
+    with absltest.mock.patch.object(
+        run_deepsomatic.tf.io.gfile, 'exists'
+    ) as mock_exists:
+      with absltest.mock.patch.object(
+          run_deepsomatic.tf.io.gfile, 'GFile'
+      ) as mock_gfile:
+        mock_exists.side_effect = lambda p: p == json_path
+        mock_gfile.side_effect = absltest.mock.mock_open(
+            read_data=json.dumps(json_content)
+        )
+
+        commands = run_deepsomatic.create_all_commands_and_logfiles(
+            '/tmp/deepsomatic_tmp_output', used_in_test=True
+        )
+
+    # Check make_examples_somatic command
+    self.assertIn('--call_small_model_examples', commands[0][0])
+
+    # Check postprocess_variants command
+    self.assertIn('--small_model_cvo_records', commands[2][0])
 
   @parameterized.parameters(
       ('WGS', True),
@@ -130,10 +201,6 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' %s'
-        ' --sort_by_alt_allele_support'
-        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
-        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
-        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
         ' --task {}' % (extra_args_plus_gvcf),
     )
     call_variants_bin = 'call_variants'
@@ -215,10 +282,6 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         '%s'
-        ' --sort_by_alt_allele_support'
-        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
-        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
-        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
         ' --task {}' % extra_sample_name_flag,
     )
     self.assertEqual(
@@ -244,22 +307,21 @@ class RunDeepSomaticTest(parameterized.TestCase):
   @parameterized.parameters(
       (
           'keep_secondary_alignments=true',
-          '--keep_secondary_alignments --sort_by_alt_allele_support',
+          '--keep_secondary_alignments',
       ),
       (
           'keep_secondary_alignments=false',
-          '--nokeep_secondary_alignments --sort_by_alt_allele_support',
+          '--nokeep_secondary_alignments',
       ),
       (
           'keep_secondary_alignments=true,keep_supplementary_alignments=true',
-          '--keep_secondary_alignments --keep_supplementary_alignments '
-          + '--sort_by_alt_allele_support',
+          '--keep_secondary_alignments --keep_supplementary_alignments',
       ),
       (
           'use_ref_for_cram=true,keep_secondary_alignments=true,'
           + 'keep_supplementary_alignments=false',
           '--keep_secondary_alignments --nokeep_supplementary_alignments '
-          + '--sort_by_alt_allele_support --use_ref_for_cram',
+          + '--use_ref_for_cram',
       ),
   )
   @flagsaver.flagsaver
@@ -288,9 +350,6 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' --gvcf'
         ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" %s'
-        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
-        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
-        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
         ' --task {}' % expected_args,
     )
 
@@ -318,12 +377,7 @@ class RunDeepSomaticTest(parameterized.TestCase):
             ' "your_normal_bam" --examples'
             ' "/tmp/deepsomatic_tmp_output/make_examples_somatic.tfrecord@64.gz"'
             ' --checkpoint "/opt/models/wgs/model.ckpt" --gvcf'
-            ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz"'
-            ' --sort_by_alt_allele_support'
-            ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
-            ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
-            ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
-            ' --task {}'
+            ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" --task {}'
         ),
     )
 
@@ -357,10 +411,6 @@ class RunDeepSomaticTest(parameterized.TestCase):
         ' --checkpoint "/opt/models/wgs/model.ckpt"'
         ' --gvcf'
         ' "/tmp/deepsomatic_tmp_output/gvcf.tfrecord@64.gz" %s'
-        ' --sort_by_alt_allele_support'
-        ' --vsc_max_fraction_indels_for_non_target_sample "0.5"'
-        ' --vsc_max_fraction_snps_for_non_target_sample "0.5"'
-        ' --vsc_min_fraction_indels "0.05" --vsc_min_fraction_snps "0.029"'
         ' --task {}' % expected_args,
     )
 

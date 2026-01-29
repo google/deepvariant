@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
-ARG VERSION=1.10.0-rc0
+ARG VERSION=1.10.0-rc3
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
 #======================================#
@@ -44,7 +44,7 @@ RUN apk add --no-cache wget parallel
 RUN parallel --verbose --halt now,fail=1 --verbose --jobs 10 \
   "mkdir -p /opt/models/deepsomatic/{1}/variables && wget -O /opt/models/deepsomatic/{1}/{2} https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION}/savedmodels/deepsomatic.{1}.savedmodel/{2}" ::: \
   wgs wes pacbio ont ffpe_wgs ffpe_wes wgs_tumor_only wes_tumor_only pacbio_tumor_only ont_tumor_only ffpe_wgs_tumor_only ffpe_wes_tumor_only ::: \
-  fingerprint.pb saved_model.pb example_info.json variables/variables.data-00000-of-00001 variables/variables.index && \
+  fingerprint.pb saved_model.pb model.example_info.json example_info.json variables/variables.data-00000-of-00001 variables/variables.index && \
   chmod -R +r /opt/models/
 
 # Adapt the code below if you are testing custom models.
@@ -70,6 +70,13 @@ RUN mkdir -p /opt/models/deepsomatic/pons && \
   PON_dbsnp138_gnomad_ILMN1000g_pon.vcf.gz.tbi \
   PON_dbsnp138_gnomad_PB1000g_pon.vcf.gz \
   PON_dbsnp138_gnomad_PB1000g_pon.vcf.gz.tbi
+
+# Download small models
+RUN parallel --halt now,fail=1 --verbose --jobs 10 \
+  "mkdir -p /opt/smallmodels/{1}/variables && wget -O /opt/smallmodels/{1}/{2} https://storage.googleapis.com/deepvariant/models/DeepSomatic/${VERSION}/smallmodels/deepsomatic.{1}.smallmodel/{2}" ::: \
+  wgs ffpe_wgs pacbio ont ::: \
+  model.keras && \
+  chmod -R +r /opt/smallmodels/
 
 #===================#
 # Stage 3: Build DS #
@@ -192,6 +199,7 @@ RUN \
 
 # Copy over models
 COPY --from=download_models /opt/models /opt/models
+COPY --from=download_models /opt/smallmodels /opt/smallmodels
 
 # This to use Keras 2.x with TF 2.16.1 or higher.
 ENV TF_USE_LEGACY_KERAS=1
