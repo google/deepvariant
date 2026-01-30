@@ -37,8 +37,8 @@ For more details, see:
 https://github.com/google/deepvariant/blob/r1.10/docs/deepvariant-quick-start.md
 """
 
-import dataclasses
 import enum
+import json
 import os
 import re
 import subprocess
@@ -307,36 +307,6 @@ MODEL_TYPE_MAP = {
     ModelType.RNASEQ: '/opt/models/rnaseq',
 }
 
-
-@dataclasses.dataclass
-class SmallModelConfig:
-  small_model_checkpoint: str
-  snp_gq_threshold: int
-  indel_gq_threshold: int
-  vaf_context_window: int
-
-
-SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
-    ModelType.WGS: SmallModelConfig(
-        small_model_checkpoint='/opt/smallmodels/wgs/model.keras',
-        snp_gq_threshold=20,
-        indel_gq_threshold=28,
-        vaf_context_window=51,
-    ),
-    ModelType.PACBIO: SmallModelConfig(
-        small_model_checkpoint='/opt/smallmodels/pacbio/model.keras',
-        snp_gq_threshold=15,
-        indel_gq_threshold=16,
-        vaf_context_window=51,
-    ),
-    ModelType.ONT_R104: SmallModelConfig(
-        small_model_checkpoint='/opt/smallmodels/ont/model.keras',
-        snp_gq_threshold=9,
-        indel_gq_threshold=17,
-        vaf_context_window=51,
-    ),
-}
-
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
 DEEP_VARIANT_VERSION = '1.10.0'
@@ -415,23 +385,30 @@ def _update_kwargs_with_warning(kwargs, extra_args):
   return kwargs
 
 
-def _use_small_model() -> bool:
+def _use_small_model(model_ckpt_json: Optional[str] = None) -> bool:
   """Determines if the small model is enabled based on flags and model type."""
   if _DISABLE_SMALL_MODEL.value:
     return False
   if _CUSTOMIZED_SMALL_MODEL.value:
     return True
-  return ModelType(_MODEL_TYPE.value) in SMALL_MODEL_CONFIG_BY_MODEL_TYPE
+  if model_ckpt_json and tf.io.gfile.exists(model_ckpt_json):
+    with tf.io.gfile.GFile(model_ckpt_json) as f:
+      info = json.load(f)
+      if info.get('flags_for_calling', {}).get('trained_small_model_path'):
+        return True
+  return False
 
 
-def _update_small_model_flags(
+def _set_small_model_config(
     special_args: dict[str, Any],
     customized_small_model: str | None,
+    model_ckpt_json: str | None,
 ) -> None:
   """Sets small model config parameters."""
-  if not _use_small_model():
+  if not _use_small_model(model_ckpt_json):
     special_args['call_small_model_examples'] = False
     return
+  special_args['call_small_model_examples'] = True
   if customized_small_model:
     special_args['trained_small_model_path'] = customized_small_model
   if _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
@@ -508,7 +485,9 @@ def make_examples_command(
   # Small model args should be in the model.example_info.json file
   # as well. However, if the user specifies customized small model, we will
   # override the default small model args here.
-  _update_small_model_flags(special_args, _CUSTOMIZED_SMALL_MODEL.value)
+  _set_small_model_config(
+      special_args, _CUSTOMIZED_SMALL_MODEL.value, model_ckpt_json
+  )
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
@@ -554,6 +533,7 @@ def postprocess_variants_command(
     outfile: str,
     small_model_cvo_records: str,
     extra_args: str,
+    model_ckpt_json: Optional[str] = None,
     **kwargs,
 ) -> tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
@@ -571,7 +551,7 @@ def postprocess_variants_command(
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--cpus', '"{}"'.format(cpus)])
   command.extend(['--multiallelic_mode', '"{}"'.format(multiallelic_mode)])
-  if _use_small_model():
+  if _use_small_model(model_ckpt_json):
     command.extend(
         ['--small_model_cvo_records', '"{}"'.format(small_model_cvo_records)]
     )
@@ -680,11 +660,16 @@ def check_flags():
       model_dir = _CUSTOMIZED_MODEL.value
     else:
       model_dir = os.path.dirname(_CUSTOMIZED_MODEL.value)
-    if (
-        not tf.io.gfile.exists(f'{model_dir}/model.example_info.json')
-        and not tf.io.gfile.exists(f'{model_dir}/model.example_info.json')
-        and not tf.io.gfile.exists(_CUSTOMIZED_MODEL_JSON.value)
-    ):
+    # Check if model.example_info.json exists in the model directory
+    # or if the user provided a customized json file.
+    json_in_model_dir = tf.io.gfile.exists(
+        f'{model_dir}/model.example_info.json'
+    )
+    custom_json_exists = _CUSTOMIZED_MODEL_JSON.value and tf.io.gfile.exists(
+        _CUSTOMIZED_MODEL_JSON.value
+    )
+
+    if not json_in_model_dir and not custom_json_exists:
       raise RuntimeError(
           'Starting from v1.10.0, the model file needs to have a corresponding'
           ' model.example_info.json file. You can see'
@@ -769,13 +754,24 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
     runtime_by_region_path = None
 
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
+
+  model_ckpt_json = _CUSTOMIZED_MODEL_JSON.value
+  if not model_ckpt_json:
+    if tf.io.gfile.isdir(model_ckpt):
+      model_dir = model_ckpt
+    else:
+      model_dir = os.path.dirname(model_ckpt)
+    potential_json = f'{model_dir}/model.example_info.json'
+    if tf.io.gfile.exists(potential_json):
+      model_ckpt_json = potential_json
+
   commands.append(
       make_examples_command(
           ref=_REF.value,
           reads=_READS.value,
           examples=examples,
           model_ckpt=model_ckpt,
-          model_ckpt_json=_CUSTOMIZED_MODEL_JSON.value,
+          model_ckpt_json=model_ckpt_json,
           runtime_by_region_path=runtime_by_region_path,
           extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
           # kwargs:
@@ -818,6 +814,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
               resolve_call_variants_outputs_by_model=True,
               small_model_gq_threshold=gq,
               phased_reads_input_path=local_read_phasing_tsv_files,
+              model_ckpt_json=model_ckpt_json,
           )
       )
   else:
@@ -835,6 +832,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
             par_regions_bed=_PAR_REGIONS.value,
             regions=_REGIONS.value,
             phased_reads_input_path=local_read_phasing_tsv_files,
+            model_ckpt_json=model_ckpt_json,
         )
     )
     # vcf_stats_report
