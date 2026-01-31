@@ -27,12 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-edition = "2023";
+edition = "2024";
 
 package learning.genomics.deeptrio;
 
-import "third_party/protobuf/cpp_features.proto";
-
-option features.(pb.cpp).string_type = VIEW;
 option features.utf8_validation = NONE;
 
