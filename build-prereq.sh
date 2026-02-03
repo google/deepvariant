@@ -141,4 +141,7 @@ note_build_stage "Set pyparsing to 2.2.2 for CLIF."
 export PATH="$HOME/.local/bin":$PATH
 pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.2'
 
+# internal - Pin httplib2, pyopenssl, and cryptography to mitigate build failures.
+pip3 install "${PIP_ARGS[@]}" 'httplib2==0.31.0' 'pyopenssl==23.2.0' 'cryptography==41.0.3'
+
 note_build_stage "build-prereq.sh complete"
