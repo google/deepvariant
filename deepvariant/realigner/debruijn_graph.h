@@ -144,6 +144,10 @@ class DeBruijnGraph {
   // Removes low weight non-ref edges from the graph.
   void Prune();
 
+  // Lite version of Prune(). Only removes isolated vertices (those with zero
+  // in-degree and zero out-degree).
+  void PruneLite();
+
  public:
   // We attempt to build acyclic graphs with increasing kmer size until we
   // achieve an acyclic graph---kmer size starts with options.min_k and goes

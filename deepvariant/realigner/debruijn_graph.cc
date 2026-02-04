@@ -254,7 +254,9 @@ std::unique_ptr<DeBruijnGraph> DeBruijnGraph::Build(
     if (graph->HasCycle()) {
       continue;
     } else {
-      if (!options.disable_graph_pruning()) {
+      if (options.disable_graph_pruning()) {
+        graph->PruneLite();
+      } else {
         graph->Prune();
       }
       return graph;
@@ -422,6 +424,28 @@ string DeBruijnGraph::GraphViz() const {
       boost::default_writer(),
       IndexMap());
   return graphviz.str();
+}
+
+void DeBruijnGraph::PruneLite() {
+  // Remove vertices that have zero incoming and zero outgoing edges.
+  std::vector<Vertex> to_remove;
+  VertexIterator vbegin, vend;
+  std::tie(vbegin, vend) = boost::vertices(g_);
+  // We create a copy of the vertices because boost::remove_vertex invalidates
+  // vertex descriptors and iterators.
+  std::vector<Vertex> vertices(vbegin, vend);
+  for (Vertex v : vertices) {
+    if (boost::in_degree(v, g_) == 0 && boost::out_degree(v, g_) == 0) {
+      to_remove.push_back(v);
+    }
+  }
+
+  for (Vertex v : to_remove) {
+    kmer_to_vertex_.erase(g_[v].kmer);
+    boost::clear_vertex(v, g_);
+    boost::remove_vertex(v, g_);
+  }
+  RebuildIndexMap();
 }
 
 void DeBruijnGraph::Prune() {
