@@ -31,6 +31,7 @@
 import collections
 import functools
 import itertools
+import json
 import os
 import tempfile
 import time
@@ -143,6 +144,11 @@ _PHASED_READS_INPUT_PATH = flags.DEFINE_string(
         'will be used to extend phase blocks in the output VCF.'
     ),
 )
+_CHECKPOINT_JSON = flags.DEFINE_string(
+    'checkpoint_json',
+    None,
+    'Optional. Path to the json file containing the flags for postprocessing.',
+)
 _PHASED_READS_SWITCHES_OUTPUT_PATH = flags.DEFINE_string(
     'phased_reads_switches_output_path',
     '/tmp/phased_reads_switches.tsv',
@@ -199,7 +205,7 @@ _USE_MULTIALLELIC_MODEL = flags.DEFINE_boolean(
 )
 _MULTIALLELIC_MODE = flags.DEFINE_enum(
     'multiallelic_mode',
-    'min',
+    'product',
     ['min', 'product'],
     'The fusion rule for merging probabilities in multiallelic calling.',
 )
@@ -2179,8 +2185,54 @@ def run_postprocessing_without_partitioning(
       tmp_tfrecord_file.close()
 
 
+def apply_flags_for_postprocessing(flags_obj):
+  """Read flags for postprocessing from the model.example_info.json file.
+
+  Args:
+    flags_obj: The flag values object.
+  """
+  if not flags_obj.checkpoint_json:
+    return
+
+  logging.info(
+      'Reading flags_for_postprocessing from %s', flags_obj.checkpoint_json
+  )
+  with tf.io.gfile.GFile(flags_obj.checkpoint_json, 'r') as fin:
+    flags_map = json.load(fin).get('flags_for_postprocessing', {})
+
+  if flags_map:
+    logging.info(
+        'Flags for postprocessing:\n%s',
+        '\n'.join([f'{k}: {v}' for k, v in flags_map.items()]),
+    )
+
+  for flag_name, flag_value in flags_map.items():
+    if flag_name not in flags_obj:
+      logging.warning(
+          'Flag "%s" from json is not defined as an application flag.',
+          flag_name,
+      )
+      continue
+
+    flag = flags_obj[flag_name]
+    if flag.present:
+      if flag.value != flag_value:
+        logging.warning(
+            'Flag %s is specified in model.example_info.json [%s] but '
+            'overridden by command line with value [%s]',
+            flag_name,
+            flag_value,
+            flag.value,
+        )
+      continue
+
+    flag.value = flag_value
+
+
 def main(argv=()):
   with errors.clean_commandline_error_exit():
+    apply_flags_for_postprocessing(flags.FLAGS)
+
     if len(argv) > 1:
       errors.log_and_raise(
           'Command line parsing failure: postprocess_variants does not accept '

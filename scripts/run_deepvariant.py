@@ -259,9 +259,10 @@ _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
 )
 _PHASE_VCF = flags.DEFINE_boolean(
     'phase_vcf',
-    False,
+    None,
     'Optional. If true, emit phasing information in the VCF output. Available'
-    ' for long-read models (PacBio, ONT) only.',
+    ' for long-read models (PacBio, ONT) only. Default is True for PacBio and'
+    ' ONT models and False for others.',
 )
 
 # Optional flags for postprocess_variants.
@@ -538,19 +539,18 @@ def postprocess_variants_command(
 ) -> tuple[str, Optional[str]]:
   """Returns a postprocess_variants (command, logfile) for subprocess."""
   cpus = _POSTPROCESS_CPUS.value
-  multiallelic_mode = 'product'
   if cpus is None:
     cpus = _NUM_SHARDS.value
     # WES does not benefit from multiprocessing.
     if ModelType(_MODEL_TYPE.value) == ModelType.WES:
       cpus = 0
-      multiallelic_mode = 'min'
   command = ['time', '/opt/deepvariant/bin/postprocess_variants']
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--infile', '"{}"'.format(infile)])
   command.extend(['--outfile', '"{}"'.format(outfile)])
   command.extend(['--cpus', '"{}"'.format(cpus)])
-  command.extend(['--multiallelic_mode', '"{}"'.format(multiallelic_mode)])
+  if model_ckpt_json and tf.io.gfile.exists(model_ckpt_json):
+    command.extend(['--checkpoint_json', '"{}"'.format(model_ckpt_json)])
   if _use_small_model(model_ckpt_json):
     command.extend(
         ['--small_model_cvo_records', '"{}"'.format(small_model_cvo_records)]
@@ -605,6 +605,12 @@ def runtime_by_region_vis_command(
   command.extend(['--output', '"{}"'.format(runtime_report)])
 
   return (' '.join(command), None)
+
+
+def _should_phase_vcf() -> bool:
+  if _PHASE_VCF.value is not None:
+    return _PHASE_VCF.value
+  return _MODEL_TYPE.value in [ModelType.PACBIO.value, ModelType.ONT_R104.value]
 
 
 def check_or_create_intermediate_results_dir(
@@ -688,7 +694,7 @@ def check_flags():
         _MODEL_TYPE.value,
         _CUSTOMIZED_SMALL_MODEL.value,
     )
-  if _PHASE_VCF.value:
+  if _should_phase_vcf():
     if ModelType(_MODEL_TYPE.value) not in [
         ModelType.PACBIO,
         ModelType.ONT_R104,
@@ -730,7 +736,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
       ),
   )
   local_read_phasing_tsv_files = None
-  if _PHASE_VCF.value:
+  if _should_phase_vcf():
     local_read_phasing_tsv_files = os.path.join(
         intermediate_results_dir, f'read-phasing_debug@{_NUM_SHARDS.value}.tsv'
     )

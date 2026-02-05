@@ -31,6 +31,7 @@ import errno
 import gzip
 import io
 import itertools
+import json
 import os
 import shutil
 import sys
@@ -857,12 +858,13 @@ class PostprocessVariantsTest(parameterized.TestCase):
       ),
   )
   def test_merge_predictions_probs(self, inputs, expected_unnormalized_probs):
-    denominator = sum(expected_unnormalized_probs)
-    for permuted_inputs in itertools.permutations(inputs):
-      _, predictions = postprocess_variants.merge_predictions(permuted_inputs)
-      np.testing.assert_almost_equal(
-          predictions, [x / denominator for x in expected_unnormalized_probs]
-      )
+    with flagsaver.flagsaver(multiallelic_mode='min'):
+      denominator = sum(expected_unnormalized_probs)
+      for permuted_inputs in itertools.permutations(inputs):
+        _, predictions = postprocess_variants.merge_predictions(permuted_inputs)
+        np.testing.assert_almost_equal(
+            predictions, [x / denominator for x in expected_unnormalized_probs]
+        )
 
   @parameterized.parameters(
       (
@@ -2213,6 +2215,69 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
     # In sorted output, 3rd has indices=[1].
     self.assertEqual(output[2], group[1])
     self.assertEqual(output[2].alt_allele_indices.indices, [1])
+
+  @flagsaver.flagsaver
+  def test_apply_flags_for_postprocessing(self):
+    # Prepare a dummy checkpoint_json file
+    checkpoint_json_path = test_utils.test_tmpfile('model.example_info.json')
+    with tf.io.gfile.GFile(checkpoint_json_path, 'w') as f:
+      json.dump({'flags_for_postprocessing': {'multiallelic_mode': 'min'}}, f)
+
+    FLAGS.checkpoint_json = checkpoint_json_path
+    # Set a default value for multiallelic_mode to be different from JSON
+    FLAGS.multiallelic_mode = 'product'
+
+    # Create a mock for FLAGS to simulate application
+    # We use the actual FLAGS object but verify it changes
+    postprocess_variants.apply_flags_for_postprocessing(FLAGS)
+
+    self.assertEqual(FLAGS.multiallelic_mode, 'min')
+
+  @flagsaver.flagsaver
+  def test_apply_flags_for_postprocessing_overridden(self):
+    # Prepare a dummy checkpoint_json file
+    checkpoint_json_path = test_utils.test_tmpfile('model.example_info.json')
+    with tf.io.gfile.GFile(checkpoint_json_path, 'w') as f:
+      json.dump({'flags_for_postprocessing': {'multiallelic_mode': 'min'}}, f)
+
+    FLAGS.checkpoint_json = checkpoint_json_path
+    # Explicitly set the flag on command line (simulated by marking as present)
+    FLAGS.multiallelic_mode = 'product'
+
+    # We need to simulate that the flag was present on command line.
+    # absl flags doesn't make it easy to forcefully set 'present'
+    # without parsing argv.
+    # So we will verify the logic by checking if it logs a warning,
+    # but since we can't easily mock 'present' status of a real Flag object
+    # without deeper hacking, we might rely on the fact that if we set it
+    # via FLAGS.flag = value it might not count as 'present' in some versions,
+    # OR we just test that it DOES NOT update if we can simulate presence.
+
+    # Actually, apply_flags_for_postprocessing checks `flag.present`.
+    # Let's try to manually set it for this test if possible, or skip this
+    # specific override check if too complex for integration test.
+    # However, strict behavior verification is important.
+
+    # Let's use a fresh FlagValues object for more control if possible,
+    # OR just trust the logic we verified in the isolated test (which we are
+    # deleting). Replicating the isolated test logic:
+
+    flag_values = flags.FlagValues()
+    flags.DEFINE_string(
+        'multiallelic_mode', 'product', 'help', flag_values=flag_values
+    )
+    flags.DEFINE_string(
+        'checkpoint_json', checkpoint_json_path, 'help', flag_values=flag_values
+    )
+
+    # Simulate command line presence
+    flag_values['multiallelic_mode'].present = 1
+    flag_values.mark_as_parsed()
+
+    postprocess_variants.apply_flags_for_postprocessing(flag_values)
+
+    # parameters should NOT change because it was present
+    self.assertEqual(flag_values.multiallelic_mode, 'product')
 
 
 if __name__ == '__main__':
