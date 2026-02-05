@@ -37,7 +37,6 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "absl/types/span.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 
 namespace learning {
@@ -91,9 +90,9 @@ void MaybeSwapPhase(nucleus::genomics::v1::Variant* variant,
 // genotypes, and setting the PS field, which indicates the contiguous phase
 // set. The output Variants are written to the output TFRecord files. The number
 // of input files must match the number of output files.
-void StitchPhaseSets(absl::Span<const std::string> tfrecord_paths,
+void StitchPhaseSets(const std::vector<std::string>& tfrecord_paths,
                      const std::string& switches_output_path,
-                     absl::Span<const std::string> output_tfrecord_paths);
+                     const std::vector<std::string>& output_tfrecord_paths);
 
 }  // namespace deepvariant
 }  // namespace genomics

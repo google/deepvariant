@@ -41,7 +41,6 @@
 #include <vector>
 
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "absl/types/span.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
@@ -263,9 +262,9 @@ std::uint64_t ProcessSingleSiteCallTfRecords(
   return single_site_calls.size();
 }
 
-void StitchPhaseSets(absl::Span<const std::string> tfrecord_paths,
+void StitchPhaseSets(const std::vector<std::string>& tfrecord_paths,
                      const std::string& switches_output_path,
-                     absl::Span<const std::string> output_tfrecord_paths) {
+                     const std::vector<std::string>& output_tfrecord_paths) {
   std::map<std::pair<std::string, std::string>, int>
       stitching_status_by_phase_set = LoadPhasingInfo(switches_output_path);
   LOG(INFO) << "Loaded " << stitching_status_by_phase_set.size()
