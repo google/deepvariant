@@ -15,7 +15,7 @@ ARG FROM_IMAGE=ubuntu:22.04
 # PYTHON_VERSION is also set in settings.sh.
 ARG PYTHON_VERSION=3.10
 ARG DV_GPU_BUILD=0
-ARG VERSION_DEEPTRIO=1.9.0
+ARG VERSION_DEEPTRIO=1.10.0-rc0
 ARG TF_ENABLE_ONEDNN_OPTS=1
 
 FROM continuumio/miniconda3 as conda_setup
@@ -185,58 +185,28 @@ RUN chmod -R +r /opt/models/deeptrio/ont/parent/*
 
 # Copy small model checkpoints
 WORKDIR /opt/smallmodels/deeptrio/wgs/child
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_child.smallmodel/fingerprint.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_child.smallmodel/saved_model.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_child.smallmodel/keras_metadata.pb ./
-WORKDIR /opt/smallmodels/deeptrio/wgs/child/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_child.smallmodel/variables/variables.data-00000-of-00001 \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_child.smallmodel/variables/variables.index ./
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_child.smallmodel/model.keras ./
 RUN chmod -R +r /opt/smallmodels/deeptrio/wgs/child/*
 
 
 WORKDIR /opt/smallmodels/deeptrio/wgs/parent
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_parent.smallmodel/fingerprint.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_parent.smallmodel/saved_model.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_parent.smallmodel/keras_metadata.pb ./
-WORKDIR /opt/smallmodels/deeptrio/wgs/parent/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_parent.smallmodel/variables/variables.data-00000-of-00001 \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_parent.smallmodel/variables/variables.index ./
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.wgs_parent.smallmodel/model.keras ./
 RUN chmod -R +r /opt/smallmodels/deeptrio/wgs/parent/*
 
 WORKDIR /opt/smallmodels/deeptrio/pacbio/child
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_child.smallmodel/fingerprint.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_child.smallmodel/saved_model.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_child.smallmodel/keras_metadata.pb ./
-WORKDIR /opt/smallmodels/deeptrio/pacbio/child/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_child.smallmodel/variables/variables.data-00000-of-00001 \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_child.smallmodel/variables/variables.index ./
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_child.smallmodel/model.keras ./
 RUN chmod -R +r /opt/smallmodels/deeptrio/pacbio/child/*
 
 WORKDIR /opt/smallmodels/deeptrio/pacbio/parent
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_parent.smallmodel/fingerprint.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_parent.smallmodel/saved_model.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_parent.smallmodel/keras_metadata.pb ./
-WORKDIR /opt/smallmodels/deeptrio/pacbio/parent/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_parent.smallmodel/variables/variables.data-00000-of-00001 \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_parent.smallmodel/variables/variables.index ./
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.pacbio_parent.smallmodel/model.keras ./
 RUN chmod -R +r /opt/smallmodels/deeptrio/pacbio/parent/*
 
 WORKDIR /opt/smallmodels/deeptrio/ont/child
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_child.smallmodel/fingerprint.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_child.smallmodel/saved_model.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_child.smallmodel/keras_metadata.pb ./
-WORKDIR /opt/smallmodels/deeptrio/ont/child/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_child.smallmodel/variables/variables.data-00000-of-00001 \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_child.smallmodel/variables/variables.index ./
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_child.smallmodel/model.keras ./
 RUN chmod -R +r /opt/smallmodels/deeptrio/ont/child/*
 
 WORKDIR /opt/smallmodels/deeptrio/ont/parent
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_parent.smallmodel/fingerprint.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_parent.smallmodel/saved_model.pb \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_parent.smallmodel/keras_metadata.pb ./
-WORKDIR /opt/smallmodels/deeptrio/ont/parent/variables
-ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_parent.smallmodel/variables/variables.data-00000-of-00001 \
-  https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_parent.smallmodel/variables/variables.index ./
+ADD https://storage.googleapis.com/deepvariant/models/DeepTrio/${VERSION_DEEPTRIO}/smallmodels/deeptrio.ont_parent.smallmodel/model.keras ./
 RUN chmod -R +r /opt/smallmodels/deeptrio/ont/parent/*
 
 

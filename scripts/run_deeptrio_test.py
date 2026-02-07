@@ -127,6 +127,9 @@ class RunDeeptrioTest(parameterized.TestCase):
             model_type.lower()
         ),
     )
+    multiallelic_mode_arg = ''
+    if model_type == 'WES':
+      multiallelic_mode_arg = ' --multiallelic_mode "min"'
     self.assertEqual(
         postprocess_cmds[0],
         (
@@ -137,7 +140,8 @@ class RunDeeptrioTest(parameterized.TestCase):
             + self._get_small_model_cvo_records_path(model_type, 'child')
             + ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz"'
-            ' --gvcf_outfile "your_gvcf_child"'
+            + ' --gvcf_outfile "your_gvcf_child"'
+            + multiallelic_mode_arg
         ),
     )
     self.assertEqual(
@@ -151,6 +155,7 @@ class RunDeeptrioTest(parameterized.TestCase):
             + ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz"'
             ' --gvcf_outfile "your_gvcf_parent1"'
+            + multiallelic_mode_arg
         ),
     )
     self.assertEqual(
@@ -164,6 +169,7 @@ class RunDeeptrioTest(parameterized.TestCase):
             + ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_parent2.tfrecord@64.gz"'
             ' --gvcf_outfile "your_gvcf_parent2"'
+            + multiallelic_mode_arg
         ),
     )
     # Because PACBIO model will always have use_candidate_partition on,
@@ -224,6 +230,9 @@ class RunDeeptrioTest(parameterized.TestCase):
             model_type.lower()
         ),
     )
+    multiallelic_mode_arg = ''
+    if model_type == 'WES':
+      multiallelic_mode_arg = ' --multiallelic_mode "min"'
     self.assertEqual(
         postprocess_cmds[0],
         (
@@ -237,6 +246,7 @@ class RunDeeptrioTest(parameterized.TestCase):
             + ' --nonvariant_site_tfrecord_path '
             '"/tmp/deeptrio_tmp_output/gvcf_child.tfrecord@64.gz" '
             '--gvcf_outfile "your_gvcf_child"'
+            + multiallelic_mode_arg
         ),
     )
     self.assertEqual(
@@ -250,6 +260,7 @@ class RunDeeptrioTest(parameterized.TestCase):
             + ' --nonvariant_site_tfrecord_path'
             ' "/tmp/deeptrio_tmp_output/gvcf_parent1.tfrecord@64.gz"'
             ' --gvcf_outfile "your_gvcf_parent1"'
+            + multiallelic_mode_arg
         ),
     )
     # pylint: disable=g-generic-assert
@@ -270,8 +281,9 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--pileup_image_height_child "60" '
           + '--pileup_image_height_parent "40" '
           + '--small_model_indel_gq_threshold "29" --small_model_path_child'
-          ' "/opt/smallmodels/deeptrio/wgs/child" --small_model_path_parent'
-          ' "/opt/smallmodels/deeptrio/wgs/parent"'
+          ' "/opt/smallmodels/deeptrio/wgs/child/model.keras"'
+          ' --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/wgs/parent/model.keras"'
           ' --small_model_snp_gq_threshold "15" --track_ref_reads ',
       ),
       (
@@ -298,8 +310,9 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--pileup_image_height_parent "40" --pileup_image_width "199" '
           + '--norealign_reads '
           + '--small_model_indel_gq_threshold "25" --small_model_path_child'
-          ' "/opt/smallmodels/deeptrio/pacbio/child" --small_model_path_parent'
-          ' "/opt/smallmodels/deeptrio/pacbio/parent"'
+          ' "/opt/smallmodels/deeptrio/pacbio/child/model.keras"'
+          ' --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/pacbio/parent/model.keras"'
           ' --small_model_snp_gq_threshold "20"'
           + ' --sort_by_haplotypes '
           + '--track_ref_reads --trim_reads_for_pileup '
@@ -314,8 +327,9 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--pileup_image_height_child "60" --pileup_image_height_parent'
           ' "40" '
           + '--small_model_indel_gq_threshold "29" --small_model_path_child'
-          ' "/opt/smallmodels/deeptrio/wgs/child" --small_model_path_parent'
-          ' "/opt/smallmodels/deeptrio/wgs/parent"'
+          ' "/opt/smallmodels/deeptrio/wgs/child/model.keras"'
+          ' --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/wgs/parent/model.keras"'
           ' --small_model_snp_gq_threshold "15" --track_ref_reads ',
       ),
       (
@@ -398,8 +412,10 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--pileup_image_width "199" '
       + '--norealign_reads '
       + '--small_model_indel_gq_threshold "25" '
-      + '--small_model_path_child "/opt/smallmodels/deeptrio/pacbio/child" '
-      + '--small_model_path_parent "/opt/smallmodels/deeptrio/pacbio/parent" '
+      + '--small_model_path_child'
+      ' "/opt/smallmodels/deeptrio/pacbio/child/model.keras" '
+      + '--small_model_path_parent'
+      ' "/opt/smallmodels/deeptrio/pacbio/parent/model.keras" '
       + '--small_model_snp_gq_threshold "20" '
       + '--sort_by_haplotypes '
       + '--track_ref_reads --trim_reads_for_pileup '
@@ -432,8 +448,10 @@ class RunDeeptrioTest(parameterized.TestCase):
       + '--pileup_image_height_parent "40" --pileup_image_width "199" '
       + '--norealign_reads '
       + '--small_model_indel_gq_threshold "25" '
-      + '--small_model_path_child "/opt/smallmodels/deeptrio/pacbio/child" '
-      + '--small_model_path_parent "/opt/smallmodels/deeptrio/pacbio/parent" '
+      + '--small_model_path_child'
+      ' "/opt/smallmodels/deeptrio/pacbio/child/model.keras" '
+      + '--small_model_path_parent'
+      ' "/opt/smallmodels/deeptrio/pacbio/parent/model.keras" '
       + '--small_model_snp_gq_threshold "20" '
       + '--sort_by_haplotypes '
       + '--track_ref_reads --trim_reads_for_pileup '
@@ -471,8 +489,9 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--pileup_image_height_child "60" '
           + '--pileup_image_height_parent "40" '
           + '--small_model_indel_gq_threshold "29" --small_model_path_child'
-          ' "/opt/smallmodels/deeptrio/wgs/child" --small_model_path_parent'
-          ' "/opt/smallmodels/deeptrio/wgs/parent"'
+          ' "/opt/smallmodels/deeptrio/wgs/child/model.keras"'
+          ' --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/wgs/parent/model.keras"'
           ' --small_model_snp_gq_threshold "15" --track_ref_reads ',
       ),
       (
@@ -496,8 +515,9 @@ class RunDeeptrioTest(parameterized.TestCase):
           + '--pileup_image_height_parent "40" --pileup_image_width "199"'
           ' --norealign_reads '
           + '--small_model_indel_gq_threshold "25" --small_model_path_child'
-          ' "/opt/smallmodels/deeptrio/pacbio/child" --small_model_path_parent'
-          ' "/opt/smallmodels/deeptrio/pacbio/parent"'
+          ' "/opt/smallmodels/deeptrio/pacbio/child/model.keras"'
+          ' --small_model_path_parent'
+          ' "/opt/smallmodels/deeptrio/pacbio/parent/model.keras"'
           ' --small_model_snp_gq_threshold "20" '
           + '--sort_by_haplotypes '
           + '--track_ref_reads --trim_reads_for_pileup '
@@ -555,9 +575,9 @@ class RunDeeptrioTest(parameterized.TestCase):
               ' --pileup_image_height_child "60" --pileup_image_height_parent'
               ' "40" --pileup_image_width "199" --norealign_reads'
               ' --small_model_indel_gq_threshold "25" --small_model_path_child'
-              ' "/opt/smallmodels/deeptrio/pacbio/child"'
+              ' "/opt/smallmodels/deeptrio/pacbio/child/model.keras"'
               ' --small_model_path_parent'
-              ' "/opt/smallmodels/deeptrio/pacbio/parent"'
+              ' "/opt/smallmodels/deeptrio/pacbio/parent/model.keras"'
               ' --small_model_snp_gq_threshold "20" --sort_by_haplotypes'
               ' --track_ref_reads --trim_reads_for_pileup'
               ' --vsc_min_fraction_indels "0.12" '
@@ -578,9 +598,9 @@ class RunDeeptrioTest(parameterized.TestCase):
               ' --pileup_image_height_child "60" --pileup_image_height_parent'
               ' "40" --pileup_image_width "199" --norealign_reads'
               ' --small_model_indel_gq_threshold "25" --small_model_path_child'
-              ' "/opt/smallmodels/deeptrio/pacbio/child"'
+              ' "/opt/smallmodels/deeptrio/pacbio/child/model.keras"'
               ' --small_model_path_parent'
-              ' "/opt/smallmodels/deeptrio/pacbio/parent"'
+              ' "/opt/smallmodels/deeptrio/pacbio/parent/model.keras"'
               ' --small_model_snp_gq_threshold "20" --sort_by_haplotypes'
               ' --track_ref_reads --trim_reads_for_pileup'
               ' --vsc_min_fraction_indels "0.03" '
@@ -673,23 +693,20 @@ class RunDeeptrioTest(parameterized.TestCase):
 
     self.assertEqual(
         commands[0],
-        'time seq 0 63 | parallel -q --halt 2 --line-buffer '
-        '/opt/deepvariant/bin/deeptrio/make_examples --mode calling '
-        '--ref "your_ref" --reads_parent1 "your_bam_parent1" '
-        '--reads_parent2 "your_bam_parent2" '
-        '--reads "your_bam_child" '
-        '--examples "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" '
-        '--checkpoint "/opt/models/deeptrio/wgs/child" '
-        '--sample_name "your_sample_child" '
-        '--sample_name_parent1 "your_sample_parent1" '
-        '--sample_name_parent2 "your_sample_parent2" '
-        '--call_small_model_examples '
-        '%s '
-        '--small_model_indel_gq_threshold "29" --small_model_path_child'
-        ' "/opt/smallmodels/deeptrio/wgs/child" --small_model_path_parent'
-        ' "/opt/smallmodels/deeptrio/wgs/parent"'
-        ' --small_model_snp_gq_threshold "15" --track_ref_reads '
-        '--task {}' % expected_args,
+        'time seq 0 63 | parallel -q --halt 2 --line-buffer'
+        ' /opt/deepvariant/bin/deeptrio/make_examples --mode calling --ref'
+        ' "your_ref" --reads_parent1 "your_bam_parent1" --reads_parent2'
+        ' "your_bam_parent2" --reads "your_bam_child" --examples'
+        ' "/tmp/deeptrio_tmp_output/make_examples.tfrecord@64.gz" --checkpoint'
+        ' "/opt/models/deeptrio/wgs/child" --sample_name "your_sample_child"'
+        ' --sample_name_parent1 "your_sample_parent1" --sample_name_parent2'
+        ' "your_sample_parent2" --call_small_model_examples %s'
+        ' --small_model_indel_gq_threshold "29" --small_model_path_child'
+        ' "/opt/smallmodels/deeptrio/wgs/child/model.keras"'
+        ' --small_model_path_parent'
+        ' "/opt/smallmodels/deeptrio/wgs/parent/model.keras"'
+        ' --small_model_snp_gq_threshold "15" --track_ref_reads --task {}'
+        % expected_args,
     )
 
   @flagsaver.flagsaver

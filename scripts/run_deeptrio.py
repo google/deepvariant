@@ -353,20 +353,32 @@ class SmallModelConfig:
 
 SMALL_MODEL_CONFIG_BY_MODEL_TYPE = {
     'WGS': SmallModelConfig(
-        small_model_path_child='/opt/smallmodels/deeptrio/wgs/child',
-        small_model_path_parent='/opt/smallmodels/deeptrio/wgs/parent',
+        small_model_path_child=(
+            '/opt/smallmodels/deeptrio/wgs/child/model.keras'
+        ),
+        small_model_path_parent=(
+            '/opt/smallmodels/deeptrio/wgs/parent/model.keras'
+        ),
         indel_gq_threshold=29,
         snp_gq_threshold=15,
     ),
     'PACBIO': SmallModelConfig(
-        small_model_path_child='/opt/smallmodels/deeptrio/pacbio/child',
-        small_model_path_parent='/opt/smallmodels/deeptrio/pacbio/parent',
+        small_model_path_child=(
+            '/opt/smallmodels/deeptrio/pacbio/child/model.keras'
+        ),
+        small_model_path_parent=(
+            '/opt/smallmodels/deeptrio/pacbio/parent/model.keras'
+        ),
         indel_gq_threshold=25,
         snp_gq_threshold=20,
     ),
     'ONT': SmallModelConfig(
-        small_model_path_child='/opt/smallmodels/deeptrio/ont/child',
-        small_model_path_parent='/opt/smallmodels/deeptrio/ont/parent',
+        small_model_path_child=(
+            '/opt/smallmodels/deeptrio/ont/child/model.keras'
+        ),
+        small_model_path_parent=(
+            '/opt/smallmodels/deeptrio/ont/parent/model.keras'
+        ),
         indel_gq_threshold=10,
         snp_gq_threshold=15,
     ),
@@ -798,6 +810,8 @@ def postprocess_variants_command(
   # Extend the command with all items in extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
   command = _extend_command_by_args_dict(command, kwargs)
+  if _MODEL_TYPE.value == 'WES':
+    command.extend(['--multiallelic_mode "min"'])
   if _LOGGING_DIR.value:
     command.extend(
         [
