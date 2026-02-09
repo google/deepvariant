@@ -1717,7 +1717,6 @@ cc_test(
     srcs = ["make_examples_native_test.cc"],
     deps = [
         ":make_examples_native",
-        ":pileup_image_native",
         ":testing_utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/io:reference",
