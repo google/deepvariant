@@ -110,7 +110,7 @@ GOLDEN_VCF_CANDIDATE_IMPORTER_TRAINING_EXAMPLES=${TESTDATA_DIR}/golden.vcf_candi
 MODEL=gs://deepvariant/models/DeepVariant/1.6.0/savedmodels/deepvariant.wgs.savedmodel
 # Speed up by copying to /tmp/
 rm -rf /tmp/deepvariant.wgs.savedmodel
-gsutil -m cp -R ${MODEL} /tmp/
+gcloud storage cp --recursive ${MODEL} /tmp/
 MODEL=/tmp/deepvariant.wgs.savedmodel
 
 source settings.sh
