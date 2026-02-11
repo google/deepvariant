@@ -82,7 +82,7 @@ GOLDEN_POSTPROCESS_GVCF_OUTPUT="${TESTDATA_DIR}"/golden.postprocess_gvcf_output.
 MODEL=gs://deepvariant/models/DeepTrio/1.6.0/savedmodels/deeptrio.wgs_child.savedmodel
 # Speed up by copying to /tmp/
 rm -rf /tmp/deeptrio.wgs_child.savedmodel
-gsutil -m cp -R ${MODEL} /tmp/
+gcloud storage cp --recursive ${MODEL} /tmp/
 MODEL=/tmp/deeptrio.wgs_child.savedmodel
 
 source settings.sh

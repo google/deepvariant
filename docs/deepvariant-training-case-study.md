@@ -104,9 +104,9 @@ mkdir -p "${LOG_DIR}"
 ### Copy data
 
 ```bash
-gsutil -m cp ${DATA_BUCKET}/BGISEQ_PE100_NA12878.sorted.chr*.bam* "${DATA_DIR}"
-gsutil -m cp -r "${DATA_BUCKET}/ucsc_hg19.fa*" "${DATA_DIR}"
-gsutil -m cp -r "${DATA_BUCKET}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_*" "${DATA_DIR}"
+gcloud storage cp ${DATA_BUCKET}/BGISEQ_PE100_NA12878.sorted.chr*.bam* "${DATA_DIR}"
+gcloud storage cp --recursive "${DATA_BUCKET}/ucsc_hg19.fa*" "${DATA_DIR}"
+gcloud storage cp --recursive "${DATA_BUCKET}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_*" "${DATA_DIR}"
 ```
 
 ### Download extra packages
@@ -198,7 +198,7 @@ We will want to shuffle this on Dataflow later, so we copy the data to GCS
 bucket first:
 
 ```
-gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
+gcloud storage cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
   ${OUTPUT_BUCKET}
 ```
 
@@ -232,7 +232,7 @@ This took: 4m33.081s.
 Copy to GCS bucket:
 
 ```bash
-gsutil -m cp ${OUTPUT_DIR}/validation_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
+gcloud storage cp ${OUTPUT_DIR}/validation_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
   ${OUTPUT_BUCKET}
 ```
 
@@ -246,11 +246,11 @@ consider cleaning up previous data first to avoid confusion:
 
 ```bash
 # (Optional) Clean up existing files.
-gsutil -m rm -f "${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-gsutil rm -f "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
-gsutil -m rm -f "${OUTPUT_BUCKET}/validation_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-gsutil rm -f "${OUTPUT_BUCKET}/validation_set.dataset_config.pbtxt"
-gsutil rm -f "${OUTPUT_BUCKET}/example_info.json"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/validation_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/validation_set.dataset_config.pbtxt"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/example_info.json"
 ```
 
 Here we provide examples for running on
@@ -321,7 +321,7 @@ study here.
 The output path can be found in the dataset_config file by:
 
 ```bash
-gsutil cat "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
+gcloud storage cat "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
 ```
 
 In the output, the `tfrecord_path` should be valid paths in gs://.
@@ -443,14 +443,14 @@ You can run with more GPUs to speed up.
 Once training is complete, the following command can be used list checkpoints:
 
 ```bash
-gsutil ls ${TRAINING_DIR}/checkpoints/ema/
+gcloud storage ls ${TRAINING_DIR}/checkpoints/ema/
 ```
 
 The best checkpoint can be retrieved using the following command:
 
 ```bash
 # Get the list of files from gsutil
-files=$(gsutil ls ${TRAINING_DIR}/checkpoints/ema)
+files=$(gcloud storage ls ${TRAINING_DIR}/checkpoints/ema)
 
 # Initialize variables to store the best filename and score
 BEST_CHECKPOINT=""
