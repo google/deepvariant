@@ -81,7 +81,7 @@ Please also note:
 We recommend using our Docker solution. The command will look like this:
 
 ```
-BIN_VERSION="1.9.0"
+BIN_VERSION="1.10.0"
 docker run \
   -v "YOUR_INPUT_DIR":"/input" \
   -v "YOUR_OUTPUT_DIR:/output" \

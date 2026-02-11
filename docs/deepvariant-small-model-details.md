@@ -29,8 +29,8 @@ The small model is called during the `make_examples` step, after candidate
 sweeping but before pileup image generation. This way we avoid generating pileup
 images for candidates we have already classified. If the small model
 classification is accepted, `make_examples` writes them to disk as
-[CallVariantsOutput](https://github.com/google/deepvariant/blob/r1.9/deepvariant/protos/deepvariant.proto#L328-L333)
-protos, which are then consumed by `postprocess_variants` alongside the CVOs
+CallVariantsOutput protos, which are then consumed by `postprocess_variants`
+alongside the CVOs
 from `call_variants`.
 
 <figure class="image">
