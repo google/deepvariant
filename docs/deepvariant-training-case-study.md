@@ -449,7 +449,7 @@ gcloud storage ls ${TRAINING_DIR}/checkpoints/ema/
 The best checkpoint can be retrieved using the following command:
 
 ```bash
-# Get the list of files from gsutil
+# Get the list of files from gcloud storage
 files=$(gcloud storage ls ${TRAINING_DIR}/checkpoints/ema)
 
 # Initialize variables to store the best filename and score

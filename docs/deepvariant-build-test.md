@@ -6,7 +6,7 @@ these scripts. One way to get access to a machine running Ubuntu is through a
 cloud computing platform like Google Cloud Engine.
 
 First install the [Google Cloud SDK](https://cloud.google.com/sdk/downloads),
-because we will need to use its `gsutil` command to fetch some dependencies.
+because we will need to use its `gcloud storage` command to fetch some dependencies.
 
 The `build-prereq.sh` command below will install a number of system packages to
 fulfill DeepVariant's prerequisites (using apt-get and pip, invoked via sudo).

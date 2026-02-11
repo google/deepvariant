@@ -465,7 +465,7 @@ function copy_gs_or_http_file() {
     fi
   elif [[ "$1" == gs://* ]]; then
     status=0
-    gsutil -q stat "$1" || status=1
+    gcloud storage objects list --stat "$1" || status=1
     if [[ $status == 0 ]]; then
       run echo "Copying from \"$1\" to \"$2\""
       run gcloud storage cp "$1" "$2"
@@ -650,7 +650,7 @@ function setup_args() {
     run echo "Copy from gs:// path ${CUSTOMIZED_MODEL} to ${INPUT_DIR}/"
     # Check if it's saved Model
     saved_modelpath=${CUSTOMIZED_MODEL}/saved_model.pb
-    using_saved_model=$(gsutil -q stat "$saved_modelpath" || echo 1)
+    using_saved_model=$(gcloud storage objects list --stat "$saved_modelpath" || echo 1)
     if [[ $using_saved_model != 1 ]]; then
       echo "Using saved model"
       run mkdir -p "${INPUT_DIR}/savedmodel"
