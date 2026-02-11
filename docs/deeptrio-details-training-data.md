@@ -19,6 +19,7 @@ Parent model |                                                                  
 1.5.0        | <sup>[(6)](#vfootnote6)</sup>3 HG002, 3 HG003, 3 HG004, 7 HG005, 6 HG006, 6 HG007                                | 457,374,464
 1.6.0        | <sup>[(6)](#vfootnote6)</sup>2 HG001, 3 HG002, 3 HG003, 3 HG004, 7 HG005, 6 HG006, 6 HG007, 2 NA12891, 2 NA12892 | 457,420,038
 1.9.0        | <sup>[(6)](#vfootnote6)</sup>2 HG001, 3 HG002, 3 HG003, 3 HG004, 7 HG005, 6 HG006, 6 HG007, 2 NA12891, 2 NA12892 | 457,420,038
+1.10.0        | <sup>[(6)](#vfootnote6)</sup>2 HG001, 3 HG002, 3 HG003, 3 HG004, 7 HG005, 6 HG006, 6 HG007, 2 NA12891, 2 NA12892 | 457,420,038
 
 ### WES models
 
@@ -39,6 +40,7 @@ Parent model |                                                                  
 | 1.5.0        | <sup>[(6)](#vfootnote6)</sup>6 HG002, 6 HG003, 6 HG004, 8 HG005, 8 HG006, 8 HG007 | 13,036,998  |
 | 1.6.0        | <sup>[(6)](#vfootnote6)</sup>6 HG002, 6 HG003, 6 HG004, 8 HG005, 8 HG006, 8 HG007 | 13,039,595  |
 | 1.9.0        | <sup>[(6)](#vfootnote6)</sup>6 HG002, 6 HG003, 6 HG004, 8 HG005, 8 HG006, 8 HG007 | 13,039,595  |
+| 1.10.0        | <sup>[(6)](#vfootnote6)</sup>6 HG002, 6 HG003, 6 HG004, 8 HG005, 8 HG006, 8 HG007 | 13,039,595  |
 
 
 
@@ -59,6 +61,7 @@ Parent model |                                                                  
 | 1.4.0        | (Same model as 1.3.0)              |             |
 | 1.6.0        | 9 HG002, 5 HG003, 5 HG004, 1 HG005, 1 HG006, 1 HG007 | 838,515,085<sup>[(5)](#vfootnote5)</sup> |
 | 1.9.0        | 9 HG002, 5 HG003, 5 HG004, 1 HG005, 1 HG006, 1 HG007 | 607,118,560<sup>[(5)](#vfootnote5)</sup> |
+| 1.10.0        | 9 HG002, 5 HG003, 5 HG004, 1 HG005, 1 HG006, 1 HG007 | 607,118,560<sup>[(5)](#vfootnote5)</sup> |
 
 ### ONT models<sup>[(2)](#vfootnote2)</sup><sup>[(3)](#vfootnote3)</sup>
 | version      | Replicates                         | #examples   |
@@ -67,6 +70,7 @@ Parent model |                                                                  
 | Parent model |                                    |             |
 | 1.6.0        | 1 HG002, 1 HG002, 1 HG004 | 99,675,190<sup>[(5)](#vfootnote5)</sup> |
 | 1.9.0        | 5 HG002, 5 HG004, 4 HG005, 4 HG006, 4 HG007 | 607,118,560<sup>[(5)](#vfootnote5)</sup> |
+| 1.10.0        | 5 HG002, 5 HG004, 4 HG005, 4 HG006, 4 HG007 | 607,118,560<sup>[(5)](#vfootnote5)</sup> |
 
 <a name="vfootnote1">(1)</a>: We include HG002/HG003/HG004 for training WGS
 model, but only using examples from the region of NIST truth confident region
