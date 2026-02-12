@@ -86,7 +86,7 @@ machine.
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="pangenome_aware_deepvariant-1.9.0"
+BIN_VERSION="pangenome_aware_deepvariant-1.10.0"
 
 sudo docker pull google/deepvariant:"${BIN_VERSION}"
 
