@@ -44,27 +44,15 @@ gcloud compute ssh "deepvariant-fast-pipeline" --zone us-central1-a
 
 CUDA drivers and NVIDIA Container toolkit are required to run the case study.
 Please refer to the following documentation for more details.
-[NVIDIA CUDA Installation Guide for Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/),
+[NVIDIA CUDA Installation Guide for Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/), or [Install GPU drivers](https://docs.cloud.google.com/compute/docs/gpus/install-drivers-gpu) for the installation on GCP.
 [Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-
-For this case study we used the
-[script](https://github.com/google/deepvariant/blob/r1.9/scripts/install_nvidia_docker.sh)
-that automates the CUDA and container tools kit installation.
-
-The script can take a while to run.
-
-```bash
-wget https://raw.githubusercontent.com/google/deepvariant/refs/heads/r1.9/scripts/install_nvidia_docker.sh
-chmod +x install_nvidia_docker.sh
-./install_nvidia_docker.sh
-```
 
 ## Get Docker image, models, and test data
 
 ### Get DeepVariant Docker image
 
 ```bash
-BIN_VERSION="1.9.0"
+BIN_VERSION="1.10.0"
 sudo docker pull google/deepvariant:"${BIN_VERSION}-gpu"
 ```
 
@@ -97,7 +85,9 @@ run the `fast_pipeline`
 
 ### Prepare files containing command line parameters for all `DeepVariant` binaries
 
-Config files below contain all default command line parameters for PacBio data.
+Config files below contain all input data parameters for DeepVariant. All other
+model specific parameters are automatically applied from
+model.example_info.json.
 `--examples` and `--gvcf` flags are set with the sharded file names. ==It is
 important to ensure that the number of shards matches in all config files and
 the `--num_shards` flag in the fast_pipeline binary. In our case it is set to
@@ -118,23 +108,6 @@ cat <<EOM >$FILE
 --mode=calling
 --reads=/input/HG003.SPRQ.pacbio.GRCh38.nov2024.chr20.bam
 --ref=/reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
---alt_aligned_pileup=diff_channels
---max_reads_per_partition=600
---min_mapping_quality=1
---parse_sam_aux_fields
---partition_size=25000
---phase_reads
---pileup_image_width=147
---norealign_reads
---sort_by_haplotypes
---track_ref_reads
---vsc_min_fraction_indels=0.12
---trim_reads_for_pileup
---call_small_model_examples
---trained_small_model_path=/opt/smallmodels/pacbio
---small_model_snp_gq_threshold=25
---small_model_indel_gq_threshold=30
---small_model_vaf_context_window_size=51
 --output_phase_info
 --checkpoint=/opt/models/pacbio
 --regions=chr20
@@ -159,8 +132,8 @@ cat <<EOM >$FILE
 --ref=/reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 --infile=/output/case_study.cvo.tfrecord.gz
 --nonvariant_site_tfrecord_path=/tmp/examples.gvcf.tfrecord@14.gz
---outfile=/output/variants.chr20.vcf
---gvcf_outfile=/output/variants.gvcf.chr20.vcf
+--outfile=/output/variants.chr20.vcf.gz
+--gvcf_outfile=/output/variants.gvcf.chr20.vcf.gz
 --small_model_cvo_records=/tmp/examples_call_variant_outputs.tfrecords@14.gz
 --cpus=14
 EOM
@@ -217,9 +190,9 @@ variants.gvcf.chr20.vcf
 With the same settings the pipeline takes approximately 10 minutes.
 
 ```
-real    12m45.795s
-user    0m0.018s
-sys     0m0.038s
+real    10m23.879s
+user    0m0.041s
+sys     0m0.074s
 ```
 
 ## Benchmark output
@@ -244,7 +217,7 @@ time sudo docker run \
   jmcdani20/hap.py:${HAPPY_VERSION} \
   /opt/hap.py/bin/hap.py \
     /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
-    /output/variants.chr20.vcf \
+    /output/variants.chr20.vcf.gz \
     -f /benchmark/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
     -r /reference/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna \
     -o /output/happy.output \
@@ -256,8 +229,8 @@ time sudo docker run \
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        10628     10553        75        22560        72      11522     37     28       0.992943          0.993477        0.510727         0.993210                     NaN                     NaN                   1.748961                   2.180292
-INDEL   PASS        10628     10553        75        22560        72      11522     37     28       0.992943          0.993477        0.510727         0.993210                     NaN                     NaN                   1.748961                   2.180292
-  SNP    ALL        70166     70106        60       102415        69      32148      9      9       0.999145          0.999018        0.313899         0.999081                2.296566                 1.72911                   1.883951                   1.442237
-  SNP   PASS        70166     70106        60       102415        69      32148      9      9       0.999145          0.999018        0.313899         0.999081                2.296566                 1.72911                   1.883951                   1.442237
+INDEL    ALL        10628     10561        67        22717        70      11671     31     30       0.993696          0.993663        0.513756         0.993679                     NaN                     NaN                   1.748961                   2.174472
+INDEL   PASS        10628     10561        67        22717        70      11671     31     30       0.993696          0.993663        0.513756         0.993679                     NaN                     NaN                   1.748961                   2.174472
+  SNP    ALL        70166     70106        60       103051        60      32792      7      5       0.999145          0.999146        0.318211         0.999145                2.296566                1.720961                   1.883951                   1.409186
+  SNP   PASS        70166     70106        60       103051        60      32792      7      5       0.999145          0.999146        0.318211         0.999145                2.296566                1.720961                   1.883951                   1.409186
 ```
