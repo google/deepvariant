@@ -32,7 +32,7 @@ documentation on how to build.
 ### Get Docker image
 
 ```bash
-BIN_VERSION="1.9.0"
+BIN_VERSION="1.10.0"
 
 sudo apt -y update
 sudo apt-get -y install docker.io
@@ -338,7 +338,7 @@ INDEL   PASS            2         2         0            2         0          0 
 [BAM]: http://genome.sph.umich.edu/wiki/BAM
 [BWA]: https://academic.oup.com/bioinformatics/article/25/14/1754/225615/Fast-and-accurate-short-read-alignment-with
 [docker build]: https://docs.docker.com/engine/reference/commandline/build/
-[Dockerfile]: https://github.com/google/deepvariant/blob/r1.9/Dockerfile.deeptrio
+[Dockerfile]: https://github.com/google/deepvariant/blob/r1.10/Dockerfile.deeptrio
 [FASTA]: https://en.wikipedia.org/wiki/FASTA_format
 [run_deeptrio.py]: ../scripts/run_deeptrio.py
 [install_nvidia_docker.sh]: ../scripts/install_nvidia_docker.sh
