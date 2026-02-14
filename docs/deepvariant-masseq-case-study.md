@@ -78,7 +78,7 @@ The command below will run the DeepVariant MAS-Seq model and produce an output
 VCF.
 
 ```bash
-BIN_VERSION="1.9.0"
+BIN_VERSION="1.10.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -154,8 +154,8 @@ The above command should output the following results:
 
 ```
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL          135       106        29          161        13         39      7      2       0.785185          0.893443        0.242236         0.835823                     NaN                     NaN                   2.628571                   2.651163
-INDEL   PASS          135       106        29          161        13         39      7      2       0.785185          0.893443        0.242236         0.835823                     NaN                     NaN                   2.628571                   2.651163
-  SNP    ALL         1002       935        67          978        12         31      7      1       0.933134          0.987328        0.031697         0.959466                2.795455                2.761538                   2.083077                   2.046729
-  SNP   PASS         1002       935        67          978        12         31      7      1       0.933134          0.987328        0.031697         0.959466                2.795455                2.761538                   2.083077                   2.046729
+INDEL    ALL          135       104        31          162        14         41      9      1       0.770370          0.884298        0.253086         0.823412                     NaN                     NaN                   2.628571                   2.434783
+INDEL   PASS          135       104        31          162        14         41      9      1       0.770370          0.884298        0.253086         0.823412                     NaN                     NaN                   2.628571                   2.434783
+  SNP    ALL         1002       936        66          979        12         31      7      1       0.934132          0.987342        0.031665         0.960000                2.795455                2.765385                   2.083077                   2.059375
+  SNP   PASS         1002       936        66          979        12         31      7      1       0.934132          0.987342        0.031665         0.960000                2.795455                2.765385                   2.083077                   2.059375
 ```
