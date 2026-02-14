@@ -166,9 +166,16 @@ $ ls -lh HG003.novaseq.pcr-free.35x.vg-${VG_VERSION}.bam
 
 This file can also be found at:
 
-TODO: I need to copy from gs://brain-genomics/deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-1.67.0.bam
-
 `gs://deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-${VG_VERSION}.bam`
+
+So you can run:
+
+```
+VG_VERSION=1.67.0
+gcloud storage cp gs://deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-${VG_VERSION}.bam .
+gcloud storage cp gs://deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-${VG_VERSION}.bam.bai .
+BAM=HG003.novaseq.pcr-free.35x.vg-${VG_VERSION}.bam
+```
 
 ## Run DeepVariant With `min_mapping_quality=0,keep_legacy_allele_counter_behavior=true,normalize_reads=true`
 
@@ -188,7 +195,7 @@ And then, run DeepVariant.
 [DeepVariant Case Study](deepvariant-case-study.md).)
 
 ```bash
-BIN_VERSION="1.9.0"
+BIN_VERSION="1.10.0"
 
 sudo docker pull google/deepvariant:"${BIN_VERSION}"
 
@@ -208,10 +215,9 @@ time sudo docker run \
 
 Stage                            | Time (minutes)
 -------------------------------- | -----------------
-make_examples                    | 51m47.067s
-call_variants                    | 22m58.808s
-postprocess_variants (with gVCF) | 6m9.349s
-
+make_examples                    | 79m57.988s
+call_variants                    | 109m38.085s
+postprocess_variants (with gVCF) | 10m34.505s
 
 ### Run hap.py
 
@@ -248,21 +254,21 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL       504501    502471      2030       956598      1370     431591    841    255       0.995976          0.997391        0.451173         0.996683                     NaN                     NaN                   1.489759                   1.914957
-INDEL   PASS       504501    502471      2030       956598      1370     431591    841    255       0.995976          0.997391        0.451173         0.996683                     NaN                     NaN                   1.489759                   1.914957
-  SNP    ALL      3327496   3318642      8854      4014901      5280     689296   1747    403       0.997339          0.998412        0.171684         0.997875                2.102576                1.894074                   1.535137                   1.315504
-  SNP   PASS      3327496   3318642      8854      4014901      5280     689296   1747    403       0.997339          0.998412        0.171684         0.997875                2.102576                1.894074                   1.535137                   1.315504
+INDEL    ALL       504501    502549      1952       955395      1270     430402    775    221       0.996131          0.997581        0.450496         0.996855                     NaN                     NaN                   1.489759                   1.896194
+INDEL   PASS       504501    502549      1952       955395      1270     430402    775    221       0.996131          0.997581        0.450496         0.996855                     NaN                     NaN                   1.489759                   1.896194
+  SNP    ALL      3327496   3318647      8849      4013882      5252     688303   1746    377       0.997341          0.998421        0.171481         0.997880                2.102576                1.895368                   1.535137                   1.312713
+  SNP   PASS      3327496   3318647      8849      4013882      5252     688303   1746    377       0.997341          0.998421        0.171481         0.997880                2.102576                1.895368                   1.535137                   1.312713
 ```
 
 | Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
 | ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502471   | 2030     | 1370     | 0.995976      | 0.997391         | 0.996683        |
-| SNP   | 3318642  | 8854     | 5280     | 0.997339      | 0.998412         | 0.997875        |
+| INDEL | 502471   | 1952     | 1270     | 0.996131      | 0.997581         | 0.996855        |
+| SNP   | 3318642  | 8849     | 5252     | 0.997341      | 0.998421         | 0.997880        |
 
 This can be compared with
-https://github.com/google/deepvariant/blob/r1.9/docs/metrics.md#accuracy.
+https://github.com/google/deepvariant/blob/r1.10/docs/metrics.md#accuracy.
 
 Which shows that `vg giraffe` improves F1:
 
-- Indel F1: 0.995845 --> 0.996683
-- SNP F1: 0.996133 --> 0.997875
+- Indel F1: 0.99598 --> 0.996855
+- SNP F1: 0.996136 --> 0.997880
