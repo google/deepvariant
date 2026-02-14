@@ -9,6 +9,18 @@ To make it faster to run over this case study, we run only on chromosome 20.
 For how to prepare environment, the steps are the same as
 [this doc](deepvariant-case-study.md).
 
+## Download Reference
+
+We will be using GRCh38 for this case study.
+
+```bash
+mkdir -p reference
+
+FTPDIR=ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids
+
+curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz | gunzip > reference/GRCh38_no_alt_analysis_set.fasta
+curl ${FTPDIR}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.fai > reference/GRCh38_no_alt_analysis_set.fasta.fai
+```
 
 ## Download Complete Genomics G400 HG002 chr20 BAM
 
@@ -44,6 +56,8 @@ curl ${HTTPDIR}/complete-g400/weights-60-0.993753.ckpt.data-00000-of-00001 > inp
 curl ${HTTPDIR}/complete-g400/weights-60-0.993753.ckpt.index > input/weights-60-0.993753.ckpt.index
 
 curl ${HTTPDIR}/complete-g400/example_info.json > input/example_info.json
+
+curl ${HTTPDIR}/complete-g400/model.example_info.json > input/model.example_info.json
 ```
 
 ## Running DeepVariant with one command
@@ -54,7 +68,7 @@ On a CPU-only machine:
 mkdir -p output
 mkdir -p output/intermediate_results_dir
 
-BIN_VERSION="1.9.0"
+BIN_VERSION="1.10.0"
 
 sudo docker run \
   -v "${PWD}/input":"/input" \
@@ -105,15 +119,9 @@ Output:
 ```
 Benchmarking Summary:
 Type Filter  TRUTH.TOTAL  TRUTH.TP  TRUTH.FN  QUERY.TOTAL  QUERY.FP  QUERY.UNK  FP.gt  FP.al  METRIC.Recall  METRIC.Precision  METRIC.Frac_NA  METRIC.F1_Score  TRUTH.TOTAL.TiTv_ratio  QUERY.TOTAL.TiTv_ratio  TRUTH.TOTAL.het_hom_ratio  QUERY.TOTAL.het_hom_ratio
-INDEL    ALL        11256     11129       127        20905        30       9322     25      4       0.988717          0.997410        0.445922         0.993045                     NaN                     NaN                   1.561710                   2.053139
-INDEL   PASS        11256     11129       127        20905        30       9322     25      4       0.988717          0.997410        0.445922         0.993045                     NaN                     NaN                   1.561710                   2.053139
-  SNP    ALL        71333     70954       379        85776        52      14722     28      8       0.994687          0.999268        0.171633         0.996972                2.314904                2.098765                   1.715978                   1.753260
-  SNP   PASS        71333     70954       379        85776        52      14722     28      8       0.994687          0.999268        0.171633         0.996972                2.314904                2.098765                   1.715978                   1.753260
+INDEL    ALL        11256     11129       127        20918        29       9336     24      4       0.988717          0.997496        0.446314         0.993087                     NaN                     NaN                   1.561710                   2.049444
+INDEL   PASS        11256     11129       127        20918        29       9336     24      4       0.988717          0.997496        0.446314         0.993087                     NaN                     NaN                   1.561710                   2.049444
+  SNP    ALL        71333     70952       381        85724        51      14673     28      7       0.994659          0.999282        0.171166         0.996965                2.314904                 2.09936                   1.715978                   1.753945
+  SNP   PASS        71333     70952       381        85724        51      14673     28      7       0.994659          0.999282        0.171166         0.996965                2.314904                 2.09936                   1.715978                   1.753945
 ```
 
-To summarize:
-
-| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
-| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 11129    | 127      | 30       | 0.988717      | 0.997410         | 0.993045        |
-| SNP   | 70954    | 379      | 52       | 0.994687      | 0.999268         | 0.996972        |
