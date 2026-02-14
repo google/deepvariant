@@ -150,9 +150,14 @@ bedtools intersect \
 -b data/chr20_CDS_3x.bed > benchmark/chr20_CDS_3x.benchmark_regions.bed
 ```
 
+Make sure to exit docker environment after running the last command by running:
+
+```
+exit
+```
+
 We now have a bed file of CDS regions intersected with 3x coverage regions
-called `data/chr20_CDS_3x.bed`. You can exit the docker container now. Type
-`exit` and hit enter.
+called `data/chr20_CDS_3x.bed`.
 
 ### Directory Structure
 
