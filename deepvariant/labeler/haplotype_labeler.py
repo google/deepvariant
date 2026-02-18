@@ -1249,7 +1249,8 @@ def select_best_haplotype_match(all_matches):
   if len(equivalents) > 1:
     for i, f in enumerate(equivalents):
       extra_info = 'best' if i == 0 else i
-      logging.warning('Equivalent match to best: %s [%s]', f, extra_info)
+      if _DEBUG_PRINTING_IS_ENABLED:
+        logging.warning('Equivalent match to best: %s [%s]', f, extra_info)
 
   return equivalents[0]
 
