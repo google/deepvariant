@@ -31,6 +31,7 @@
  */
 
 #include "third_party/nucleus/io/tabix_indexer.h"
+#include <filesystem>
 #include <memory>
 #include <utility>
 
@@ -98,7 +99,7 @@ TEST(CSIIndexerTest, IndexBuildsCorrectly) {
   writer.reset();
 
   EXPECT_THAT(CSIIndexBuild(output_filename, 14), IsOK());
-  EXPECT_THAT(tensorflow::Env::Default()->FileExists(output_csi_index), IsOK());
+  EXPECT_TRUE(std::filesystem::exists(output_csi_index));
   EXPECT_THAT(reader->Query(MakeRange("chr3", 14318, 14319)), IsOK());
 }
 }  // namespace nucleus
