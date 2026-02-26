@@ -124,7 +124,8 @@ def get_exome_config(config: ml_collections.ConfigDict):
 
 def get_pacbio_config(config: ml_collections.ConfigDict):
   """Training parameters."""
-  config.num_epochs = 8
+  config.num_epochs = 20
+  config.early_stopping_patience = 15
   config.num_validation_examples = 150_000
   config.include_snp_indel_metrics = True
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
@@ -140,7 +141,6 @@ def get_pacbio_config(config: ml_collections.ConfigDict):
   config.weight_decay = 0.00004
   config.optimizer_weight_decay = 0.0
 
-  config.early_stopping_patience = 20
   config.learning_rate = 0.00008663001151624387
   config.learning_rate_num_epochs_per_decay = 2.66
   config.learning_rate_decay_rate = 0.8514735277962562
