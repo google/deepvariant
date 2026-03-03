@@ -12,65 +12,54 @@ Memory: 384GiB
 GPUs: 0
 ```
 
-## WGS (Illumina)
+Details of metrics can be found here:
 
-BAM: We used the VG Giraffe mapped BAM file. The file is available here:
-`gs://deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-1.55.0.bam`
+* [Sample sheet](https://storage.googleapis.com/deepvariant/case-study-outputs/1.10.0/pangenome-aware-deepvariant/pangenome_aware_deepvariant_case_study_summaries/sample_sheet.tsv)
+* [Multi QC report](https://storage.googleapis.com/deepvariant/case-study-outputs/1.10.0/pangenome-aware-deepvariant/pangenome_aware_deepvariant_case_study_summaries/multiqc_report.html)
+* [Runtime summary report](https://storage.googleapis.com/deepvariant/case-study-outputs/1.10.0/pangenome-aware-deepvariant/pangenome_aware_deepvariant_case_study_summaries/runtimes.md)
+* [Accuracy summary report](https://storage.googleapis.com/deepvariant/case-study-outputs/1.10.0/pangenome-aware-deepvariant/pangenome_aware_deepvariant_case_study_summaries/happy.summary.md)
 
-### Runtime
+Sample sheet contains details of the input files used to generate this report.
 
-Runtime is on HG003 (all chromosomes).
-Reported runtime is an average of 5 runs.
+Note: Each model type uses different coverages.
 
-Stage                            | Time (minutes)
--------------------------------- | ------------------
-load_gbz_into_shared_memory      | 1m8.93s
-make_examples                    | 86m42.90s
-call_variants                    | 158m15.02s
-postprocess_variants (with gVCF) | 7m28.88s
-vcf_stats_report (optional)      | 5m50.72s
-total                            | 268m16.91ss (~4h28m)
+## Accuracy
 
-### Accuracy
+| Model type    | sample   | Type   |   TRUTH.TOTAL |   TRUTH.TP |   TRUTH.FN |   QUERY.TOTAL |   QUERY.FP |   Recall |   Precision |   F1_Score |
+|:--------------|:---------|:-------|--------------:|-----------:|-----------:|--------------:|-----------:|---------:|------------:|-----------:|
+| wgs-pangenome | HG003    | INDEL  |        504501 |     502667 |       1834 |        940230 |       1263 | 0.996365 |    0.997587 |   0.996976 |
+| wgs-pangenome | HG003    | SNP    |       3327496 |    3320057 |       7439 |       4074366 |       4945 | 0.997764 |    0.998514 |   0.998139 |
+| wes-pangenome | HG003    | INDEL  |          1051 |       1025 |         26 |          1497 |         14 | 0.975262 |    0.986805 |   0.980999 |
+| wes-pangenome | HG003    | SNP    |         25279 |      25007 |        272 |         27679 |         53 | 0.98924  |    0.997885 |   0.993544 |
 
-hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
-held out while training.
+## Runtime
 
-| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
-| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 502333   | 2168     | 1499     | 0.995703      | 0.997145         | 0.996423        |
-| SNP   | 3320003  | 7492     | 5039     | 0.997748      | 0.998485         | 0.998117        |
+### Total runtime
 
-## WES (Illumina)
+| Model type    | sample   | stage                | mean runtime    |
+|:--------------|:---------|:---------------------|:----------------|
+| wgs-pangenome | HG003    | total                | 4h 8m 47s       |
+| wes-pangenome | HG003    | total                | 6m 32s          |
 
-### Runtime
+### Runtime by stage
 
-Runtime is on HG003 (all chromosomes).
-Reported runtime is an average of 5 runs.
-
-Stage                            | Time (minutes)
--------------------------------- | -----------------
-load_gbz_into_shared_memory      | 1m9.21s
-make_examples                    | 4m51.40s
-call_variants                    | 1m3.95s
-postprocess_variants (with gVCF) | 0m39.76s
-vcf_stats_report (optional)      | 0m5.08s
-total                            | 9m25.21s
-
-### Accuracy
-
-hap.py results on HG003 (all chromosomes, using NIST v4.2.1 truth), which was
-held out while training.
-
-| Type  | TRUTH.TP | TRUTH.FN | QUERY.FP | METRIC.Recall | METRIC.Precision | METRIC.F1_Score |
-| ----- | -------- | -------- | -------- | ------------- | ---------------- | --------------- |
-| INDEL | 1023     | 28       | 16       | 0.973359      | 0.984906         | 0.979098        |
-| SNP   | 25006    | 273      | 54       | 0.989201      | 0.997845         | 0.993504        |
+| Model type    | sample   | stage                | mean runtime    |
+|:--------------|:---------|:---------------------|:----------------|
+| wgs-pangenome | HG003    | make_examples        | 1h 31m 38s      |
+| wgs-pangenome | HG003    | call_variants        | 2h 30m 56s      |
+| wgs-pangenome | HG003    | postprocess_variants | 6m 12s          |
+| wgs-pangenome | HG003    | vcf_stats            | 5m 35s          |
+| wgs-pangenome | HG003    | total                | 4h 8m 47s       |
+| wes-pangenome | HG003    | make_examples        | 4m 57s          |
+| wes-pangenome | HG003    | call_variants        | 1m 4s           |
+| wes-pangenome | HG003    | postprocess_variants | 31s             |
+| wes-pangenome | HG003    | vcf_stats            | 6s              |
+| wes-pangenome | HG003    | total                | 6m 32s          |
 
 ## How to reproduce the metrics on this page
 
 For simplicity and consistency, we report runtime with a
-[CPU instance with 96 CPUs](https://github.com/google/deepvariant/blob/r1.9/docs/deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform)
+[CPU instance with 96 CPUs](https://github.com/google/deepvariant/blob/r1.10/docs/deepvariant-details.md#command-for-a-cpu-only-machine-on-google-cloud-platform)
 This is NOT the fastest or cheapest configuration.
 
 Use `gcloud compute ssh` to log in to the newly created instance.
@@ -79,12 +68,12 @@ Download and run any of the following case study scripts:
 
 ```
 # Get the script.
-curl -O https://raw.githubusercontent.com/google/deepvariant/r1.9/scripts/inference_deepvariant.sh
+curl -O https://raw.githubusercontent.com/google/deepvariant/r1.10/scripts/inference_deepvariant.sh
 
 # WGS-PANGENOME
 bash inference_deepvariant.sh --model_preset WGS_PANGENOME
 
-# WGS-PANGENOME
+# WES-PANGENOME
 bash inference_deepvariant.sh --model_preset WES_PANGENOME
 ```
 
@@ -92,5 +81,4 @@ Runtime metrics are taken from the resulting log after each stage of
 DeepVariant.
 
 The accuracy metrics came from the hap.py program.
-
 
