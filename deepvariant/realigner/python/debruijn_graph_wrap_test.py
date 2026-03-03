@@ -100,23 +100,17 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
         """\
           digraph G {
           0[label=GAT];
-          1[label=ATT];
-          2[label=TTA];
-          3[label=TAC];
-          4[label=ACA];
-          5[label=ATG];
-          6[label=TGA];
-          7[label=GAC];
+          1[label=ATTAC];
+          2[label=ACA];
+          3[label=ATGAC];
           0->1 [label=1 color=red];
+          0->3 [label=2];
           1->2 [label=1 color=red];
-          2->3 [label=1 color=red];
-          3->4 [label=1 color=red];
-          0->5 [label=2];
-          5->6 [label=2];
-          6->7 [label=2];
-          7->4 [label=2];
+          3->2 [label=2];
           }
-          """, dbg)
+          """,
+        dbg,
+    )
 
   def test_pruning_1(self):
     """Test that pruning removes a path traced by only one read."""
@@ -133,17 +127,11 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
     self.assertGraphEqual(
         """\
         digraph G {
-        0[label=GAT];
-        1[label=ATT];
-        2[label=TTA];
-        3[label=TAC];
-        4[label=ACA];
-        0->1 [label=1 color=red];
-        1->2 [label=1 color=red];
-        2->3 [label=1 color=red];
-        3->4 [label=1 color=red];
+        0[label=GATTACA];
         }
-        """, dbg)
+        """,
+        dbg,
+    )
 
   def test_pruning_2(self):
     """Test that pruning removes edges not between source and sink."""
@@ -164,23 +152,17 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
         """\
         digraph G {
         0[label=GAT];
-        1[label=ATT];
-        2[label=TTA];
-        3[label=TAC];
-        4[label=ACA];
-        5[label=ATG];
-        6[label=TGA];
-        7[label=GAC];
+        1[label=ATTAC];
+        2[label=ACA];
+        3[label=ATGAC];
         0->1 [label=1 color=red];
+        0->3 [label=2];
         1->2 [label=1 color=red];
-        2->3 [label=1 color=red];
-        3->4 [label=1 color=red];
-        0->5 [label=2];
-        5->6 [label=2];
-        6->7 [label=2];
-        7->4 [label=2];
+        3->2 [label=2];
         }
-        """, dbg)
+        """,
+        dbg,
+    )
 
   @parameterized.parameters(
       # No bad positions => all edges get +1 to counts.
@@ -260,23 +242,14 @@ class DeBruijnGraphWrapTest(parameterized.TestCase):
       dbg = debruijn_graph.build(ref_str, [read, read],
                                  self.single_k_dbg_options(2))
 
-      expected_edges = '\n'.join(
-          '{} [label={} color=red];'.format(edge, 1 if edge in
-                                            dropped_edges else 3)
-          for edge in ['0->1', '1->2', '2->3', '3->4', '4->5'])
-
       self.assertGraphEqual(
           """\
             digraph G {
-            0[label=GA];
-            1[label=AT];
-            2[label=TT];
-            3[label=TA];
-            4[label=AC];
-            5[label=CA];
-            %s
+            0[label=GATTACA];
             }
-            """ % expected_edges, dbg)
+            """,
+          dbg,
+      )
 
   def test_straightforward_region(self):
     ref_reader = fasta.IndexedFastaReader(testdata.CHR20_FASTA)

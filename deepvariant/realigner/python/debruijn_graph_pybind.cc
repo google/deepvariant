@@ -50,6 +50,7 @@ PYBIND11_MODULE(debruijn_graph, m) {
   py::classh<DeBruijnGraph>(m, "DeBruijnGraph")
       .def("graphviz", &DeBruijnGraph::GraphViz)
       .def("candidate_haplotypes", &DeBruijnGraph::CandidateHaplotypes)
+      .def("collapse", &DeBruijnGraph::Collapse)
       .def_property_readonly("kmer_size", &DeBruijnGraph::KmerSize);
   m.def("build", &DeBruijnGraph::Build, py::arg("ref"), py::arg("reads"),
         py::arg("options"));

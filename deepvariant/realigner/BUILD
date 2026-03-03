@@ -110,6 +110,19 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "debruijn_graph_test",
+    size = "small",
+    srcs = ["debruijn_graph_test.cc"],
+    deps = [
+        ":debruijn_graph",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/util:proto_ptr",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
 py_library(
     name = "utils",
     srcs = ["utils.py"],

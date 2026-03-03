@@ -141,6 +141,11 @@ class DeBruijnGraph {
   // Returns the string traced by a path through the graph.
   string HaplotypeForPath(const Path& path) const;
 
+ public:
+  // Collapses straight paths in the graph. A straight path is a sequence of
+  // vertices where each internal vertex has in-degree 1 and out-degree 1.
+  void Collapse();
+
   // Removes low weight non-ref edges from the graph.
   void Prune();
 
@@ -148,7 +153,6 @@ class DeBruijnGraph {
   // in-degree and zero out-degree).
   void PruneLite();
 
- public:
   // We attempt to build acyclic graphs with increasing kmer size until we
   // achieve an acyclic graph---kmer size starts with options.min_k and goes
   // linearly up to options.max_k, stepping by options.step_k.  If we are able

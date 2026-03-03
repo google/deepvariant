@@ -32,6 +32,7 @@
 #include "deepvariant/realigner/debruijn_graph.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <map>
@@ -42,6 +43,7 @@
 #include <sstream>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
@@ -259,6 +261,7 @@ std::unique_ptr<DeBruijnGraph> DeBruijnGraph::Build(
       } else {
         graph->Prune();
       }
+      graph->Collapse();
       return graph;
     }
   }
@@ -357,6 +360,10 @@ void DeBruijnGraph::AddEdgesForRead(const nucleus::genomics::v1::Read& read) {
 }
 
 std::vector<Path> DeBruijnGraph::CandidatePaths() const {
+  if (source_ == sink_) {
+    return {{source_}};
+  }
+
   std::vector<Path> terminated_paths;
   std::queue<Path> extendable_paths;
 
@@ -394,11 +401,13 @@ std::vector<Path> DeBruijnGraph::CandidatePaths() const {
 
 string DeBruijnGraph::HaplotypeForPath(const Path& path) const {
   std::stringstream haplotype;
-  for (Vertex v : path) {
-    haplotype << g_[v].kmer[0];
-  }
-  if (!path.empty()) {
-    haplotype << g_[path.back()].kmer.substr(1, k_ - 1);
+  for (size_t i = 0; i < path.size(); ++i) {
+    Vertex v = path[i];
+    if (i < path.size() - 1) {
+      haplotype << g_[v].kmer.substr(0, g_[v].kmer.size() - (k_ - 1));
+    } else {
+      haplotype << g_[v].kmer;
+    }
   }
   return haplotype.str();
 }
@@ -424,6 +433,58 @@ string DeBruijnGraph::GraphViz() const {
       boost::default_writer(),
       IndexMap());
   return graphviz.str();
+}
+
+void DeBruijnGraph::Collapse() {
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    VertexIterator vi, vend;
+    std::tie(vi, vend) = boost::vertices(g_);
+    for (; vi != vend; ++vi) {
+      Vertex v = *vi;
+      if (v == source_) continue;
+      if (boost::in_degree(v, g_) != 1) continue;
+
+      Edge in_edge = *boost::in_edges(v, g_).first;
+      Vertex u = boost::source(in_edge, g_);
+      if (boost::out_degree(u, g_) != 1) continue;
+      if (u == sink_) continue;
+
+      // Merge node v into u: node u's sequence will be extended to cover u->v,
+      // node v will be removed, and out-edges of v will become out-edges of u.
+      // Remove old sequence of u from map.
+      kmer_to_vertex_.erase(g_[u].kmer);
+      // Extend u's sequence by appending non-overlapping suffix of v's
+      // sequence and update map.
+      g_[u].kmer += g_[v].kmer.substr(k_ - 1);
+      kmer_to_vertex_[g_[u].kmer] = u;
+
+      // Collect out-edges of v.
+      std::vector<std::pair<Vertex, EdgeInfo>> out_edges;
+      AdjacencyIterator ai, aend;
+      std::tie(ai, aend) = boost::adjacent_vertices(v, g_);
+      for (; ai != aend; ++ai) {
+        Edge e = boost::edge(v, *ai, g_).first;
+        out_edges.push_back({*ai, g_[e]});
+      }
+      // Add edges from u to successors of v.
+      for (const auto& oe : out_edges) {
+        boost::add_edge(u, oe.first, oe.second, g_);
+      }
+
+      // If v was sink_, u becomes the new sink_.
+      if (v == sink_) sink_ = u;
+
+      // Remove v from graph.
+      kmer_to_vertex_.erase(g_[v].kmer);
+      boost::clear_vertex(v, g_);
+      boost::remove_vertex(v, g_);
+      changed = true;
+      break;
+    }
+  }
+  RebuildIndexMap();
 }
 
 void DeBruijnGraph::PruneLite() {
