@@ -31,6 +31,7 @@
 This module is used by the training and inference libraries.
 """
 import os
+from typing import Any
 import keras
 import ml_collections
 import tensorflow as tf
@@ -43,7 +44,7 @@ class LearningRateMetric(keras.metrics.Metric):
 
   def __init__(
       self,
-      optimizer: keras.optimizers.Optimizer,
+      optimizer: keras.optimizers.Optimizer | None = None,
       name="learning_rate",
       **kwargs,
   ):
@@ -52,7 +53,8 @@ class LearningRateMetric(keras.metrics.Metric):
     self.optimizer = optimizer
 
   def update_state(self, y_true, y_pred, sample_weight=None):
-    self.learning_rate.assign(self.optimizer.learning_rate)
+    if self.optimizer is not None:
+      self.learning_rate.assign(self.optimizer.learning_rate)
 
   def result(self):
     return self.learning_rate
@@ -60,18 +62,35 @@ class LearningRateMetric(keras.metrics.Metric):
   def reset_state(self):
     self.learning_rate.assign(0.0)
 
+  def get_config(self) -> dict[str, int]:
+    config = super().get_config()
+    # Note: optimizer is not serializable here.
+    return config
+
 
 @keras.saving.register_keras_serializable(package="CustomMetrics")
 class F1ScorePerClass(keras.metrics.F1Score):
   """Reports F1 Score for a target class."""
 
 
-  def __init__(self, target_class: int, name: str):
+  def __init__(
+      self,
+      target_class: int = 0,
+      name: str = "f1_score_per_class",
+      **kwargs,
+  ):
     self.target_class = target_class
-    super().__init__(name=name)
+    super().__init__(name=name, **kwargs)
 
   def result(self) -> tf.Tensor:
     return super().result()[self.target_class]
+
+  def get_config(self) -> dict[str, Any]:
+    config = super().get_config()
+    config.update({
+        "target_class": self.target_class,
+    })
+    return config
 
 
 def keras_model_metrics() -> list[keras.metrics.Metric]:

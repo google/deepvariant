@@ -38,6 +38,16 @@ py_library(
     ],
 )
 
+py_test(
+    name = "keras_config_reproduce_test",
+    srcs = ["keras_config_reproduce_test.py"],
+    deps = [
+        ":keras_config",
+        "@absl_py//absl/testing:absltest",
+        "@absl_py//absl/testing:parameterized",  # buildcleaner: keep
+    ],
+)
+
 py_library(
     name = "inference",
     srcs = ["inference.py"],
