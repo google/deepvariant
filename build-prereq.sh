@@ -96,7 +96,7 @@ DV_DIR=$(pwd)
 
 if [[ ! -d ../tensorflow ]]; then
   note_build_stage "Cloning TensorFlow from github as ../tensorflow doesn't exist"
-  (cd .. && git clone https://github.com/tensorflow/tensorflow)
+  (cd .. && git clone --depth 1 --branch "${DV_CPP_TENSORFLOW_TAG}" https://github.com/tensorflow/tensorflow)
 fi
 
 # PYTHON_BIN_PATH and PYTHON_LIB_PATH are set in settings.sh.
@@ -104,7 +104,6 @@ fi
 # rule() got unexpected keyword argument 'incompatible_use_toolchain_transition'.
 # I changed the llvm path to zip to avoid flakiness.
 (cd ../tensorflow &&
- git checkout "${DV_CPP_TENSORFLOW_TAG}" &&
  echo | ./configure)
 
 # Update tensorflow.bzl. This updates the `pybind_extension` rule to use the
