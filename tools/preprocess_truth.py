@@ -39,8 +39,8 @@ to normalize the alleles correctly.
 
 Example usage:
 blaze run -c opt //learning/genomics/deepvariant/opensource_only/tools:preprocess_truth -- \
---truth_vcf /data/kishwar/program_outputs/Q100_truth/update_20250117/GRCh38_HG2-T2TQ100-V1.1_smvar_dipcall-z2k.intersected.vcf.gz \
---output_vcf /data/kishwar/program_outputs/Q100_truth/update_20250117/GRCh38_HG2-T2TQ100-V1.1_smvar.star_normalized.vcf.gz \
+--truth_vcf /data/common/GIAB_v5/HG002_GRCh38_v5.0q_smvar.intersected.vcf.gz \
+--output_vcf /data/common/GIAB_v5/HG002_GRCh38_v5.0q_smvar.kishwar_edition.vcf.gz \
 --logtostderr
 """
 
