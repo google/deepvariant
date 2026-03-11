@@ -308,19 +308,6 @@ int Channels::getMaxEnumValue(
   }
   return maxEnumValue;
 }
-// Scales an input vector to pixel range 0-254
-std::vector<std::uint8_t> Channels::ScaleColorVector(
-    std::vector<std::uint8_t>& channel_values, float max_val) {
-  for (int i = 0; i < channel_values.size(); i++) {
-    int value = channel_values[i];
-    if (static_cast<float>(value) > max_val) {
-      value = max_val;
-    }
-    channel_values[i] = static_cast<int>(kMaxPixelValueAsFloat *
-                                         (static_cast<float>(value) / max_val));
-  }
-  return channel_values;
-}
 //---------------//
 // Base Channels //
 //---------------//

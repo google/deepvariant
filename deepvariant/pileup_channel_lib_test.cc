@@ -71,35 +71,6 @@ namespace deepvariant {
 
 using ::testing::ValuesIn;
 
-TEST(ScaleColorVector, BasicCase) {
-  PileupImageOptions options{};
-  Channels channel_set{options};
-  std::vector<std::uint8_t> test_vector{5, 10, 25};
-  std::vector<std::uint8_t> expect_vector{25, 50, 127};
-  EXPECT_EQ(channel_set.ScaleColorVector(test_vector, 50), expect_vector);
-}
-
-TEST(ScaleColorVectorLarge, OverMaxCase) {
-  PileupImageOptions options{};
-  Channels channel_set{options};
-  std::vector<std::uint8_t> test_vector;
-  test_vector.resize(500);
-  for (int i = 0; i < test_vector.size(); i++) {
-    test_vector[i] = i + 1;
-  }
-  test_vector =
-      channel_set.ScaleColorVector(test_vector, kMaxPixelValueAsFloat);
-  std::uint8_t j = 0;
-  for (auto& i : test_vector) {
-    j++;
-    if (i < kMaxPixelValueAsFloat) {
-      EXPECT_EQ(i, j);
-    } else {
-      EXPECT_EQ(i, static_cast<int>(kMaxPixelValueAsFloat));
-    }
-  }
-}
-
 TEST(BaseColor, A) {
   PileupImageOptions options{};
   options.set_base_color_offset_a_and_g(1);
