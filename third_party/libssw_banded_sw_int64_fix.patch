@@ -1,0 +1,30 @@
+--- a/src/ssw.c
++++ b/src/ssw.c
+@@ -602,7 +602,8 @@
+ 	int32_t i, j, e, f, temp1, temp2, s = 16, s1 = 8, l, max = 0, len;
+ 	int64_t s2 = 1024;
+ 	char op, prev_op;
+-	int32_t width, width_d, *h_b, *e_b, *h_c;
++	int32_t width, *h_b, *e_b, *h_c;
++	int64_t width_d;
+ 	int8_t *direction, *direction_line;
+     len = refLen > readLen ? refLen : readLen;
+ 	cigar* result = (cigar*)malloc(sizeof(cigar));
+@@ -620,7 +621,7 @@
+ 			e_b = (int32_t*)realloc(e_b, s1 * sizeof(int32_t));
+ 			h_c = (int32_t*)realloc(h_c, s1 * sizeof(int32_t));
+ 		}
+-		while (width_d * readLen * 3 >= s2) {   // width_d*readLen* overflow before s2
++		while (width_d * (int64_t)readLen * 3 >= s2) {
+ 			++s2;
+ 			kroundup32(s2);
+ 			direction = (int8_t*)realloc(direction, s2 * sizeof(int8_t));
+@@ -633,7 +634,7 @@
+ 			j = i + band_width; end = end < j ? end : j; // band end
+ 			edge = end + 1 < width - 1 ? end + 1 : width - 1;
+ 			f = h_b[0] = e_b[0] = h_b[edge] = e_b[edge] = h_c[0] = 0;
+-			direction_line = direction + width_d * i * 3;
++			direction_line = direction + width_d * (int64_t)i * 3;
+ 
+ 			for (j = beg; LIKELY(j <= end); j ++) {
+ 				int32_t b, e1, f1, d, de, df, dh;

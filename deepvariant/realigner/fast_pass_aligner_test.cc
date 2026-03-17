@@ -31,6 +31,8 @@
 
 #include "deepvariant/realigner/fast_pass_aligner.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <list>
@@ -1237,6 +1239,69 @@ TEST_F(FastPassAlignerTest, IsAlignmentNormalized_Ins_Norm) {
       /*ref_offset=*/7,
       /*read_sequence=*/"ACTCTCTCTCTCAGCTGT"
       ));
+}
+
+// Regression test for GitHub issue #1060.
+// Root cause: int32_t overflow in banded_sw() within SSW library (ssw.c line
+// 623).
+//
+// When SSW aligns two sequences that share enough homology to produce a large
+// gapped alignment, banded_sw() first tries with band_width = abs(refLen -
+// readLen) + 1. If the score doesn't match, it doubles band_width (line 671)
+// and retries. The computation:
+//   width_d * readLen * 3
+// where width_d = 2*band_width+1, is done in int32 arithmetic. After band
+// doubling, this overflows int32, causing the `direction` array check to be
+// bypassed (negative result < s2), and subsequent writes go out of bounds.
+//
+// Real crash scenario: hap_len=17437, read_len=25939, maskLen=2760.
+// SSW's gapped alignment produces band_width ~8500. After doubling to ~17000,
+// width_d * readLen * 3 ≈ 34001 * 25939 * 3 ≈ 2.6 billion > INT32_MAX.
+//
+// To reproduce: construct a query that is the reference with extra inserted
+// bases throughout, guaranteeing SSW will attempt a large gapped alignment.
+TEST_F(FastPassAlignerTest, SswAligner_BandedSwInt32Overflow_GH1060) {
+  aligner_.InitSswLib();
+
+  // Create a deterministic sequence.
+  auto make_sequence = [](int len, int seed = 0) {
+    std::string seq(len, 'A');
+    uint32_t state = seed + 1;
+    for (int i = 0; i < len; i++) {
+      state = state * 1103515245 + 12345;
+      seq[i] = "ACGT"[(state >> 16) % 4];
+    }
+    return seq;
+  };
+
+  // Reference: 17437bp (matching the real crash scenario).
+  std::string ref_seq = make_sequence(17437, 42);
+
+  // Build a query by taking the reference and inserting an extra base after
+  // every 2nd base. This creates a query ~50% longer with high homology.
+  // 17437/2 ≈ 8718 insertions → query ~= 17437 + 8718 = 26155bp.
+  std::string query;
+  query.reserve(26200);
+  uint32_t insert_state = 99;
+  for (size_t i = 0; i < ref_seq.size(); i++) {
+    query.push_back(ref_seq[i]);
+    if (i % 2 == 1) {
+      insert_state = insert_state * 1103515245 + 12345;
+      query.push_back("ACGT"[(insert_state >> 16) % 4]);
+    }
+  }
+
+  aligner_.SswSetReference(ref_seq);
+  AlignerOptions opts;
+  opts.set_read_size(2760);  // Matching the real crash scenario maskLen.
+  opts.set_kmer_size(3);
+  aligner_.set_options(opts);
+
+  // This call triggers the crash before the fix. SSW produces a large
+  // gapped alignment with band_width ~8700. After band doubling,
+  // width_d * readLen * 3 overflows int32, causing a SIGSEGV in banded_sw.
+  Alignment alignment = aligner_.SswAlign(query);
+  EXPECT_GT(alignment.sw_score, 0);
 }
 
 }  // namespace deepvariant

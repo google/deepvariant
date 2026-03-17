@@ -38,6 +38,10 @@ http_archive(
     urls = [
         "https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library/archive/v1.2.5.tar.gz",
     ],
+    # Fix int32_t overflow in banded_sw() causing segfault with large indels.
+    # See https://github.com/google/deepvariant/issues/1060
+    patches = ["//:third_party/libssw_banded_sw_int64_fix.patch"],
+    patch_args = ["-p1"],
 )
 
 http_archive(
