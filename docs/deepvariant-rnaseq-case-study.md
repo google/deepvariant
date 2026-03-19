@@ -220,21 +220,13 @@ sudo docker run \
 
 *   `--model_type` - Sets the model and options, but we will override the model
     with `--customized model`.
-*   `--customized_model` - Points to a model trained using RNA-seq data.
 *   `--ref` - Specifies the reference sequence.
 *   `--reads` - Specifies the input bam file.
 *   `--output_vcf` - Specifies the output variant file.
+*   `--disable_small_model` - Disables the small model from running.
 *   `--num_shards` - Sets the number of shards to the number of available
     processors (`$(nproc)`). This is used to perform parallelization.
 *   `--regions` - Restricts analysis to 3x chr20 CDS regions only.
-*   `--disable_small_model` - Disables the small model from running.
-*   `--make_examples_extra_args=` - Passes additional arguments to
-    make_examples.
-    *   `split_skip_reads=true` - *Important!* This flag is critical for RNA-seq
-        variant calling to work properly. It enables RNA-seq data to be
-        processed efficiently.
-    *   `channels=''` - Resets the channel list to be appropriate for the
-        RNA-seq model. model.
 *   `--intermediate_results_dir` - Outputs results to an intermediate directory.
 
 For running on GPU machines, or using Singularity instead of Docker, see
