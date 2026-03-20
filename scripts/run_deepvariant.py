@@ -298,6 +298,28 @@ _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES = flags.DEFINE_list(
     ' thresholds for all samples.',
 )
 
+_STEPS = flags.DEFINE_list(
+    'steps',
+    ['make_examples', 'call_variants', 'postprocess_variants'],
+    'Optional. A comma-separated list of steps to execute. If omitted, all'
+    ' steps will run.',
+)
+
+_MAKE_EXAMPLES_SHARDS_OFFSET = flags.DEFINE_integer(
+    'make_examples_shards_offset',
+    0,
+    'Optional. The offset of the make_examples shards to process. This is'
+    ' used to run make_examples in parallel with different task offsets and'
+    ' calculate the runtime for each shard.',
+)
+
+_MAKE_EXAMPLES_SHARDS_COUNT = flags.DEFINE_integer(
+    'make_examples_shards_count',
+    0,
+    'Optional. The number of make_examples shards to process. If set to 0,'
+    ' all shards will be processed.',
+)
+
 MODEL_TYPE_MAP = {
     ModelType.WGS: '/opt/models/wgs',
     ModelType.WES: '/opt/models/wes',
@@ -454,9 +476,15 @@ def make_examples_command(
   Returns:
     (string, string) A command to run, and a log file to output to.
   """
+  shards_start = _MAKE_EXAMPLES_SHARDS_OFFSET.value
+
+  shards_end = _NUM_SHARDS.value - 1
+  if _MAKE_EXAMPLES_SHARDS_COUNT.value != 0:
+    shards_end = shards_start + _MAKE_EXAMPLES_SHARDS_COUNT.value - 1
+
   command = [
       'time',
-      'seq 0 {} |'.format(_NUM_SHARDS.value - 1),
+      'seq {} {} |'.format(shards_start, shards_end),
       'parallel -q --halt 2 --line-buffer',
       '/opt/deepvariant/bin/make_examples',
   ]
@@ -771,76 +799,79 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
     if tf.io.gfile.exists(potential_json):
       model_ckpt_json = potential_json
 
-  commands.append(
-      make_examples_command(
-          ref=_REF.value,
-          reads=_READS.value,
-          examples=examples,
-          model_ckpt=model_ckpt,
-          model_ckpt_json=model_ckpt_json,
-          runtime_by_region_path=runtime_by_region_path,
-          extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
-          # kwargs:
-          gvcf=nonvariant_site_tfrecord_path,
-          regions=_REGIONS.value,
-          sample_name=_SAMPLE_NAME.value,
-          haploid_contigs=_HAPLOID_CONTIGS.value,
-          par_regions_bed=_PAR_REGIONS.value,
-          output_local_read_phasing=local_read_phasing_tsv_files,
-      )
-  )
+  if 'make_examples' in _STEPS.value:
+    commands.append(
+        make_examples_command(
+            ref=_REF.value,
+            reads=_READS.value,
+            examples=examples,
+            model_ckpt=model_ckpt,
+            model_ckpt_json=model_ckpt_json,
+            runtime_by_region_path=runtime_by_region_path,
+            extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
+            # kwargs:
+            gvcf=nonvariant_site_tfrecord_path,
+            regions=_REGIONS.value,
+            sample_name=_SAMPLE_NAME.value,
+            haploid_contigs=_HAPLOID_CONTIGS.value,
+            par_regions_bed=_PAR_REGIONS.value,
+            output_local_read_phasing=local_read_phasing_tsv_files,
+        )
+    )
 
   # call_variants
   call_variants_output = os.path.join(
       intermediate_results_dir, 'call_variants_output.tfrecord.gz'
   )
-  commands.append(
-      call_variants_command(
-          outfile=call_variants_output,
-          examples=examples,
-          model_ckpt=model_ckpt,
-          extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
-      )
-  )
+  if 'call_variants' in _STEPS.value:
+    commands.append(
+        call_variants_command(
+            outfile=call_variants_output,
+            examples=examples,
+            model_ckpt=model_ckpt,
+            extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
+        )
+    )
 
   # postprocess_variants
-  if _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
-    for gq in _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
+  if 'postprocess_variants' in _STEPS.value:
+    if _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
+      for gq in _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
+        commands.append(
+            postprocess_variants_command(
+                ref=_REF.value,
+                infile=call_variants_output,
+                outfile=_rename_vcf_file_by_gq(_OUTPUT_VCF.value, gq),
+                small_model_cvo_records=small_model_cvo_records,
+                extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+                sample_name=_SAMPLE_NAME.value,
+                haploid_contigs=_HAPLOID_CONTIGS.value,
+                par_regions_bed=_PAR_REGIONS.value,
+                regions=_REGIONS.value,
+                resolve_call_variants_outputs_by_model=True,
+                small_model_gq_threshold=gq,
+                phased_reads_input_path=local_read_phasing_tsv_files,
+                model_ckpt_json=model_ckpt_json,
+            )
+        )
+    else:
       commands.append(
           postprocess_variants_command(
               ref=_REF.value,
               infile=call_variants_output,
-              outfile=_rename_vcf_file_by_gq(_OUTPUT_VCF.value, gq),
+              outfile=_OUTPUT_VCF.value,
               small_model_cvo_records=small_model_cvo_records,
               extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+              nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
+              gvcf_outfile=_OUTPUT_GVCF.value,
               sample_name=_SAMPLE_NAME.value,
               haploid_contigs=_HAPLOID_CONTIGS.value,
               par_regions_bed=_PAR_REGIONS.value,
               regions=_REGIONS.value,
-              resolve_call_variants_outputs_by_model=True,
-              small_model_gq_threshold=gq,
               phased_reads_input_path=local_read_phasing_tsv_files,
               model_ckpt_json=model_ckpt_json,
           )
       )
-  else:
-    commands.append(
-        postprocess_variants_command(
-            ref=_REF.value,
-            infile=call_variants_output,
-            outfile=_OUTPUT_VCF.value,
-            small_model_cvo_records=small_model_cvo_records,
-            extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
-            nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
-            gvcf_outfile=_OUTPUT_GVCF.value,
-            sample_name=_SAMPLE_NAME.value,
-            haploid_contigs=_HAPLOID_CONTIGS.value,
-            par_regions_bed=_PAR_REGIONS.value,
-            regions=_REGIONS.value,
-            phased_reads_input_path=local_read_phasing_tsv_files,
-            model_ckpt_json=model_ckpt_json,
-        )
-    )
     # vcf_stats_report
     if _VCF_STATS_REPORT.value:
       commands.append(
