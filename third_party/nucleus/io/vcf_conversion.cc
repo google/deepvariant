@@ -826,14 +826,16 @@ VcfRecordConverter::VcfRecordConverter(
 void VcfHeaderConverter::ConvertToPb(const bcf_hdr_t* hdr,
                                      genomics::v1::VcfHeader* vcf_header) {
   vcf_header->Clear();
-  if (hdr->nhrec < 1) {
+  if (hdr->nhrec < 1 || hdr->hrec[0] == nullptr) {
     LOG(WARNING) << "Empty header, not a valid VCF.";
     return;
   }
-  if (string(hdr->hrec[0]->key) != "fileformat") {
+  if (hdr->hrec[0]->key == nullptr || string(hdr->hrec[0]->key) != "fileformat") {
     LOG(WARNING) << "Not a valid VCF, fileformat needed.";
   }
-  vcf_header->set_fileformat(hdr->hrec[0]->value);
+  if (hdr->hrec[0]->value != nullptr) {
+    vcf_header->set_fileformat(hdr->hrec[0]->value);
+  }
 
   // Fill in the contig info for each contig in the VCF header. Directly
   // accesses the low-level C struct because there are no indirection

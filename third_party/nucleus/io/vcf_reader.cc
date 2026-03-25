@@ -241,18 +241,19 @@ StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Query(
 ::nucleus::Status VcfReader::FromString(const absl::string_view& vcf_line,
                                         nucleus::genomics::v1::Variant* v) {
   size_t len = vcf_line.length();
-  std::unique_ptr<char[]> cstr{new char[len + 1]};
-  std::strncpy(cstr.get(), vcf_line.data(), len);
-  *(cstr.get() + len) = '\0';
-  kstring_t str = {.l = len + 1, .m = len + 1, .s = cstr.get()};
+  char* cstr = static_cast<char*>(malloc(len + 1));
+  std::strncpy(cstr, vcf_line.data(), len);
+  cstr[len] = '\0';
+  kstring_t str = {.l = len, .m = len + 1, .s = cstr};
 
   // vcf_parse1 returns -1 on critical errors and 0 otherwise. BCF_ERR_CTG_UNDEF
   // and BCF_ERR_TAG_UNDEF indicate missing header definitions, and are
   // non-critical errors. Ignore these missing header definitions because they
   // are common in the wild.
   if (vcf_parse1(&str, header_, bcf1_) < 0) {
+    free(str.s);
     return ::nucleus::DataLoss(
-        absl::StrCat("Failed to parse VCF record: ", cstr.get()));
+        absl::StrCat("Failed to parse VCF record: ", str.s));
   }
   if (bcf1_->errcode == BCF_ERR_CTG_UNDEF ||
       bcf1_->errcode == BCF_ERR_TAG_UNDEF) {
@@ -261,11 +262,13 @@ StatusOr<std::shared_ptr<VariantIterable>> VcfReader::Query(
   }
 
   if (bcf1_->errcode != 0) {
+    free(str.s);
     return ::nucleus::DataLoss(absl::StrCat(
         "Failed to parse VCF record with errcode: ", bcf1_->errcode));
   }
 
   NUCLEUS_RETURN_IF_ERROR(RecordConverter().ConvertToPb(header_, bcf1_, v));
+  free(str.s);
   return ::nucleus::Status();
 }
 
