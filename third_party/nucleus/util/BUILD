@@ -85,7 +85,10 @@ cc_test(
 py_library(
     name = "py_utils",
     srcs = ["utils.py"],
-    deps = ["//third_party/nucleus/util/python:utils"],
+    deps = [
+        "//third_party/nucleus/protos:range_py_pb2",
+        "//third_party/nucleus/util/python:utils",
+    ],
 )
 
 py_library(
@@ -132,10 +135,7 @@ cc_library(
     name = "cpp_math",
     srcs = ["math.cc"],
     hdrs = ["math.h"],
-    deps = [
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings:cord",
-    ],
+    deps = ["@com_google_absl//absl/log:check"],
 )
 
 cc_test(
@@ -171,6 +171,7 @@ py_library(
     srcs = ["ranges.py"],
     deps = [
         "//third_party/nucleus/io:bed",
+        "//third_party/nucleus/io:gfile",
         "//third_party/nucleus/protos:position_py_pb2",
         "//third_party/nucleus/protos:range_py_pb2",
         "//third_party/nucleus/protos:reference_py_pb2",
@@ -199,8 +200,8 @@ py_library(
     name = "variantcall_utils",
     srcs = ["variantcall_utils.py"],
     deps = [
+        ":struct_utils",
         ":vcf_constants",
-        "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
     ],
 )
@@ -210,6 +211,7 @@ py_test(
     size = "small",
     srcs = ["variantcall_utils_test.py"],
     deps = [
+        ":struct_utils",
         ":variantcall_utils",
         "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
@@ -225,7 +227,6 @@ py_library(
         ":ranges",
         ":variantcall_utils",
         ":vcf_constants",
-        "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
     ],
 )
@@ -236,7 +237,9 @@ py_test(
     srcs = ["variant_utils_test.py"],
     deps = [
         ":ranges",
+        ":struct_utils",
         ":variant_utils",
+        "//third_party/nucleus/protos:struct_py_pb2",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/testing:absltest",
@@ -298,6 +301,7 @@ py_test(
     srcs = ["errors_test.py"],
     deps = [
         ":errors",
+        "@absl_py//absl/logging",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],
@@ -360,6 +364,7 @@ py_test(
         ":vis",
         "//third_party/nucleus/protos:variants_py_pb2",
         "//third_party/nucleus/testing:py_test_utils",
+        "//third_party/tensorflow/core/example:example_protos_py_proto",
         "@absl_py//absl/testing:absltest",
         "@absl_py//absl/testing:parameterized",
     ],

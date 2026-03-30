@@ -42,6 +42,7 @@ import intervaltree
 import six
 
 from third_party.nucleus.io import bed
+from third_party.nucleus.io import gfile
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reference_pb2
@@ -518,8 +519,11 @@ def from_regions(regions, contig_map=None):
       region as a file and read the Range protos from it with the corresponding
       reader from _get_parser_for_file, yielding each Range from the file in
       order.
-    * Otherwise we parse region as a region literal (`chr20:1-10`) and return
-      the Range proto.
+    * If region does not have a recognized file extension:
+      * If the region string contains '/' or `gfile.Exists(region)` is true, a
+        `ValueError` is raised, as it's likely a malformed file path.
+      * Otherwise, we parse region as a region literal (`chr20:1-10`) and return
+        the Range proto.
 
   Args:
     regions: iterable[str]. Converts each element of this iterable into
@@ -531,6 +535,11 @@ def from_regions(regions, contig_map=None):
 
   Yields:
     A Range proto.
+
+  Raises:
+    ValueError: If a region is detected as a file path but does not have a
+      recognized extension (e.g., .bed, .bed.gz, .bedpe), or if a region literal
+      cannot be parsed.
   """
   for region in regions:
     reader = _get_parser_for_file(region)
@@ -538,6 +547,12 @@ def from_regions(regions, contig_map=None):
       for elt in reader(region):
         yield elt
     else:
+      if '/' in region or gfile.Exists(region):
+        raise ValueError(
+            f"Region '{region}' was not recognized as a BED file. "
+            "Nucleus requires file paths to end with standard extensions "
+            "such as .bed or .bed.gz."
+        )
       yield parse_literal(region, contig_map)
 
 

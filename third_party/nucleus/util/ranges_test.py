@@ -300,6 +300,19 @@ class RangesTests(parameterized.TestCase):
 
     self.assertEqual(list(ranges.from_regions(regions)), expected)
 
+  def test_from_regions_invalid_file_path(self):
+    with self.assertRaisesRegex(ValueError, 'was not recognized as a BED file'):
+      list(ranges.from_regions(['/some/path/to/file.txt']))
+
+  def test_from_regions_path_like_string_with_slash(self):
+    with self.assertRaisesRegex(ValueError, 'was not recognized as a BED file'):
+      list(ranges.from_regions(['some/path/to/file.txt']))
+
+  def test_from_regions_existing_file_without_bed_extension(self):
+    temp_file = test_utils.test_tmpfile('not_a_bed_extension.txt', 'test')
+    with self.assertRaisesRegex(ValueError, 'was not recognized as a BED file'):
+      list(ranges.from_regions([temp_file]))
+
   @parameterized.parameters(
       # Intersection with 1, 2, 3 identical RangeSets produces the original set.
       ([['1:1-10']], ['1:1-10']),

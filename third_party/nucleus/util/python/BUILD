@@ -74,7 +74,6 @@ py_test(
     srcs = ["utils_wrap_test.py"],
     deps = [
         ":utils",
-        "//third_party/nucleus/io:clif_postproc",
         "//third_party/nucleus/protos:range_py_pb2",
         "//third_party/nucleus/protos:reads_py_pb2",
         "@absl_py//absl/testing:absltest",
