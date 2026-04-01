@@ -553,14 +553,14 @@ def run():
             'the paths are correct:\n'
         )
         for p in paths[0:3]:
-          special_gcs_message += 'gsutil ls {}\n'.format(p)
+          special_gcs_message += 'gcloud storage ls {}\n'.format(p)
         logging.warning(special_gcs_message)
       else:
         logging.warning(
             (
                 'WARNING: --examples file is either empty or does not exist. '
                 'Please check that the path is correct: \n'
-                'gsutil ls %s'
+                'gcloud storage ls %s'
             ),
             examples_path,
         )

@@ -103,9 +103,9 @@ mkdir -p "${LOG_DIR}"
 ### Copy data
 
 ```bash
-gsutil -m cp ${DATA_BUCKET}/BGISEQ_PE100_NA12878.sorted.chr*.bam* "${DATA_DIR}"
-gsutil -m cp -r "${DATA_BUCKET}/ucsc_hg19.fa*" "${DATA_DIR}"
-gsutil -m cp -r "${DATA_BUCKET}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_*" "${DATA_DIR}"
+gcloud storage cp ${DATA_BUCKET}/BGISEQ_PE100_NA12878.sorted.chr*.bam* "${DATA_DIR}"
+gcloud storage cp --recursive "${DATA_BUCKET}/ucsc_hg19.fa*" "${DATA_DIR}"
+gcloud storage cp --recursive "${DATA_BUCKET}/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_*" "${DATA_DIR}"
 ```
 
 ### Download extra packages
@@ -197,7 +197,7 @@ We will want to shuffle this on Dataflow later, so we copy the data to GCS
 bucket first:
 
 ```
-gsutil -m cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
+gcloud storage cp ${OUTPUT_DIR}/training_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
   ${OUTPUT_BUCKET}
 ```
 
@@ -231,7 +231,7 @@ This took: 5m16.890s.
 Copy to GCS bucket:
 
 ```bash
-gsutil -m cp ${OUTPUT_DIR}/validation_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
+gcloud storage cp ${OUTPUT_DIR}/validation_set.with_label.tfrecord-?????-of-000${N_SHARDS}.gz* \
   ${OUTPUT_BUCKET}
 ```
 
@@ -245,11 +245,11 @@ consider cleaning up previous data first to avoid confusion:
 
 ```bash
 # (Optional) Clean up existing files.
-gsutil -m rm -f "${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-gsutil rm -f "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
-gsutil -m rm -f "${OUTPUT_BUCKET}/validation_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
-gsutil rm -f "${OUTPUT_BUCKET}/validation_set.dataset_config.pbtxt"
-gsutil rm -f "${OUTPUT_BUCKET}/example_info.json"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/training_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/training_set.dataset_config.pbtxt"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/validation_set.with_label.shuffled-?????-of-?????.tfrecord.gz"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/validation_set.dataset_config.pbtxt"
+gcloud storage rm --continue-on-error "${OUTPUT_BUCKET}/example_info.json"
 ```
 
 Here we provide examples for running on

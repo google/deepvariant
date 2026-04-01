@@ -113,7 +113,7 @@ MODEL=gs://deepvariant/models/DeepVariant/1.6.0/savedmodels/deepvariant.wgs.save
 MODEL_PACBIO=gs://deepvariant/models/DeepVariant/1.10.0/savedmodels/deepvariant.pacbio.savedmodel
 # Speed up by copying to /tmp/
 rm -rf /tmp/deepvariant.wgs.savedmodel
-gsutil -m cp -R ${MODEL} /tmp/
+gcloud storage cp -R ${MODEL} /tmp/
 MODEL=/tmp/deepvariant.wgs.savedmodel
 
 source settings.sh

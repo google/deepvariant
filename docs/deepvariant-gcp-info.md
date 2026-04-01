@@ -42,10 +42,10 @@ for organizating cloud projects for an enterprise.)
 
 The Google Cloud SDK comes with two very useful command line utilities that you
 can use on your local workstation---`gcloud`, which lets you administer your
-cloud resources, and `gsutil`, which lets you manage and transfer data to Google
-Cloud Storage buckets. We will make use of these tools in the following
-instructions. To install the Cloud SDK, [follow the installation instructions
-here](https://cloud.google.com/sdk/downloads).
+cloud resources, and `gcloud storage`, which lets you manage and transfer data
+to Google Cloud Storage buckets. We will make use of these tools in the
+following instructions. To install the Cloud SDK,
+[follow the installation instructions here](https://cloud.google.com/sdk/downloads).
 
 The final step in the installation process (`gcloud init`) will have you
 authenticate via your web browser and select a default [zone and
