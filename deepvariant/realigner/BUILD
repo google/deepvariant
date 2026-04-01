@@ -110,12 +110,46 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "debruijn_graph_exp",
+    srcs = ["debruijn_graph_exp.cc"],
+    hdrs = ["debruijn_graph_exp.h"],
+    deps = [
+        "//deepvariant/protos:realigner_cc_pb2",
+        "//third_party/nucleus/platform:types",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
+        "//third_party/nucleus/util:proto_ptr",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
 cc_test(
     name = "debruijn_graph_test",
     size = "small",
     srcs = ["debruijn_graph_test.cc"],
     deps = [
         ":debruijn_graph",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/util:proto_ptr",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_test(
+    name = "debruijn_graph_exp_test",
+    size = "small",
+    srcs = ["debruijn_graph_exp_test.cc"],
+    deps = [
+        ":debruijn_graph_exp",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
         "@com_google_googletest//:gtest_main",
