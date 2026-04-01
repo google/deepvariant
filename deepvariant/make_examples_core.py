@@ -1371,6 +1371,12 @@ class OutputsWriter:
       writer.write('\t'.join(columns) + '\n')
 
   def _add_writer(self, name: str, writer: tf_record.TFRecordWriter):
+    """Adds a writer to the writers dict.
+
+    Args:
+      name: The name of the writer to add.
+      writer: The writer to add.
+    """
     if name not in self._writers:
       raise ValueError(
           'Expected writer {} to have a None binding in writers.'.format(name)
@@ -1380,7 +1386,10 @@ class OutputsWriter:
           'Expected writer {} to be bound to None in writers but '
           'saw {} instead'.format(name, self._writers[name])
       )
-    self._writers[name] = writer
+    if hasattr(writer, '__enter__'):
+      self._writers[name] = writer.__enter__()
+    else:
+      self._writers[name] = writer
 
   def __enter__(self):
     """API function to support with syntax."""
@@ -3495,7 +3504,9 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
     _, candidate_positions_filename = sharded_file_utils.resolve_filespecs(
         options.task_id, main_sample.candidate_positions
     )
-    candidates_writer = epath.Path(candidate_positions_filename).open('wb')
+    candidates_writer = (
+        epath.Path(candidate_positions_filename).open('wb').__enter__()
+    )
 
   # Create a processor to create candidates and examples for each region.
   # Replace path in calling regions with the actual calling regions.
