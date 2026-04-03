@@ -440,6 +440,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.trial = 0  # Used to allow for replicates during training.
 
   # Default Dataset
+  config.dataset_dir = ''  # make_examples_nf method for specifying dataset.
   config.train_dataset_pbtxt = '/path/to/your/train.dataset_config.pbtxt'
   config.tune_dataset_pbtxt = '/path/to/your/tune.dataset_config.pbtxt'
 

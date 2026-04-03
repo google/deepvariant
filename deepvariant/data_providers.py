@@ -33,6 +33,7 @@ training and evaluating germline calling accuracy.
 """
 
 import itertools
+import json
 import os
 from typing import Callable, Dict, Tuple, Union
 
@@ -264,6 +265,51 @@ def input_fn(
   ds = strategy.experimental_distribute_dataset(ds)
 
   return ds
+
+
+def _create_nf_dataset_config(
+    dataset_dir: str, dataset_name: str, counts: Dict[str, int]
+) -> deepvariant_pb2.DeepVariantDatasetConfig:
+  """Creates a DeepVariantDatasetConfig proto for config.dataset_dir."""
+  # This is used for make_examples_nf.
+  config = deepvariant_pb2.DeepVariantDatasetConfig()
+  config.name = dataset_name
+  config.tfrecord_path = os.path.join(
+      dataset_dir, dataset_name, '*.tfrecord.gz'
+  )
+  if dataset_name in counts:
+    config.num_examples = counts[dataset_name]
+  else:
+    raise ValueError(
+        f'Number of examples not found for {dataset_name} in'
+        ' example_counts.json'
+    )
+  return config
+
+
+def read_nf_dataset_config(dataset_dir: str) -> Tuple[
+    deepvariant_pb2.DeepVariantDatasetConfig,
+    deepvariant_pb2.DeepVariantDatasetConfig,
+]:
+  """Returns the dataset config for the given dataset directory."""
+  json_path = os.path.join(dataset_dir, 'example_counts.json')
+  if not tf.io.gfile.exists(json_path):
+    raise ValueError(f'example_counts.json not found in {dataset_dir}')
+
+  try:
+    with tf.io.gfile.GFile(json_path) as f:
+      counts = json.load(f)
+  except Exception as e:
+    raise ValueError(
+        f'Failed to load example_counts.json from {json_path}: {e}'
+    ) from e
+
+  train_dataset_config = _create_nf_dataset_config(dataset_dir, 'train', counts)
+  eval_dataset_config = _create_nf_dataset_config(dataset_dir, 'eval', counts)
+  # The 'eval' dataset is named 'tune' for historical reasons.
+  eval_dataset_config.name = 'tune'
+
+  return train_dataset_config, eval_dataset_config
 
 
 def read_dataset_config(dataset_config_filename):

@@ -26,6 +26,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+import os
+
 from absl.testing import absltest
 from absl.testing import parameterized
 import tensorflow as tf
@@ -182,6 +184,48 @@ class DataProviderTest(parameterized.TestCase):
       self.assertEqual(config.batch_size, labels.shape[0])
       # Check that our labels don't exceed num classes
       self.assertLess(tf.reduce_max(labels), dv_constants.NUM_CLASSES)
+
+
+class ReadDatasetConfigTest(parameterized.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    self.test_dir = self.create_tempdir().full_path
+
+  def test_read_dataset_config_with_json(self):
+
+    counts_json = os.path.join(self.test_dir, 'example_counts.json')
+    with tf.io.gfile.GFile(counts_json, 'w') as f:
+      f.write('{"train": 100, "eval": 50}')
+
+    train_config, tune_config = data_providers.read_nf_dataset_config(
+        self.test_dir
+    )
+    self.assertEqual(train_config.num_examples, 100)
+    self.assertEqual(tune_config.num_examples, 50)
+
+  def test_read_dataset_config_backward_compatibility(self):
+    config_pbtxt = os.path.join(self.test_dir, 'dataset_config.pbtxt')
+    with tf.io.gfile.GFile(config_pbtxt, 'w') as f:
+      f.write("""
+name: "test_dataset"
+tfrecord_path: "/path/to/tfrecord"
+num_examples: 200
+""")
+
+    config = data_providers.read_dataset_config(config_pbtxt)
+    self.assertEqual(config.num_examples, 200)
+
+  def test_read_dataset_config_missing_num_examples_and_json_raises(self):
+    config_pbtxt = os.path.join(self.test_dir, 'dataset_config.pbtxt')
+    with tf.io.gfile.GFile(config_pbtxt, 'w') as f:
+      f.write("""
+name: "test_dataset"
+tfrecord_path: "/path/to/tfrecord"
+""")
+
+    with self.assertRaisesRegex(ValueError, 'does not have a num_examples'):
+      data_providers.read_dataset_config(config_pbtxt)
 
 
 if __name__ == '__main__':

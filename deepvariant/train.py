@@ -127,13 +127,19 @@ def train(config: ml_collections.ConfigDict):
     raise ValueError(f'Unknown strategy: {_STRATEGY.value}')
 
   # Load config
-  train_dataset_config = data_providers.read_dataset_config(
-      config.train_dataset_pbtxt
-  )
+  if config.dataset_dir:
+    # make_examples_nf method for loading dataset example counts.
+    train_dataset_config, tune_dataset_config = (
+        data_providers.read_nf_dataset_config(config.dataset_dir)
+    )
+  else:
+    train_dataset_config = data_providers.read_dataset_config(
+        config.train_dataset_pbtxt
+    )
 
-  tune_dataset_config = data_providers.read_dataset_config(
-      config.tune_dataset_pbtxt
-  )
+    tune_dataset_config = data_providers.read_dataset_config(
+        config.tune_dataset_pbtxt
+    )
 
   # Copy example_info.json to checkpoint path.
   model_example_info_path = os.path.join(
