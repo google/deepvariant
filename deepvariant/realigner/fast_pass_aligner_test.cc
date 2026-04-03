@@ -1304,6 +1304,101 @@ TEST_F(FastPassAlignerTest, SswAligner_BandedSwInt32Overflow_GH1060) {
   EXPECT_GT(alignment.sw_score, 0);
 }
 
+TEST_F(FastPassAlignerTest, FastAlignStringsWithSoftClips_Test) {
+  int soft_clip_length = 0;
+  int num_of_mismatches = 0;
+
+  // Case 1: kClipSideRight, perfect match
+  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
+                "AAAAA", "AAAAA", FastPassAligner::kClipSideRight,
+                &soft_clip_length, &num_of_mismatches),
+            20);
+  EXPECT_EQ(soft_clip_length, 0);
+  EXPECT_EQ(num_of_mismatches, 0);
+
+  // Case 2: kClipSideRight, clip at the end
+  // Scores: 4, 8, 12, 6, 0. Max score 12 at index 2.
+  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
+                "AAAAA", "AAATT", FastPassAligner::kClipSideRight,
+                &soft_clip_length, &num_of_mismatches),
+            0);  // 12 - 2*6 = 0
+  EXPECT_EQ(soft_clip_length, 2);
+  EXPECT_EQ(num_of_mismatches, 0);
+
+  // Case 3: kClipSideLeft, some matches in soft clip.
+  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
+                "ATATAAAAA", "TTTTAAAAA", FastPassAligner::kClipSideLeft,
+                &soft_clip_length, &num_of_mismatches),
+            6);  // 6*4 - 3*6 = 6
+  EXPECT_EQ(soft_clip_length, 3);
+  EXPECT_EQ(num_of_mismatches, 0);
+
+  // Case 4: kClipSideRight, some matches in soft clip.
+  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
+                "AAAAATATA", "AAAAATTTT", FastPassAligner::kClipSideRight,
+                &soft_clip_length, &num_of_mismatches),
+            6);  // 6*4 - 3*6 = 6
+  EXPECT_EQ(soft_clip_length, 3);
+  EXPECT_EQ(num_of_mismatches, 0);
+
+  // Case 5: kClipSideLeft, clip at the beginning
+  // Scores from right: 4, 8, 12, 6, 0. Max score 12 at index 2.
+  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
+                "AAAAA", "TTAAA", FastPassAligner::kClipSideLeft,
+                &soft_clip_length, &num_of_mismatches),
+            0);
+  EXPECT_EQ(soft_clip_length, 2);
+  EXPECT_EQ(num_of_mismatches, 0);
+
+  // Case 5: No match at all, should clip everything
+  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
+                "AAAA", "TTTT", FastPassAligner::kClipSideRight,
+                &soft_clip_length, &num_of_mismatches),
+            -24);
+  EXPECT_EQ(soft_clip_length, 4);
+  EXPECT_EQ(num_of_mismatches, 0);
+
+  // Case 6: 'N' handling
+  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
+                "AANAA", "AANCC", FastPassAligner::kClipSideRight,
+                &soft_clip_length, &num_of_mismatches),
+            0);  // 3*4 - 2*6 = 0
+  EXPECT_EQ(soft_clip_length, 2);
+  EXPECT_EQ(num_of_mismatches, 0);
+
+  // Case 7: Match with internal mismatch, still better than clipping early
+  // AAAAA vs AAATA
+  // kClipSideRight:
+  // i=0: A vs A -> 4 (max)
+  // i=1: AA vs AA -> 8 (max)
+  // i=2: AAA vs AAA -> 12 (max)
+  // i=3: AAAA vs AAAT -> 6
+  // i=4: AAAAA vs AAATA -> 10
+  // Max score is 12 at index 2.
+  // Wait, if max score is at index 2, it will clip 2 bases.
+  // If the mismatch is followed by matches, we should see if it "recovers".
+  // AAAAA vs AAATA
+  // i=0: 4
+  // i=1: 8
+  // i=2: 12
+  // i=3: 6
+  // i=4: 10
+  // Max is 12. So it clips 'TA'.
+  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
+                "AAAAA", "AAATA", FastPassAligner::kClipSideRight,
+                &soft_clip_length, &num_of_mismatches),
+            0);  // 12 - 2*6 = 0
+  EXPECT_EQ(soft_clip_length, 2);
+
+  // Case 8: best alignment should have 2 mismatches
+  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
+                "AAAAATGCTA", "TTAAATCGTA", FastPassAligner::kClipSideLeft,
+                &soft_clip_length, &num_of_mismatches),
+            0);
+  EXPECT_EQ(soft_clip_length, 2);
+  EXPECT_EQ(num_of_mismatches, 2);
+}
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

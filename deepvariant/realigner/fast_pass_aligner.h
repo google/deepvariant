@@ -329,6 +329,22 @@ class FastPassAligner {
 
   void CalculateSswAlignmentScoreThreshold();
 
+  int FastAlignStrings(absl::string_view s1, absl::string_view s2,
+                       int max_mismatches, int* num_of_mismatches) const;
+
+  // This function aligns two strings allowing soft clips. Softclips are allowed
+  // only on one side which is specified by clip_side argument.
+  // The return value is the alignment score. Soft clips are counted as
+  // mismatches for the score calculation. But num_of_mismatches is not affected
+  // by soft clips.
+  enum ClipSide { kClipSideLeft, kClipSideRight };
+  int FastAlignStringsWithSoftClips(
+                      absl::string_view s1,
+                      absl::string_view s2,
+                      ClipSide clip_side,
+                      int* soft_clip_length,
+                      int* num_of_mismatches) const;
+
  private:
   // Reference sequence for the window
   string reference_;
@@ -406,13 +422,6 @@ class FastPassAligner {
   void AddKmerToIndex(absl::string_view kmer, ReadId read_id,
                       KmerOffset pos);
 
-  int FastAlignStrings(absl::string_view s1, absl::string_view s2,
-                       int max_mismatches, int* num_of_mismatches) const;
-
-  // Update position map for each haplotype. Position map stores shifts for
-  // each position of a haplotype in respect to haplotype to reference
-  // alignment. This map helps to quickly calculate reference position for
-  // a read from a read to haplotype alignment.
   void CalculatePositionMaps();
 };
 

@@ -325,6 +325,56 @@ int FastPassAligner::FastAlignStrings(absl::string_view s1,
   return num_of_matches * match_score_ - *num_of_mismatches * mismatch_penalty_;
 }
 
+int FastPassAligner::FastAlignStringsWithSoftClips(
+    absl::string_view s1, absl::string_view s2, ClipSide clip_side,
+    int* soft_clip_length, int* num_of_mismatches) const {
+  CHECK_EQ(s1.size(), s2.size());
+  int n = s1.size();
+  if (n == 0) {
+    *soft_clip_length = 0;
+    *num_of_mismatches = 0;
+    return 0;
+  }
+
+  auto is_match = [](char c1, char c2) {
+    return (c1 == c2) || (c1 == 'N' || c2 == 'N');
+  };
+
+  int max_score = -1;
+  int best_index = -1;
+  int current_score = 0;
+  int current_num_of_mismatches = 0;
+  int best_num_of_mismatches = 0;
+
+  for (int j = 0; j < n; ++j) {
+    int i = (clip_side == kClipSideRight) ? j : (n - 1 - j);
+    if (is_match(s1[i], s2[i])) {
+      current_score += match_score_;
+    } else {
+      current_score -= mismatch_penalty_;
+      current_num_of_mismatches++;
+    }
+    if (current_score > max_score) {
+      max_score = current_score;
+      best_index = j;
+      best_num_of_mismatches = current_num_of_mismatches;
+    }
+  }
+
+  if (best_index == -1) {
+    *soft_clip_length = n;
+    *num_of_mismatches = 0;
+  } else {
+    *soft_clip_length = n - (best_index + 1);
+    *num_of_mismatches = best_num_of_mismatches;
+  }
+
+  // Final score = score of aligned portion -
+  // (clipped portion length * mismatch_penalty_)
+  int aligned_score = (best_index == -1) ? 0 : max_score;
+  return aligned_score - (*soft_clip_length * mismatch_penalty_);
+}
+
 CigarUnit::Operation CigarOperationFromChar(char op) {
   switch (op) {
     case '=':
