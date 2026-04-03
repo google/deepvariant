@@ -1045,6 +1045,31 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         expected_columns,
     )
 
+  def test_experimental_features_are_excluded_by_default(self):
+    small_model_example_factory = (
+        make_small_model_examples.SmallModelExampleFactory(
+            vaf_context_window_size=0,
+            sample_names=[MAIN_SAMPLE],
+        )
+    )
+    self.assertNotIn(
+        "test_experimental_feature",
+        small_model_example_factory.model_features,
+    )
+
+  def test_experimental_features_can_be_included_if_specified(self):
+    small_model_example_factory = (
+        make_small_model_examples.SmallModelExampleFactory(
+            vaf_context_window_size=0,
+            sample_names=[MAIN_SAMPLE],
+            model_features=["test_experimental_feature"],
+        )
+    )
+    self.assertIn(
+        "test_experimental_feature",
+        small_model_example_factory.model_features,
+    )
+
   def test_encode_training_examples(self):
     small_model_example_factory = (
         make_small_model_examples.SmallModelExampleFactory(

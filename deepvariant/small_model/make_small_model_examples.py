@@ -95,6 +95,7 @@ class BaseFeature(SmallModelFeature):
   ALT_BASE_QUALITY = 'alt_base_quality'
   REF_REVERSE_STRAND_RATIO = 'ref_reverse_strand_ratio'
   ALT_REVERSE_STRAND_RATIO = 'alt_reverse_strand_ratio'
+  TEST_EXPERIMENTAL_FEATURE = 'test_experimental_feature'
 
 
 class VariantFeature(SmallModelFeature):
@@ -124,6 +125,14 @@ FAKE_CANDIDATE = deepvariant_pb2.DeepVariantCall(
     },
 )
 DEFAULT_ALT_ALLELE_INDICES = (0,)
+
+# List of features that have not been implemented for models at v1.10.0.
+# This is temporary until all models have a config file that specifies their
+# features.
+# TODO: Remove once all models have a config file.
+_EXPERIMENTAL_FEATURES: list[str] = [
+    BaseFeature.TEST_EXPERIMENTAL_FEATURE.value,
+]
 
 
 def _mean_for_attribute(
@@ -427,6 +436,8 @@ class FeatureEncoder:
       return self._get_ref_reverse_strand_ratio()
     elif feature == BaseFeature.ALT_REVERSE_STRAND_RATIO:
       return self._get_alt_reverse_strand_ratio()
+    elif feature == BaseFeature.TEST_EXPERIMENTAL_FEATURE:
+      return 0
     else:
       raise ValueError(f'{feature.value} does not map to a callable.')
 
@@ -612,7 +623,12 @@ class SmallModelExampleFactory:
         )
       return model_features
     else:
-      return all_features
+      # TODO: Remove once all models have a config file.
+      return [
+          f
+          for f in all_features
+          if not any(exp_feature in f for exp_feature in _EXPERIMENTAL_FEATURES)
+      ]
 
   def _pass_candidate_to_small_model(
       self,
