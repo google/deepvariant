@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Module for generating small model examples."""
 
+import collections
 from collections.abc import Sequence
 import dataclasses
 import enum
@@ -95,6 +96,12 @@ class BaseFeature(SmallModelFeature):
   ALT_BASE_QUALITY = 'alt_base_quality'
   REF_REVERSE_STRAND_RATIO = 'ref_reverse_strand_ratio'
   ALT_REVERSE_STRAND_RATIO = 'alt_reverse_strand_ratio'
+  TOTAL_DEPTH_WITH_OVERLAPPING_DELETIONS = (
+      'total_depth_with_overlapping_deletions'
+  )
+  VARIANT_ALLELE_FREQUENCY_WITH_OVERLAPPING_DELETIONS = (
+      'variant_allele_frequency_with_overlapping_deletions'
+  )
   TEST_EXPERIMENTAL_FEATURE = 'test_experimental_feature'
 
 
@@ -131,6 +138,8 @@ DEFAULT_ALT_ALLELE_INDICES = (0,)
 # features.
 # TODO: Remove once all models have a config file.
 _EXPERIMENTAL_FEATURES: list[str] = [
+    BaseFeature.TOTAL_DEPTH_WITH_OVERLAPPING_DELETIONS.value,
+    BaseFeature.VARIANT_ALLELE_FREQUENCY_WITH_OVERLAPPING_DELETIONS.value,
     BaseFeature.TEST_EXPERIMENTAL_FEATURE.value,
 ]
 
@@ -218,6 +227,7 @@ class FeatureEncoder:
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
       alt_allele_indices: tuple[int, ...],
+      num_overlapping_deletion_alleles: int,
       sample: str | None = None,
       haplotype: int | None = None,
       read_phases: dict[str, int] | None = None,
@@ -228,6 +238,8 @@ class FeatureEncoder:
       candidate: the candidate proto from which to extract the feature.
       alt_allele_indices: the indices of the alt alleles to consider when
         computing the feature values.
+      num_overlapping_deletion_alleles: the number of overlapping deletion
+        alleles in the candidate.
       sample: (optional) the sample name to use for filtering reads.
       haplotype: (optional) the haplotype tag to use for filtering reads.
       read_phases: (optional)a dictionary of read names to haplotype phases.
@@ -262,6 +274,7 @@ class FeatureEncoder:
     self.alt_read_infos_count = len(self.alt_read_infos)
     self.all_alt_read_infos_count = len(self.all_alt_read_infos)
     self.exclude_alleles = get_exclude_alleles(candidate, alt_allele_indices)
+    self.num_overlapping_deletion_alleles = num_overlapping_deletion_alleles
 
   def _get_contig(self) -> str:
     """Returns the contig of the candidate."""
@@ -304,6 +317,17 @@ class FeatureEncoder:
         len(r.read_infos) for r in self.candidate.allele_support_ext.values()
     )
 
+  def _get_total_depth_with_overlapping_deletions(self) -> int:
+    """Returns the total depth of the candidate."""
+    return (
+        len(self.candidate.ref_support_ext.read_infos)
+        + sum(
+            len(r.read_infos)
+            for r in self.candidate.allele_support_ext.values()
+        )
+        + self.num_overlapping_deletion_alleles
+    )
+
   def _get_alt_indices_variant_allele_frequency(self) -> int:
     """Returns the ref allele frequency of the candidate."""
     dp = self._get_alt_indices_depth()
@@ -314,6 +338,15 @@ class FeatureEncoder:
   def _get_variant_allele_frequency(self) -> int:
     """Returns the variant allele frequency of the candidate."""
     dp = self._get_total_depth()
+    if dp == 0:
+      return 0
+    return 100 * self.alt_read_infos_count // dp
+
+  def _get_variant_allele_frequency_with_overlapping_deletions(
+      self,
+  ) -> int:
+    """Returns the variant allele frequency of the candidate."""
+    dp = self._get_total_depth_with_overlapping_deletions()
     if dp == 0:
       return 0
     return 100 * self.alt_read_infos_count // dp
@@ -436,6 +469,13 @@ class FeatureEncoder:
       return self._get_ref_reverse_strand_ratio()
     elif feature == BaseFeature.ALT_REVERSE_STRAND_RATIO:
       return self._get_alt_reverse_strand_ratio()
+    elif feature == BaseFeature.TOTAL_DEPTH_WITH_OVERLAPPING_DELETIONS:
+      return self._get_total_depth_with_overlapping_deletions()
+    elif (
+        feature
+        == BaseFeature.VARIANT_ALLELE_FREQUENCY_WITH_OVERLAPPING_DELETIONS
+    ):
+      return self._get_variant_allele_frequency_with_overlapping_deletions()
     elif feature == BaseFeature.TEST_EXPERIMENTAL_FEATURE:
       return 0
     else:
@@ -610,6 +650,7 @@ class SmallModelExampleFactory:
         self._encode_candidate_feature_dict(
             candidate=FAKE_CANDIDATE,
             alt_allele_indices=DEFAULT_ALT_ALLELE_INDICES,
+            num_overlapping_deletion_alleles=0,
             read_phases=None,
             sample_order=list(range(len(self.sample_names))),
         ).keys()
@@ -646,12 +687,18 @@ class SmallModelExampleFactory:
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
       alt_allele_indices: tuple[int, ...],
+      num_overlapping_deletion_alleles: int,
       read_phases: dict[str, int] | None,
       sample_order: Sequence[int],
   ) -> dict[str, int]:
     """Encodes all model features for a given candidate into a key-value dict."""
     candidate_example = {}
-    feature_encoder = FeatureEncoder(candidate, alt_allele_indices, sample=None)
+    feature_encoder = FeatureEncoder(
+        candidate,
+        alt_allele_indices,
+        num_overlapping_deletion_alleles,
+        sample=None,
+    )
     candidate_example.update({
         feature.value: feature_encoder.encode_base_feature(feature)
         for feature in BaseFeature
@@ -660,7 +707,10 @@ class SmallModelExampleFactory:
       for sample_index in sample_order:
         sample_name = self.sample_names[sample_index]
         sample_feature_encoder = FeatureEncoder(
-            candidate, alt_allele_indices, sample_name
+            candidate,
+            alt_allele_indices,
+            num_overlapping_deletion_alleles,
+            sample_name,
         )
         candidate_example.update({
             f'{sample_name}_{feature.value}': (
@@ -684,6 +734,7 @@ class SmallModelExampleFactory:
           haplotype_feature_encoder = FeatureEncoder(
               candidate,
               alt_allele_indices,
+              num_overlapping_deletion_alleles,
               sample_name,
               haplotype.value,
               read_phases,
@@ -700,6 +751,7 @@ class SmallModelExampleFactory:
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
       alt_allele_indices: tuple[int, ...],
+      num_overlapping_deletion_alleles: int,
       read_phases: dict[str, int] | None,
       sample_order: Sequence[int],
   ) -> Sequence[int]:
@@ -708,6 +760,8 @@ class SmallModelExampleFactory:
     Args:
       candidate: The candidate to be encoded.
       alt_allele_indices: The alt-allele indices to use for the candidate.
+      num_overlapping_deletion_alleles: The number of overlapping deletion
+        alleles for the candidate.
       read_phases: A dictionary mapping read names to haplotype tags.
       sample_order: The order in which the samples are to be encoded.
 
@@ -715,7 +769,11 @@ class SmallModelExampleFactory:
       A feature vector.
     """
     encoded_candidate = self._encode_candidate_feature_dict(
-        candidate, alt_allele_indices, read_phases, sample_order
+        candidate,
+        alt_allele_indices,
+        num_overlapping_deletion_alleles,
+        read_phases,
+        sample_order,
     )
     return [
         value
@@ -727,12 +785,15 @@ class SmallModelExampleFactory:
       self,
       candidate: deepvariant_pb2.DeepVariantCall,
       alt_allele_indices: tuple[int, ...],
+      num_overlapping_deletion_alleles: int,
       label: variant_labeler.VariantLabel,
       read_phases: dict[str, int],
       sample_order: Sequence[int],
   ) -> tf.train.Example:
     """Encodes a candidate example."""
-    feature_encoder = FeatureEncoder(candidate, alt_allele_indices)
+    feature_encoder = FeatureEncoder(
+        candidate, alt_allele_indices, num_overlapping_deletion_alleles
+    )
     return tf.train.Example(
         features=tf.train.Features(
             feature={
@@ -741,6 +802,7 @@ class SmallModelExampleFactory:
                         value=self._encode_model_features(
                             candidate,
                             alt_allele_indices,
+                            num_overlapping_deletion_alleles,
                             read_phases,
                             sample_order,
                         )
@@ -770,6 +832,47 @@ class SmallModelExampleFactory:
         )
     )
 
+  def _reduce_alleles_by_longest_common_suffix(
+      self, ref_allele: str, alt_allele: str
+  ) -> tuple[str, str]:
+    """Returns the reduced alleles by the longest common suffix."""
+    ref_allele_len = len(ref_allele)
+    alt_allele_len = len(alt_allele)
+    common_suffix_len = 0
+    while (
+        common_suffix_len < alt_allele_len
+        and ref_allele[-common_suffix_len - 1]
+        == alt_allele[-common_suffix_len - 1]
+    ):
+      common_suffix_len += 1
+    return (
+        ref_allele[: ref_allele_len - common_suffix_len],
+        alt_allele[: alt_allele_len - common_suffix_len],
+    )
+
+  def _compute_overlapping_deletion_alleles(
+      self, candidates: Sequence[deepvariant_pb2.DeepVariantCall]
+  ) -> dict[int, int]:
+    """Returns a mapping of position to the number of overlapping deletion alleles."""
+    num_overlapping_deletion_alleles_by_position = collections.defaultdict(int)
+    for candidate in candidates:
+      if len(candidate.variant.reference_bases) < 2:
+        continue
+      for alt_base in candidate.variant.alternate_bases:
+        if len(alt_base) < len(candidate.variant.reference_bases):
+          read_infos = candidate.allele_support_ext[alt_base].read_infos
+          ref_allele, alt_allele = (
+              self._reduce_alleles_by_longest_common_suffix(
+                  candidate.variant.reference_bases, alt_base
+              )
+          )
+          for relative_position in range(len(alt_allele), len(ref_allele)):
+            position = candidate.variant.start + relative_position
+            num_overlapping_deletion_alleles_by_position[position] += len(
+                read_infos
+            )
+    return num_overlapping_deletion_alleles_by_position
+
   def encode_training_examples(
       self,
       candidates_with_label: Sequence[
@@ -790,13 +893,25 @@ class SmallModelExampleFactory:
       A list of encoded candidate examples.
     """
     training_examples = []
+    num_overlapping_deletion_alleles_by_position = (
+        self._compute_overlapping_deletion_alleles(
+            [candidate for candidate, _ in candidates_with_label]
+        )
+    )
     for candidate, label in candidates_with_label:
       if not self._pass_candidate_to_small_model(candidate):
         continue
       alt_allele_indices_set = get_set_of_allele_indices(candidate)
       for alt_allele_indices in alt_allele_indices_set:
         candidate_example = self._encode_training_example(
-            candidate, alt_allele_indices, label, read_phases, sample_order
+            candidate,
+            alt_allele_indices,
+            num_overlapping_deletion_alleles_by_position.get(
+                candidate.variant.start, 0
+            ),
+            label,
+            read_phases,
+            sample_order,
         )
         training_examples.append(candidate_example)
     return training_examples
@@ -823,6 +938,9 @@ class SmallModelExampleFactory:
         inference_examples: A list of encoded candidate examples.
     """
     example_set = InferenceExampleSet()
+    num_overlapping_deletion_alleles_by_position = (
+        self._compute_overlapping_deletion_alleles(candidates)
+    )
     for candidate in candidates:
       if not self._pass_candidate_to_small_model(candidate):
         example_set.skipped_candidates.append(candidate)
@@ -833,7 +951,13 @@ class SmallModelExampleFactory:
             (candidate, alt_allele_indices)
         )
         candidate_example = self._encode_model_features(
-            candidate, alt_allele_indices, read_phases, sample_order
+            candidate,
+            alt_allele_indices,
+            num_overlapping_deletion_alleles_by_position.get(
+                candidate.variant.start, 0
+            ),
+            read_phases,
+            sample_order,
         )
         example_set.inference_examples.append(candidate_example)
     return example_set

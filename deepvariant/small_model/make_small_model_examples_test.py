@@ -192,6 +192,68 @@ FAKE_VARIANT_MULTIALLELIC_INSERTION = deepvariant_pb2.DeepVariantCall(
         ),
     },
 )
+FAKE_VARIANT_MULTIALLELIC_DELETION = deepvariant_pb2.DeepVariantCall(
+    variant=variants_pb2.Variant(
+        start=4997,
+        end=5001,
+        reference_bases="TAAA",
+        alternate_bases=["T", "TA", "TG"],
+    ),
+    ref_support_ext=deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+        read_infos=[
+            deepvariant_pb2.DeepVariantCall.ReadSupport(
+                read_name="read_1",
+                sample_name=MAIN_SAMPLE,
+            ),
+            deepvariant_pb2.DeepVariantCall.ReadSupport(
+                read_name="read_2",
+                sample_name=MAIN_SAMPLE,
+            ),
+            deepvariant_pb2.DeepVariantCall.ReadSupport(
+                read_name="read_3",
+                sample_name=MAIN_SAMPLE,
+            ),
+        ]
+    ),
+    allele_support_ext={
+        "T": deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+            read_infos=[
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_4",
+                    sample_name=MAIN_SAMPLE,
+                ),
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_5",
+                    sample_name=MAIN_SAMPLE,
+                ),
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_6",
+                    sample_name=MAIN_SAMPLE,
+                ),
+            ]
+        ),
+        "TA": deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+            read_infos=[
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_7",
+                    sample_name=MAIN_SAMPLE,
+                ),
+            ]
+        ),
+        "TG": deepvariant_pb2.DeepVariantCall.SupportingReadsExt(
+            read_infos=[
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_8",
+                    sample_name=MAIN_SAMPLE,
+                ),
+                deepvariant_pb2.DeepVariantCall.ReadSupport(
+                    read_name="read_9",
+                    sample_name=MAIN_SAMPLE,
+                ),
+            ]
+        ),
+    },
+)
 FAKE_VARIANT_MULTIALLELIC_INSERTION_LABEL_HETALT = variant_labeler.VariantLabel(
     is_confident=True,
     variant=FAKE_VARIANT_MULTIALLELIC_INSERTION.variant,
@@ -291,6 +353,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         make_small_model_examples.FeatureEncoder(
             FAKE_VARIANT_CALL_HET,
             make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+            0,
         ).encode_identifying_feature(
             feature,
         ),
@@ -392,6 +455,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         make_small_model_examples.FeatureEncoder(
             candidate,
             alt_allele_indices,
+            0,
         ).encode_base_feature(
             feature,
         ),
@@ -442,6 +506,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         make_small_model_examples.FeatureEncoder(
             candidate,
             alt_allele_indices,
+            0,
         ).encode_label(label),
         expected_value,
     )
@@ -577,6 +642,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         make_small_model_examples.FeatureEncoder(
             candidate,
             alt_allele_indices,
+            0,
         ).encode_variant_feature(
             feature,
         ),
@@ -625,6 +691,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         make_small_model_examples.FeatureEncoder(
             FAKE_VARIANT_CALL_HET,
             make_small_model_examples.DEFAULT_ALT_ALLELE_INDICES,
+            0,
         ).encode_variant_allele_frequency_at_position(
             vaf_context_window_size,
         ),
@@ -1318,6 +1385,43 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         + expected_values[2]
         + [1, 0, 0, 0, 0, 0, 0],
     )
+
+  def test_overlapping_deletion_alleles(self):
+    small_model_example_factory = (
+        make_small_model_examples.SmallModelExampleFactory(
+            vaf_context_window_size=5,
+            sample_names=[MAIN_SAMPLE],
+            expand_by_haplotype=True,
+            model_features=[
+                "total_depth",
+                "variant_allele_frequency",
+                "total_depth_with_overlapping_deletions",
+                "variant_allele_frequency_with_overlapping_deletions",
+            ],
+        )
+    )
+    example_set = small_model_example_factory.encode_inference_examples(
+        [FAKE_VARIANT_CALL_HET, FAKE_VARIANT_MULTIALLELIC_DELETION],
+        READ_PHASES,
+        [0],
+    )
+    self.assertEqual(example_set.skipped_candidates, [])
+    self.assertEqual(
+        example_set.candidates_with_alt_allele_indices,
+        [
+            (FAKE_VARIANT_CALL_HET, (0,)),
+            (FAKE_VARIANT_MULTIALLELIC_DELETION, (0,)),
+            (FAKE_VARIANT_MULTIALLELIC_DELETION, (1,)),
+            (FAKE_VARIANT_MULTIALLELIC_DELETION, (2,)),
+            (FAKE_VARIANT_MULTIALLELIC_DELETION, (0, 1)),
+            (FAKE_VARIANT_MULTIALLELIC_DELETION, (0, 2)),
+            (FAKE_VARIANT_MULTIALLELIC_DELETION, (1, 2)),
+        ],
+    )
+    self.assertEqual(example_set.inference_examples[0][0], 6)
+    self.assertEqual(example_set.inference_examples[0][1], 50)
+    self.assertEqual(example_set.inference_examples[0][2], 11)
+    self.assertEqual(example_set.inference_examples[0][3], 27)
 
 
 if __name__ == "__main__":
