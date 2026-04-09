@@ -35,7 +35,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -44,6 +43,7 @@
 #include <sstream>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"

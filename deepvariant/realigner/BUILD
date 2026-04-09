@@ -150,6 +150,7 @@ cc_test(
     srcs = ["debruijn_graph_exp_test.cc"],
     deps = [
         ":debruijn_graph_exp",
+        "//deepvariant/protos:realigner_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/util:proto_ptr",
         "@com_google_googletest//:gtest_main",

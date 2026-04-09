@@ -35,6 +35,7 @@
 #include <string>
 #include <vector>
 
+#include "deepvariant/protos/realigner.pb.h"
 #include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
