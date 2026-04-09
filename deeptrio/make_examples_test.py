@@ -310,6 +310,10 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     # seed.
     if mode == 'calling':
       golden_file = _sharded(testdata.GOLDEN_CALLING_EXAMPLES, num_shards)
+    elif labeler_algorithm == 'positional_labeler':
+      golden_file = _sharded(
+          testdata.POSITIONAL_LABELER_GOLDEN_TRAINING_EXAMPLES, num_shards
+      )
     else:
       golden_file = _sharded(testdata.GOLDEN_TRAINING_EXAMPLES, num_shards)
     self.assertDeepVariantExamplesEqual(

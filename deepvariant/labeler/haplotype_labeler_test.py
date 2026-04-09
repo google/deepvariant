@@ -31,15 +31,16 @@ from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
+
+from deepvariant.labeler import haplotype_labeler
+from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
+from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import variant_utils
-
-from deepvariant.labeler import haplotype_labeler
-from deepvariant.protos import deepvariant_pb2
 
 
 def _test_variant(start=10, alleles=('A', 'C'), gt=None):
@@ -62,7 +63,7 @@ def _variants_from_grouped_positions(grouped_positions):
       [_test_variant(start=s) for s in starts] for starts in grouped_positions
   ]
   variants = [v for subgroup in groups for v in subgroup]
-  return variants, [(g, []) for g in groups]
+  return variants, [(g, [], False) for g in groups]
 
 
 def _make_labeler(
@@ -133,7 +134,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     # Because separation <= max_separation, all variants should be in a
     # single group.
     self.assertEqual(
-        [(variants, [])],
+        [(variants, [], False)],
         haplotype_labeler.group_variants(
             variants, [], max_separation=max_separation
         ),
@@ -143,7 +144,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
   def test_group_variants_works_with_any_number_of_variants(self, n_variants):
     variants = [_test_variant(start=10 + i) for i in range(n_variants)]
     self.assertEqual(
-        [(variants, [])],
+        [(variants, [], False)],
         haplotype_labeler.group_variants(
             variants, [], max_group_size=n_variants, max_separation=n_variants
         ),
@@ -301,7 +302,7 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     self.assertEqual(
         [
             ([v.start for v in variant_group], [v.start for v in truth_group])
-            for variant_group, truth_group in actual
+            for variant_group, truth_group, _ in actual
         ],
         expected_positions,
     )
@@ -328,11 +329,11 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     # containing the grouped candidates and truth. The order they appear depends
     # on the truth_position, since our deletion starts at 10.
     if expected_together:
-      expected = [([deletion], [truth])]
+      expected = [([deletion], [truth], False)]
     elif truth_position < 10:
-      expected = [([], [truth]), ([deletion], [])]
+      expected = [([], [truth], False), ([deletion], [], False)]
     else:
-      expected = [([deletion], []), ([], [truth])]
+      expected = [([deletion], [], False), ([], [truth], False)]
 
     self.assertEqual(
         haplotype_labeler.group_variants([deletion], [truth], max_separation=1),
@@ -581,6 +582,44 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
     )
     region = ranges.make_range('20', 6299000, 6299999)
     self.assertIsNotNone(labeler.label_variants([], region))
+
+  def test_label_variants_complexity_split_tagging(self):
+    # Two nearby SNPs that would normally be labeled jointly. By setting
+    # max_gt_options_product=1, the second variant exceeds the limit and gets
+    # split into its own group (is_complexity_split=True). That group should
+    # have FALLBACK_LABELED=True tagged on its labeled variants.
+    candidates = [
+        _test_variant(start=10, alleles=('A', 'T')),
+        _test_variant(start=11, alleles=('A', 'C')),
+    ]
+    truths = [
+        _test_variant(start=10, alleles=('A', 'T'), gt=(0, 1)),
+        _test_variant(start=11, alleles=('A', 'C'), gt=(0, 1)),
+    ]
+
+    labeler = _make_labeler(
+        truths=truths,
+        ref_reader=fasta.InMemoryFastaReader([('20', 0, 'A' * 100)]),
+        # Force every variant beyond the first into its own complexity-split
+        # group by setting the product limit to 1.
+        max_gt_options_product=1,
+    )
+
+    labels = list(
+        labeler.label_variants(
+            candidates, region=ranges.make_range('20', 1, 100)
+        )
+    )
+
+    self.assertLen(labels, 2)
+    # First group is not complexity-split (it's the first group).
+    self.assertFalse(
+        struct_utils.get_bool_field(labels[0].variant.info, 'FALLBACK_LABELED')
+    )
+    # Second group was split off due to complexity.
+    self.assertTrue(
+        struct_utils.get_bool_field(labels[1].variant.info, 'FALLBACK_LABELED')
+    )
 
   @parameterized.parameters(
       # A single TP bi-allelic variant.

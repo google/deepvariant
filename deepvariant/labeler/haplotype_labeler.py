@@ -68,6 +68,7 @@ from deepvariant.labeler import variant_labeler
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import fasta
 from third_party.nucleus.util import ranges
+from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 
@@ -164,7 +165,7 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
 
     # Now loop over our grouped variants, labeling them, and yielding
     # VariantLabel objects.
-    for candidates_group, truth_group in grouped:
+    for candidates_group, truth_group, is_complexity_split in grouped:
       ref = self.make_labeler_ref(candidates_group, truth_group)
       labeling = find_best_matching_haplotypes(
           candidates_group, truth_group, ref
@@ -190,6 +191,11 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
         # like another approach would be to assign confidence if it has a
         # non-ref genotype (as we only consider confident truth variants) or if
         # it overlaps the confident regions.
+        if is_complexity_split:
+          # This group was split off from a larger group because the combined
+          # genotype product exceeded max_gt_options_product. Tag it so it can
+          # be identified and potentially filtered during training.
+          struct_utils.set_bool_field(labeled.info, 'FALLBACK_LABELED', True)
         yield variant_labeler.VariantLabel(
             is_confident=self._confident_regions.variant_overlaps(labeled),
             genotype=tuple(labeled.calls[0].genotype),
@@ -439,13 +445,17 @@ def group_variants(
     """Selects a list of Variant protos from list[_VariantToGroup] of type."""
     return [gv.variant for gv in group if gv.type == required_type]
 
-  def _split_grouped_variants(group):
+  def _split_grouped_variants(group, is_complexity_split):
     """Splits a list of _VariantToGroup into candidate and truth variants."""
-    return _of_type(group, _CANDIDATE_MARKER), _of_type(group, _TRUTH_MARKER)
+    return (
+        _of_type(group, _CANDIDATE_MARKER),
+        _of_type(group, _TRUTH_MARKER),
+        is_complexity_split,
+    )
 
   def _include_in_variant_group(group, group_variant, new_gt_options_product):
     if not group:
-      return True
+      return True, False
     if new_gt_options_product >= max_gt_options_product:
       logging.info(
           (
@@ -455,23 +465,32 @@ def group_variants(
           new_gt_options_product,
           max_gt_options_product,
       )
-      return False
+      return False, True  # excluded due to complexity
     n_of_type = sum(1 for g in group if g.type == group_variant.type)
     if n_of_type >= max_group_size:
-      return False
+      return False, False
     else:
-      return any(
-          group_variant.variant.start - g.variant.end + 1 <= max_separation
-          for g in group
+      return (
+          any(
+              group_variant.variant.start - g.variant.end + 1 <= max_separation
+              for g in group
+          ),
+          False,
       )
 
   def _include_group_by_end_in_variant_group(
       group, group_by_end, new_gt_options_product
   ):
+    """Returns (include, is_complexity_split)."""
+    is_complexity_split = False
     for variant in group_by_end:
-      if not _include_in_variant_group(group, variant, new_gt_options_product):
-        return False
-    return True
+      include, complexity_split = _include_in_variant_group(
+          group, variant, new_gt_options_product
+      )
+      if not include:
+        is_complexity_split = is_complexity_split or complexity_split
+        return False, is_complexity_split
+    return True, False
 
   def _regroup_by_end(current_group, force_group_within_bp):
     """Regroups variants by end positions, if force_group_within_bp >= 0."""
@@ -505,9 +524,13 @@ def group_variants(
   # Then, consider each group, and merge them into groups according to
   # the predicate _include_group_by_end_in_variant_group.
   groups = []
+  # Tracks whether each group was forced to split due to complexity.
+  groups_complexity_split = []
   current_group = []
   current_gt_options_product = 1
   previous_pos_end = 0
+  # Whether the *next* group to be emitted was split off due to complexity.
+  next_group_is_complexity_split = False
   variants_groups_by_end = _regroup_by_end(
       groupable_variants, force_group_within_bp
   )
@@ -516,26 +539,30 @@ def group_variants(
     for group_variant in group_by_end:
       new_gt_options_product *= _num_genotypes(group_variant.variant)
     distance_from_prev_variant = group_by_end[0].variant.end - previous_pos_end
-    if (
-        _include_group_by_end_in_variant_group(
-            current_group, group_by_end, new_gt_options_product
-        )
-        or distance_from_prev_variant <= force_group_within_bp
-    ):
+    include, is_complexity_split = _include_group_by_end_in_variant_group(
+        current_group, group_by_end, new_gt_options_product
+    )
+    if include or distance_from_prev_variant <= force_group_within_bp:
       current_group.extend(group_by_end)
       current_gt_options_product = new_gt_options_product
     else:
       groups.append(current_group)
+      groups_complexity_split.append(next_group_is_complexity_split)
       current_group = group_by_end
+      next_group_is_complexity_split = is_complexity_split
       current_gt_options_product = 1
       for v in group_by_end:
         current_gt_options_product *= _num_genotypes(v.variant)
     previous_pos_end = group_by_end[0].variant.end
   if current_group:
     groups.append(current_group)
+    groups_complexity_split.append(next_group_is_complexity_split)
 
-  # Finally split up each group into candidates and truths.
-  return [_split_grouped_variants(g) for g in groups]
+  # Finally split up each group into candidates, truths, and complexity flag.
+  return [
+      _split_grouped_variants(g, cs)
+      for g, cs in zip(groups, groups_complexity_split)
+  ]
 
 
 def with_false_negative_genotypes(gt):
@@ -1195,11 +1222,14 @@ def find_best_matching_haplotypes(candidates, truths, ref):
       )
   )
 
+  candidate_enum_type = _hom_ref_enum_if_empty(
+      truths, EnumerationType.CANDIDATES
+  )
   # Note, it may be worth deduplicating these haplotypes as well.
   variant_haplotypes = enumerate_all_possible_haplotypes(
       candidates,
       ref,
-      _hom_ref_enum_if_empty(truths, EnumerationType.CANDIDATES),
+      candidate_enum_type,
   )
 
   found = []
