@@ -114,11 +114,16 @@ std::vector<std::uint8_t> InterHomopolymerInsertionQualityChannel::GetT0Values(
 std::vector<std::uint8_t>
 InterHomopolymerInsertionQualityChannel::GetT0QualityValues(const Read& read) {
   // Get T0 values and convert them to color values
+  // T0 values represent non-homopolymer insertion probabilities
+  // (Ultima-specific) and should use the same base-quality cap as other
+  // homopolymer quality channels.
+  const int quality_cap = options_.base_quality_cap();
   auto t0_values = GetT0Values(read);
   std::vector<std::uint8_t> t0_quality_colors(t0_values.size());
 
   for (int i = 0; i < t0_values.size(); i++) {
-    t0_quality_colors[i] = channels::internal::BaseQualityColor(t0_values[i]);
+    t0_quality_colors[i] =
+        channels::internal::BaseQualityColor(t0_values[i], quality_cap);
   }
 
   return t0_quality_colors;

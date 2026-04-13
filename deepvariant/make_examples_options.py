@@ -1280,7 +1280,10 @@ def shared_flags_to_options(
     options.realigner_enabled = _REALIGN_READS.value
     options.max_read_length_to_realign = _MAX_READ_LENGTH_TO_REALIGN.value
     options.trim_reads_for_pileup = _TRIM_READS_FOR_PILEUP.value
-    if _ALT_ALIGNED_PILEUP.value and not options.trim_reads_for_pileup:
+    if (
+        _ALT_ALIGNED_PILEUP.value != 'none'
+        and not options.trim_reads_for_pileup
+    ):
       logging.warning(
           'Automatically setting --trim_reads_for_pileup to True '
           'because --alt_aligned_pileup is set.'

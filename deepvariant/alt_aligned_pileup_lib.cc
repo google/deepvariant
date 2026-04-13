@@ -198,6 +198,34 @@ Read TrimRead(const Read& read, const Range& region) {
   new_read.set_secondary_alignment(read.secondary_alignment());
   new_read.set_supplementary_alignment(read.supplementary_alignment());
 
+  // Trim per-base info tags (tp, t0) to match the trimmed sequence.
+  // These tags have one entry per original read base and were copied in full
+  // by the info-map loop above.  Slice them to
+  // [read_trim, read_trim + new_read_length) so that downstream channel code
+  // can consume them directly without offset arithmetic.
+  for (const std::string& tag : {"tp", "t0"}) {
+    if (!new_read.info().contains(tag)) continue;
+    auto* values = (*new_read.mutable_info())[tag].mutable_values();
+    if (values->size() == 1 && (*values)[0].kind_case() ==
+                                   nucleus::genomics::v1::Value::kStringValue) {
+      // String-encoded per-base array: trim the string.
+      const std::string& full_str = (*values)[0].string_value();
+      const int64_t orig_tp_size = static_cast<int64_t>(full_str.size());
+      if (read_trim + new_read_length <= orig_tp_size) {
+        (*values)[0].set_string_value(
+            full_str.substr(read_trim, new_read_length));
+      }
+    } else if (values->size() > 1 &&
+               read_trim + new_read_length <= values->size()) {
+      // Array of individual values: keep only the trimmed range.
+      ::google::protobuf::RepeatedPtrField<nucleus::genomics::v1::Value> trimmed;
+      for (int64_t i = read_trim; i < read_trim + new_read_length; ++i) {
+        *trimmed.Add() = (*values)[static_cast<int>(i)];
+      }
+      values->Swap(&trimmed);
+    }
+  }
+
   // Set new read's alignment position.
   if (trim_left != 0) {
     new_read.mutable_alignment()->mutable_position()->set_position(

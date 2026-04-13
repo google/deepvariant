@@ -132,9 +132,10 @@ HomopolymerInDelQualityChannel::HomoPolymerInDelQuality(const Read& read,
   // in the read. The probabilities are encoded in phred-scores.
   // The parameter is_deletion determines the direction of the computed error
   // rate per homopolymer.
+  const int quality_cap = options_.base_quality_cap();
   std::vector<std::uint8_t> hmer_directed_qualities(
       read.aligned_sequence().size(),
-      channels::internal::BaseQualityColor(kMaxQScore));
+      channels::internal::MaxQualityColor(quality_cap));
 
   std::string seq(read.aligned_sequence());
   auto hmer_lengths = HomoPolymerWeighted(read);
@@ -174,8 +175,8 @@ HomopolymerInDelQualityChannel::HomoPolymerInDelQuality(const Read& read,
     }
 
     for (int j = 0; j < hmer_length; j++) {
-      hmer_directed_qualities[i + j] =
-          channels::internal::BaseQualityColor(hmer_directed_quality);
+      hmer_directed_qualities[i + j] = channels::internal::BaseQualityColor(
+          hmer_directed_quality, quality_cap);
     }
     i += hmer_length;
   }
