@@ -72,7 +72,7 @@ SOMATIC_FORMAT_FIELDS = [
     ),
     variants_pb2.VcfFormatInfo(
         id='NAF',
-        number='R',
+        number='A',
         type=vcf_constants.FLOAT_TYPE,
         description='VAF of ALT alleles in the normal sample.',
     ),
