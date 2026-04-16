@@ -798,10 +798,13 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.reads = testdata.CHR20_PACBIO_BAM
     FLAGS.examples = test_utils.test_tmpfile('examples.tfrecord')
     FLAGS.channel_list = ','.join(
-        dv_constants.PILEUP_DEFAULT_CHANNELS + ['haplotype', 'base_methylation']
+        dv_constants.PILEUP_DEFAULT_CHANNELS
+        + ['haplotype', 'supplementary_alignment']
     )
     FLAGS.mode = 'calling'
     FLAGS.split_skip_reads = False
+    FLAGS.keep_supplementary_alignments = True
+    FLAGS.max_reads_per_partition = 1500
     FLAGS.realign_reads = False
     FLAGS.alt_aligned_pileup = 'diff_channels'
     FLAGS.min_mapping_quality = 1
@@ -812,7 +815,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.sort_by_haplotypes = True
     FLAGS.track_ref_reads = True
     FLAGS.trim_reads_for_pileup = True
-    FLAGS.vsc_min_fraction_indels = 0.12
+    FLAGS.vsc_min_indel_fraction_for_small_indels = 0.12
+    FLAGS.vsc_min_indel_fraction_for_large_indels = 0.05
+    FLAGS.vsc_small_indel_threshold = 1
     FLAGS.output_phase_info = True
     FLAGS.call_small_model_examples = False
     options = make_examples.default_options(add_flags=True)
