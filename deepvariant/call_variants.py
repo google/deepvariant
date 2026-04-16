@@ -456,6 +456,7 @@ def get_dataset(
     use_data_from_stream=False,
     shm_prefix=None,
     num_shards=None,
+    skip_preprocessing=False,
 ):
   """Parse TFRecords, do image preprocessing, and return the image dataset for inference and the variant/alt-allele dataset for writing the variant calls."""
 
@@ -478,7 +479,8 @@ def get_dataset(
     image = tf.io.decode_raw(parsed_features['image/encoded'], tf.uint8)
     image = tf.reshape(image, example_shape)
     image = tf.cast(image, tf.float32)
-    image = dv_utils.preprocess_images(image, channel_indices)
+    if not skip_preprocessing:
+      image = dv_utils.preprocess_images(image, channel_indices)
     variant = parsed_features['variant/encoded']
     alt_allele_indices = parsed_features['alt_allele_indices/encoded']
     optional_label = tf.constant([-1], dtype=tf.int64)
@@ -490,7 +492,10 @@ def get_dataset(
     """Parses a data from shared memory buffer."""
     image = tf.io.decode_raw(blob.image, tf.uint8)
     image = tf.reshape(image, example_shape)
-    image = dv_utils.preprocess_images(image, channel_indices)
+    if not skip_preprocessing:
+      image = dv_utils.preprocess_images(image, channel_indices)
+    else:
+      image = tf.cast(image, tf.float32)
     variant = blob.variant
     alt_allele_indices = blob.alt_allele_idx
     return b'', image, variant, alt_allele_indices, None
@@ -872,6 +877,20 @@ def call_variants(
         _STREAM_EXAMPLES.value,
     )
 
+    skip_preprocessing = False
+    if use_saved_model:
+      # Jax/Flax based saved-models may integrate preprocessing into the
+      # model itself.
+      if (
+          hasattr(model, 'preprocessing_applied')
+          and model.preprocessing_applied.numpy()
+      ):
+        skip_preprocessing = True
+        logging.info(
+            'Model handles preprocessing itself. Skipping preprocessing in'
+            ' call_variants.'
+        )
+
     if not example_shape:
       raise ValueError(
           'Could not infer example shape from examples or model directory.'
@@ -895,6 +914,7 @@ def call_variants(
       use_dataset_from_stream,
       shm_prefix,
       num_shards,
+      skip_preprocessing=skip_preprocessing,
   )
 
   dist_dataset = strategy.experimental_distribute_dataset(
