@@ -338,9 +338,6 @@ class DirectPhasing {
 AlleleType AlleleTypeFromCandidate(std::string_view bases,
                                    const DeepVariantCall& candidate);
 
-// Calculate number of alt alleles that are SUBs.
-int NumOfSubstitutionAlleles(const DeepVariantCall& candidate);
-
 // Calculate number of alt alleles that are INDELs.
 int NumOfIndelAlleles(const DeepVariantCall& candidate);
 

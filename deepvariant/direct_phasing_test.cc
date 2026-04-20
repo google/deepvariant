@@ -125,24 +125,6 @@ TEST(DirectPhasingTest, TestAlleleTypeFromCandidateOneBaseSubstitution) {
             AlleleTypeFromCandidate("A", MakeCandidate(100, 101)));
 }
 
-TEST(DirectPhasingTest, TestNumOfSubstitutionAllelesMultipleSubAlleles) {
-  EXPECT_EQ(2,
-    NumOfSubstitutionAlleles(MakeCandidate(100, 101, {
-      {"A", {"read1", "read2", "read3"}},  // SUB allele
-      {"C", {"read4", "read5"}},          // SUB allele
-      {"CC", {"read6", "read7"}}}         // INDEL allele
-      )));
-}
-
-TEST(DirectPhasingTest, TestNumOfSubstitutionAllelesUncalledAllelePresent) {
-  EXPECT_EQ(1,
-    NumOfSubstitutionAlleles(MakeCandidate(100, 101, {
-      {"UNCALLED_ALLELE", {"read1", "read2", "read3"}},  // Uncalled allele
-      {"C", {"read4", "read5"}},          // SUB allele
-      {"CC", {"read6", "read7"}}}         // INDEL allele
-      )));
-}
-
 TEST(DirectPhasingTest, TestNumOfIndelAlleles2Sub1Indel) {
   EXPECT_EQ(1,
     NumOfIndelAlleles(MakeCandidate(100, 101, {

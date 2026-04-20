@@ -915,18 +915,6 @@ AlleleType AlleleTypeFromCandidate(std::string_view bases,
   return AlleleType::UNSPECIFIED;
 }
 
-int NumOfSubstitutionAlleles(const DeepVariantCall& candidate) {
-  return std::count_if(
-      candidate.allele_support_ext().begin(),
-      candidate.allele_support_ext().end(),
-      [candidate](
-          std::pair<std::string, DeepVariantCall_SupportingReadsExt> it) {
-        return (it.first != kUncalledAllele &&
-                AlleleTypeFromCandidate(it.first, candidate) ==
-                    AlleleType::SUBSTITUTION);
-      });
-}
-
 int NumOfIndelAlleles(const DeepVariantCall& candidate) {
   return std::count_if(
       candidate.allele_support_ext().begin(),
