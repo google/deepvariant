@@ -501,6 +501,10 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   # Placeholder value for limiting training examples. 0=No limit.
   config.limit = 0
 
+  # If True, exclude examples whose variant has FALLBACK_LABELED set,
+  # i.e. examples where joint labeling fell back to individual labeling.
+  config.exclude_fallback_labeled = False
+
   config.adaptive_epsilon = True
 
   if config_name and '+' in config_name:

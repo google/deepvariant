@@ -91,9 +91,12 @@ def create_parse_example_fn(
         ['image/encoded', 'variant/encoded', 'alt_allele_indices/encoded'],
     )
   elif mode in ['train', 'tune']:
+    features_to_select = ['image/encoded', 'label', 'variant_type']
+    if config.exclude_fallback_labeled:
+      features_to_select.append('variant/encoded')
     proto_features = _select_features(
         _PROTO_FEATURES,
-        ['image/encoded', 'label', 'variant_type'],
+        features_to_select,
     )
   else:
     raise ValueError(
@@ -113,7 +116,9 @@ def create_parse_example_fn(
   def parse_example(
       example: tf.train.Example,
   ) -> Union[
-      Dict[str, tf.Tensor], Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]
+      Dict[str, tf.Tensor],
+      Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor],
+      Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor],
   ]:
     """Parses a serialized tf.Example, preprocesses the image, and one-hot encodes the label."""
 
@@ -143,6 +148,22 @@ def create_parse_example_fn(
       result['label'] = tf.cast(result['label'], dtype=tf.int8)
     if mode in ['train', 'tune']:
       result['variant_type'] = tf.cast(result['variant_type'], dtype=tf.int8)
+      if config.exclude_fallback_labeled:
+        # Detect FALLBACK_LABELED by checking if the literal string appears
+        # in the serialized Variant proto bytes. This is a pure TF op.
+        variant_encoded = result['variant/encoded']
+        original_len = tf.strings.length(variant_encoded)
+        replaced_len = tf.strings.length(
+            tf.strings.regex_replace(variant_encoded, 'FALLBACK_LABELED', '')
+        )
+        is_fallback = tf.not_equal(original_len, replaced_len)
+        return (
+            result['image'],
+            result['label'],
+            result['sample_weight'],
+            result['variant_type'],
+            is_fallback,
+        )
       return (
           result['image'],
           result['label'],
@@ -246,6 +267,22 @@ def input_fn(
       num_parallel_calls=tf.data.AUTOTUNE,
       deterministic=False,
   )
+
+  if is_training and config.exclude_fallback_labeled:
+    # Filter out examples where FALLBACK_LABELED is set.
+    ds = ds.filter(
+        lambda image, label, weight, vtype, is_fb: tf.logical_not(is_fb)
+    )
+    # Strip the is_fallback flag so downstream sees the original 4-tuple.
+    ds = ds.map(
+        lambda image, label, weight, vtype, is_fb: (
+            image,
+            label,
+            weight,
+            vtype,
+        ),
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
 
   if is_training and config.shuffle_buffer_elements:
     ds = ds.shuffle(
