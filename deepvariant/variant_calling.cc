@@ -64,7 +64,7 @@ namespace vcf_candidate_importer {
 using nucleus::genomics::v1::Range;
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
-using tensorflow::string;
+using std::string;
 
 // Declared in .h.
 const char* const kGVCFAltAllele = "<*>";
