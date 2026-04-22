@@ -433,3 +433,20 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_test(
+    name = "homopolymer_quality_channels_test",
+    srcs = ["homopolymer_quality_channels_test.cc"],
+    deps = [
+        ":channel_utils",
+        ":homopolymer_deletion_quality_channel",
+        ":homopolymer_indel_quality_channel",
+        ":homopolymer_insertion_quality_channel",
+        ":inter_homopolymer_insertion_quality_channel",
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/testing:cpp_test_utils",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
