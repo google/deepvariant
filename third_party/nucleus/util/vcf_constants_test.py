@@ -115,6 +115,8 @@ class VcfConstantsTest(parameterized.TestCase):
       'MF',
       'MD',
       'MT',
+      'AD_HP1',
+      'AD_HP2',
   )
   def test_get_reserved_format(self, field_id):
     fmt = vcf_constants.reserved_format_field(field_id)
@@ -231,6 +233,8 @@ class VcfConstantsTest(parameterized.TestCase):
       dict(field='MF', expected=struct_utils.set_number_field),
       dict(field='MD', expected=struct_utils.set_int_field),
       dict(field='MT', expected=struct_utils.set_string_field),
+      dict(field='AD_HP1', expected=struct_utils.set_int_field),
+      dict(field='AD_HP2', expected=struct_utils.set_int_field),
   )
   def test_reserved_format_field_set_fn(self, field, expected):
     actual = vcf_constants.reserved_format_field_set_fn(field)

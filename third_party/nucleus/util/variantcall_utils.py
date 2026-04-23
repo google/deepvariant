@@ -45,6 +45,8 @@ _MI = 'MI'
 _NAD = 'NAD'
 _NDP = 'NDP'
 _NAF = 'NAF'
+_AD_HP1 = 'AD_HP1'
+_AD_HP2 = 'AD_HP2'
 
 # The max number of regions we can expect to be processed by a single shard.
 _MAX_REGIONS_INSIDE_SHARD = 100_000
@@ -94,6 +96,12 @@ def set_format(variant_call, field_name, value, vcf_object=None):
   if field_name == _NAF:
     set_naf(variant_call, value)
     return
+  if field_name == _AD_HP1:
+    set_ad_hp1(variant_call, value)
+    return
+  if field_name == _AD_HP2:
+    set_ad_hp2(variant_call, value)
+    return
 
   if vcf_object is None:
     set_field_fn = vcf_constants.reserved_format_field_set_fn(field_name)
@@ -133,6 +141,10 @@ def get_format(variant_call, field_name, vcf_object=None):
     return get_ndp(variant_call)
   elif field_name == _NAF:
     return get_naf(variant_call)
+  elif field_name == _AD_HP1:
+    return get_ad_hp1(variant_call)
+  elif field_name == _AD_HP2:
+    return get_ad_hp2(variant_call)
 
   if vcf_object is None:
     get_field_fn = vcf_constants.reserved_format_field_get_fn(field_name)
@@ -259,6 +271,30 @@ def set_bam_fname(variant_call, bam_fname):
 def set_ps(variant_call, first_variant_in_phase_set: variants_pb2.Variant):
   """Sets the 'PS' field of the VariantCall."""
   set_format(variant_call, 'PS', first_variant_in_phase_set.start + 1)
+
+
+def get_ad_hp1(variant_call):
+  """Gets the 'AD_HP1' field of the VariantCall."""
+  return struct_utils.get_int_field(
+      variant_call.info, 'AD_HP1', is_single_field=False
+  )
+
+
+def get_ad_hp2(variant_call):
+  """Gets the 'AD_HP2' field of the VariantCall."""
+  return struct_utils.get_int_field(
+      variant_call.info, 'AD_HP2', is_single_field=False
+  )
+
+
+def set_ad_hp1(variant_call, ad_hp1):
+  """Sets the 'AD_HP1' field of the VariantCall."""
+  struct_utils.set_int_field(variant_call.info, 'AD_HP1', ad_hp1)
+
+
+def set_ad_hp2(variant_call, ad_hp2):
+  """Sets the 'AD_HP2' field of the VariantCall."""
+  struct_utils.set_int_field(variant_call.info, 'AD_HP2', ad_hp2)
 
 
 def has_genotypes(variant_call):

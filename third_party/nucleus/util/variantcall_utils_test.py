@@ -162,6 +162,18 @@ class VariantcallUtilsTests(parameterized.TestCase):
           values=['0/0', '0/1'],
       ),
       dict(
+          field_name='AD_HP1',
+          setter=variantcall_utils.set_ad_hp1,
+          getter=variantcall_utils.get_ad_hp1,
+          values=[[1, 5], [30, 29]],
+      ),
+      dict(
+          field_name='AD_HP2',
+          setter=variantcall_utils.set_ad_hp2,
+          getter=variantcall_utils.get_ad_hp2,
+          values=[[2, 6], [31, 32]],
+      ),
+      dict(
           field_name='NAF',
           setter=variantcall_utils.set_naf,
           getter=variantcall_utils.get_naf,

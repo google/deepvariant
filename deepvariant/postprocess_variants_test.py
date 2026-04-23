@@ -178,8 +178,9 @@ def _read_contents(path, decompress=False):
   with tf.io.gfile.GFile(path, 'rb') as fin:
     contents = fin.read()
     if decompress:
-      contents = gzip.GzipFile(path, fileobj=io.BytesIO(contents)).read()
-    return contents
+      return gzip.GzipFile(path, fileobj=io.BytesIO(contents)).read()
+    else:
+      return contents
 
 
 def _create_nonvariant(ref_name, start, end, ref_base):
@@ -347,6 +348,21 @@ class PostprocessVariantsTest(parameterized.TestCase):
     if compressed_inputs_and_outputs:
       self.assertTrue(tf.io.gfile.exists(FLAGS.outfile + '.tbi'))
       self.assertTrue(tf.io.gfile.exists(FLAGS.gvcf_outfile + '.tbi'))
+
+  @flagsaver.flagsaver
+  def test_output_header_contains_haplotype_format_fields(self):
+    FLAGS.infile = make_golden_dataset(False)
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.outfile = create_outfile('header_check.vcf', False, False)
+    FLAGS.nonvariant_site_tfrecord_path = testdata.GOLDEN_POSTPROCESS_GVCF_INPUT
+    FLAGS.gvcf_outfile = create_outfile('header_check.g.vcf', False, False)
+    FLAGS.cpus = 0
+    postprocess_variants.main(['postprocess_variants.py'])
+
+    with tf.io.gfile.GFile(FLAGS.outfile, 'rb') as f:
+      contents = f.read()
+      self.assertIn(b'ID=AD_HP1', contents)
+      self.assertIn(b'ID=AD_HP2', contents)
 
   @flagsaver.flagsaver
   def test_haploid_contigs(self):
@@ -2042,6 +2058,50 @@ class PostprocessVariantsTest(parameterized.TestCase):
     actual = postprocess_variants.prune_alleles(variant, to_remove)
     self.assertEqual(
         [v.int_value for v in actual.calls[0].info['AD'].values], expected_ad
+    )
+
+  @parameterized.parameters(
+      (['A'], {}, [1, 2], [1, 2]),
+      (['A'], {'A'}, [1, 2], [1]),
+      (['A', 'C'], {}, [1, 2, 3], [1, 2, 3]),
+      (['A', 'C'], {'A'}, [1, 2, 3], [1, 3]),
+      (['A', 'C'], {'C'}, [1, 2, 3], [1, 2]),
+      (['A', 'C'], {'A', 'C'}, [1, 2, 3], [1]),
+  )
+  def test_prune_alleles_handles_haplotype_format_fields(
+      self, alts, to_remove, orig_ad, expected_ad
+  ):
+    variant = _create_variant_with_alleles(alts=alts)
+    test_utils.set_list_values(
+        variant.calls[0].info[dv_vcf_constants.DEEP_VARIANT_AD_HP1_FORMAT],
+        orig_ad,
+    )
+    test_utils.set_list_values(
+        variant.calls[0].info[dv_vcf_constants.DEEP_VARIANT_AD_HP2_FORMAT],
+        orig_ad,
+    )
+    actual = postprocess_variants.prune_alleles(variant, to_remove)
+    self.assertEqual(
+        [
+            v.int_value
+            for v in (
+                actual.calls[0]
+                .info[dv_vcf_constants.DEEP_VARIANT_AD_HP1_FORMAT]
+                .values
+            )
+        ],
+        expected_ad,
+    )
+    self.assertEqual(
+        [
+            v.int_value
+            for v in (
+                actual.calls[0]
+                .info[dv_vcf_constants.DEEP_VARIANT_AD_HP2_FORMAT]
+                .values
+            )
+        ],
+        expected_ad,
     )
 
   @parameterized.parameters(

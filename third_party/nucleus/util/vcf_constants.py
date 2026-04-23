@@ -330,6 +330,20 @@ RESERVED_FORMAT_FIELDS = [
             ' methylation between haplotypes.'
         ),
     ),
+    # Adding new FORMAT fields for haplotype-specific allele depths not in VCF
+    # 4.3 spec.
+    variants_pb2.VcfFormatInfo(
+        id='AD_HP1',
+        number='R',
+        type=INTEGER_TYPE,
+        description='Allele depths for HP1 reads.',
+    ),
+    variants_pb2.VcfFormatInfo(
+        id='AD_HP2',
+        number='R',
+        type=INTEGER_TYPE,
+        description='Allele depths for HP2 reads.',
+    ),
 ]
 
 # Map from field type to the function used to set struct_pb2.Value elements

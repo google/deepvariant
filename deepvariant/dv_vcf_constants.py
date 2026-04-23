@@ -48,6 +48,8 @@ DEEP_VARIANT_MIN_DP_FORMAT = 'MIN_DP'
 DEEP_VARIANT_MED_DP_FORMAT = 'MED_DP'
 DEEP_VARIANT_VAF_FORMAT = 'VAF'
 DEEP_VARIANT_MODEL_ID_FORMAT = 'MID'
+DEEP_VARIANT_AD_HP1_FORMAT = 'AD_HP1'
+DEEP_VARIANT_AD_HP2_FORMAT = 'AD_HP2'
 
 # Genotype codes:
 UNCALLED_GENOTYPE = -1
@@ -131,6 +133,18 @@ def deepvariant_header(
           number='A',
           type='Float',
           description='Variant allele fractions.',
+      ),
+      variants_pb2.VcfFormatInfo(
+          id=DEEP_VARIANT_AD_HP1_FORMAT,
+          number='R',
+          type='Integer',
+          description='Allele depths for HP1 reads.',
+      ),
+      variants_pb2.VcfFormatInfo(
+          id=DEEP_VARIANT_AD_HP2_FORMAT,
+          number='R',
+          type='Integer',
+          description='Allele depths for HP2 reads.',
       ),
       vcf_constants.reserved_format_field('PL'),
       vcf_constants.reserved_format_field('PS'),

@@ -810,6 +810,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     FLAGS.min_mapping_quality = 1
     FLAGS.parse_sam_aux_fields = True
     FLAGS.partition_size = 25000
+    FLAGS.max_reads_per_partition = 600
     FLAGS.phase_reads = True
     FLAGS.pileup_image_width = 147
     FLAGS.sort_by_haplotypes = True

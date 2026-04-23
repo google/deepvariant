@@ -61,6 +61,10 @@ class DvVcfConstantsTest(parameterized.TestCase):
     self.assertNotEmpty(header.infos)
     self.assertNotEmpty(header.formats)
 
+    format_ids = [f.id for f in header.formats]
+    self.assertIn(dv_vcf_constants.DEEP_VARIANT_AD_HP1_FORMAT, format_ids)
+    self.assertIn(dv_vcf_constants.DEEP_VARIANT_AD_HP2_FORMAT, format_ids)
+
   def test_compute_filter_fields(self):
     # This generates too many tests as a parameterized test.
     for qual, min_qual in itertools.product(range(100), range(100)):

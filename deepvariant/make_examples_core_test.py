@@ -35,6 +35,7 @@ from absl.testing import parameterized
 import numpy as np
 
 from deepvariant import dv_constants
+from deepvariant import dv_vcf_constants
 from deepvariant import make_examples
 from deepvariant import make_examples_core
 from deepvariant import testdata
@@ -1904,6 +1905,64 @@ class RegionProcessorTest(parameterized.TestCase):
 
     expected_phases = [1, 1, 1, 1, 1, 1, 2, 0]
     self.assertEqual(read_phases, expected_phases)
+
+  def test_add_phasing_to_candidate_populates_ad_hp(self):
+    processor = make_examples_core.RegionProcessor(self.options)
+    processor.direct_phasing_cpp = mock.Mock()
+    processor.direct_phasing_cpp.get_phased_variants.return_value = []
+
+    candidate = deepvariant_pb2.DeepVariantCall()
+    candidate.variant.alternate_bases.extend(['A', 'C'])
+    candidate.ref_support_ext.read_infos.add(read_name='read1')
+    candidate.ref_support_ext.read_infos.add(read_name='read2')
+    candidate.ref_support_ext.read_infos.add(read_name='read3')
+
+    candidate.allele_support['A'].read_names.extend(['read4', 'read5'])
+    candidate.allele_support['C'].read_names.extend(['read6', 'read7'])
+
+    candidate.variant.calls.add()
+
+    read_id_to_phase = {
+        'read1': 1,
+        'read2': 2,
+        'read3': 0,
+        'read4': 1,
+        'read5': 0,
+        'read6': 2,
+        'read7': 2,
+    }
+
+    processor.add_phasing_to_candidate([candidate], read_id_to_phase)
+
+    # Check that AD_HP1 and AD_HP2 were set correctly
+    # REF: read1 (HP1), read2 (HP2), read3 (HP0) -> HP1=1, HP2=1
+    # ALT A: read4 (HP1), read5 (HP0) -> HP1=1, HP2=0
+    # ALT C: read6 (HP2), read7 (HP2) -> HP1=0, HP2=2
+    # Expect AD_HP1 = [1, 1, 0]
+    # Expect AD_HP2 = [1, 0, 2]
+
+    self.assertIn(
+        dv_vcf_constants.DEEP_VARIANT_AD_HP1_FORMAT,
+        candidate.variant.calls[0].info,
+    )
+    self.assertIn(
+        dv_vcf_constants.DEEP_VARIANT_AD_HP2_FORMAT,
+        candidate.variant.calls[0].info,
+    )
+
+    ad_hp1 = (
+        candidate.variant.calls[0]
+        .info[dv_vcf_constants.DEEP_VARIANT_AD_HP1_FORMAT]
+        .values
+    )
+    ad_hp2 = (
+        candidate.variant.calls[0]
+        .info[dv_vcf_constants.DEEP_VARIANT_AD_HP2_FORMAT]
+        .values
+    )
+
+    self.assertEqual([val.int_value for val in ad_hp1], [1, 1, 0])
+    self.assertEqual([val.int_value for val in ad_hp2], [1, 0, 2])
 
 
 if __name__ == '__main__':

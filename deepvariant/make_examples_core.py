@@ -2676,6 +2676,40 @@ class RegionProcessor:
     else:
       return 0
 
+  def _count_haplotypes(self, candidate, read_id_to_phase):
+    """Counts reads supporting each haplotype for each allele.
+
+    Args:
+      candidate: DeepVariantCall.
+      read_id_to_phase: dict(str, int). Map from read key to phase (1 or 2).
+
+    Returns:
+      ad_hp1: list(int). Counts of reads supporting HP1 for each allele.
+      ad_hp2: list(int). Counts of reads supporting HP2 for each allele.
+    """
+    num_alleles = len(candidate.variant.alternate_bases) + 1
+    ad_hp1 = [0] * num_alleles
+    ad_hp2 = [0] * num_alleles
+
+    # REF reads (allele index 0)
+    for read_info in candidate.ref_support_ext.read_infos:
+      phase = read_id_to_phase.get(read_info.read_name, 0)
+      if phase == 1:
+        ad_hp1[0] += 1
+      elif phase == 2:
+        ad_hp2[0] += 1
+
+    # ALT reads (allele indices 1..N)
+    for i, alt_base in enumerate(candidate.variant.alternate_bases):
+      if alt_base in candidate.allele_support:
+        for read_name in candidate.allele_support[alt_base].read_names:
+          phase = read_id_to_phase.get(read_name, 0)
+          if phase == 1:
+            ad_hp1[i + 1] += 1
+          elif phase == 2:
+            ad_hp2[i + 1] += 1
+    return ad_hp1, ad_hp2
+
   def infer_allele_phase(
       self, alternate_bases, ref_support_ext, allele_support, read_id_to_phase
   ):
@@ -2792,6 +2826,11 @@ class RegionProcessor:
             dv_constants.FIRST_VARIANT_IN_PHASE_SET,
             False,
         )
+
+      ad_hp1, ad_hp2 = self._count_haplotypes(candidate, read_id_to_phase)
+      variantcall_utils.set_ad_hp1(candidate.variant.calls[0], ad_hp1)
+      variantcall_utils.set_ad_hp2(candidate.variant.calls[0], ad_hp2)
+
     return len(phased_variants)
 
   def assign_phase_from_normal(self, tumor_candidates, tumor_reads_to_phase):

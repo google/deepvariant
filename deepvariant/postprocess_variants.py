@@ -314,6 +314,8 @@ _ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset([
     ('MD', True),
     ('NAD', True),
     ('NAF', False),
+    (dv_vcf_constants.DEEP_VARIANT_AD_HP1_FORMAT, True),
+    (dv_vcf_constants.DEEP_VARIANT_AD_HP2_FORMAT, True),
 ])
 
 # The number of places past the decimal point to round QUAL estimates to.
