@@ -440,7 +440,6 @@ cc_test(
     deps = [
         ":channel_utils",
         ":homopolymer_deletion_quality_channel",
-        ":homopolymer_indel_quality_channel",
         ":homopolymer_insertion_quality_channel",
         ":inter_homopolymer_insertion_quality_channel",
         "//deepvariant/protos:deepvariant_cc_pb2",
