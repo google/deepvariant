@@ -38,9 +38,12 @@ cc_library(
         "statusor.h",
     ],
     deps = [
-        "//third_party/nucleus/core:status",
+        ":status",
         "//third_party/nucleus/platform:types",
-        "@org_tensorflow//tensorflow/core:lib",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
     ],
 )
 

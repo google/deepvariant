@@ -434,11 +434,11 @@ ReadAllele AlleleCounter::MakeIndelReadAllele(const Read& read,
         // chromosome is actually circular, and the aligner is clever enough to
         // know that, and the read's cigar reflect true differences of the read
         // to the alignment at the start of the contig.  Nasty, I know.
-        VLOG(2) << "Deletion spans off the chromosome for read: "
-                << read.ShortDebugString() << " at cigar "
-                << cigar.ShortDebugString() << " with interval "
-                << Interval().ShortDebugString() << " with interval_offset "
-                << interval_offset << " and read_offset " << read_offset;
+        LOG(INFO) << "Deletion spans off the chromosome for read: "
+                  << read.ShortDebugString() << " at cigar "
+                  << cigar.ShortDebugString() << " with interval "
+                  << Interval().ShortDebugString() << " with interval_offset "
+                  << interval_offset << " and read_offset " << read_offset;
         return ReadAllele();
       }
 
@@ -527,8 +527,8 @@ void AlleleCounter::AddReadAlleles(const Read& read, absl::string_view sample,
         // Not thread safe.
         static int counter = 0;
         if (counter++ < 1) {
-          VLOG(2) << "Found duplicate read: " << key << " at "
-                  << allele_count.position().ShortDebugString();
+          LOG(INFO) << "Found duplicate read: " << key << " at "
+                    << allele_count.position().ShortDebugString();
         }
       }
 

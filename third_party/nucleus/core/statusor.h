@@ -88,13 +88,15 @@
 #define THIRD_PARTY_NUCLEUS_VENDOR_STATUSOR_H_
 
 #include <new>
-#include <type_traits>
+#include <cassert>
 #include <utility>
 
+#include "absl/base/optimization.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
 #include "third_party/nucleus/platform/types.h"
 #include "third_party/nucleus/core/status.h"
-#include "tensorflow/core/lib/core/errors.h"
-#include "tensorflow/core/lib/core/status.h"
 
 namespace nucleus {
 
@@ -174,8 +176,8 @@ class StatusOr {
   // Returns this->status().error_message()
   const string& error_message() const { return status_.error_message(); }
   // Returns this->status().code()
-  tensorflow::error::Code code() const {
-    return static_cast<tensorflow::error::Code>(status_.code());
+  absl::StatusCode code() const {
+    return static_cast<absl::StatusCode>(status_.code());
   }
 
   // Returns a reference to our current value, requires that this->ok().
@@ -207,7 +209,7 @@ class StatusOr {
 
   template <typename U>
   struct IsNull<U*> {
-    static inline bool IsValueNull(const U* t) { return t == NULL; }
+    static inline bool IsValueNull(const U* t) { return t == nullptr; }
   };
 };
 
@@ -266,7 +268,7 @@ void StatusOr<T>::CheckValueNotNull(const T& value) {
 #define NUCLEUS_RETURN_IF_ERROR(...)                     \
   do {                                                   \
     ::nucleus::Status _status = (__VA_ARGS__);           \
-    if (TF_PREDICT_FALSE(!_status.ok())) return _status; \
+    if (ABSL_PREDICT_FALSE(!_status.ok())) return _status; \
   } while (0)
 
 }  // namespace nucleus
