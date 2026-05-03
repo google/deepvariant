@@ -29,7 +29,6 @@
 """Test that our protobuf implementation behaves as we'd expect."""
 
 import unittest
-
 from google.protobuf.internal import api_implementation
 
 
