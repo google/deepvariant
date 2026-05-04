@@ -225,3 +225,15 @@ cc_test(
         "@org_tensorflow//tensorflow/core:test",
     ],
 )
+
+cc_test(
+    name = "fast_pass_aligner_global_align_test",
+    size = "small",
+    srcs = ["fast_pass_aligner_global_align_test.cc"],
+    deps = [
+        ":fast_pass_aligner",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)

@@ -1038,6 +1038,156 @@ void FastPassAligner::CalculateReadToRefAlignment(
   }
 }
 
+FastPassAligner::GlobalAlignment FastPassAligner::GlobalAlign(
+    absl::string_view query, absl::string_view target) const {
+  const int n = query.size();
+  const int m = target.size();
+  if (n == 0 || m == 0) return FastPassAligner::GlobalAlignment();
+
+  const int kInf = 1e9;
+  std::vector<int> M((n + 1) * (m + 1), -kInf);
+  std::vector<int> E((n + 1) * (m + 1), -kInf);
+  std::vector<int> F((n + 1) * (m + 1), -kInf);
+
+  PopulateDpMatrix(query, target, M, E, F);
+  return BackTrackBestAlignment(query, target, M, E, F);
+}
+
+void FastPassAligner::PopulateDpMatrix(absl::string_view query,
+                                       absl::string_view target,
+                                       std::vector<int>& M, std::vector<int>& E,
+                                       std::vector<int>& F) const {
+  const int n = query.size();
+  const int m = target.size();
+  const int match = match_score_;
+  const int mismatch = -static_cast<int>(mismatch_penalty_);
+  const int gap_open = -static_cast<int>(gap_opening_penalty_);
+  const int gap_extend = -static_cast<int>(gap_extending_penalty_);
+
+  auto idx = [&](int i, int j) { return i * (m + 1) + j; };
+
+  for (int j = 0; j <= m; ++j) {
+    M[idx(0, j)] = 0;
+    E[idx(0, j)] = gap_open + j * gap_extend;
+    F[idx(0, j)] = gap_open + j * gap_extend;
+  }
+
+  for (int i = 1; i <= n; ++i) {
+    for (int j = 1; j <= m; ++j) {
+      E[idx(i, j)] = std::max(M[idx(i, j - 1)] + gap_open + gap_extend,
+                              E[idx(i, j - 1)] + gap_extend);
+      F[idx(i, j)] = std::max(M[idx(i - 1, j)] + gap_open + gap_extend,
+                              F[idx(i - 1, j)] + gap_extend);
+      int score = (query[i - 1] == target[j - 1]) ? match : mismatch;
+      M[idx(i, j)] =
+          std::max({M[idx(i - 1, j - 1)] + score, E[idx(i, j)], F[idx(i, j)]});
+    }
+  }
+}
+
+FastPassAligner::GlobalAlignment FastPassAligner::BackTrackBestAlignment(
+    absl::string_view query, absl::string_view target,
+    const std::vector<int>& M, const std::vector<int>& E,
+    const std::vector<int>& F) const {
+  const int n = query.size();
+  const int m = target.size();
+  const int match = match_score_;
+  const int mismatch = -static_cast<int>(mismatch_penalty_);
+  const int gap_extend = -static_cast<int>(gap_extending_penalty_);
+  const int kInf = 1e9;
+
+  auto idx = [&](int i, int j) { return i * (m + 1) + j; };
+
+  int best_score = -kInf;
+  int best_i = -1;
+  int best_j = -1;
+
+  for (int j = 0; j <= m; ++j) {
+    if (M[idx(n, j)] >= best_score) {
+      best_score = M[idx(n, j)];
+      best_i = n;
+      best_j = j;
+    }
+  }
+
+  FastPassAligner::GlobalAlignment alignment;
+  alignment.sw_score = best_score;
+  alignment.ref_end = best_j - 1;
+  alignment.query_end = best_i - 1;
+
+  int i = best_i;
+  int j = best_j;
+  std::string cigar_str = "";
+
+  std::vector<char> ops;
+  enum Matrix { M_MATRIX, E_MATRIX, F_MATRIX };
+  Matrix state = M_MATRIX;
+
+  while (i > 0 || j > 0) {
+    if (state == M_MATRIX) {
+      if (M[idx(i, j)] == 0 && (i == 0 || j == 0)) break;
+      int score = -2e9;
+      if (i > 0 && j > 0) {
+        score = (query[i - 1] == target[j - 1]) ? match : mismatch;
+      }
+      // Highest priority: alignment match/mismatch
+      if (i > 0 && j > 0 && M[idx(i, j)] == M[idx(i - 1, j - 1)] + score) {
+        ops.push_back((query[i - 1] == target[j - 1]) ? '=' : 'X');
+        i--;
+        j--;
+        state = M_MATRIX;
+      } else if (i > 0 && M[idx(i, j)] == F[idx(i, j)]) {
+        state = F_MATRIX;
+      } else if (j > 0 && M[idx(i, j)] == E[idx(i, j)]) {
+        state = E_MATRIX;
+      } else {
+        break;
+      }
+    } else if (state == F_MATRIX) {
+      ops.push_back('I');
+      i--;
+      if (i > 0 && F[idx(i + 1, j)] == F[idx(i, j)] + gap_extend) {
+        state = F_MATRIX;
+      } else {
+        state = M_MATRIX;
+      }
+    } else {  // E_MATRIX
+      ops.push_back('D');
+      j--;
+      if (j > 0 && E[idx(i, j + 1)] == E[idx(i, j)] + gap_extend) {
+        state = E_MATRIX;
+      } else {
+        state = M_MATRIX;
+      }
+    }
+  }
+  std::reverse(ops.begin(), ops.end());
+  if (!ops.empty()) {
+    char last_op = ops[0];
+    int count = 1;
+    for (int k = 1; k < ops.size(); ++k) {
+      if (ops[k] == last_op) {
+        count++;
+      } else {
+        cigar_str += std::to_string(count) + last_op;
+        last_op = ops[k];
+        count = 1;
+      }
+    }
+    cigar_str += std::to_string(count) + last_op;
+  }
+
+  alignment.ref_begin = j;
+  alignment.query_begin = i;
+  if (i > 0) {
+    cigar_str = absl::StrCat(i, "S", cigar_str);
+  }
+
+  alignment.cigar_string = cigar_str;
+  return alignment;
+}
+
+
 }  // namespace deepvariant
 }  // namespace genomics
 }  // namespace learning

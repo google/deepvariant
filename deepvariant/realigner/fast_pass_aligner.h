@@ -263,6 +263,33 @@ class FastPassAligner {
   std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> AlignReads(
       absl::Span<const nucleus::genomics::v1::Read> reads_param);
 
+  // Alternative way to align reads instead of SSW. This is needed to allow
+  // alignment of shorter haplotypes without introducing artificial indels.
+  // Global alignment is performed using DP algorithm with the scoring schema
+  // defined by match_score_, mismatch_penalty_, gap_opening_penalty_,
+  // gap_extending_penalty_. To make it global alignment, the first row and
+  // first column of the DP matrix are initialized to 0. In addition the
+  // best score in the DP matrix is searched along the last row rather than
+  // using the bottom right corner of the matrix.
+  struct GlobalAlignment {
+    GlobalAlignment()
+        : sw_score(0),
+          ref_begin(0),
+          ref_end(0),
+          query_begin(0),
+          query_end(0),
+          cigar_string("") {}
+    int sw_score;
+    int ref_begin;
+    int ref_end;
+    int query_begin;
+    int query_end;
+    std::string cigar_string;
+  };
+
+  GlobalAlignment GlobalAlign(absl::string_view query,
+                              absl::string_view target) const;
+
   // Build K-mer index for all reads.
   void BuildIndex();
 
@@ -421,6 +448,16 @@ class FastPassAligner {
 
   void AddKmerToIndex(absl::string_view kmer, ReadId read_id,
                       KmerOffset pos);
+
+  void PopulateDpMatrix(absl::string_view query, absl::string_view target,
+                        std::vector<int>& M, std::vector<int>& E,
+                        std::vector<int>& F) const;
+
+  GlobalAlignment BackTrackBestAlignment(absl::string_view query,
+                                         absl::string_view target,
+                                         const std::vector<int>& M,
+                                         const std::vector<int>& E,
+                                         const std::vector<int>& F) const;
 
   void CalculatePositionMaps();
 };
