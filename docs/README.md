@@ -48,3 +48,7 @@
 *   [DeepVariant Genomic VCF (gVCF) support](deepvariant-gvcf-support.md)
 *   [Getting Started with GCP](deepvariant-gcp-info.md) (It is not required to
     run DeepVariant on GCP.)
+
+## Tools
+
+*   [Build local hap.py v0.3.9](build-local-happy-v0.3.9.md)

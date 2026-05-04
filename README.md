@@ -128,6 +128,7 @@ For more information, also see:
 *   [Best practices for multi-sample variant calling with DeepVariant](docs/trio-merge-case-study.md)
 *   [(Advanced) Training tutorial](docs/deepvariant-training-case-study.md)
 *   [DeepVariant's Frequently Asked Questions, FAQ](docs/FAQ.md)
+*   [Build local hap.py v0.3.9](docs/build-local-happy-v0.3.9.md)
 
 ## How to cite
 

@@ -1,0 +1,54 @@
+# Use Ubuntu 16.04 as the base image
+FROM ubuntu:16.04
+
+# Set non-interactive mode for apt-get
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        wget \
+        build-essential \
+        cmake \
+        autoconf \
+        python-dev \
+        python-pip \
+        python-setuptools \
+        curl \
+        zlib1g-dev \
+        libbz2-dev \
+        liblzma-dev \
+        liblzo2-dev \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install a newer version of pip using get-pip.py
+RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py \
+    && python get-pip.py \
+    && rm get-pip.py
+
+# Install an older version of Cython compatible with Python 2.7 and bx-python
+RUN pip install --no-cache-dir 'Cython<0.30'
+
+# Install required python packages using the new pip
+# Pin pandas to a version < 0.20.0 for compatibility with hap.py 0.3.9
+# Build bx-python from source to ensure Unicode compatibility
+RUN pip install --no-cache-dir --upgrade \
+        setuptools \
+        'pandas<0.20.0' \
+        pysam \
+        numpy \
+        scipy \
+    && pip install --no-cache-dir --no-binary :all: bx-python
+
+# Download and install hap.py 0.3.9
+RUN cd /opt \
+    && export VER=0.3.9 \
+    && export NAMEVER=hap.py-${VER} \
+    && wget https://github.com/Illumina/hap.py/archive/v${VER}.tar.gz \
+    && tar xzf v${VER}.tar.gz \
+    && python /opt/${NAMEVER}/install.py --no-tests /usr/local \
+    && rm -rf /opt/${NAMEVER} /opt/v${VER}.tar.gz
+
+# Add the hap.py LICENSE file
+RUN mkdir -p /usr/share/licenses/hap.py \
+    && wget https://raw.githubusercontent.com/Illumina/hap.py/v0.3.9/LICENSE.txt -O /usr/share/licenses/hap.py/LICENSE.txt
