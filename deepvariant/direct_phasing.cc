@@ -360,9 +360,6 @@ void DirectPhasing::AssignPhasesToVertices() {
         graph_[max_score_it->first.phase_1_vertex].allele_info.phase = 0;
         graph_[max_score_it->first.phase_2_vertex].allele_info.phase = 0;
         i--;
-        LOG(WARNING) << "Unexpected phasing score at position "
-            << graph_[max_score_it->first.phase_1_vertex].allele_info.position
-            << " with score " << max_score_it->second.score;
         break;
       }
       // Go to the next score.
