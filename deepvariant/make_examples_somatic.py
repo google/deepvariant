@@ -142,6 +142,15 @@ _TRAINED_SMALL_MODEL_PATH = flags.DEFINE_string(
     '',
     'Path to a small model checkpoint directory.',
 )
+_PHASE_TUMOR_READS = flags.DEFINE_bool(
+    'phase_tumor_reads',
+    False,
+    'If True, phase reads for the tumor sample only. Normal reads will not '
+    'be phased. This implicitly enables --phase_reads and '
+    '--track_ref_reads. Cannot be used together with --phase_reads. '
+    'If you want to phase both tumor and normal reads, '
+    'use --phase_reads instead.',
+)
 
 # Change any flag defaults that differ for DeepSomatic.
 # I'm setting this to float('inf') because we don't want to include any
@@ -200,6 +209,8 @@ def tumor_normal_samples_from_flags(flags_obj):
         sample_options.order.extend([0])
     else:
       sample_options.use_non_uniform_downsampling = False
+      if flags_obj.phase_tumor_reads:
+        sample_options.skip_phasing = True
 
     downsample_fraction = (
         flags_obj.downsample_fraction_tumor
@@ -260,11 +271,26 @@ def default_options(main_sample_index, add_flags=True, flags_obj=None):
   else:
     options.bam_fname = os.path.basename(flags_obj.reads_tumor)
 
+  if flags_obj.phase_tumor_reads:
+    options.phase_reads = True
+    options.allele_counter_options.track_ref_reads = True
+    for sample_options in options.sample_options:
+      if sample_options.role == 'tumor':
+        sample_options.variant_caller_options.track_ref_reads = True
+
   return options
 
 
 def check_options_are_valid(options, main_sample_index):
   """Checks that all the options chosen make sense together."""
+
+  if _PHASE_TUMOR_READS.value and FLAGS['phase_reads'].value:
+    errors.log_and_raise(
+        'Cannot use both --phase_reads and --phase_tumor_reads at the same '
+        'time. Use --phase_reads to phase all samples, or '
+        '--phase_tumor_reads to phase only the tumor sample.',
+        errors.CommandLineError,
+    )
 
   # Check for general flags (shared for DeepVariant and DeepTrio).
   make_examples_options.check_options_are_valid(

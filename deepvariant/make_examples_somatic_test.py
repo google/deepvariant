@@ -152,5 +152,152 @@ class MakeExamplesSomaticEnd2EndTest(parameterized.TestCase):
     self.assertEmpty(normal_sample_options.small_model_path)
 
 
+class PhaseTumorReadsTrackRefReadsTest(parameterized.TestCase):
+  """Tests that --phase_tumor_reads correctly sets track_ref_reads.
+
+  Background:
+    There are TWO separate track_ref_reads settings:
+    1. AlleleCounterOptions.track_ref_reads (global): Controls whether the
+       allele counter tracks reference-supporting reads at each position.
+    2. VariantCallerOptions.track_ref_reads (per-sample): Controls whether
+       the variant caller populates ref_support in DeepVariantCall protos.
+
+    When --phase_tumor_reads is set, the code explicitly sets BOTH:
+    - options.allele_counter_options.track_ref_reads = True  (global)
+    - tumor sample_options.variant_caller_options.track_ref_reads = True
+
+    Without the per-sample override, the variant caller would NOT include
+    ref_support reads in its output because the global --track_ref_reads
+    flag is NOT turned on by --phase_tumor_reads.
+  """
+
+  @flagsaver.flagsaver
+  def test_phase_tumor_reads_sets_tumor_variant_caller_track_ref_reads(self):
+    """The per-sample override is needed because the global flag stays False."""
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads_normal = testdata.CHR20_BAM
+    FLAGS.reads_tumor = testdata.CHR20_BAM
+    FLAGS.sample_name_normal = 'NORMAL'
+    FLAGS.sample_name_tumor = 'TUMOR'
+    FLAGS.mode = 'calling'
+    FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.phase_tumor_reads = True
+
+    options = make_examples_somatic.default_options(
+        main_sample_index=1, add_flags=True
+    )
+
+    normal_opts = options.sample_options[
+        make_examples_somatic.NORMAL_SAMPLE_INDEX
+    ]
+    tumor_opts = options.sample_options[1]
+
+    # Global allele counter track_ref_reads is set to True.
+    self.assertTrue(options.allele_counter_options.track_ref_reads)
+
+    # Tumor variant caller MUST have track_ref_reads=True so it populates
+    # ref_support in DeepVariantCall protos. Without the explicit override
+    # in default_options(), this would be False because the global
+    # --track_ref_reads flag was never set.
+    self.assertTrue(
+        tumor_opts.variant_caller_options.track_ref_reads,
+        'Tumor variant_caller_options.track_ref_reads should be True '
+        'when --phase_tumor_reads is set. Without this, the variant '
+        'caller would discard reference-supporting read information '
+        'even though the allele counter is tracking them.',
+    )
+
+    # Normal variant caller does NOT need track_ref_reads since we are
+    # only phasing tumor reads.
+    self.assertFalse(
+        normal_opts.variant_caller_options.track_ref_reads,
+        'Normal variant_caller_options.track_ref_reads should remain '
+        'False when --phase_tumor_reads is set.',
+    )
+
+  @flagsaver.flagsaver
+  def test_without_phase_tumor_reads_no_track_ref_reads(self):
+    """Baseline: without --phase_tumor_reads, neither sample tracks refs."""
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads_normal = testdata.CHR20_BAM
+    FLAGS.reads_tumor = testdata.CHR20_BAM
+    FLAGS.sample_name_normal = 'NORMAL'
+    FLAGS.sample_name_tumor = 'TUMOR'
+    FLAGS.mode = 'calling'
+    FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.phase_tumor_reads = False
+
+    options = make_examples_somatic.default_options(
+        main_sample_index=1, add_flags=True
+    )
+
+    normal_opts = options.sample_options[
+        make_examples_somatic.NORMAL_SAMPLE_INDEX
+    ]
+    tumor_opts = options.sample_options[1]
+
+    # Without --phase_tumor_reads, nothing changes.
+    self.assertFalse(options.allele_counter_options.track_ref_reads)
+    self.assertFalse(tumor_opts.variant_caller_options.track_ref_reads)
+    self.assertFalse(normal_opts.variant_caller_options.track_ref_reads)
+
+  @flagsaver.flagsaver
+  def test_phase_tumor_reads_also_sets_phase_reads_and_skip_phasing(self):
+    """--phase_tumor_reads enables phasing globally but skips normal."""
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads_normal = testdata.CHR20_BAM
+    FLAGS.reads_tumor = testdata.CHR20_BAM
+    FLAGS.sample_name_normal = 'NORMAL'
+    FLAGS.sample_name_tumor = 'TUMOR'
+    FLAGS.mode = 'calling'
+    FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.phase_tumor_reads = True
+
+    options = make_examples_somatic.default_options(
+        main_sample_index=1, add_flags=True
+    )
+
+    normal_opts = options.sample_options[
+        make_examples_somatic.NORMAL_SAMPLE_INDEX
+    ]
+    tumor_opts = options.sample_options[1]
+
+    # phase_reads is implicitly enabled.
+    self.assertTrue(options.phase_reads)
+
+    # Normal sample should skip phasing; tumor should not.
+    self.assertTrue(normal_opts.skip_phasing)
+    self.assertFalse(tumor_opts.skip_phasing)
+
+  @flagsaver.flagsaver
+  def test_phase_reads_and_phase_tumor_reads_mutual_exclusion(self):
+    """Setting both --phase_reads and --phase_tumor_reads should error."""
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads_normal = testdata.CHR20_BAM
+    FLAGS.reads_tumor = testdata.CHR20_BAM
+    FLAGS.sample_name_normal = 'NORMAL'
+    FLAGS.sample_name_tumor = 'TUMOR'
+    FLAGS.mode = 'calling'
+    FLAGS.examples = ''
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.phase_tumor_reads = True
+    FLAGS.phase_reads = True
+    FLAGS.track_ref_reads = True
+
+    options = make_examples_somatic.default_options(
+        main_sample_index=1, add_flags=True
+    )
+
+    with self.assertRaisesRegex(
+        Exception, 'Cannot use both --phase_reads and --phase_tumor_reads'
+    ):
+      make_examples_somatic.check_options_are_valid(
+          options, main_sample_index=1
+      )
+
+
 if __name__ == '__main__':
   absltest.main()
