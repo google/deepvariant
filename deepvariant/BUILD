@@ -786,11 +786,17 @@ py_binary(
 
 py_test(
     name = "make_examples_somatic_test",
+    size = "large",
     srcs = ["make_examples_somatic_test.py"],
     data = [":testdata"],
     deps = [
+        ":dv_constants",
+        ":dv_utils",
+        ":make_examples_core",
         ":make_examples_somatic_lib",
         ":py_testdata",
+        "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/testing:py_test_utils",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
         "@absl_py//absl/testing:absltest",

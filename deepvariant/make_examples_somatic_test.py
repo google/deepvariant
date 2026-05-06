@@ -33,13 +33,15 @@ from absl import logging
 from absl.testing import absltest
 from absl.testing import flagsaver
 from absl.testing import parameterized
+import numpy as np
 
 from deepvariant import dv_constants
+from deepvariant import dv_utils
 from deepvariant import make_examples_core
 from deepvariant import make_examples_somatic
 from deepvariant import testdata
+from third_party.nucleus.io import tfrecord
 from third_party.nucleus.testing import test_utils
-
 
 FLAGS = flags.FLAGS
 
@@ -297,6 +299,7 @@ class PhaseTumorReadsTrackRefReadsTest(parameterized.TestCase):
       make_examples_somatic.check_options_are_valid(
           options, main_sample_index=1
       )
+
 
 
 if __name__ == '__main__':
