@@ -38,12 +38,12 @@ import os
 from typing import Callable, Dict, Tuple, Union
 
 from absl import logging
+from google.protobuf import text_format
 import ml_collections
 import tensorflow as tf
 
 from deepvariant import dv_utils
 from deepvariant.protos import deepvariant_pb2
-from google.protobuf import text_format
 from third_party.nucleus.io import sharded_file_utils
 
 

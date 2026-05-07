@@ -43,6 +43,7 @@ from typing import Any, DefaultDict, Dict, Iterable, Iterator, List, Optional, S
 from absl import flags
 from absl import logging
 from etils import epath
+from google.protobuf import text_format
 import numpy as np
 
 
@@ -71,7 +72,6 @@ from deepvariant.realigner import realigner as realigner_module
 from deepvariant.small_model import inference as small_model_inference
 from deepvariant.small_model import make_small_model_examples
 from deepvariant.vendor import timer
-from google.protobuf import text_format
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io import genomics_reader

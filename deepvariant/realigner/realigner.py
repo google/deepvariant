@@ -39,13 +39,13 @@ import os.path
 
 from absl import flags
 from etils import epath
+from google.protobuf import text_format
 
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import window_selector
 from deepvariant.realigner.python import debruijn_graph
 from deepvariant.realigner.python import fast_pass_aligner
 from deepvariant.vendor import timer
-from google.protobuf import text_format
 from third_party.nucleus.io import sam
 from third_party.nucleus.protos import cigar_pb2
 from third_party.nucleus.protos import reads_pb2
