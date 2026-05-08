@@ -232,6 +232,7 @@ cc_test(
     srcs = ["fast_pass_aligner_global_align_test.cc"],
     deps = [
         ":fast_pass_aligner",
+        "//deepvariant/protos:realigner_cc_pb2",
         "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
         "@org_tensorflow//tensorflow/core:test",

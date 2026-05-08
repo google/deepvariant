@@ -31,6 +31,7 @@
 
 #include <string>
 
+#include "deepvariant/protos/realigner.pb.h"
 #include "deepvariant/realigner/fast_pass_aligner.h"
 #include "tensorflow/core/platform/test.h"
 #include "absl/strings/string_view.h"
