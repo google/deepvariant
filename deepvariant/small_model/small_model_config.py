@@ -99,14 +99,10 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   config.epochs = 50
   config.batch_size = 512
   config.logging_frequency = 16384
-  config.interleave_cycle_length = 4
-  config.interleave_parallel_calls = 64
+  config.interleave_cycle_length = 32
   config.shuffle_buffer_elements = 100_000
-  config.tfrecord_buffer_size = 64 * 1000 * 1000
-  config.tfrecord_num_parallel_calls = 12
-  config.prefetch_buffer_size = 12
-  config.read_ahead_buffer = "128M"
-  config.map_parallel_calls = 100
+  config.tfrecord_buffer_size = 32 * 1000 * 1000
+  config.read_ahead_buffer = "512M"
   config.k_folds = 1
   config.current_k_folds = 0
   config.k_folds_seed = 42
