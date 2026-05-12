@@ -42,6 +42,7 @@ DEEP_VARIANT_QUAL_FILTER = 'LowQual'
 DEEP_VARIANT_NO_CALL = 'NoCall'
 DEEP_VARIANT_GERMLINE = 'GERMLINE'
 DEEP_VARIANT_PON = 'PON'
+DEEP_VARIANT_RESCUED = 'RESCUED'
 
 # FORMAT field IDs.
 DEEP_VARIANT_MIN_DP_FORMAT = 'MIN_DP'
@@ -188,26 +189,40 @@ def deepvariant_header(
   if include_somatic_fields:
     formats.extend(SOMATIC_FORMAT_FIELDS)
 
+  filters = [
+      vcf_constants.reserved_filter_field(DEEP_VARIANT_PASS),
+      variants_pb2.VcfFilterInfo(
+          id=DEEP_VARIANT_REF_FILTER,
+          description='Genotyping model thinks this site is reference.',
+      ),
+      variants_pb2.VcfFilterInfo(
+          id=DEEP_VARIANT_QUAL_FILTER,
+          description=(
+              'Confidence in this variant being real is below '
+              'calling threshold.'
+          ),
+      ),
+      variants_pb2.VcfFilterInfo(
+          id=DEEP_VARIANT_NO_CALL,
+          description='Site has depth=0 resulting in no call.',
+      ),
+  ]
+  if include_somatic_fields:
+    filters.append(
+        variants_pb2.VcfFilterInfo(
+            id=DEEP_VARIANT_RESCUED,
+            description=(
+                'Rescued somatic tandem duplication: insertion matching'
+                ' adjacent reference (exact match >= 5bp, or near match'
+                ' > 10bp with >= 70% similarity) with high tumor VAF and'
+                ' zero normal alt allele depth (NAD alt = 0).'
+            ),
+        )
+    )
+
   return variants_pb2.VcfHeader(
       fileformat='VCFv4.2',
-      filters=[
-          vcf_constants.reserved_filter_field(DEEP_VARIANT_PASS),
-          variants_pb2.VcfFilterInfo(
-              id=DEEP_VARIANT_REF_FILTER,
-              description='Genotyping model thinks this site is reference.',
-          ),
-          variants_pb2.VcfFilterInfo(
-              id=DEEP_VARIANT_QUAL_FILTER,
-              description=(
-                  'Confidence in this variant being real is below '
-                  'calling threshold.'
-              ),
-          ),
-          variants_pb2.VcfFilterInfo(
-              id=DEEP_VARIANT_NO_CALL,
-              description='Site has depth=0 resulting in no call.',
-          ),
-      ],
+      filters=filters,
       infos=info_fields,
       formats=formats,
       contigs=contigs,

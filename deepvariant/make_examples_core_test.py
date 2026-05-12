@@ -48,6 +48,7 @@ from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import errors
 from third_party.nucleus.util import ranges
+from third_party.nucleus.util import struct_utils
 
 FLAGS = flags.FLAGS
 
@@ -1993,6 +1994,199 @@ class RegionProcessorTest(parameterized.TestCase):
 
     self.assertEqual([val.int_value for val in ad_hp1], [1, 1, 0])
     self.assertEqual([val.int_value for val in ad_hp2], [1, 0, 2])
+
+
+class AnnotateTandemDuplicationsTest(parameterized.TestCase):
+  """Tests for annotate_tandem_duplications in make_examples_core."""
+
+  def _make_candidate(self, chrom, start, ref, alts):
+    """Creates a DeepVariantCall with the given variant."""
+    candidate = deepvariant_pb2.DeepVariantCall()
+    candidate.variant.reference_name = chrom
+    candidate.variant.start = start
+    candidate.variant.end = start + len(ref)
+    candidate.variant.reference_bases = ref
+    for alt in alts:
+      candidate.variant.alternate_bases.append(alt)
+    return candidate
+
+  def _make_ref_reader(self, chrom, start, bases):
+    """Creates an InMemoryFastaReader with given bases."""
+    return fasta.InMemoryFastaReader([(chrom, start, bases)])
+
+  def test_tandem_dup_insertion_labeled(self):
+    """5bp insertion matching reference after variant -> IS_TANDEM_DUP=True."""
+    # Reference: chr1 pos 100: A ACGTG ACGTG ZZZZZ
+    # Variant: pos 100, REF=A, ALT=AACGTG (5bp inserted = 'ACGTG')
+    # ref after pos 101 = 'ACGTG' -> tandem dup!
+    ref_reader = self._make_ref_reader('chr1', 99, 'XAACGTGACGTGZZZZZ')
+    candidate = self._make_candidate('chr1', 100, 'A', ['AACGTG'])
+    make_examples_core.annotate_tandem_duplications([candidate], ref_reader)
+    self.assertTrue(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+
+  def test_non_tandem_insertion_not_labeled(self):
+    """5bp insertion NOT matching reference -> no label."""
+    # Inserted seq = 'XYZWV', ref after pos 101 = 'GGGGG' -> NOT a tandem dup.
+    ref_reader = self._make_ref_reader('chr1', 99, 'XAGGGGGGGGGZZZZZ')
+    candidate = self._make_candidate('chr1', 100, 'A', ['AXYZWV'])
+    make_examples_core.annotate_tandem_duplications([candidate], ref_reader)
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+
+  def test_short_tandem_dup_not_labeled(self):
+    """Insertions < 5bp are excluded even if they match adjacent reference."""
+    # 1bp insertion: A -> AA (homopolymer expansion)
+    ref_reader_1bp = self._make_ref_reader('chr1', 99, 'XAAZZZZZ')
+    c1 = self._make_candidate('chr1', 100, 'A', ['AA'])
+
+    # 4bp insertion: A -> AACGT, ref after = 'ACGT' (matches, but too short)
+    ref_reader_4bp = self._make_ref_reader('chr1', 99, 'XAACGTZZZZZ')
+    c4 = self._make_candidate('chr1', 100, 'A', ['AACGT'])
+
+    make_examples_core.annotate_tandem_duplications([c1], ref_reader_1bp)
+    make_examples_core.annotate_tandem_duplications([c4], ref_reader_4bp)
+
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            c1.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            c4.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+
+  def test_snp_not_labeled(self):
+    """SNP -> never labeled as tandem dup."""
+    ref_reader = self._make_ref_reader('chr1', 99, 'XAACGTGZZZZZ')
+    candidate = self._make_candidate('chr1', 100, 'A', ['T'])
+    make_examples_core.annotate_tandem_duplications([candidate], ref_reader)
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+
+  def test_deletion_not_labeled(self):
+    """Deletion -> never labeled as tandem dup."""
+    ref_reader = self._make_ref_reader('chr1', 99, 'XATCGWVZZZZZ')
+    candidate = self._make_candidate('chr1', 100, 'ATCGWV', ['A'])
+    make_examples_core.annotate_tandem_duplications([candidate], ref_reader)
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+
+  def test_multiple_candidates_mixed(self):
+    """Multiple candidates: only the >= 5bp tandem dup gets labeled."""
+    # Reference has enough bases for all candidates.
+    ref_reader = self._make_ref_reader(
+        'chr1', 99, 'XAACGTGACGTGZZZZZZZZZZZZZZZZZZZ'
+    )
+    # 5bp tandem dup insertion at pos 100 (ACGTG matches ref after)
+    c1 = self._make_candidate('chr1', 100, 'A', ['AACGTG'])
+    # 5bp non-tandem insertion at pos 106
+    c2 = self._make_candidate('chr1', 106, 'A', ['AXYZWV'])
+    # SNP at pos 112
+    c3 = self._make_candidate('chr1', 112, 'Z', ['A'])
+
+    make_examples_core.annotate_tandem_duplications([c1, c2, c3], ref_reader)
+
+    self.assertTrue(
+        struct_utils.get_bool_field(
+            c1.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            c2.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            c3.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+
+  def test_case_insensitive_matching(self):
+    """Tandem dup matching is case-insensitive."""
+    ref_reader = self._make_ref_reader('chr1', 99, 'XAacgtgZZZZZZZ')
+    candidate = self._make_candidate('chr1', 100, 'A', ['AACGTG'])
+    make_examples_core.annotate_tandem_duplications([candidate], ref_reader)
+    self.assertTrue(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+
+  def test_near_tandem_dup_labeled(self):
+    """12bp insertion with ~75% match -> IS_NEAR_TANDEM_DUP=True."""
+    # Reference after pos 101: 'ACGTACGTACGT' (12bp)
+    # Inserted seq:             'ACGTACGTAXXX' (9/12 = 75% match)
+    ref_reader = self._make_ref_reader(
+        'chr1', 99, 'XAACGTACGTACGTZZZZZZZZZZZZZ'
+    )
+    candidate = self._make_candidate('chr1', 100, 'A', ['AACGTACGTAXXX'])
+    make_examples_core.annotate_tandem_duplications([candidate], ref_reader)
+    # Should NOT be labeled as exact tandem dup.
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+    # Should be labeled as near-tandem dup.
+    self.assertTrue(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_NEAR_TANDEM_DUP', is_single_field=True
+        )
+    )
+
+  def test_exact_tandem_dup_not_also_near_tandem(self):
+    """Exact tandem dup -> IS_TANDEM_DUP only, not IS_NEAR_TANDEM_DUP."""
+    # 12bp exact match insertion.
+    ref_reader = self._make_ref_reader(
+        'chr1', 99, 'XAACGTACGTACGTACGTACGTACGTZZZZZZZZZZZZZ'
+    )
+    candidate = self._make_candidate('chr1', 100, 'A', ['AACGTACGTACGT'])
+    make_examples_core.annotate_tandem_duplications([candidate], ref_reader)
+    self.assertTrue(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_NEAR_TANDEM_DUP', is_single_field=True
+        )
+    )
+
+  def test_near_tandem_dup_short_insertion_not_labeled(self):
+    """10bp insertion (not > 10bp) -> not labeled as near-tandem dup."""
+    # 10bp insertion with ~80% match, but too short (needs > 10bp = 11bp).
+    ref_reader = self._make_ref_reader('chr1', 99, 'XAACGTACGTACZZZZZZZZZZZZZ')
+    candidate = self._make_candidate(
+        'chr1', 100, 'A', ['AACGTACGTXX']  # 10bp ins, 8/10 = 80% match
+    )
+    make_examples_core.annotate_tandem_duplications([candidate], ref_reader)
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_TANDEM_DUP', is_single_field=True
+        )
+    )
+    self.assertFalse(
+        struct_utils.get_bool_field(
+            candidate.variant.info, 'IS_NEAR_TANDEM_DUP', is_single_field=True
+        )
+    )
 
 
 if __name__ == '__main__':

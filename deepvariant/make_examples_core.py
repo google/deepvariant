@@ -1058,6 +1058,76 @@ def filter_candidates(
         break
 
 
+def annotate_tandem_duplications(
+    candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+    ref_reader,
+) -> None:
+  """Annotates insertion candidates as tandem or near-tandem duplications.
+
+  For each candidate, checks if any alt allele is an insertion whose inserted
+  sequence matches the reference immediately after the insertion point:
+
+  1. **Exact tandem duplication** (IS_TANDEM_DUP): insertion >= 5bp with 100%
+     match to adjacent reference.
+  2. **Near-tandem duplication** (IS_NEAR_TANDEM_DUP): insertion > 10bp with
+     >= 70% base-level match to adjacent reference. Only set if the variant
+     does not already qualify as an exact tandem duplication.
+
+  Short insertions (< 5bp for exact, <= 10bp for near) are excluded because
+  they are typically homopolymer or short tandem repeat (STR) expansions, not
+  the structural tandem duplications where normal short reads fail to
+  distinguish the duplicated haplotype from reference.
+
+  These annotations flow through the pipeline (make_examples -> call_variants
+  -> postprocess_variants) and are used by the RESCUED filter in
+  postprocess_variants to identify somatic tandem duplications.
+
+  Args:
+    candidates: Sequence of DeepVariantCall protos to annotate.
+    ref_reader: A FastaReader (IndexedFastaReader or InMemoryFastaReader) for
+      looking up reference bases.
+  """
+  for candidate in candidates:
+    variant = candidate.variant
+    for alt in variant.alternate_bases:
+      if len(alt) <= len(variant.reference_bases):
+        continue  # Not an insertion.
+      inserted_seq = alt[len(variant.reference_bases) :]
+      insert_len = len(inserted_seq)
+      if insert_len < dv_constants.MIN_TANDEM_DUP_INSERT_LENGTH:
+        continue  # Too short for any tandem dup annotation.
+      chrom = variant.reference_name
+      # Check if inserted sequence matches reference after the variant.
+      # TODO: Do we need to consider the reverse?
+      #   REF_SEQ_A + INSERTION_SEQ_A vs INSERTION_SEQ_A + REF_SEQ_A
+      #   Currently we only check one direction.
+      check_start = variant.end
+      check_end = check_start + insert_len
+      region = ranges.make_range(chrom, check_start, check_end)
+      try:
+        if not ref_reader.is_valid(region):
+          continue
+        ref_after = ref_reader.query(region)
+        if inserted_seq.upper() == ref_after.upper():
+          struct_utils.set_bool_field(variant.info, 'IS_TANDEM_DUP', True)
+          break  # One matching alt is enough.
+        # Check for near-tandem duplication (>10bp, >=70% match).
+        if insert_len >= dv_constants.MIN_NEAR_TANDEM_DUP_INSERT_LENGTH:
+          matches = sum(
+              a == b for a, b in zip(inserted_seq.upper(), ref_after.upper())
+          )
+          if (
+              matches / insert_len
+              >= dv_constants.MIN_NEAR_TANDEM_DUP_MATCH_FRACTION
+          ):
+            struct_utils.set_bool_field(
+                variant.info, 'IS_NEAR_TANDEM_DUP', True
+            )
+            break
+      except (ValueError, KeyError):
+        continue
+
+
 # ---------------------------------------------------------------------------
 # A modified version of reservoir_sample for reads.
 # ---------------------------------------------------------------------------
@@ -2396,6 +2466,10 @@ class RegionProcessor:
                 ref_reader=self.ref_reader,
             )
         )
+
+      # Annotate tandem duplications for somatic rescue.
+      if role == 'tumor':
+        annotate_tandem_duplications(candidates, self.ref_reader)
 
       # After any filtering and other changes above, set candidates for sample.
       candidates_by_sample[role] = candidates

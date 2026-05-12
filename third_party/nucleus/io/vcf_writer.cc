@@ -165,11 +165,23 @@ void SetVariantGenotype(const std::array<int, 2> genotype,
   auto original_genotype = GetVariantGenotype(variant_message);
   if (original_genotype != "00" && original_genotype != "-1-1" &&
       original_genotype != "11") {
-    SetVariantGenotype({0, 0}, &variant_message_mutable);
-    // Only replace filter with the GERMLINE if it is not empty (.)
-    if (!variant_message_mutable.filter().empty()) {
-      variant_message_mutable.mutable_filter()->Clear();
-      variant_message_mutable.mutable_filter()->Add("GERMLINE");
+    // Skip the GERMLINE override for variants rescued by postprocess_variants
+    // (tandem dup insertions with RESCUED in their filter). Without this check,
+    // the genotype and filter changes below would silently undo the rescue.
+    bool is_rescued = false;
+    for (const auto& f : variant_message.filter()) {
+      if (f == "RESCUED") {
+        is_rescued = true;
+        break;
+      }
+    }
+    if (!is_rescued) {
+      SetVariantGenotype({0, 0}, &variant_message_mutable);
+      // Only replace filter with the GERMLINE if it is not empty (.)
+      if (!variant_message_mutable.filter().empty()) {
+        variant_message_mutable.mutable_filter()->Clear();
+        variant_message_mutable.mutable_filter()->Add("GERMLINE");
+      }
     }
   }
   return Write(variant_message_mutable);

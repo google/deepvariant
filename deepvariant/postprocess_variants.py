@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Postprocess output from call_variants to produce a VCF file."""
+
 # TODO: Add type annotations to this module
 import collections
 import functools
@@ -72,7 +73,6 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
-
 
 
 _INFILE = flags.DEFINE_string(
@@ -284,6 +284,23 @@ _PON_FILTERING = flags.DEFINE_string(
         'removed.'
     ),
 )
+_RESCUED_MIN_VAF = flags.DEFINE_float(
+    'rescued_min_vaf',
+    0.0,
+    (
+        'Only used if --process_somatic is true. Minimum tumor VAF to rescue a'
+        ' (near-)tandem duplication insertion as potentially somatic. Set to 0'
+        ' to disable rescue. When enabled, (near-)tandem duplication insertions'
+        ' (labeled IS_TANDEM_DUP or IS_NEAR_TANDEM_DUP by make_examples) with'
+        ' tumor VAF >= this threshold and zero normal alt allele depth (NAD alt'
+        ' = 0) will be assigned the RESCUED filter regardless of their original'
+        ' filter (RefCall, GERMLINE, LowQual, PASS, or NoCall). Short'
+        ' insertions (< 5bp for exact tandem dups, <= 10bp for near-tandem'
+        ' dups) are excluded as they are typically homopolymer or STR'
+        ' expansions. This is an experimental feature. Current use case is for'
+        ' DeepSomatic Hybrid (PacBio Tumor and Illumina Normal) model.'
+    ),
+)
 _RESOLVE_CALL_VARIANTS_OUTPUTS_BY_MODEL = flags.DEFINE_bool(
     'resolve_call_variants_outputs_by_model',
     False,
@@ -330,6 +347,14 @@ _FILTERED_ALT_PROB = -9.0
 
 # The number of genotype probabilities in a diploid sample.
 _NUM_GENOTYPE_PROBABILITIES = 3
+
+RESCUABLE_FILTERS = frozenset([
+    dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+    dv_vcf_constants.DEEP_VARIANT_GERMLINE,
+    dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER,
+    dv_vcf_constants.DEEP_VARIANT_PASS,
+    dv_vcf_constants.DEEP_VARIANT_NO_CALL,
+])
 
 
 def _extract_single_sample_name(
@@ -1347,6 +1372,135 @@ def add_pon_filter(
     yield variant
 
 
+def maybe_rescue_missed_calls(
+    variant: variants_pb2.Variant, min_vaf: float
+) -> None:
+  """Rescues tandem dup insertions with high tumor VAF and no normal support.
+
+  For somatic calling, tandem duplications can be missed because normal short
+  reads may still align to the alt haplotype. This function rescues such
+  variants by checking:
+    1. The variant is labeled as a tandem duplication (IS_TANDEM_DUP for
+       exact matches >= 5bp, or IS_NEAR_TANDEM_DUP for near matches > 10bp
+       with >= 70% sequence similarity to the adjacent reference).
+    2. The resolved alt allele is an insertion >= 5bp for IS_TANDEM_DUP or
+       > 10bp for IS_NEAR_TANDEM_DUP (guards against multi-allelic candidates
+       where a sibling alt was the tandem dup).
+    3. The variant is currently filtered as RefCall, GERMLINE, LowQual,
+       PASS, or NoCall. (PASS variants are included because WriteSomatic in
+       vcf_writer.cc can overwrite heterozygous PASS to GERMLINE.)
+    4. Tumor VAF is >= min_vaf.
+    5. Normal has zero alt allele depth (NAD alt = 0).
+
+  If all conditions are met, the FILTER is changed to RESCUED. For variants
+  that are already GERMLINE, or that are heterozygous PASS (which WriteSomatic
+  in vcf_writer.cc would override to GERMLINE), the filter is set to
+  GERMLINE;RESCUED to preserve the germline classification.
+
+  Args:
+    variant: Variant proto to potentially rescue.
+    min_vaf: Minimum tumor VAF threshold for rescue.
+  """
+  if not min_vaf or min_vaf <= 0:
+    return  # Rescue disabled.
+
+  # Check for tandem duplication labels set by make_examples.
+  is_tandem_dup = struct_utils.get_bool_field(
+      variant.info, 'IS_TANDEM_DUP', is_single_field=True
+  )
+  is_near_tandem_dup = struct_utils.get_bool_field(
+      variant.info, 'IS_NEAR_TANDEM_DUP', is_single_field=True
+  )
+  if not is_tandem_dup and not is_near_tandem_dup:
+    return
+
+  # Verify the resolved alt allele is actually an insertion of sufficient
+  # length. IS_TANDEM_DUP requires >= 5bp, IS_NEAR_TANDEM_DUP requires > 10bp.
+  if len(variant.alternate_bases) != 1:
+    return  # Unexpected: postprocess should have resolved to a single alt.
+  alt = variant.alternate_bases[0]
+  ref = variant.reference_bases
+  insert_len = len(alt) - len(ref)
+  if is_tandem_dup and insert_len < dv_constants.MIN_TANDEM_DUP_INSERT_LENGTH:
+    return  # Not an insertion >= 5bp; skip.
+  if (
+      is_near_tandem_dup
+      and not is_tandem_dup
+      and insert_len < dv_constants.MIN_NEAR_TANDEM_DUP_INSERT_LENGTH
+  ):
+    return  # Not an insertion > 10bp; skip.
+
+  # Only rescue variants with a rescuable filter.
+  if not set(variant.filter).intersection(RESCUABLE_FILTERS):
+    return
+
+  call = variant_utils.only_call(variant)
+
+  # Check tumor VAF.
+  if 'VAF' not in call.info:
+    return
+  vaf_values = [v.number_value for v in call.info['VAF'].values]
+  if not vaf_values:
+    return
+  max_vaf = max(vaf_values)
+  if max_vaf < min_vaf:
+    return  # Tumor VAF too low.
+
+  # Check normal allelic depth (NAD).
+  nad_values = variantcall_utils.get_nad(call)
+  if nad_values:
+    # NAD[0] is ref count, NAD[1:] are alt counts.
+    alt_nad = nad_values[1:] if len(nad_values) > 1 else []
+    if any(count > 0 for count in alt_nad):
+      return  # Normal has alt support; likely germline.
+
+  # All conditions met: rescue this variant.
+  # Preserve GERMLINE alongside RESCUED (written as "GERMLINE;RESCUED" in VCF)
+  # because it is informative: it tells downstream users the model classified
+  # the variant as germline but we overrode that based on tandem dup evidence.
+  # For other filters (RefCall, LowQual, NoCall), just RESCUED is sufficient.
+  #
+  # There are TWO sources of the GERMLINE filter:
+  # 1. add_somatic_germline_filter() in Python (based on NAF threshold) — this
+  #    runs before rescue, so GERMLINE is already in variant.filter.
+  # 2. WriteSomatic() in vcf_writer.cc — overrides heterozygous PASS variants
+  #    to GERMLINE.  This runs AFTER rescue, so we must proactively detect
+  #    would-be-GERMLINE variants (heterozygous + PASS) and tag them now.
+  is_germline = dv_vcf_constants.DEEP_VARIANT_GERMLINE in variant.filter
+  if not is_germline:
+    # Check if WriteSomatic would override this to GERMLINE:
+    # heterozygous genotype (not 0/0, not ./., not 1/1) and currently PASS.
+    genotype = tuple(call.genotype)
+    is_het = len(genotype) == 2 and genotype not in ((0, 0), (-1, -1), (1, 1))
+    if is_het and dv_vcf_constants.DEEP_VARIANT_PASS in variant.filter:
+      is_germline = True
+  if is_germline:
+    variant.filter[:] = [
+        dv_vcf_constants.DEEP_VARIANT_GERMLINE,
+        dv_vcf_constants.DEEP_VARIANT_RESCUED,
+    ]
+  else:
+    variant.filter[:] = [dv_vcf_constants.DEEP_VARIANT_RESCUED]
+
+
+def add_rescue_filter(
+    variant_generator: Iterator[variants_pb2.Variant],
+    min_vaf: float,
+) -> Iterator[variants_pb2.Variant]:
+  """Applies rescue filtering to a variant stream.
+
+  Args:
+    variant_generator: Iterator of Variant protos.
+    min_vaf: Minimum tumor VAF to rescue.
+
+  Yields:
+    Variant protos with RESCUED filter applied where appropriate.
+  """
+  for variant in variant_generator:
+    maybe_rescue_missed_calls(variant, min_vaf)
+    yield variant
+
+
 def write_variants_to_vcf(
     variant_iterable: Iterator[variants_pb2.Variant],
     output_vcf_path: str,
@@ -1370,6 +1524,7 @@ def write_variants_to_vcf(
       ]:
         count += 1
         if _PROCESS_SOMATIC.value:
+          maybe_rescue_missed_calls(variant, _RESCUED_MIN_VAF.value)
           writer.write_somatic(variant)
         else:
           writer.write(variant)

@@ -57,6 +57,7 @@ from third_party.nucleus.io import vcf
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import genomics_math
+from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
@@ -2338,6 +2339,388 @@ class MergeVcfAndGvcfTest(parameterized.TestCase):
 
     # parameters should NOT change because it was present
     self.assertEqual(flag_values.multiallelic_mode, 'product')
+
+
+class RescueFilterTest(parameterized.TestCase):
+  """Tests for the RESCUED filter logic in postprocess_variants."""
+
+  def _make_variant_with_somatic_info(
+      self,
+      ref='A',
+      alts=None,
+      filter_field=None,
+      vaf=None,
+      nad=None,
+      is_tandem_dup=False,
+      is_near_tandem_dup=False,
+      genotype=None,
+  ):
+    """Creates a Variant with somatic FORMAT fields set.
+
+    Args:
+      ref: str. Reference bases.
+      alts: list of str. Alternate bases.
+      filter_field: str or list of str. Filter field value(s).
+      vaf: list of float. Tumor VAF values (one per alt allele).
+      nad: list of int. Normal allelic depths (ref + alts).
+      is_tandem_dup: bool. If True, set IS_TANDEM_DUP info field.
+      is_near_tandem_dup: bool. If True, set IS_NEAR_TANDEM_DUP info field.
+      genotype: list of int. Genotype values (e.g. [0, 1] for het).
+
+    Returns:
+      A Variant proto with the specified fields set.
+    """
+    if alts is None:
+      alts = ['AT']
+    if filter_field is None:
+      filter_field = dv_vcf_constants.DEEP_VARIANT_REF_FILTER
+    if isinstance(filter_field, str):
+      filter_field = [filter_field]
+
+    variant = variants_pb2.Variant(
+        reference_name='chr1',
+        start=100,
+        end=100 + len(ref),
+        reference_bases=ref,
+        alternate_bases=alts,
+        filter=filter_field,
+        calls=[variants_pb2.VariantCall(call_set_name='TUMOR')],
+    )
+    call = variant.calls[0]
+    if genotype is not None:
+      call.genotype[:] = genotype
+    if vaf is not None:
+      struct_utils.set_number_field(call.info, 'VAF', vaf)
+    if nad is not None:
+      variantcall_utils.set_nad(call, nad)
+    if is_tandem_dup:
+      struct_utils.set_bool_field(variant.info, 'IS_TANDEM_DUP', True)
+    if is_near_tandem_dup:
+      struct_utils.set_bool_field(variant.info, 'IS_NEAR_TANDEM_DUP', True)
+    return variant
+
+  def test_rescue_tandem_dup_insertion(self):
+    """RefCall + IS_TANDEM_DUP + high VAF + NAD=0 -> RESCUED."""
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_RESCUED])
+
+  def test_rescue_germline_tandem_dup(self):
+    """GERMLINE + IS_TANDEM_DUP + high VAF + NAD=0 -> GERMLINE;RESCUED."""
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_GERMLINE,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(
+        variant.filter,
+        [
+            dv_vcf_constants.DEEP_VARIANT_GERMLINE,
+            dv_vcf_constants.DEEP_VARIANT_RESCUED,
+        ],
+    )
+
+  def test_no_rescue_insertion_without_tandem_dup_label(self):
+    """RefCall insertion without IS_TANDEM_DUP -> stays RefCall."""
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=False,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_REF_FILTER])
+
+  def test_no_rescue_germline_with_nad(self):
+    """GERMLINE + IS_TANDEM_DUP + NAD>0 -> stays GERMLINE (true germline)."""
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_GERMLINE,
+        vaf=[0.3],
+        nad=[20, 5],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_GERMLINE])
+
+  def test_no_rescue_low_vaf(self):
+    """RefCall + IS_TANDEM_DUP + low tumor VAF -> stays RefCall."""
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.05],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_REF_FILTER])
+
+  def test_rescue_pass_tandem_dup(self):
+    """PASS + IS_TANDEM_DUP + high VAF + NAD=0 -> RESCUED.
+
+    A variant may initially be called PASS by the model but still benefit
+    from rescue labeling because WriteSomatic in vcf_writer.cc can
+    overwrite heterozygous PASS variants to GERMLINE. Rescuing them
+    ensures they survive that downstream override.
+    """
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_PASS,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_RESCUED])
+
+  def test_rescue_lowqual_tandem_dup(self):
+    """LowQual + IS_TANDEM_DUP + high VAF + NAD=0 -> RESCUED."""
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_QUAL_FILTER,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_RESCUED])
+
+  def test_rescue_nocall_tandem_dup(self):
+    """NoCall + IS_TANDEM_DUP + high VAF + NAD=0 -> RESCUED."""
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_NO_CALL,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_RESCUED])
+
+  def test_rescue_near_tandem_dup_insertion(self):
+    """NoCall + IS_NEAR_TANDEM_DUP + high VAF + NAD=0 -> RESCUED."""
+    # A 12bp insertion (> 10bp) labeled as a near-tandem dup.
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCGATCGA'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_NO_CALL,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_near_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_RESCUED])
+
+  def test_no_rescue_near_tandem_dup_short_insertion(self):
+    """IS_NEAR_TANDEM_DUP but insertion <= 10bp -> no rescue."""
+    # A 7bp insertion is too short for near-tandem dup rescue (needs > 10bp).
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_near_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_REF_FILTER])
+
+  def test_rescue_het_pass_tandem_dup_gets_germline_rescued(self):
+    """Heterozygous PASS + IS_TANDEM_DUP -> GERMLINE;RESCUED.
+
+    WriteSomatic in vcf_writer.cc overrides heterozygous PASS to GERMLINE.
+    Since rescue runs before WriteSomatic, we must proactively detect these
+    would-be-GERMLINE variants and tag them as GERMLINE;RESCUED.
+    """
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_PASS,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=True,
+        genotype=[0, 1],
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(
+        variant.filter,
+        [
+            dv_vcf_constants.DEEP_VARIANT_GERMLINE,
+            dv_vcf_constants.DEEP_VARIANT_RESCUED,
+        ],
+    )
+
+  def test_no_rescue_snp_even_with_tandem_dup_label(self):
+    """SNP with IS_TANDEM_DUP=True -> no rescue (multi-allelic guard)."""
+    # In practice, make_examples labels IS_TANDEM_DUP per-variant, so a
+    # multi-allelic candidate with a tandem dup insertion alt can leak the
+    # label to a sibling SNP alt. The insertion length check in
+    # maybe_rescue_missed_calls correctly blocks rescue for non-insertion alts.
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['T'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    # SNP is not an insertion >= 5bp, so it's not rescued despite the label.
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_REF_FILTER])
+
+  def test_no_rescue_deletion_with_tandem_dup_label(self):
+    """Deletion with IS_TANDEM_DUP=True -> no rescue (multi-allelic guard).
+
+    This tests the case where a multi-allelic candidate had a tandem dup
+    insertion alt that caused IS_TANDEM_DUP to be set, but postprocess_variants
+    resolved to the deletion alt. The insertion length check blocks rescue.
+    """
+    variant = self._make_variant_with_somatic_info(
+        ref='AACACACACACACAC',
+        alts=['A'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.4],
+        nad=[15, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_REF_FILTER])
+
+  def test_no_rescue_short_insertion_with_tandem_dup_label(self):
+    """Short insertion (< 5bp) with IS_TANDEM_DUP=True -> no rescue.
+
+    Guards against multi-allelic candidates where a sibling >= 5bp alt was
+    the actual tandem dup but this 3bp insertion is the resolved alt.
+    """
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_REF_FILTER])
+
+  def test_no_rescue_disabled(self):
+    """rescued_min_vaf=0 -> no rescue even with IS_TANDEM_DUP."""
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.3],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.0)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_REF_FILTER])
+
+  def test_rescue_no_nad_field(self):
+    """RefCall + IS_TANDEM_DUP + high VAF + no NAD field -> RESCUED.
+
+    When NAD is not populated (e.g., tumor-only mode), we should still
+    rescue since there's no evidence of normal alt support.
+    """
+    variant = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.3],
+        nad=None,
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant, min_vaf=0.1)
+    self.assertEqual(variant.filter, [dv_vcf_constants.DEEP_VARIANT_RESCUED])
+
+  def test_rescue_with_higher_threshold(self):
+    """Test with rescued_min_vaf=0.3 (more conservative)."""
+    # VAF=0.25 is below 0.3 threshold, should NOT rescue.
+    variant_low = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.25],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant_low, min_vaf=0.3)
+    self.assertEqual(
+        variant_low.filter, [dv_vcf_constants.DEEP_VARIANT_REF_FILTER]
+    )
+
+    # VAF=0.35 is above 0.3 threshold, should rescue.
+    variant_high = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.35],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    postprocess_variants.maybe_rescue_missed_calls(variant_high, min_vaf=0.3)
+    self.assertEqual(
+        variant_high.filter, [dv_vcf_constants.DEEP_VARIANT_RESCUED]
+    )
+
+  def test_add_rescue_filter_generator(self):
+    """Test that add_rescue_filter works as a generator wrapper."""
+    # First variant: insertion >= 5bp with IS_TANDEM_DUP -> should be rescued.
+    v1 = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCGATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.5],
+        nad=[20, 0],
+        is_tandem_dup=True,
+    )
+    # Second variant: SNP PASS -> unchanged (fails insertion length check).
+    v2 = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['T'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_PASS,
+        vaf=[0.5],
+        nad=[20, 0],
+    )
+    # Third variant: insertion RefCall but no IS_TANDEM_DUP -> not rescued.
+    v3 = self._make_variant_with_somatic_info(
+        ref='A',
+        alts=['ATCG'],
+        filter_field=dv_vcf_constants.DEEP_VARIANT_REF_FILTER,
+        vaf=[0.5],
+        nad=[20, 0],
+        is_tandem_dup=False,
+    )
+    results = list(
+        postprocess_variants.add_rescue_filter(iter([v1, v2, v3]), 0.1)
+    )
+    self.assertLen(results, 3)
+    # First variant (tandem dup insertion RefCall) should be rescued.
+    self.assertEqual(results[0].filter, [dv_vcf_constants.DEEP_VARIANT_RESCUED])
+    # Second variant (SNP PASS) should be unchanged.
+    self.assertEqual(results[1].filter, [dv_vcf_constants.DEEP_VARIANT_PASS])
+    # Third variant (insertion without tandem dup label) stays RefCall.
+    self.assertEqual(
+        results[2].filter, [dv_vcf_constants.DEEP_VARIANT_REF_FILTER]
+    )
 
 
 if __name__ == '__main__':

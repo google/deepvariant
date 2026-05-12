@@ -32,6 +32,7 @@ This file is for very general constants in the code that end up needing to be
 accessed in a variety of places, often in live code as well as throughout the
 code in tests.
 """
+
 import enum
 from deepvariant.protos import deepvariant_pb2
 
@@ -206,3 +207,13 @@ FIRST_VARIANT_IN_PHASE_SET = 'FIRST_VARIANT_IN_BLOCK'
 NULL_PHASE_SET_REGION_ID = -1
 NULL_PHASE_SET_SHARD_ID = -1
 NULL_PHASE_SET = (NULL_PHASE_SET_SHARD_ID, NULL_PHASE_SET_REGION_ID)
+
+# Minimum insertion length (in bp) to be considered a tandem duplication.
+# Insertions shorter than this are typically homopolymer or short tandem repeat
+# (STR) expansions, not the structural tandem duplications we aim to rescue.
+MIN_TANDEM_DUP_INSERT_LENGTH = 5
+
+# Near-tandem duplication thresholds: insertions >10bp with >=70% match to the
+# adjacent reference. These catch imperfect tandem dups with a few mutations.
+MIN_NEAR_TANDEM_DUP_INSERT_LENGTH = 11
+MIN_NEAR_TANDEM_DUP_MATCH_FRACTION = 0.7
