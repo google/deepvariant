@@ -38,22 +38,65 @@ APT_ARGS=(
 "-y"
 )
 
-# (1) Install Nvidia driver
+echo "====================================================================="
+echo "Waiting for background APT processes (unattended-upgrades) to finish..."
+echo "====================================================================="
+while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+    echo "Waiting for other apt-get processes to finish..."
+    sleep 5
+done
 
-# Ensure kernel headers are available
-sudo apt update
-sudo apt install -y linux-headers-"$(uname -r)"
+# (1) Install Nvidia driver NATIVELY via Ubuntu
+echo "====================================================================="
+echo "(1) Installing NVIDIA driver natively..."
+echo "====================================================================="
+sudo apt-get "${APT_ARGS[@]}" update
+sudo DEBIAN_FRONTEND=noninteractive apt-get "${APT_ARGS[@]}" install ubuntu-drivers-common linux-headers-"$(uname -r)"
 
-# Download the installation script
-curl https://raw.githubusercontent.com/GoogleCloudPlatform/compute-gpu-installation/main/linux/install_gpu_driver.py --output install_gpu_driver.py
+# Automatically detect the attached GPU and install the recommended driver
+sudo DEBIAN_FRONTEND=noninteractive ubuntu-drivers autoinstall
 
-# Run the script
-sudo python3 install_gpu_driver.py
+# Explicitly install nvidia-modprobe (GCP VMs often skip this due to minimal image settings)
+sudo DEBIAN_FRONTEND=noninteractive apt-get "${APT_ARGS[@]}" install nvidia-modprobe
+
+
+# (1.5) Hot-load the NVIDIA drivers (Avoids needing a reboot)
+echo "====================================================================="
+echo "(1.5) Hot-loading the NVIDIA drivers into the kernel..."
+echo "====================================================================="
+
+# STOP the daemon that locks older drivers in memory
+sudo systemctl stop nvidia-persistenced || true
+
+# FORCEFULLY UNLOAD any older NVIDIA modules that GCP or Ubuntu pre-loaded
+sudo modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia || true
+sudo modprobe -r nouveau || true
+
+# LOAD the NVIDIA kernel modules we just installed
+sudo modprobe nvidia
+sudo modprobe nvidia_uvm
+sudo modprobe nvidia_drm
+
+# Explicitly create the /dev/nvidia* device nodes that Docker needs
+sudo nvidia-modprobe
+sudo nvidia-modprobe -u -c=0
+
+# Restart the daemon with the new drivers
+sudo systemctl start nvidia-persistenced || true
+
+# Verify driver on the host
+echo "====================================================================="
+echo "Testing nvidia-smi on Host..."
+echo "====================================================================="
+sudo nvidia-smi
+
 
 # (2) Install Docker CE:
-# https://docs.docker.com/engine/install/ubuntu/
+echo "====================================================================="
+echo "(2) Installing Docker CE..."
+echo "====================================================================="
 sudo apt-get "${APT_ARGS[@]}" update
-sudo apt-get "${APT_ARGS[@]}" install ca-certificates curl
+sudo apt-get "${APT_ARGS[@]}" install ca-certificates curl gnupg
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
@@ -62,6 +105,7 @@ echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
 sudo apt-get "${APT_ARGS[@]}" update
 sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a \
   apt-get "${APT_ARGS[@]}" install \
@@ -70,12 +114,15 @@ sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a \
   docker-buildx-plugin \
   docker-compose-plugin
 
+
 # (3) Install nvidia docker:
-# https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
-curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-  && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+echo "====================================================================="
+echo "(3) Installing NVIDIA Container Toolkit..."
+echo "====================================================================="
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor --yes -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list > /dev/null
 
 sudo apt-get "${APT_ARGS[@]}" update
 sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a \
@@ -84,5 +131,13 @@ sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a \
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
-#### Test nvidia-smi with the latest official CUDA image
-sudo docker run --gpus 1 nvidia/cuda:12.3.2-cudnn9-devel-ubuntu22.04 nvidia-smi
+
+# (4) Test
+echo "====================================================================="
+echo "(4) Testing nvidia-smi with the latest official CUDA image..."
+echo "====================================================================="
+sudo docker run --rm --gpus 1 nvidia/cuda:12.3.2-cudnn9-devel-ubuntu22.04 nvidia-smi
+
+echo "====================================================================="
+echo "✅ SUCCESS! Your GPU is fully functional inside Docker."
+echo "====================================================================="
