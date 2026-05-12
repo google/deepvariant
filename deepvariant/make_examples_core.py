@@ -3890,17 +3890,28 @@ def apply_flags_for_calling(flags_obj: flags.FlagValues):
   """
   example_info_filename: Optional[str] = None
 
-  # Only read the example_info.json file in calling mode, if a checkpoint is
-  # provided.
-  if in_calling_mode_from_flag(flags_obj.mode) and flags_obj.checkpoint:
-    try:
-      example_info_filename = get_model_example_info_json_path(
-          flags_obj.checkpoint
-      )
-    except ValueError as e:
-      logging.exception(
-          'Error: Failed to get model.example_info.json path: %s', e
-      )
+  if in_calling_mode_from_flag(flags_obj.mode):
+    if flags_obj.checkpoint:
+      # If --checkpoint is set, resolve example_info.json from the checkpoint
+      # directory, with --checkpoint_json as an optional override.
+      try:
+        example_info_filename = get_model_example_info_json_path(
+            flags_obj.checkpoint, flags_obj.checkpoint_json
+        )
+      except ValueError as e:
+        logging.exception(
+            'Error: Failed to get model.example_info.json path: %s', e
+        )
+    elif flags_obj.checkpoint_json:
+      # If --checkpoint_json is set without --checkpoint, use it directly.
+      example_info_filename = flags_obj.checkpoint_json
+      if not gfile.Exists(example_info_filename):
+        logging.warning(
+            '--checkpoint_json is set to %s but the file does not exist.'
+            ' flags_for_calling will not be applied.',
+            example_info_filename,
+        )
+        example_info_filename = None
 
   logging.info('model.example_info filename: %s', example_info_filename)
 

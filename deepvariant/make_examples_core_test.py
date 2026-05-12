@@ -250,6 +250,36 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     ):
       make_examples_core.apply_flags_for_calling(FLAGS)
 
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_checkpoint_json_without_checkpoint(self):
+    """Tests that --checkpoint_json works standalone without --checkpoint."""
+    example_info_file = self.create_tempfile(
+        file_path='model.example_info.json',
+        content='{"flags_for_calling": {"pileup_image_height": 100}}',
+    )
+    FLAGS.mode = 'calling'
+    FLAGS.checkpoint_json = example_info_file.full_path
+    # checkpoint is not set.
+
+    make_examples_core.apply_flags_for_calling(FLAGS)
+
+    self.assertEqual(FLAGS.pileup_image_height, 100)
+
+  @flagsaver.flagsaver
+  def test_apply_flags_for_calling_checkpoint_json_file_not_found(self):
+    """Tests warning when --checkpoint_json points to a non-existent file."""
+    FLAGS.mode = 'calling'
+    FLAGS.checkpoint_json = '/tmp/nonexistent/model.example_info.json'
+    # checkpoint is not set.
+
+    with self.assertLogs(level='WARNING') as logs:
+      make_examples_core.apply_flags_for_calling(FLAGS)
+
+    self.assertTrue(
+        any('does not exist' in msg for msg in logs.output),
+        f'Expected warning about non-existent file, got: {logs.output}',
+    )
+
   def test_no_example_info_json_path_with_saved_model(self):
     with self.assertRaises(ValueError):
       make_examples_core.get_model_example_info_json_path('')
