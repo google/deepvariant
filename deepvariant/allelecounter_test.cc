@@ -1446,10 +1446,9 @@ TEST_F(AlleleCounterTest, NormalizeCigarDelInsMerged) {
                {"11M", "1D", "4M", "8I", "12M"});
 
   // Most right INS is shifted to the left and become ajacent to the DEL
-  // 1D and 8I should be merged into 1M and 7I. The resulting 7 bases INS is
-  // shifted again to position 4.
+  // 1D and 8I should not be merged.
   std::vector<CigarUnit> expected_cigar =
-      nucleus::MakeCigar({"4M", "7I", "24M"});
+      nucleus::MakeCigar({"11M", "1D", "8I", "16M"});
 
   // Initialize input/output norm_cigar with the original alignment.
   std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
@@ -1562,10 +1561,9 @@ TEST_F(AlleleCounterTest, NormalizeCigarDelInsMergedNoShift) {
                {"11M", "1D", "8I", "16M"});
 
   // Most right INS is shifted to the left and become ajacent to the DEL
-  // 1D and 8I should be merged into 1M and 7I. The resulting 7 bases INS is
-  // shifted again to position 4.
+  // 1D and 8I should not be merged.
   std::vector<CigarUnit> expected_cigar =
-      nucleus::MakeCigar({"4M", "7I", "24M"});
+      nucleus::MakeCigar({"11M", "1D", "8I", "16M"});
 
   // Initialize input/output norm_cigar with the original alignment.
   std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),

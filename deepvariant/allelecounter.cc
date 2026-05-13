@@ -568,17 +568,8 @@ bool MergeOperations(nucleus::genomics::v1::CigarUnit& op1,
               op1.operation() == CigarUnit::INSERT) &&
              (op2.operation() == CigarUnit::DELETE ||
               op2.operation() == CigarUnit::INSERT)) {
-    auto min_indel_len =
-        std::min(op1.operation_length(), op2.operation_length());
-    auto new_indel_len =
-        std::max(op1.operation_length(), op2.operation_length()) -
-        min_indel_len;
-    if (op1.operation_length() > op2.operation_length()) {
-      op2.set_operation(op1.operation());
-    }
-    op1.set_operation(CigarUnit::ALIGNMENT_MATCH);
-    op1.set_operation_length(min_indel_len);
-    op2.set_operation_length(new_indel_len);
+    // Do not merge indels of different types since it is lossy in general.
+    return false;
   } else {
     return false;
   }
@@ -679,7 +670,14 @@ int ShiftOperation(int shift,
     post_ref.set_operation(CigarUnit::ALIGNMENT_MATCH);
     norm_cigar.insert(it + 1, post_ref);
   } else {
-    post_op->set_operation_length(post_op->operation_length() + shift);
+    if (IsOperationMatch(*post_op)) {
+      post_op->set_operation_length(post_op->operation_length() + shift);
+    } else {
+      nucleus::genomics::v1::CigarUnit post_ref;
+      post_ref.set_operation_length(shift);
+      post_ref.set_operation(CigarUnit::ALIGNMENT_MATCH);
+      norm_cigar.insert(it + 1, post_ref);
+    }
   }
   return read_alignment_shift;
 }
@@ -741,7 +739,8 @@ bool AlleleCounter::CanDelBeShifted(
   if (read_offset <= 0) {
     return false;
   }
-  if (interval_offset + op_len - 1 >= ref_bases_.size()) {
+  if (interval_offset + op_len - 1 < 0 ||
+      interval_offset + op_len - 1 >= ref_bases_.size()) {
     return false;
   }
 
@@ -758,10 +757,11 @@ bool AlleleCounter::CanInsBeShifted(
   if (cigar_elt->operation() != CigarUnit::INSERT) {
     return false;
   }
-  if (interval_offset <= 0) {
+  if (interval_offset <= 0 || interval_offset - 1 >= ref_bases_.size()) {
     return false;
   }
-  if (read_offset + op_len - 1 >= read_seq.size()) {
+  if (read_offset + op_len - 1 < 0 ||
+      read_offset + op_len - 1 >= read_seq.size()) {
     return false;
   }
 
@@ -788,7 +788,7 @@ bool AlleleCounter::NormalizeCigar(
   // which can be shifted as well.
   int iteration = 0;  // while loop will run up to 100,000,000 times to be safe
   // from possible infinite loop.
-  while (iteration++ < 100000000) {
+  while (iteration++ < 100000) {
     int read_offset = 0;
     int cur_interval_offset = interval_offset + read_shift;
     // Iterate cigar operations and shift indels if possible
@@ -834,13 +834,18 @@ bool AlleleCounter::NormalizeCigar(
     if (is_merged) {
       is_modified = true;
     }
+    if (norm_cigar.empty()) {
+      break;
+    }
     // Only break the loop if not shift was made and no merging was done.
     if (!is_shifted && !is_merged) {
       break;
     }
   }  // while (iteration < 10)
   // Call shift to deal with an indel at the beginning of cigar.
-  read_shift += HandleHeadingIndel(norm_cigar.begin(), norm_cigar);
+  if (!norm_cigar.empty()) {
+    read_shift += HandleHeadingIndel(norm_cigar.begin(), norm_cigar);
+  }
   return is_modified;
 }
 
