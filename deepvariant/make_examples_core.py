@@ -3980,12 +3980,10 @@ def apply_flags_for_calling(flags_obj: flags.FlagValues):
       # If --checkpoint_json is set without --checkpoint, use it directly.
       example_info_filename = flags_obj.checkpoint_json
       if not gfile.Exists(example_info_filename):
-        logging.warning(
-            '--checkpoint_json is set to %s but the file does not exist.'
-            ' flags_for_calling will not be applied.',
-            example_info_filename,
+        raise ValueError(
+            f'--checkpoint_json is set to {example_info_filename} but the'
+            ' file does not exist. Please check the path.'
         )
-        example_info_filename = None
 
   logging.info('model.example_info filename: %s', example_info_filename)
 

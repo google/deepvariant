@@ -268,18 +268,13 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
 
   @flagsaver.flagsaver
   def test_apply_flags_for_calling_checkpoint_json_file_not_found(self):
-    """Tests warning when --checkpoint_json points to a non-existent file."""
+    """Tests error when --checkpoint_json points to a non-existent file."""
     FLAGS.mode = 'calling'
     FLAGS.checkpoint_json = '/tmp/nonexistent/model.example_info.json'
     # checkpoint is not set.
 
-    with self.assertLogs(level='WARNING') as logs:
+    with self.assertRaisesRegex(ValueError, 'does not exist'):
       make_examples_core.apply_flags_for_calling(FLAGS)
-
-    self.assertTrue(
-        any('does not exist' in msg for msg in logs.output),
-        f'Expected warning about non-existent file, got: {logs.output}',
-    )
 
   def test_no_example_info_json_path_with_saved_model(self):
     with self.assertRaises(ValueError):
