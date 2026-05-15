@@ -58,6 +58,7 @@
 #include "deepvariant/channels/inter_homopolymer_insertion_quality_channel.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "tensorflow/core/platform/test.h"
+#include "absl/types/span.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
 
@@ -73,9 +74,8 @@ using ::nucleus::genomics::v1::Read;
 // ---------------------------------------------------------------------------
 
 // Creates a Read with TP tag set as a repeated int array and custom qualities.
-Read MakeReadWithTP(const std::string& seq,
-                    const std::vector<int>& tp_values,
-                    const std::vector<int>& base_qualities) {
+Read MakeReadWithTP(const std::string& seq, absl::Span<const int> tp_values,
+                    absl::Span<const int> base_qualities) {
   Read read = nucleus::MakeRead("chr1", 100, seq,
                                 {std::to_string(seq.size()) + "M"});
   for (int i = 0; i < base_qualities.size(); i++) {
