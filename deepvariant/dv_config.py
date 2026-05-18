@@ -34,6 +34,8 @@ import ml_collections
 # Test Config #
 # =============#
 
+# pylint: disable=line-too-long
+
 
 def get_test_config(config: ml_collections.ConfigDict):
   """Config parameters for test training."""

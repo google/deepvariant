@@ -31,7 +31,7 @@
 import copy
 import itertools
 import json
-import multiprocessing
+import multiprocessing  # pylint: disable=unused-import
 import os
 import time
 from typing import Any, Sequence
