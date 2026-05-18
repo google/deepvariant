@@ -45,6 +45,7 @@ enum class ExampleFormat {
   kAuto = 0,  // Autodetect format by file extension.
   kTfRecord = 1,
   kBagz = 2,
+  kRawFd3 = 3,
 };
 
 // Local writer for records, supports only a single file.

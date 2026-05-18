@@ -30,11 +30,14 @@
  */
 #include "third_party/nucleus/io/example_writer.h"
 #include <filesystem>
+#include <fcntl.h>
+#include <unistd.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
+
 #include "absl/base/optimization.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -43,8 +46,8 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
-#include "re2/re2.h"
 #include "tensorflow/core/lib/io/record_writer.h"
+#include "re2/re2.h"
 
 
 namespace nucleus {
@@ -57,7 +60,7 @@ ExampleFormat AutodetectFormat(absl::string_view path,
   // Replace shard strings and .gz extension.
   RE2::GlobalReplace(&path_str, R"(\@[0-9]+|-\*?\d*-of-\*?\d*|\.gz)", "");
   RE2::PartialMatch(path_str,
-                    R"(\.(bagz|tfrecords?)$)",  // extension
+                    R"(\.(bagz|tfrecords?|fd3)$)",  // extension
                     &extension);
   if (extension == "tfrecord" || extension == "tfrecords") {
     return ExampleFormat::kTfRecord;
@@ -126,7 +129,6 @@ class ExampleWriter::TfRecordImpl : public ExampleWriter::Impl {
   std::unique_ptr<tensorflow::WritableFile> tf_file_;
 };
 
-
 ExampleWriter::ExampleWriter(absl::string_view path,
                              ExampleFormat format) {
   std::filesystem::path p = std::filesystem::path(path);
@@ -146,6 +148,8 @@ ExampleWriter::ExampleWriter(absl::string_view path,
       impl_ = std::make_unique<TfRecordImpl>(path);
       break;
     case ExampleFormat::kBagz:
+      break;
+    case ExampleFormat::kRawFd3:
       break;
   }
   status_ = impl_->status();

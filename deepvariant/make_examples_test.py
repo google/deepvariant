@@ -1504,6 +1504,26 @@ class MainTest(parameterized.TestCase):
     )
     mock_exit.assert_called_once_with(errno.ENOENT)
 
+  @flagsaver.flagsaver
+  def test_make_examples_to_fd3(self):
+    region = ranges.parse_literal('chr20:10,000,000-10,004,000')
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.examples = test_utils.test_tmpfile('examples.tfrecord.fd3')
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.partition_size = 1000
+    FLAGS.mode = 'calling'
+    FLAGS.sample_name = 'sample'
+
+    with (
+        mock.patch.object(logging, 'error') as _,
+        mock.patch.object(sys, 'exit') as mock_exit,
+    ):
+      make_examples.main(['make_examples.py'])
+    self.assertFalse(gfile.Exists(FLAGS.examples))
+    mock_exit.assert_not_called()
+
 
 if __name__ == '__main__':
   absltest.main()

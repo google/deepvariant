@@ -1281,7 +1281,7 @@ class OutputsWriter:
           '',
           os.path.basename(options.examples_filename.lower()),
       )
-      if not re.fullmatch(r'.*(bagz|tfrecords?)$', clean_basename):
+      if not clean_basename.endswith(('bagz', 'tfrecord', 'tfrecords', 'fd3')):
         raise ValueError(
             'Unsupported file extension: %s.\n'
             % os.path.basename(options.examples_filename)
@@ -3551,6 +3551,11 @@ def processing_regions_from_options(
         'happens if you use "chr20" for a BAM where contig names '
         'don\'t have "chr"s (or vice versa).'
     )
+  # Enable round-robin sampling only when writing to standard tfrecord files.
+  round_robin_sampling = (
+      'tfrecord' in options.examples_filename.lower()
+      and not options.examples_filename.endswith('.fd3')
+  )
   regions = regions_to_process(
       contigs=contigs,
       partition_size=options.allele_counter_options.partition_size,
@@ -3558,7 +3563,7 @@ def processing_regions_from_options(
       task_id=options.task_id,
       num_shards=options.num_shards,
       candidates=candidate_positions,
-      round_robin_sampling='tfrecord' in options.examples_filename.lower(),
+      round_robin_sampling=round_robin_sampling,
   )
 
   region_list = list(regions)

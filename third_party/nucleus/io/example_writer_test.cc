@@ -29,6 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "third_party/nucleus/io/example_writer.h"
+#include <unistd.h>
+#include <cstdint>
 #include <filesystem>
 #include <string>
 
