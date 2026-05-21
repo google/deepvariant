@@ -32,6 +32,7 @@
 
 #include "third_party/nucleus/io/reader_base.h"
 
+#include "absl/synchronization/mutex.h"
 #include "third_party/nucleus/core/status.h"
 
 namespace nucleus {

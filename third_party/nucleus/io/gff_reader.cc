@@ -33,6 +33,7 @@
 #include "third_party/nucleus/io/gff_reader.h"
 
 #include <limits>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -196,7 +197,7 @@ namespace {
   int64 end = end1;
 
   // Parse score.
-  absl::optional<float> score;
+  std::optional<float> score;
   if (fields[5] != kGffMissingField) {
     float value;
     if (!absl::SimpleAtof(fields[5], &value)) {
@@ -217,7 +218,7 @@ namespace {
     return ::nucleus::Unknown("Invalid GFF record `strand` encoding");
   }
   // Parse phase.
-  absl::optional<int> phase;
+  std::optional<int> phase;
   const string& phase_field = fields[7];
   if (phase_field != kGffMissingField) {
     int value;
