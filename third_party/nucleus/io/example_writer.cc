@@ -32,6 +32,9 @@
 #include <filesystem>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include <cerrno>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
