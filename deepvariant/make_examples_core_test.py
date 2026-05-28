@@ -1447,7 +1447,9 @@ class RegionProcessorTest(parameterized.TestCase):
         sam_readers=None,
         reads_filenames=main_sample.options.reads_filenames,
     )
-    mock_rr.assert_called_once_with(reads=[], region=self.region)
+    mock_rr.assert_called_once_with(
+        reads=[], region=self.region, sample_role='main_sample'
+    )
     mock_cir.assert_called_once_with(self.region, None)
 
   def test_on_demand_initialization_not_called_if_initialized(self):
@@ -1472,7 +1474,9 @@ class RegionProcessorTest(parameterized.TestCase):
         sam_readers=None,
         reads_filenames=main_sample.options.reads_filenames,
     )
-    mock_rr.assert_called_once_with(reads=[], region=self.region)
+    mock_rr.assert_called_once_with(
+        reads=[], region=self.region, sample_role='main_sample'
+    )
     mock_cir.assert_called_once_with(self.region, None)
 
   def test_process_calls_no_candidates(self):
@@ -1502,7 +1506,9 @@ class RegionProcessorTest(parameterized.TestCase):
         sam_readers=None,
         reads_filenames=main_sample.options.reads_filenames,
     )
-    mock_rr.assert_called_once_with(reads=[], region=self.region)
+    mock_rr.assert_called_once_with(
+        reads=[], region=self.region, sample_role='main_sample'
+    )
     mock_cir.assert_called_once_with(self.region, None)
 
   @parameterized.parameters([
@@ -1540,7 +1546,9 @@ class RegionProcessorTest(parameterized.TestCase):
         sam_readers=None,
         reads_filenames=main_sample.options.reads_filenames,
     )
-    mock_rr.assert_called_once_with(reads=[mock_read], region=self.region)
+    mock_rr.assert_called_once_with(
+        reads=[mock_read], region=self.region, sample_role='main_sample'
+    )
     mock_cir.assert_called_once_with(self.region, None)
 
   @parameterized.parameters([
@@ -1611,7 +1619,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.assertEqual(phased_reads_count, 2)
     main_sample.sam_readers[0].query.assert_called_once_with(self.region)
     self.processor.realigner.realign_reads.assert_called_once_with(
-        [], self.region
+        [], self.region, 'main_sample'
     )
 
   def test_call_small_model_examples(self):

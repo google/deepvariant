@@ -480,7 +480,7 @@ class RealignerTest(parameterized.TestCase):
           epath.Path(
               os.path.join(
                   region_subdir,
-                  self.reads_realigner.diagnostic_logger.graph_filename,
+                  f'main_{self.reads_realigner.diagnostic_logger.graph_filename}',
               )
           ).exists()
       )
@@ -488,7 +488,7 @@ class RealignerTest(parameterized.TestCase):
       reads_file = os.path.join(
           dx_dir,
           region_str,
-          self.reads_realigner.diagnostic_logger.realigned_reads_filename,
+          f'main_{self.reads_realigner.diagnostic_logger.realigned_reads_filename}',
       )
 
       # if emit_reads=False then file should not exist and vice versa.

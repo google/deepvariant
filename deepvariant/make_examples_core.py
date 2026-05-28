@@ -2560,7 +2560,10 @@ class RegionProcessor:
         raise err
 
   def realign_reads(
-      self, reads: List[reads_pb2.Read], region: range_pb2.Range
+      self,
+      reads: List[reads_pb2.Read],
+      region: range_pb2.Range,
+      sample_role: str = 'main',
   ) -> List[reads_pb2.Read]:
     """Realign reads overlapping the region.
 
@@ -2568,6 +2571,8 @@ class RegionProcessor:
       reads: list of reads.
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to realign reads.
+      sample_role: A string representing the sample role (e.g. 'main', 'joint')
+        used for diagnostic outputs.
 
     Returns:
       genomics.deepvariant.core.genomics.Read: realigned reads
@@ -2582,7 +2587,7 @@ class RegionProcessor:
           'max_read_length_to_realign=0. Realigning reads of all lengths.',
           1,
       )
-      _, reads = self.realigner.realign_reads(reads, region)
+      _, reads = self.realigner.realign_reads(reads, region, sample_role)
       return reads
 
     long_reads = [
@@ -2595,7 +2600,9 @@ class RegionProcessor:
         for read in reads
         if len(read.aligned_sequence) <= max_read_length_to_realign
     ]
-    _, realigned_short_reads = self.realigner.realign_reads(short_reads, region)
+    _, realigned_short_reads = self.realigner.realign_reads(
+        short_reads, region, sample_role
+    )
     # Long reads will be listed before short reads when both are present.
     # Examples with only short or only long reads will be unaffected.
     return long_reads + realigned_short_reads
@@ -2616,8 +2623,10 @@ class RegionProcessor:
       [genomics.deepvariant.core.genomics.Read], realigned reads per sample
     """
     return [
-        self.realign_reads(reads_per_sample, region)
-        for reads_per_sample in sample_reads_list
+        self.realign_reads(
+            reads_per_sample, region, self.samples[i].options.role
+        )
+        for i, reads_per_sample in enumerate(sample_reads_list)
     ]
 
   def realign_reads_joint_multisample(
@@ -2645,7 +2654,7 @@ class RegionProcessor:
     else:
       reads = sample_reads_list[0]
 
-    realigned_reads = self.realign_reads(reads, region)
+    realigned_reads = self.realign_reads(reads, region, 'joint')
 
     sample_realigned_reads_list = [[] for _ in sample_reads_list]
 
@@ -2701,8 +2710,6 @@ class RegionProcessor:
 
   def _file_for_region_and_sample(self, region, sample_name, basename):
     """Returns the path to a file in a region-specific subdirectory."""
-    # TODO: This logic currently only works for single sample.
-    # Once we extend to multi-sample, we can remove this assert.
     return self._root_join(
         os.path.join(ranges.to_literal(region), f'{sample_name}_{basename}')
     )

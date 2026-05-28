@@ -475,19 +475,23 @@ class DiagnosticLogger(object):
     assert self._csv_writer is not None
     self._csv_writer.writerow(args)
 
-  def _file_for_region(self, region, basename):
+  def _file_for_region(self, region, sample_name, basename):
     """Returns the path to a file in a region-specific subdirectory."""
     assert self.enabled, 'only callable when diagnostics are on'
-    return self._root_join(os.path.join(ranges.to_literal(region), basename))
+    return self._root_join(
+        os.path.join(ranges.to_literal(region), f'{sample_name}_{basename}')
+    )
 
-  def log_realigned_reads(self, region, reads, shared_header=None):
+  def log_realigned_reads(self, region, reads, sample_role, shared_header=None):
     """Logs, if enabled, the realigned reads for region."""
     if (
         self.enabled
         and self.config.emit_realigned_reads
         and shared_header is not None
     ):
-      path = self._file_for_region(region, self.realigned_reads_filename)
+      path = self._file_for_region(
+          region, sample_role, self.realigned_reads_filename
+      )
       with sam.SamWriter(path, header=shared_header) as writer:
         # For realigned reads, sorting by just looking at starting position is
         # enough.
@@ -497,12 +501,19 @@ class DiagnosticLogger(object):
           writer.write(read)
 
   def log_graph_metrics(
-      self, region, graph, candidate_haplotypes, graph_building_time
+      self,
+      region,
+      graph,
+      candidate_haplotypes,
+      graph_building_time,
+      sample_role,
   ):
     """Logs, if enabled, graph construction information for region."""
     if self.enabled:
       if graph:
-        dest_file = self._file_for_region(region, self.graph_filename)
+        dest_file = self._file_for_region(
+            region, sample_role, self.graph_filename
+        )
         with epath.Path(dest_file).open('w') as f:
           f.write(graph.graphviz())
       self._write_csv_line(
@@ -703,7 +714,7 @@ class Realigner(object):
     self.diagnostic_logger = DiagnosticLogger(self.config.diagnostics)
     self.shared_header = shared_header
 
-  def call_debruijn_graph(self, windows, reads):
+  def call_debruijn_graph(self, windows, reads, sample_role):
     """Helper function to call debruijn_graph module."""
     windows_haplotypes = []
     # Build and process de-Bruijn graph for each window.
@@ -732,7 +743,11 @@ class Realigner(object):
         windows_haplotypes.append(candidate_haplotypes_info)
 
       self.diagnostic_logger.log_graph_metrics(
-          window, graph, candidate_haplotypes, graph_building_time
+          window,
+          graph,
+          candidate_haplotypes,
+          graph_building_time,
+          sample_role,
       )
 
     return windows_haplotypes
@@ -788,7 +803,7 @@ class Realigner(object):
     ])
     return fast_pass_realigner.realign_reads(assembled_region.reads)
 
-  def realign_reads(self, reads, region):
+  def realign_reads(self, reads, region, sample_role='main'):
     """Run realigner.
 
     This is the main function that
@@ -808,6 +823,8 @@ class Realigner(object):
         to realign.
       region: A `third_party.nucleus.protos.Range` proto. Specifies the region
         on the genome we should process.
+      sample_role: A string representing the sample role (e.g. 'main', 'joint')
+        used for diagnostic outputs.
 
     Returns:
       [realigner_pb2.CandidateHaplotypes]. Information on the list of candidate
@@ -830,7 +847,9 @@ class Realigner(object):
     )
 
     # Assemble each of those regions.
-    candidate_haplotypes = self.call_debruijn_graph(candidate_windows, reads)
+    candidate_haplotypes = self.call_debruijn_graph(
+        candidate_windows, reads, sample_role
+    )
     # Create our simple container to store candidate / read mappings.
     assembled_regions = [AssemblyRegion(ch) for ch in candidate_haplotypes]
 
@@ -851,7 +870,7 @@ class Realigner(object):
       realigned_reads.extend(realigned_reads_copy)
 
     self.diagnostic_logger.log_realigned_reads(
-        region, realigned_reads, self.shared_header
+        region, realigned_reads, sample_role, self.shared_header
     )
 
     return candidate_haplotypes, realigned_reads
