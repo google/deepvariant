@@ -81,6 +81,7 @@ struct AlleleInfo {
   AlleleType type;
   int64_t position = 0;
   std::string bases = "";
+  std::string normalized_allele = "";
   int phase = 0;
   std::vector<ReadSupportInfo> read_support;
   bool is_first_in_block = false;
@@ -166,6 +167,11 @@ class DirectPhasing {
                                                      // and phase 2.
   };
 
+  struct CandidateInfo {
+    std::vector<std::string> alleles;  // alt alleles of the candidate.
+    int ref_support;  // number of reads supporting the reference allele.
+  };
+
   // Function returns read phases for each read in the input reads preserving
   // the order. Python wrapper will be used to add phases to read protos in
   // order to avoid copying gigabytes of memory.
@@ -173,7 +179,34 @@ class DirectPhasing {
       absl::Span<const DeepVariantCall> candidates,
       absl::Span<
           const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
-          reads);
+          reads,
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads_of_interest = absl::Span<const nucleus::ConstProtoPtr<
+              const nucleus::genomics::v1::Read>>());
+
+  nucleus::StatusOr<std::vector<int>> PhaseFromCandidates(
+      absl::Span<const DeepVariantCall> candidates,
+      absl::Span<const DeepVariantCall> candidates_of_interest,
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads,
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads_of_interest);
+
+  std::vector<int> PhaseFromCandidatesPython(
+      const std::vector<DeepVariantCall>& candidates,
+      const std::vector<DeepVariantCall>& candidates_of_interest,
+      const std::vector<
+          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads,
+      const std::vector<
+          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>&
+          reads_of_interest) {
+    return PhaseFromCandidates(candidates, candidates_of_interest, reads,
+                               reads_of_interest)
+        .ValueOrDie();
+  }
 
   // PhaseReads wrapper for Python clif interface.
   // TODO In other similar wrappers ConstProtoPtr is unwrapped in the
@@ -208,14 +241,18 @@ class DirectPhasing {
       absl::Span<const DeepVariantCall> candidates,
       absl::Span<
           const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
-          reads);
+          reads,
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads_of_interest = absl::Span<const nucleus::ConstProtoPtr<
+              const nucleus::genomics::v1::Read>>());
 
   // Add nodes to the graph for each allele of the candidate. Fill auxiliary
   // data structures.
-  void AddCandidate(const DeepVariantCall& candidate);
+  bool AddCandidate(const DeepVariantCall& candidate);
 
   // Methylation-aware phasing for REF sites.
-  void AddMethylatedRefCandidate(const DeepVariantCall& candidate);
+  bool AddMethylatedRefCandidate(const DeepVariantCall& candidate);
 
   // Initializes all members of the class.
   void Clear();
@@ -223,10 +260,15 @@ class DirectPhasing {
   void InitializeReadMaps(
       absl::Span<
           const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
-          reads);
+          reads,
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads_second_sample = absl::Span<const nucleus::ConstProtoPtr<
+              const nucleus::genomics::v1::Read>>());
 
   Vertex AddVertex(
       int64_t position, AlleleType allele_type, absl::string_view bases,
+      absl::string_view normalized_allele,
       const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& reads);
 
   // Add edge to the graph using the provided weight.
@@ -285,6 +327,17 @@ class DirectPhasing {
 
   bool HasAtLeastOneIncomingEdge(const std::vector<Vertex>& vertecies) const;
 
+  std::string NormalizeAllele(absl::string_view allele,
+                              absl::string_view ref_bases) const;
+
+  bool AlleleFilter(std::string_view allele, int position) const {
+    return allele_filter_fn_(allele, position);
+  }
+
+  bool RefAlleleFilter(int position) const {
+    return ref_allele_filter_fn_(position);
+  }
+
  private:
   DirectPhasingOptions options_;
   BoostGraph graph_;
@@ -311,6 +364,16 @@ class DirectPhasing {
   // Map read name to read id.
   absl::flat_hash_map<std::string, ReadIndex> read_to_index_;
   absl::flat_hash_map<ReadIndex, std::string> index_to_read_name_;
+
+  // Allele filter function. Default is to keep all alleles.
+  std::function<bool(std::string_view, int)> allele_filter_fn_ =
+      [](std::string_view allele, int) { return true; };
+
+  // Ref allele filter function.
+  std::function<bool(int)> ref_allele_filter_fn_ = [](int) { return true; };
+
+  // Set to true in PhaseFromCandidates to allow indels during guided phasing.
+  bool allow_indels_ = false;
 
   // Graph Vizualization
   VertexIndexMap IndexMap() const;

@@ -60,6 +60,9 @@ PYBIND11_MODULE(direct_phasing, m) {
       .def(py::init<const DirectPhasingOptions&>(), py::arg("options"))
       .def("graphviz", &DirectPhasing::GraphViz)
       .def("get_phased_variants", &DirectPhasing::GetPhasedVariants)
+      .def("phase_from_candidates", &DirectPhasing::PhaseFromCandidatesPython,
+          py::arg("candidates"), py::arg("candidates_of_interest"),
+          py::arg("reads"), py::arg("reads_of_interest"))
       .def("phase", &DirectPhasing::PhaseReadsPython, py::arg("candidates"),
-           py::arg("reads"));
+          py::arg("reads"));
 }

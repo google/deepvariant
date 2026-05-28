@@ -75,12 +75,67 @@ std::string ReadKey(const nucleus::genomics::v1::Read& read) {
   return absl::StrCat(read.fragment_name(), "/", read.read_number());
 }
 
+nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseFromCandidates(
+      absl::Span<const DeepVariantCall> candidates,
+      absl::Span<const DeepVariantCall> candidates_of_interest,
+    absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+        reads,
+    absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+        reads_of_interest) {
+  Clear();
+  absl::flat_hash_map<int, CandidateInfo>
+      candidates_of_interest_by_position;
+  for (const auto& candidate : candidates_of_interest) {
+    candidates_of_interest_by_position[candidate.variant().start()]
+        .ref_support =
+        candidate.ref_support_ext().read_infos().size();
+    for (const auto& allele : candidate.variant().alternate_bases()) {
+      std::string real_allele =
+          NormalizeAllele(allele, candidate.variant().reference_bases());
+      candidates_of_interest_by_position[candidate.variant().start()]
+          .alleles.push_back(real_allele);
+    }
+  }
+
+  allele_filter_fn_ = [candidates_of_interest_by_position](
+                            absl::string_view allele, int position) -> bool {
+    auto it = candidates_of_interest_by_position.find(position);
+    if (it == candidates_of_interest_by_position.end()) {
+      return false;
+    }
+    for (const auto& allele_ : it->second.alleles) {
+      if (allele == allele_) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  ref_allele_filter_fn_ = [candidates_of_interest_by_position](
+                                        int position) -> bool {
+    auto it = candidates_of_interest_by_position.find(position);
+    if (it == candidates_of_interest_by_position.end()) {
+      return true;
+    }
+    if (it->second.ref_support < kMinRefAlleleDepth) {
+      return false;
+    }
+    return true;
+  };
+  allow_indels_ = true;
+  auto result = PhaseReads(candidates, reads, reads_of_interest);
+  allow_indels_ = false;
+  return result;
+}
+
 nucleus::StatusOr<std::vector<int>> DirectPhasing::PhaseReads(
     absl::Span<const DeepVariantCall> candidates,
     absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
-        reads) {
+        reads,
+    absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+        reads_of_interest) {
   // Build graph from candidates.
-  Build(candidates, reads);
+  Build(candidates, reads, reads_of_interest);
   // Iterate positions in order. Calculate the score for each combination of
   // allele pairs.
   for (int i = 0; i < positions_.size(); i++) {
@@ -461,9 +516,16 @@ std::vector<int> DirectPhasing::AssignPhasesToReads(
 
 void DirectPhasing::InitializeReadMaps(
     absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
-        reads) {
+        reads,
+    absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+        reads_of_interest) {
   size_t index = 0;
   for (const auto& read : reads) {
+    read_to_index_[ReadKey(*read.p_)] = index;
+    index_to_read_name_[index] = read.p_->fragment_name();
+    index++;
+  }
+  for (const auto& read : reads_of_interest) {
     read_to_index_[ReadKey(*read.p_)] = index;
     index_to_read_name_[index] = read.p_->fragment_name();
     index++;
@@ -592,6 +654,25 @@ void DirectPhasing::UpdateStartingScore(const std::vector<Vertex>& verts) {
   }
 }
 
+std::string DirectPhasing::NormalizeAllele(absl::string_view allele,
+                                           absl::string_view ref_bases) const {
+  // Allele bases between samples may be represented differently. For
+  // example, deletion may be represented as "AAAA->AA" in one sample and
+  // "AAA->A" in another. In that case we need to represent the allele in
+  // a consistent way. We also need to be able to distinguish between
+  // insertions and deletions. We do this by prepending the allele with "+"
+  // or "-" sign.
+  std::string normalized = std::string(allele);
+  if (allele.length() > ref_bases.length()) {  // INS
+    normalized = "+";
+    normalized.append(allele.substr(ref_bases.length()));
+  } else if (allele.length() < ref_bases.length()) {  // DEL
+    normalized = "-";
+    normalized.append(ref_bases.substr(allele.length()));
+  }
+  return normalized;
+}
+
 std::vector<ReadSupportInfo> DirectPhasing::ReadSupportFromProto(
     const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& read_support)
     const {
@@ -610,11 +691,13 @@ std::vector<ReadSupportInfo> DirectPhasing::ReadSupportFromProto(
 
 DirectPhasing::Vertex DirectPhasing::AddVertex(
     int64_t position, AlleleType allele_type, absl::string_view bases,
+    absl::string_view normalized_allele,
     const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& reads) {
   Vertex v = boost::add_vertex(
       VertexInfo{AlleleInfo{.type = allele_type,
                             .position = position,
                             .bases = std::string(bases),
+                            .normalized_allele = std::string(normalized_allele),
                             .read_support = ReadSupportFromProto(reads)}},
       graph_);
   return v;
@@ -662,7 +745,7 @@ void DirectPhasing::UpdateReadToAllelesMap(const Vertex& v) {
   }
 }
 
-void DirectPhasing::AddMethylatedRefCandidate(
+bool DirectPhasing::AddMethylatedRefCandidate(
     const DeepVariantCall& candidate) {
   // Retrieve REF supporting reads.
   const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& ref_reads =
@@ -684,7 +767,7 @@ void DirectPhasing::AddMethylatedRefCandidate(
   // Keep only potentially heterozygous methylation sites.
   if (ref_methylation <= kMinMethylationThreshold ||
       ref_methylation >= kMaxMethylationThreshold) {
-    return;
+    return false;
   }
 
   // Separate methylated and unmethylated REF reads.
@@ -716,21 +799,25 @@ void DirectPhasing::AddMethylatedRefCandidate(
   // Add methylated REF reads.
   // Represent methylation state as "M" (methylated) and "U" (unmethylated),
   // analogous to how alleles are encoded.
+  bool candidate_added = false;
   if (!methyl_reads.empty()) {
     UpdateReadToAllelesMap(AddVertex(candidate.variant().start(),
-                                     AlleleType::REFERENCE, "M",
+                                     AlleleType::REFERENCE, "M", "M",
                                      methyl_reads));
+    candidate_added = true;
   }
 
   // Add unmethylated REF reads.
   if (!unmethyl_reads.empty()) {
     UpdateReadToAllelesMap(AddVertex(candidate.variant().start(),
-                                     AlleleType::REFERENCE, "U",
+                                     AlleleType::REFERENCE, "U", "U",
                                      unmethyl_reads));
+    candidate_added = true;
   }
+  return candidate_added;
 }
 
-void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
+bool DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
   // Rreference sites are included as candidates in
   // CallVariantPosition() only if they have methylated reads.
   // This check for reference site (i.e., the alternate
@@ -740,17 +827,7 @@ void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
                      candidate.variant().alternate_bases(0) == ".";
 
   if (is_ref_site) {
-    AddMethylatedRefCandidate(candidate);
-    return;
-  }
-
-  // Add REF if it has read support.
-  const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& ref_reads =
-      candidate.ref_support_ext().read_infos();
-  // Add REF allele.
-  if (ref_reads.size() >= kMinRefAlleleDepth) {
-    UpdateReadToAllelesMap(AddVertex(candidate.variant().start(),
-                                     AlleleType::REFERENCE, kRef, ref_reads));
+    return AddMethylatedRefCandidate(candidate);
   }
 
   // Add alt alleles.
@@ -758,6 +835,7 @@ void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
   //     std::pair<std::string, DeepVariantCall_SupportingReadsExt>;
   struct AlleleSupportItem {
     std::string allele;
+    std::string real_allele;
     DeepVariantCall_SupportingReadsExt read_support;
     bool operator < (const AlleleSupportItem& other) const {
       return allele < other.allele;
@@ -769,21 +847,44 @@ void DirectPhasing::AddCandidate(const DeepVariantCall& candidate) {
   // is random, but phasing is still correct.
   absl::btree_set<AlleleSupportItem> alleles;
   for (const auto& [allele, read_support] : candidate.allele_support_ext()) {
-    if (allele != kUncalledAllele) {
-      alleles.insert(AlleleSupportItem({allele, read_support}));
+    std::string real_allele =
+        NormalizeAllele(allele, candidate.variant().reference_bases());
+    if (allele != kUncalledAllele &&
+        AlleleFilter(real_allele, candidate.variant().start())) {
+      alleles.insert(AlleleSupportItem({allele, real_allele, read_support}));
     }
   }
 
-  for (const auto& allele_support : alleles) {
-    UpdateReadToAllelesMap(AddVertex(
-        candidate.variant().start(),
-        AlleleTypeFromCandidate(allele_support.allele, candidate),
-        allele_support.allele, allele_support.read_support.read_infos()));
+  const google::protobuf::RepeatedPtrField<DeepVariantCall_ReadSupport>& ref_reads =
+      candidate.ref_support_ext().read_infos();
+
+  // Node is created if there are multiple alleles or one allele and enough
+  // ref support for ref allele.
+  if (alleles.size() > 1 ||
+      (alleles.size() == 1 && ref_reads.size() >= kMinRefAlleleDepth)) {
+    // Add REF if it has read support.
+    if (RefAlleleFilter(candidate.variant().start()) &&
+        ref_reads.size() >= kMinRefAlleleDepth) {
+      UpdateReadToAllelesMap(AddVertex(candidate.variant().start(),
+                                      AlleleType::REFERENCE, kRef, kRef,
+                                      ref_reads));
+    }
+
+    for (const auto& allele_support : alleles) {
+      UpdateReadToAllelesMap(AddVertex(
+          candidate.variant().start(),
+          AlleleTypeFromCandidate(allele_support.allele, candidate),
+          allele_support.allele, allele_support.real_allele,
+          allele_support.read_support.read_infos()));
+    }
+    return true;
   }
+  return false;
 }
 
 // Filters out all homozygous candidates and candidates containing indels.
-bool CandidateFilter(const DeepVariantCall& candidate, uint32_t* indel_end)  {
+bool CandidateFilter(const DeepVariantCall& candidate, uint32_t* indel_end,
+                     bool allow_indels) {
   // If there is only one allele and not enough support for the ref then
   // empirically we can consider this candidate homozygous.
   const int num_called_alleles = absl::c_count_if(
@@ -800,13 +901,15 @@ bool CandidateFilter(const DeepVariantCall& candidate, uint32_t* indel_end)  {
       continue;
     }
     // Allele must not be overlapped by an INDEL and allele has to be a SNP.
-    if (candidate.variant().end() <= *indel_end
-        || allele.size() != candidate.variant().end()
-                            - candidate.variant().start()) {
-      if (*indel_end < candidate.variant().end()) {
-        *indel_end = candidate.variant().end();
+    if (!allow_indels) {
+      if (candidate.variant().end() <= *indel_end
+          || allele.size() != candidate.variant().end()
+                              - candidate.variant().start()) {
+        if (*indel_end < candidate.variant().end()) {
+          *indel_end = candidate.variant().end();
+        }
+        return false;
       }
-      return false;
     }
   }
   return true;
@@ -830,9 +933,11 @@ void DirectPhasing::Clear() {
 void DirectPhasing::Build(
     absl::Span<const DeepVariantCall> candidates,
     absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
-        reads) {
+        reads,
+    absl::Span<const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+        reads_of_interest) {
   Clear();
-  InitializeReadMaps(reads);
+  InitializeReadMaps(reads, reads_of_interest);
 
   // Iterate all candidates and create graph nodes.
   // It is assumed that candidates are processed in the position order.
@@ -843,10 +948,11 @@ void DirectPhasing::Build(
       CHECK_LT(candidates[i - 1].variant().start(),
                candidate.variant().start());
     }
-    if (CandidateFilter(candidate, &indel_end)) {
-      AddCandidate(candidate);
-      // Keep an ordered vector of positions.
-      positions_.push_back(candidate.variant().start());
+    if (CandidateFilter(candidate, &indel_end, allow_indels_)) {
+      if (AddCandidate(candidate)) {
+        // Keep an ordered vector of positions.
+        positions_.push_back(candidate.variant().start());
+      }
     }
   }  // for candidates
 

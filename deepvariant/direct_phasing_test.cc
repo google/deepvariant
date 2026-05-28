@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -49,6 +50,7 @@
 
 #include "tensorflow/core/platform/test.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/core/statusor.h"
@@ -83,6 +85,7 @@ DeepVariantCall MakeCandidate(
   Variant* variant = candidate.mutable_variant();
   variant->set_start(start);
   variant->set_end(end);
+  variant->set_reference_bases(std::string(end - start, 'A'));
   if (!allele_support.empty()) {
     auto allele_support_field = candidate.mutable_allele_support_ext();
     for (const auto& one_allele_support : allele_support) {
@@ -288,11 +291,11 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
                   direct_phasing.graph_[ei->m_target].allele_info));
     // gtest comparator does not output per field differences. If test fails
     // it is easier to debug if edges are printed here.
-    // LOG(WARNING) << "Edge: "
-    //     << direct_phasing.graph_[ei->m_source].allele_info.position << " "
-    //     << direct_phasing.graph_[ei->m_source].allele_info.bases << "-"
-    //     << direct_phasing.graph_[ei->m_target].allele_info.position << " "
-    //     << direct_phasing.graph_[ei->m_target].allele_info.bases;
+    LOG(WARNING) << "Edge: "
+        << direct_phasing.graph_[ei->m_source].allele_info.position << " "
+        << direct_phasing.graph_[ei->m_source].allele_info.bases << "-"
+        << direct_phasing.graph_[ei->m_target].allele_info.position << " "
+        << direct_phasing.graph_[ei->m_target].allele_info.bases;
   }
   std::vector<AlleleInfo> graph_vertices;
   DirectPhasing::VertexIterator vi, vend;
@@ -300,15 +303,15 @@ TEST(DirectPhasingTest, BuildGraphSimple) {
   for (; vi != vend; ++vi) {
     // gtest comparator does not output per field differences. If test fails
     // it is easier to debug if vertices are printed here.
-    // std::ostringstream ss;
-    // for (auto read_info :
-    //          direct_phasing.graph_[*vi].allele_info.read_support) {
-    //   ss << read_info.read_index << ",";
-    // }
-    // LOG(WARNING) << "Vertex: "
-    //     << direct_phasing.graph_[*vi].allele_info.position << " "
-    //     << direct_phasing.graph_[*vi].allele_info.bases << " "
-    //     << ss.str();
+    std::ostringstream ss;
+    for (auto read_info :
+             direct_phasing.graph_[*vi].allele_info.read_support) {
+      ss << read_info.read_index << ",";
+    }
+    LOG(WARNING) << "Vertex: "
+        << direct_phasing.graph_[*vi].allele_info.position << " "
+        << direct_phasing.graph_[*vi].allele_info.bases << " "
+        << ss.str();
     graph_vertices.push_back(direct_phasing.graph_[*vi].allele_info);
     // gtest comparator does not output per field differences. If test fails
     // it is easier to debug if edges are printed here.
