@@ -594,7 +594,7 @@ def train(config: ml_collections.ConfigDict):
 
         metric_writer.write_scalars(
             train_step,
-            {f'tune/{x.name}': x.result() for x in state.tune_metrics},
+            {f'tune/{x.name}': float(x.result()) for x in state.tune_metrics},
         )
 
       for train_step in range(
@@ -655,7 +655,7 @@ def train(config: ml_collections.ConfigDict):
             == 0
         ) or is_last_step:
           metrics_to_write = {
-              f'train/{x.name}': x.result() for x in state.train_metrics
+              f'train/{x.name}': float(x.result()) for x in state.train_metrics
           }
           if isinstance(
               optimizer.learning_rate, tf.distribute.DistributedValues
