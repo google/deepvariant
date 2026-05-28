@@ -172,6 +172,13 @@ message DeBruijnGraphOptions {
 
   // If True, graph pruning will be disabled.
   bool disable_graph_pruning = 8;
+
+  // If True, use the experimental de Bruijn graph implementation.
+  bool use_exp_debruijn_graph = 9;
+
+  // Minimum length of a haplotype to be considered for realignment. Only used
+  // for the experimental de Bruijn graph implementation.
+  int32 min_haplotype_len = 10;
 }
 
 // Config parameters for "alignment (aln)" phase.

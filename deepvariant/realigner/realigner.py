@@ -239,8 +239,22 @@ _KMER_SIZE = flags.DEFINE_integer(
     'kmer_size', 32, 'K-mer size for fast pass alinger reads index.'
 )
 
+_USE_EXP_DEBRUIJN_GRAPH = flags.DEFINE_bool(
+    'use_exp_debruijn_graph',
+    False,
+    'If True, use the experimental de Bruijn graph implementation.',
+)
+
+_MIN_HAPLOTYPE_LEN = flags.DEFINE_integer(
+    'min_haplotype_len',
+    0,
+    'Minimum length of a haplotype to be considered for realignment. Only used'
+    'for the experimental de Bruijn graph implementation.',
+)
+
 # Margin added to the reference sequence for the aligner module.
 _REF_ALIGN_MARGIN = 20
+_REF_ALIGN_MARGIN_EXP = 200
 
 _DEFAULT_MIN_SUPPORTING_READS = 2
 _DEFAULT_MAX_SUPPORTING_READS = 300
@@ -389,6 +403,8 @@ def realigner_config(flags_obj):
       min_edge_weight=flags_obj.dbg_min_edge_weight,
       max_num_paths=flags_obj.dbg_max_num_paths,
       disable_graph_pruning=flags_obj.dbg_disable_graph_pruning,
+      use_exp_debruijn_graph=flags_obj.use_exp_debruijn_graph,
+      min_haplotype_len=flags_obj.min_haplotype_len,
   )
 
   aln_config = realigner_pb2.AlignerOptions(
@@ -729,13 +745,28 @@ class Realigner(object):
       window_reads = list(sam_reader.query(window))
 
       with timer.Timer() as t:
-        graph = debruijn_graph.build(ref, window_reads, self.config.dbg_config)
+        if self.config.dbg_config.use_exp_debruijn_graph:
+          raise NotImplementedError(
+              'Experimental de Bruijn graph is not supported in this version.'
+          )
+          # TODO: Re-enable once fastpass_aligner is updated to use
+          # CandidateHaplotypesRanked.
+          # graph = debruijn_graph_exp.build(
+          #     ref, window_reads, self.config.dbg_config
+          # )
+        else:
+          graph = debruijn_graph.build(
+              ref, window_reads, self.config.dbg_config
+          )
+
       graph_building_time = t.GetDuration()
 
       if not graph:
         candidate_haplotypes = [ref]
       else:
-        candidate_haplotypes = graph.candidate_haplotypes()
+        candidate_haplotypes = graph.candidate_haplotypes(
+            self.config.dbg_config.min_haplotype_len
+        )
       if candidate_haplotypes and candidate_haplotypes != [ref]:
         candidate_haplotypes_info = realigner_pb2.CandidateHaplotypes(
             span=window, haplotypes=candidate_haplotypes
@@ -758,15 +789,20 @@ class Realigner(object):
       return []
 
     contig = assembled_region.region.reference_name
+    ref_align_margin = (
+        _REF_ALIGN_MARGIN_EXP
+        if self.config.dbg_config.use_exp_debruijn_graph
+        else _REF_ALIGN_MARGIN
+    )
     ref_start = max(
         0,
         min(assembled_region.read_span.start, assembled_region.region.start)
-        - _REF_ALIGN_MARGIN,
+        - ref_align_margin,
     )
     ref_end = min(
         self.ref_reader.contig(contig).n_bases,
         max(assembled_region.read_span.end, assembled_region.region.end)
-        + _REF_ALIGN_MARGIN,
+        + ref_align_margin,
     )
 
     ref_prefix = self.ref_reader.query(
@@ -797,10 +833,13 @@ class Realigner(object):
     fast_pass_realigner.set_ref_start(contig, ref_start)
     fast_pass_realigner.set_ref_prefix_len(len(ref_prefix))
     fast_pass_realigner.set_ref_suffix_len(len(ref_suffix))
-    fast_pass_realigner.set_haplotypes([
-        ref_prefix + target + ref_suffix
-        for target in assembled_region.haplotypes
-    ])
+    if self.config.dbg_config.use_exp_debruijn_graph:
+      fast_pass_realigner.set_haplotypes(assembled_region.haplotypes)
+    else:
+      fast_pass_realigner.set_haplotypes([
+          ref_prefix + target + ref_suffix
+          for target in assembled_region.haplotypes
+      ])
     return fast_pass_realigner.realign_reads(assembled_region.reads)
 
   def realign_reads(self, reads, region, sample_role='main'):

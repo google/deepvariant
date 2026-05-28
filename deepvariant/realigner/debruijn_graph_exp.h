@@ -54,40 +54,41 @@ namespace deepvariant {
 
 using std::string;
 
-struct VertexInfo {
+struct VertexInfoExp {
   string kmer;
   int frequency;
 };
 
-struct EdgeInfo {
+struct EdgeInfoExp {
   int weight;   // The # of multiedges this edge represents.
   bool is_ref;  // True iff this edge is reflected by the reference sequence.
 };
 
-using BoostGraph = boost::adjacency_list<
+using BoostGraphExp = boost::adjacency_list<
   boost::setS,            // Out edge list type.
   boost::listS,           // Vertex list type.
   boost::bidirectionalS,  // Directed graph.
-  VertexInfo,             // Vertex label.
-  EdgeInfo>;              // Edge label.
+  VertexInfoExp,          // Vertex label.
+  EdgeInfoExp>;              // EdgeExp label.
 
-using Vertex = boost::graph_traits<BoostGraph>::vertex_descriptor;
-using Edge = boost::graph_traits<BoostGraph>::edge_descriptor;
+using VertexExp = boost::graph_traits<BoostGraphExp>::vertex_descriptor;
+using EdgeExp = boost::graph_traits<BoostGraphExp>::edge_descriptor;
 
-struct Path {
-  std::vector<Vertex> path;
+struct PathExp {
+  std::vector<VertexExp> path;
   double score;
-  bool operator<(const Path& other) const { return score > other.score; }
+  bool operator<(const PathExp& other) const { return score > other.score; }
 };
 
 class DeBruijnGraphExp {
  private:
-  using VertexIterator = boost::graph_traits<BoostGraph>::vertex_iterator;
-  using EdgeIterator = boost::graph_traits<BoostGraph>::edge_iterator;
-  using AdjacencyIterator = boost::graph_traits<BoostGraph>::adjacency_iterator;
+  using VertexIterator = boost::graph_traits<BoostGraphExp>::vertex_iterator;
+  using EdgeIterator = boost::graph_traits<BoostGraphExp>::edge_iterator;
+  using AdjacencyIterator =
+      boost::graph_traits<BoostGraphExp>::adjacency_iterator;
 
  public:
-  using RawVertexIndexMap = std::map<Vertex, int>;
+  using RawVertexIndexMap = absl::flat_hash_map<VertexExp, int>;
   using VertexIndexMap =
       boost::const_associative_property_map<RawVertexIndexMap>;
 
@@ -102,10 +103,10 @@ class DeBruijnGraphExp {
   VertexIndexMap IndexMap() const;
 
   // Ensure a vertex with label kmer is present--adding if necessary.
-  Vertex EnsureVertex(absl::string_view kmer);
+  VertexExp EnsureVertex(absl::string_view kmer);
 
   // Look up the vertex with this kmer label.
-  Vertex VertexForKmer(absl::string_view kmer) const;
+  VertexExp VertexForKmer(absl::string_view kmer) const;
 
   // Is this graph cyclic?
   bool HasCycle() const;
@@ -123,7 +124,7 @@ class DeBruijnGraphExp {
   // Add edge, implicitly adding the vertices if needed.  If such an edge is
   // already present, we merely increment its weight to reflect its "multiedge"
   // degree.
-  Edge AddEdge(Vertex from_vertex, Vertex to_vertex, bool is_ref);
+  EdgeExp AddEdge(VertexExp from_vertex, VertexExp to_vertex, bool is_ref);
 
   // Adds kmers from bases starting at start and stopping at end. We add a kmer
   // at each i from start to end (inclusive), and edges between all sequential
@@ -132,7 +133,7 @@ class DeBruijnGraphExp {
   // long, end + k <= bases.size() as well. Note that this function tolerates
   // end < 0, which causes the code to return immediately.
   void AddKmersAndEdges(absl::string_view bases, int start, int end,
-                        bool is_ref, bool is_debug = false);
+                        bool is_ref);
 
   // Add all the edges implied by the given reference string.
   void AddEdgesForReference(absl::string_view ref);
@@ -143,10 +144,10 @@ class DeBruijnGraphExp {
 
   // Returns candidate haplotype paths through the graph.  If more that
   // options.max_num_paths paths are found, this will return an empty vector.
-  std::vector<Path> CandidatePaths() const;
+  std::vector<PathExp> CandidatePaths() const;
 
   // Returns candidate haplotype paths through the graph using scoring.
-  std::vector<Path> CandidatePathsRanked() const;
+  std::vector<PathExp> CandidatePathsRanked() const;
 
   // Helper for CandidatePathsRanked. Performs a Depth-First Search (DFS) to
   // find candidate paths. Paths are scored by summing the log10 probabilities
@@ -158,24 +159,25 @@ class DeBruijnGraphExp {
   // as: frequency(v) / sum(frequency(w) for w in neighbors(u)).
   //
   // Maintains a priority queue of the top paths with the highest scores.
-  void CandidatePathsRankedHelper(Vertex u,
-                                  const absl::flat_hash_set<Vertex>& sink_nodes,
-                                  Path& current_path,
-                                  std::priority_queue<Path>& pq,
-                                  int& num_paths) const;
+  void CandidatePathsRankedHelper(
+    VertexExp u,
+    const absl::flat_hash_set<VertexExp>& sink_nodes,
+    PathExp& current_path,
+    std::priority_queue<PathExp>& pq,
+    int& num_paths) const;
 
   // Returns the string traced by a path through the graph.
-  string HaplotypeForPath(const Path& path) const;
+  string HaplotypeForPath(const PathExp& path) const;
 
   // Lite version of Prune(). Only removes isolated vertices (those with zero
   // in-degree and zero out-degree).
   void PruneLite();
 
   // Returns all vertices with zero in-degree and non-zero out-degree.
-  std::vector<Vertex> StartNodes() const;
+  std::vector<VertexExp> StartNodes() const;
 
   // Returns all vertices with non-zero in-degree and zero out-degree.
-  std::vector<Vertex> SinkNodes() const;
+  std::vector<VertexExp> SinkNodes() const;
 
  public:
   // We attempt to build acyclic graphs with increasing kmer size until we
@@ -204,13 +206,13 @@ class DeBruijnGraphExp {
   int KmerSize() const { return k_; }
 
  private:
-  BoostGraph g_;
+  BoostGraphExp g_;
   Options options_;
   int k_;
 
-  // N.B.: kmer strings are owned by VertexInfo objects;
+  // N.B.: kmer strings are owned by VertexInfoExp objects;
   // map keys are merely pointers.
-  absl::flat_hash_map<absl::string_view, Vertex> kmer_to_vertex_;
+  absl::flat_hash_map<absl::string_view, VertexExp> kmer_to_vertex_;
   RawVertexIndexMap vertex_index_map_;
 };
 

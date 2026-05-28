@@ -36,7 +36,7 @@
 
 #include <pybind11/stl.h>
 
-#include "deepvariant/realigner/debruijn_graph.h"
+#include "deepvariant/realigner/debruijn_graph_exp.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
 #include "third_party/nucleus/util/python/type_caster_nucleus_proto_ptr.h"
@@ -44,15 +44,15 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(debruijn_graph, m) {
+PYBIND11_MODULE(debruijn_graph_exp, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
   using namespace ::learning::genomics::deepvariant;  // NOLINT
-  py::classh<DeBruijnGraph>(m, "DeBruijnGraph")
-      .def("graphviz", &DeBruijnGraph::GraphViz)
-      .def("candidate_haplotypes", &DeBruijnGraph::CandidateHaplotypes,
-         py::arg("min_haplotype_len") = 0)
-      .def("collapse", &DeBruijnGraph::Collapse)
-      .def_property_readonly("kmer_size", &DeBruijnGraph::KmerSize);
-  m.def("build", &DeBruijnGraph::Build, py::arg("ref"), py::arg("reads"),
+  py::classh<DeBruijnGraphExp>(m, "DeBruijnGraphExp")
+      .def("graphviz", &DeBruijnGraphExp::GraphViz)
+      .def("candidate_haplotypes", &DeBruijnGraphExp::CandidateHaplotypesRanked,
+           py::arg("min_haplotype_len"))
+      .def("collapse", &DeBruijnGraphExp::Collapse)
+      .def_property_readonly("kmer_size", &DeBruijnGraphExp::KmerSize);
+  m.def("build", &DeBruijnGraphExp::Build, py::arg("ref"), py::arg("reads"),
         py::arg("options"));
 }

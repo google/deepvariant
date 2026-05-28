@@ -16,6 +16,7 @@ py_library(
         ":window_selector",
         "//deepvariant/protos:realigner_py_pb2",
         "//deepvariant/realigner/python:debruijn_graph",
+        "//deepvariant/realigner/python:debruijn_graph_exp",
         "//deepvariant/realigner/python:fast_pass_aligner",
         "//deepvariant/vendor:timer",
         "//third_party/nucleus/io:sam",

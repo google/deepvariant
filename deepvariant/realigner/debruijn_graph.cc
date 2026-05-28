@@ -412,7 +412,10 @@ string DeBruijnGraph::HaplotypeForPath(const Path& path) const {
   return haplotype.str();
 }
 
-std::vector<std::string> DeBruijnGraph::CandidateHaplotypes() const {
+// min_haplotype_len is not used. It is added for compatibility with the
+// DeBruijnGraphExp.
+std::vector<std::string> DeBruijnGraph::CandidateHaplotypes(
+    int min_haplotype_len) const {
   std::vector<std::string> haplotypes;
   for (const Path& path : CandidatePaths()) {
     haplotypes.push_back(HaplotypeForPath(path));

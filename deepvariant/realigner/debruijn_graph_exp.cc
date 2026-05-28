@@ -69,14 +69,10 @@ namespace deepvariant {
 
 constexpr int kMaxNumPaths = 50000;
 constexpr int kMaxNumPathsToKeep = 64;
+constexpr int kDefaultKmerSize = 43;
 
-using Vertex = learning::genomics::deepvariant::Vertex;
 using VertexIndexMap = DeBruijnGraphExp::VertexIndexMap;
-using Edge = learning::genomics::deepvariant::Edge;
-using Path = learning::genomics::deepvariant::Path;
-
 using Read = nucleus::genomics::v1::Read;
-
 using absl::string_view;
 
 namespace {
@@ -91,8 +87,8 @@ class CycleDetector : public boost::dfs_visitor<> {
  public:
   explicit CycleDetector(bool* has_cycle) : has_cycle(has_cycle) {}
 
-  template <class Edge, class Graph>
-  void back_edge(Edge, const Graph&) {
+  template <class EdgeExp, class Graph>
+  void back_edge(EdgeExp, const Graph&) {
     *has_cycle = true;
   }
 
@@ -105,8 +101,8 @@ class EdgeLabelWriter {
  public:
   explicit EdgeLabelWriter(const BoostGraph& g) : g_(g) {}
 
-  void operator()(std::ostream& out, const Edge e) const {
-    EdgeInfo ei = g_[e];
+  void operator()(std::ostream& out, const EdgeExp e) const {
+    EdgeInfoExp ei = g_[e];
     out << "[label=" << std::to_string(ei.weight)
         << (ei.is_ref ? " color=red" : "") << "]";
   }
@@ -117,42 +113,32 @@ class EdgeLabelWriter {
 
 class ReachableVertexVisitor : public boost::dfs_visitor<> {
  public:
-  explicit ReachableVertexVisitor(std::set<Vertex>* reachable_vertices)
+  explicit ReachableVertexVisitor(std::set<VertexExp>* reachable_vertices)
       : reachable_vertices(reachable_vertices) {}
 
-  template <class Edge, class Graph>
-  void tree_edge(Edge e, const Graph& g) {
-    Vertex from = boost::source(e, g);
+  template <class EdgeExp, class Graph>
+  void tree_edge(EdgeExp e, const Graph& g) {
+    VertexExp from = boost::source(e, g);
     if (reachable_vertices->find(from) != reachable_vertices->end()) {
-      Vertex to = boost::target(e, g);
+      VertexExp to = boost::target(e, g);
       reachable_vertices->insert(to);
     }
   }
 
  private:
-  std::set<Vertex>* reachable_vertices;
+  std::set<VertexExp>* reachable_vertices;
 };
-
-template <class BoostGraphT, class VertexIndexMapT>
-std::set<Vertex> VerticesReachableFrom(
-    Vertex v, const BoostGraphT& g, const VertexIndexMapT& vertex_index_map) {
-  std::set<Vertex> reachable_vertices{v};
-  ReachableVertexVisitor vis(&reachable_vertices);
-  boost::depth_first_search(
-      g, boost::visitor(vis).root_vertex(v).vertex_index_map(vertex_index_map));
-  return reachable_vertices;
-}
 
 }  // namespace
 
-Vertex DeBruijnGraphExp::EnsureVertex(string_view kmer) {
-  Vertex v;
+VertexExp DeBruijnGraphExp::EnsureVertex(string_view kmer) {
+  VertexExp v;
   auto vertex_find = kmer_to_vertex_.find(kmer);
   if (vertex_find != kmer_to_vertex_.end()) {
     v = (*vertex_find).second;
   } else {
     string kmer_copy(kmer);
-    v = boost::add_vertex(VertexInfo{kmer_copy, 0}, g_);
+    v = boost::add_vertex(VertexInfoExp{kmer_copy, 0}, g_);
     // N.B.: must use the long-lived string in the map key as the referent of
     // the string_view key.
     kmer_to_vertex_[g_[v].kmer] = v;
@@ -162,12 +148,12 @@ Vertex DeBruijnGraphExp::EnsureVertex(string_view kmer) {
   return v;
 }
 
-Vertex DeBruijnGraphExp::VertexForKmer(string_view kmer) const {
+VertexExp DeBruijnGraphExp::VertexForKmer(string_view kmer) const {
   return kmer_to_vertex_.at(kmer);
 }
 
 void DeBruijnGraphExp::RebuildIndexMap() {
-  std::map<Vertex, int> table;
+  absl::flat_hash_map<VertexExp, int> table;
   VertexIterator vi, vend;
   std::tie(vi, vend) = boost::vertices(g_);
   int index = 0;
@@ -219,7 +205,7 @@ struct KBounds {
 };
 
 
-KBounds KMinMaxFromReference(const string_view ref,
+KBounds KMinMaxFromReferenceExp(const string_view ref,
                              const DeBruijnGraphExp::Options& options) {
   KBounds bounds;
   bounds.min_k = options.min_k();
@@ -252,7 +238,7 @@ std::unique_ptr<DeBruijnGraphExp> DeBruijnGraphExp::Build(
     absl::string_view ref,
     absl::Span<const nucleus::ConstProtoPtr<const Read>> reads,
     const DeBruijnGraphExp::Options& options) {
-  KBounds bounds = KMinMaxFromReference(ref, options);
+  KBounds bounds = KMinMaxFromReferenceExp(ref, options);
 
   std::unique_ptr<DeBruijnGraphExp> last_graph;
   for (int k = bounds.min_k; k <= bounds.max_k; k += options.step_k()) {
@@ -266,7 +252,7 @@ std::unique_ptr<DeBruijnGraphExp> DeBruijnGraphExp::Build(
 
   if (last_graph) {
     last_graph = std::unique_ptr<DeBruijnGraphExp>(
-        new DeBruijnGraphExp(ref, reads, options, 43));
+        new DeBruijnGraphExp(ref, reads, options, kDefaultKmerSize));
 
     last_graph->PruneLite();
     return last_graph;
@@ -275,32 +261,32 @@ std::unique_ptr<DeBruijnGraphExp> DeBruijnGraphExp::Build(
   return nullptr;
 }
 
-Edge DeBruijnGraphExp::AddEdge(
-    Vertex from_vertex, Vertex to_vertex, bool is_ref) {
+EdgeExp DeBruijnGraphExp::AddEdge(
+    VertexExp from_vertex, VertexExp to_vertex, bool is_ref) {
   bool was_present;
-  Edge edge;
+  EdgeExp edge;
   std::tie(edge, was_present) = boost::edge(from_vertex, to_vertex, g_);
   if (!was_present) {
     std::tie(edge, std::ignore) = boost::add_edge(from_vertex, to_vertex,
-                                                  EdgeInfo{0, false}, g_);
+                                                  EdgeInfoExp{0, false}, g_);
   }
-  EdgeInfo& ei = g_[edge];
+  EdgeInfoExp& ei = g_[edge];
   ei.weight++;
   ei.is_ref |= is_ref;
   return edge;
 }
 
 void DeBruijnGraphExp::AddKmersAndEdges(string_view bases, int start, int end,
-                                     bool is_ref, bool is_debug) {
+                                     bool is_ref) {
   CHECK_GE(start, 0);
   CHECK_LE(start + k_, bases.size());
   CHECK_LE(end + k_, bases.size());
 
   // End can be less than 0, in which case we return without doing any work.
   if (end > 0) {
-    Vertex vertex_prev = EnsureVertex(bases.substr(start, k_));
+    VertexExp vertex_prev = EnsureVertex(bases.substr(start, k_));
     for (int i = start + 1; i <= end; ++i) {
-      Vertex vertex_cur = EnsureVertex(bases.substr(i, k_));
+      VertexExp vertex_cur = EnsureVertex(bases.substr(i, k_));
       AddEdge(vertex_prev, vertex_cur, is_ref);
       vertex_prev = vertex_cur;
     }
@@ -316,7 +302,6 @@ void DeBruijnGraphExp::AddEdgesForRead(
     const nucleus::genomics::v1::Read& read) {
   const string bases = absl::AsciiStrToUpper(read.aligned_sequence());
 
-  bool is_debug = false;
   // Lambda function to find the next bad position in the read, if one exists,
   // starting from offset `start` in the read. If all remains bases/quals are
   // good, returns bases.size().
@@ -365,16 +350,18 @@ void DeBruijnGraphExp::AddEdgesForRead(
   int i = 0;
   while (i < stop) {
     int next_bad_position = NextBadPosition(i);
-    AddKmersAndEdges(bases_view, i, next_bad_position - k_, false, is_debug);
+    AddKmersAndEdges(bases_view, i, next_bad_position - k_, false);
     i = next_bad_position + 1;
   }
 }
 
 void DeBruijnGraphExp::CandidatePathsRankedHelper(
-    Vertex u, const absl::flat_hash_set<Vertex>& sink_nodes, Path& current_path,
-    std::priority_queue<Path>& pq, int& num_paths) const {
+    VertexExp u,
+    const absl::flat_hash_set<VertexExp>& sink_nodes,
+    PathExp& current_path,
+    std::priority_queue<PathExp>& pq, int& num_paths) const {
   int visit_count = 0;
-  for (Vertex v : current_path.path) {
+  for (VertexExp v : current_path.path) {
     if (v == u) {
       visit_count++;
     }
@@ -403,7 +390,7 @@ void DeBruijnGraphExp::CandidatePathsRankedHelper(
 
   double current_path_score = current_path.score;
   for (; vi != vend; ++vi) {
-    Vertex v = *vi;
+    VertexExp v = *vi;
     if (out_degree > 1) {
       current_path.score = current_path_score + std::log10(g_[v].frequency) -
                            std::log10(total_edge_frequency);
@@ -419,33 +406,34 @@ void DeBruijnGraphExp::CandidatePathsRankedHelper(
   current_path.score = current_path_score;
 }
 
-std::vector<Path> DeBruijnGraphExp::CandidatePathsRanked() const {
-  std::priority_queue<Path> pq;
+std::vector<PathExp> DeBruijnGraphExp::CandidatePathsRanked() const {
+  std::priority_queue<PathExp> pq;
   int num_paths = 0;
-  std::vector<Vertex> start_nodes = StartNodes();
-  std::vector<Vertex> sinks = SinkNodes();
-  absl::flat_hash_set<Vertex> sink_nodes(sinks.begin(), sinks.end());
+  std::vector<VertexExp> start_nodes = StartNodes();
+  std::vector<VertexExp> sinks = SinkNodes();
+  absl::flat_hash_set<VertexExp> sink_nodes(sinks.begin(), sinks.end());
 
-  for (Vertex source : start_nodes) {
-    Path current_path = {{source}, 0.0};
+  for (VertexExp source : start_nodes) {
+    PathExp current_path = {{source}, 0.0};
     CandidatePathsRankedHelper(source, sink_nodes, current_path, pq, num_paths);
     if (num_paths > kMaxNumPaths) break;
   }
 
-  std::vector<Path> sorted_paths;
+  std::vector<PathExp> sorted_paths;
   while (!pq.empty()) {
     sorted_paths.push_back(pq.top());
     pq.pop();
   }
   std::sort(sorted_paths.begin(), sorted_paths.end(),
-            [](const Path& a, const Path& b) { return a.score > b.score; });
+            [](const PathExp& a, const PathExp& b) {
+                 return a.score > b.score; });
   return sorted_paths;
 }
 
-string DeBruijnGraphExp::HaplotypeForPath(const Path& path) const {
+string DeBruijnGraphExp::HaplotypeForPath(const PathExp& path) const {
   std::stringstream haplotype;
   for (size_t i = 0; i < path.path.size(); ++i) {
-    Vertex v = path.path[i];
+    VertexExp v = path.path[i];
     if (i < path.path.size() - 1) {
       haplotype << g_[v].kmer.substr(0, g_[v].kmer.size() - (k_ - 1));
     } else {
@@ -458,7 +446,7 @@ string DeBruijnGraphExp::HaplotypeForPath(const Path& path) const {
 std::vector<std::string> DeBruijnGraphExp::CandidateHaplotypesRanked(
     int min_haplotype_len) const {
   std::vector<std::string> haplotypes;
-  for (const Path& path : CandidatePathsRanked()) {
+  for (const PathExp& path : CandidatePathsRanked()) {
     std::string haplotype = HaplotypeForPath(path);
     if (haplotype.size() >= min_haplotype_len) {
       haplotypes.push_back(haplotype);
@@ -470,12 +458,12 @@ std::vector<std::string> DeBruijnGraphExp::CandidateHaplotypesRanked(
 string DeBruijnGraphExp::GraphViz() const {
   std::stringstream graphviz;
   auto vertex_label_writer = boost::make_label_writer(
-      boost::get(&VertexInfo::kmer, g_));
+      boost::get(&VertexInfoExp::kmer, g_));
   boost::write_graphviz(
       graphviz,
       g_,
       vertex_label_writer,
-      EdgeLabelWriter<BoostGraph>(g_),
+      EdgeLabelWriter<BoostGraphExp>(g_),
       boost::default_writer(),
       IndexMap());
   return graphviz.str();
@@ -488,11 +476,11 @@ void DeBruijnGraphExp::Collapse() {
     VertexIterator vi, vend;
     std::tie(vi, vend) = boost::vertices(g_);
     for (; vi != vend; ++vi) {
-      Vertex v = *vi;
+      VertexExp v = *vi;
       if (boost::in_degree(v, g_) != 1) continue;
 
-      Edge in_edge = *boost::in_edges(v, g_).first;
-      Vertex u = boost::source(in_edge, g_);
+      EdgeExp in_edge = *boost::in_edges(v, g_).first;
+      VertexExp u = boost::source(in_edge, g_);
       if (boost::out_degree(u, g_) != 1) continue;
 
       // Merge node v into u: node u's sequence will be extended to cover u->v,
@@ -505,11 +493,11 @@ void DeBruijnGraphExp::Collapse() {
       kmer_to_vertex_[g_[u].kmer] = u;
 
       // Collect out-edges of v.
-      std::vector<std::pair<Vertex, EdgeInfo>> out_edges;
+      std::vector<std::pair<VertexExp, EdgeInfoExp>> out_edges;
       AdjacencyIterator ai, aend;
       std::tie(ai, aend) = boost::adjacent_vertices(v, g_);
       for (; ai != aend; ++ai) {
-        Edge e = boost::edge(v, *ai, g_).first;
+        EdgeExp e = boost::edge(v, *ai, g_).first;
         out_edges.push_back({*ai, g_[e]});
       }
       // Add edges from u to successors of v.
@@ -528,12 +516,12 @@ void DeBruijnGraphExp::Collapse() {
   RebuildIndexMap();
 }
 
-std::vector<Vertex> DeBruijnGraphExp::StartNodes() const {
-  std::vector<Vertex> start_nodes;
+std::vector<VertexExp> DeBruijnGraphExp::StartNodes() const {
+  std::vector<VertexExp> start_nodes;
   VertexIterator vbegin, vend;
   std::tie(vbegin, vend) = boost::vertices(g_);
   for (; vbegin != vend; ++vbegin) {
-    Vertex v = *vbegin;
+    VertexExp v = *vbegin;
     if (boost::in_degree(v, g_) == 0) {
       start_nodes.push_back(v);
     }
@@ -541,12 +529,12 @@ std::vector<Vertex> DeBruijnGraphExp::StartNodes() const {
   return start_nodes;
 }
 
-std::vector<Vertex> DeBruijnGraphExp::SinkNodes() const {
-  std::vector<Vertex> sink_nodes;
+std::vector<VertexExp> DeBruijnGraphExp::SinkNodes() const {
+  std::vector<VertexExp> sink_nodes;
   VertexIterator vbegin, vend;
   std::tie(vbegin, vend) = boost::vertices(g_);
   for (; vbegin != vend; ++vbegin) {
-    Vertex v = *vbegin;
+    VertexExp v = *vbegin;
     if (boost::in_degree(v, g_) > 0 && boost::out_degree(v, g_) == 0) {
       sink_nodes.push_back(v);
     }
@@ -556,22 +544,23 @@ std::vector<Vertex> DeBruijnGraphExp::SinkNodes() const {
 
 void DeBruijnGraphExp::PruneLite() {
   // Remove all edges with weight < 2.
-  boost::remove_edge_if([this](const Edge& e) { return g_[e].weight < 2; }, g_);
+  boost::remove_edge_if([this](const EdgeExp& e) {
+     return g_[e].weight < 2; }, g_);
 
   // Remove vertices that have zero incoming and zero outgoing edges.
-  std::vector<Vertex> to_remove;
+  std::vector<VertexExp> to_remove;
   VertexIterator vbegin, vend;
   std::tie(vbegin, vend) = boost::vertices(g_);
   // We create a copy of the vertices because boost::remove_vertex invalidates
   // vertex descriptors and iterators.
-  std::vector<Vertex> vertices(vbegin, vend);
-  for (Vertex v : vertices) {
+  std::vector<VertexExp> vertices(vbegin, vend);
+  for (VertexExp v : vertices) {
     if (boost::in_degree(v, g_) == 0 && boost::out_degree(v, g_) == 0) {
       to_remove.push_back(v);
     }
   }
 
-  for (Vertex v : to_remove) {
+  for (VertexExp v : to_remove) {
     kmer_to_vertex_.erase(g_[v].kmer);
     boost::clear_vertex(v, g_);
     boost::remove_vertex(v, g_);

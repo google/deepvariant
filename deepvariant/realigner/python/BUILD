@@ -57,6 +57,30 @@ pybind_library(
     ],
 )
 
+pybind_extension(
+    name = "debruijn_graph_exp",
+    srcs = ["debruijn_graph_exp_pybind.cc"],
+    deps = [
+        "//deepvariant/realigner:debruijn_graph_exp",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "debruijn_graph_exp_cclib",
+    srcs = ["debruijn_graph_exp_pybind.cc"],
+    deps = [
+        "//deepvariant/realigner:debruijn_graph_exp",
+        "//third_party/nucleus/core/python:type_caster_nucleus_status",
+        "//third_party/nucleus/core/python:type_caster_nucleus_statusor",
+        "//third_party/nucleus/util/python:type_caster_nucleus_proto_ptr",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
 py_test(
     name = "debruijn_graph_wrap_test",
     size = "small",

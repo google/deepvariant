@@ -167,7 +167,7 @@ class DeBruijnGraph {
   // Gets all the candidate haplotypes defined by paths through the graph.  If
   // more than options.max_num_paths() haplotypes are identified, returns an
   // empty vector, to preempt excessive computation.
-  std::vector<string> CandidateHaplotypes() const;
+  std::vector<string> CandidateHaplotypes(int min_haplotype_len = 0) const;
 
   // Gets a GraphViz representation of the graph.
   string GraphViz() const;
