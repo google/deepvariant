@@ -538,9 +538,9 @@ bool FastPassAligner::IsAlignmentNormalized(
         CHECK(cur_read_offset + op.length <= read_sequence.size());
         op_sequence =  read_sequence.substr(cur_read_offset, op.length);
       }
-      if (( cur_ref_offset > 0
+      if (( cur_ref_offset > 0 && cur_read_offset > 0
            && op.operation == nucleus::genomics::v1::CigarUnit::INSERT
-           && op_sequence.back() == reference_[cur_ref_offset - 1]) ||
+           && op_sequence.back() == read_sequence[cur_read_offset - 1]) ||
          (cur_read_offset > 0
           && op.operation == nucleus::genomics::v1::CigarUnit::DELETE
           && op_sequence.back() == read_sequence[cur_read_offset - 1])) {
@@ -605,7 +605,7 @@ void FastPassAligner::RealignReadsToReference(
       // set. This is because if --normalize_reads is true, they will be
       // normalize later on.
       if (!normalize_reads_) {
-        // If read is not normalized (any cigar operation can be shifter left)
+        // If read is not normalized (any cigar operation can be shifted left)
         // we discard the alignment.
         if (!IsAlignmentNormalized(
             readToRefCigarOps,

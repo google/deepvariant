@@ -3626,7 +3626,6 @@ options {
   phase_reads_region_padding_pct: 20
   phase_max_candidates: 5000
   deterministic_serialization: true
-  trim_reads_for_pileup: true
   shm_buffer_size: 10485760
   exclude_variants_af_threshold: 0.05
   small_model_inference_batch_size: 128
@@ -3660,14 +3659,14 @@ labeling_metrics {
 }
 resource_metrics {
   host_name: "host"
-  physical_core_count: 8
-  cpu_frequency_mhz: 2199.998
-  total_memory_mb: 104619
-  wall_time_seconds: 3.914644479751587
-  cpu_user_time_seconds: 13.984048
-  cpu_system_time_seconds: 10.345645
-  memory_peak_rss_mb: 922
-  write_bytes: 548864
+  physical_core_count: 12
+  cpu_frequency_mhz: 3208.286083333333
+  total_memory_mb: 128662
+  wall_time_seconds: 3.2404050827026367
+  cpu_user_time_seconds: 6.5035229999999995
+  cpu_system_time_seconds: 3.889647
+  memory_peak_rss_mb: 961
+  write_bytes: 544768
 }
 stats {
   num_examples: 50
