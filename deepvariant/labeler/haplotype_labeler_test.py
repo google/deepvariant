@@ -621,6 +621,56 @@ class HaplotypeLabelerClassUnitTest(parameterized.TestCase):
         struct_utils.get_bool_field(labels[1].variant.info, 'FALLBACK_LABELED')
     )
 
+  def test_label_variants_extreme_complexity_poly_a(self):
+    # 15 overlapping candidate variants mimicking the homopolymer
+    # chr6:99419170-99419191.
+    # They all share the same end coordinate (42) and have dense overlapping
+    # deletions.
+    # This creates a combinatorial explosion of product
+    # 3^13 * 6^2 = 57,395,628 combinations.
+    variants = [
+        _test_variant(
+            start=20, alleles=('A' * 22, 'A', 'G' + 'A' * 21)
+        ),  # product 6, end 42
+        _test_variant(start=21, alleles=('A' * 22, 'A')),  # end 43
+        _test_variant(start=22, alleles=('A' * 20, 'A')),  # end 42
+        _test_variant(start=25, alleles=('A' * 18, 'A')),  # end 43
+        _test_variant(
+            start=26, alleles=('A' * 16, 'A', 'A' * 15 + 'G')
+        ),  # product 6, end 42
+        _test_variant(start=27, alleles=('A' * 16, 'A')),  # end 43
+        _test_variant(start=31, alleles=('A' * 11, 'A')),  # end 42
+        _test_variant(start=33, alleles=('A' * 10, 'A')),  # end 43
+        _test_variant(start=35, alleles=('A' * 7, 'A')),  # end 42
+        _test_variant(start=36, alleles=('A' * 7, 'A')),  # end 43
+        _test_variant(start=37, alleles=('A' * 5, 'A')),  # end 42
+        _test_variant(start=39, alleles=('A' * 4, 'A')),  # end 43
+        _test_variant(start=41, alleles=('A', 'T')),  # end 42
+        _test_variant(start=41, alleles=('A', 'G')),  # end 42
+        _test_variant(start=41, alleles=('AA', 'T')),  # end 43
+    ]
+    truths = [
+        _test_variant(start=41, alleles=('A', 'T'), gt=(0, 1)),
+    ]
+
+    labeler = _make_labeler(
+        truths=truths,
+        max_separation=30,
+        ref_reader=fasta.InMemoryFastaReader([('20', 0, 'A' * 100)]),
+    )
+    region = ranges.make_range('20', 1, 100)
+
+    # Under the old code, this would HANG indefinitely because the
+    # 57M combinations are too expensive to enumerate.
+    # With the safety ceiling mocked to a small limit (1,000 iterations),
+    # the enumeration aborts quickly, and the fallback in label_variants
+    # assigns hom-ref genotypes gracefully.
+    with mock.patch.object(
+        haplotype_labeler, '_MAX_ENUMERATION_ITERATIONS', 1000
+    ):
+      result = list(labeler.label_variants(variants, region))
+    self.assertEqual(len(result), len(variants))
+
   @parameterized.parameters(
       # A single TP bi-allelic variant.
       dict(

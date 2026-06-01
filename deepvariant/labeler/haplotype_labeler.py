@@ -61,6 +61,7 @@ import enum
 import heapq
 import itertools
 import operator
+import time
 
 from absl import logging
 
@@ -86,6 +87,13 @@ _MAX_SEPARATION_WITHIN_VARIANT_GROUP = 30
 
 # The default maximum product of possible genotypes combinations.
 _MAX_GT_OPTIONS_PRODUCT = 100000
+
+# The maximum number of iterations we allow during haplotype enumeration
+# to prevent indefinite hangs in highly complex regions (e.g., dense
+# homopolymers).
+# This is set to match _MAX_GT_OPTIONS_PRODUCT to keep complexity limits
+# consistent across variant grouping and enumeration.
+_MAX_ENUMERATION_ITERATIONS = 100000
 
 # The variants that are within this value will be forcefully grouped together.
 # This is to ensure that we don't decouple a candidate with its truth variant
@@ -172,13 +180,25 @@ class HaplotypeLabeler(variant_labeler.VariantLabeler):
       )
       if labeling is None:
         # Note this test must be 'is None' since label_variants can return an
-        # empty list.
-        raise ValueError(
-            'Failed to assign labels for variants',
-            candidates_group,
-            truth_group,
-            ref,
+        # empty list. When labeling is None due to complexity, we skip this
+        # group and assign hom-ref genotypes to all candidates.
+        logging.warning(
+            'Failed to assign labels for group (%d candidates, %d truths).'
+            ' Assigning hom-ref genotypes.',
+            len(candidates_group),
+            len(truth_group),
         )
+        for candidate in candidates_group:
+          labeled = copy.deepcopy(candidate)
+          call = labeled.calls[0] if labeled.calls else labeled.calls.add()
+          variantcall_utils.set_gt(call, (0, 0))
+          struct_utils.set_bool_field(labeled.info, 'FALLBACK_LABELED', True)
+          yield variant_labeler.VariantLabel(
+              is_confident=self._confident_regions.variant_overlaps(labeled),
+              genotype=(0, 0),
+              variant=labeled,
+          )
+        continue
 
       self._update_metrics(labeling)
       for labeled in labeling.candidates_with_assigned_genotypes():
@@ -605,7 +625,12 @@ class ImpossibleHaplotype(Exception):
   pass
 
 
-def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
+def enumerate_all_possible_haplotypes(
+    variants,
+    ref,
+    enumeration_type,
+    max_enumeration_iterations=_MAX_ENUMERATION_ITERATIONS,
+):
   """Returns all possible haplotype/genotype combinations for variants.
 
   Args:
@@ -615,6 +640,8 @@ def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
       at least the span of the variants.
     enumeration_type: EnumerationType enum value. What kind of enumeration do we
       want to do? Can be either CANDIDATES or TRUTH.
+    max_enumeration_iterations: int. The maximum product of genotype options to
+      enumerate. If exceeded, we abort and return None.
 
   Returns:
     Dict[Haplotypes, List[Genotypes]]
@@ -668,15 +695,41 @@ def enumerate_all_possible_haplotypes(variants, ref, enumeration_type):
       # this case we simply `pass`, as we cannot construct any valid haplotypes.
       pass
 
+  t0_enum = time.time()
   genotype_options = genotype_options_for_variants(variants, enumeration_type)
   haplotypes_to_genotypes_dict = collections.OrderedDict()
+  n_genotype_combos = 0
   for genotypes in itertools.product(*genotype_options):
+    n_genotype_combos += 1
+    if n_genotype_combos > max_enumeration_iterations:
+      logging.warning(
+          'Aborting haplotype enumeration: exceeded %d iterations for %d '
+          'variants (type=%s). This group is too complex for haplotype '
+          'labeling.',
+          max_enumeration_iterations,
+          len(variants),
+          enumeration_type,
+      )
+      return None
+    if n_genotype_combos % 5000 == 0:
+      logging.info(
+          'enumerate_all_possible_haplotypes progress: processed %d genotype '
+          'combos (%.1fs elapsed)',
+          n_genotype_combos,
+          time.time() - t0_enum,
+      )
     paired = [VariantAndGenotypes(v, g) for v, g in zip(variants, genotypes)]
     for haplotypes in create_haplotypes(paired, ref.start):
       key = frozenset(haplotypes)
       if key not in haplotypes_to_genotypes_dict:
         haplotypes_to_genotypes_dict[key] = []
       haplotypes_to_genotypes_dict[key].append(genotypes)
+  logging.info(
+      'enumerate_all_possible_haplotypes done: processed %d genotype combos '
+      'in %.1fs',
+      n_genotype_combos,
+      time.time() - t0_enum,
+  )
   return haplotypes_to_genotypes_dict
 
 
@@ -1216,11 +1269,18 @@ def find_best_matching_haplotypes(candidates, truths, ref):
     """If list_of_variants is empty, use a ONLY_HOM_REF enum for speed."""
     return non_empty_enum if list_of_variants else EnumerationType.ONLY_HOM_REF
 
-  truth_haplotypes = deduplicate_haplotypes(
-      enumerate_all_possible_haplotypes(
-          truths, ref, _hom_ref_enum_if_empty(candidates, EnumerationType.TRUTH)
-      )
+  truth_haplotypes_raw = enumerate_all_possible_haplotypes(
+      truths, ref, _hom_ref_enum_if_empty(candidates, EnumerationType.TRUTH)
   )
+  if truth_haplotypes_raw is None:
+    logging.warning(
+        'Truth haplotype enumeration aborted due to complexity. '
+        'Falling back to None labeling for %d candidates, %d truths.',
+        len(candidates),
+        len(truths),
+    )
+    return None
+  truth_haplotypes = deduplicate_haplotypes(truth_haplotypes_raw)
 
   candidate_enum_type = _hom_ref_enum_if_empty(
       truths, EnumerationType.CANDIDATES
@@ -1231,6 +1291,14 @@ def find_best_matching_haplotypes(candidates, truths, ref):
       ref,
       candidate_enum_type,
   )
+  if variant_haplotypes is None:
+    logging.warning(
+        'Candidate haplotype enumeration aborted due to complexity. '
+        'Falling back to None labeling for %d candidates, %d truths.',
+        len(candidates),
+        len(truths),
+    )
+    return None
 
   found = []
   for vh, vgt_list in variant_haplotypes.items():
