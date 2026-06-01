@@ -26,6 +26,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+import os
+import struct
 from unittest import mock
 
 from absl import flags
@@ -1085,6 +1087,68 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     options = make_examples.default_options(add_flags=True)
     with self.assertRaisesRegex(ValueError, 'The regions to call is empty.'):
       make_examples_core.processing_regions_from_options(options)
+
+  def test_raw_fd3_writer(self):
+    r_fd, w_fd = os.pipe()
+    try:
+      old_fd3 = os.dup(3)
+    except OSError:
+      old_fd3 = None
+    os.dup2(w_fd, 3)
+    os.close(w_fd)
+
+    try:
+      writer = make_examples_core.RawFd3Writer()
+      writer.write(b'hello')
+      writer.close()
+    finally:
+      if old_fd3 is not None:
+        os.dup2(old_fd3, 3)
+        os.close(old_fd3)
+      else:
+        os.close(3)
+
+    len_buf = os.read(r_fd, 4)
+    length = struct.unpack('<I', len_buf)[0]
+    data = os.read(r_fd, length)
+    os.close(r_fd)
+    self.assertLen(len_buf, 4)
+    self.assertEqual(length, 5)
+    self.assertEqual(data, b'hello')
+
+  @flagsaver.flagsaver
+  def test_outputs_writer_fd3(self):
+    FLAGS.mode = 'training'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.examples = self.create_tempfile(file_path='examples.fd3').full_path
+    FLAGS.write_small_model_examples = True
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+
+    options = make_examples.default_options(add_flags=True)
+
+    r_fd, w_fd = os.pipe()
+    try:
+      old_fd3 = os.dup(3)
+    except OSError:
+      old_fd3 = None
+    os.dup2(w_fd, 3)
+    os.close(w_fd)
+
+    try:
+      writer = make_examples_core.OutputsWriter(options)
+      self.assertIsInstance(
+          writer._writers['small_model_examples'],
+          make_examples_core.RawFd3Writer,
+      )
+      writer.close_all()
+    finally:
+      if old_fd3 is not None:
+        os.dup2(old_fd3, 3)
+        os.close(old_fd3)
+      else:
+        os.close(3)
+      os.close(r_fd)
 
 
 class ShouldFilterLowVafTest(parameterized.TestCase):

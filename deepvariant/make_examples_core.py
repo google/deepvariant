@@ -36,6 +36,7 @@ import math
 import os
 import random
 import re
+import struct
 import sys
 import time
 from typing import Any, DefaultDict, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
@@ -1255,6 +1256,46 @@ class DiagnosticLogger:
         writer.write(read)
 
 
+class RawFd3Writer:
+  """Writes length-prefixed serialized protos directly to file descriptor 3."""
+
+  def __init__(self):
+    """Initializes the instance.
+
+    Raises:
+      ValueError: If file descriptor 3 is not open or writable.
+    """
+    self._fd = 3
+    try:
+      os.fstat(self._fd)
+    except OSError as e:
+      raise ValueError(f'FD 3 is not open or writable: {e}') from None
+
+  def _write_all(self, data):
+    """Ensures that all bytes in `data` are written to the file descriptor."""
+    view = memoryview(data)
+    while view:
+      try:
+        n = os.write(self._fd, view)
+        view = view[n:]
+      except InterruptedError:
+        continue
+
+  def write(self, serialized_proto: bytes):
+    """Writes a serialized proto to file descriptor 3.
+
+    Args:
+      serialized_proto: The serialized proto to write.
+    """
+    length = len(serialized_proto)
+    self._write_all(struct.pack('<I', length))
+    self._write_all(serialized_proto)
+
+  @classmethod
+  def close(cls):
+    pass
+
+
 class OutputsWriter:
   """Manages all of the outputs of make_examples in a single place."""
 
@@ -1362,12 +1403,15 @@ class OutputsWriter:
       self._add_writer('sitelist', epath.Path(sitelist_fname).open('w'))
 
     if options.write_small_model_examples:
-      self._add_writer(
-          'small_model_examples',
-          dv_utils.get_tf_record_writer(
-              self._add_suffix(self.examples_filename, 'small_model')
-          ),
-      )
+      if self.examples_filename and self.examples_filename.endswith('.fd3'):
+        self._add_writer('small_model_examples', RawFd3Writer())
+      else:
+        self._add_writer(
+            'small_model_examples',
+            dv_utils.get_tf_record_writer(
+                self._add_suffix(self.examples_filename, 'small_model')
+            ),
+        )
 
     self._deterministic_serialization = options.deterministic_serialization
 
