@@ -1273,6 +1273,150 @@ INSTANTIATE_TEST_SUITE_P(
         },
     })));
 
+struct SplitIndelAlleleFractionTestData {
+  AlleleCount allele_count;
+  // Unified indel threshold flags (backward compat fallback).
+  float vsc_min_indel_fraction_for_small_indels = 0.0;
+  float vsc_min_indel_fraction_for_large_indels = 0.0;
+  int vsc_small_indel_threshold = 0;
+  // Split insertion flags.
+  float vsc_min_fraction_for_small_insertions = 0.0;
+  float vsc_min_fraction_for_large_insertions = 0.0;
+  int vsc_small_insertion_threshold = 0;
+  // Split deletion flags.
+  float vsc_min_fraction_for_small_deletions = 0.0;
+  float vsc_min_fraction_for_large_deletions = 0.0;
+  int vsc_small_deletion_threshold = 0;
+  float min_fraction_indels = 0.0;
+  std::vector<Allele> expected_alleles;
+};
+
+class SplitIndelAlleleFractionTest
+    : public testing::TestWithParam<SplitIndelAlleleFractionTestData> {};
+
+TEST_P(SplitIndelAlleleFractionTest, SplitIndelAlleleFractionTestCases) {
+  const SplitIndelAlleleFractionTestData& param = GetParam();
+  VariantCallerOptions options = BasicOptions();
+  // Unified indel thresholds.
+  options.set_vsc_min_indel_fraction_for_small_indels(
+      param.vsc_min_indel_fraction_for_small_indels);
+  options.set_vsc_min_indel_fraction_for_large_indels(
+      param.vsc_min_indel_fraction_for_large_indels);
+  options.set_vsc_small_indel_threshold(param.vsc_small_indel_threshold);
+  // Split insertion thresholds.
+  options.set_vsc_min_fraction_for_small_insertions(
+      param.vsc_min_fraction_for_small_insertions);
+  options.set_vsc_min_fraction_for_large_insertions(
+      param.vsc_min_fraction_for_large_insertions);
+  options.set_vsc_small_insertion_threshold(
+      param.vsc_small_insertion_threshold);
+  // Split deletion thresholds.
+  options.set_vsc_min_fraction_for_small_deletions(
+      param.vsc_min_fraction_for_small_deletions);
+  options.set_vsc_min_fraction_for_large_deletions(
+      param.vsc_min_fraction_for_large_deletions);
+  options.set_vsc_small_deletion_threshold(param.vsc_small_deletion_threshold);
+
+  options.set_min_count_snps(1);
+  options.set_min_count_indels(1);
+  options.set_min_fraction_snps(0);
+  options.set_min_fraction_indels(param.min_fraction_indels);
+  options.set_min_fraction_multiplier(1.0);
+
+  std::unique_ptr<VariantCaller> caller =
+      VariantCaller::MakeTestVariantCallerFromAlleleCounts(
+          options, {param.allele_count}, "sample");
+  SelectAltAllelesResult ret = caller->SelectAltAlleles({
+      .allele_counts_by_sample = {{"sample", param.allele_count}},
+      .create_complex_alleles = false,
+  });
+  EXPECT_THAT(ret.alt_alleles,
+              testing::UnorderedPointwise(nucleus::EqualsProto(),
+                                          param.expected_alleles));
+  caller->Clear();
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    SplitIndelAlleleFractionTests, SplitIndelAlleleFractionTest,
+    testing::ValuesIn(std::vector<SplitIndelAlleleFractionTestData>({
+        {
+            // Split insertion thresholds only.
+            // 100 reads total.
+            // Insertion "AT": 1bp insertion, 8 reads, AF=0.08
+            //   -> small insertion (size <= 1), threshold Y=0.10 -> filtered
+            // Insertion "ATTT": 3bp insertion, 6 reads, AF=0.06
+            //   -> large insertion (size > 1), threshold Z=0.05 -> kept
+            // Deletion uses unified indel fallback: threshold=0.05 -> kept
+            .allele_count = MakeTestMultiAlleleCount(
+                100, "sample", "A",
+                {
+                    {"AT", SupportingReadNames(8, 0)},
+                    {"ATTT", SupportingReadNames(6, 8)},
+                },
+                10),
+            .vsc_min_indel_fraction_for_small_indels = 0.0,
+            .vsc_min_indel_fraction_for_large_indels = 0.0,
+            .vsc_small_indel_threshold = 0,
+            .vsc_min_fraction_for_small_insertions = 0.10,
+            .vsc_min_fraction_for_large_insertions = 0.05,
+            .vsc_small_insertion_threshold = 1,
+            .min_fraction_indels = 0.0,
+            .expected_alleles = {MakeAllele("ATTT", AlleleType::INSERTION, 6)},
+        },
+        {
+            // Split deletion thresholds only.
+            // 100 reads total, ref = "ACTG" (4bp).
+            // Deletion "AC" (alt shorter than ref by 2bp) -> 2bp deletion,
+            //   8 reads, AF=0.08
+            //   -> small deletion (size <= 2), threshold B=0.10 -> filtered
+            // Deletion "A" (alt shorter than ref by 3bp) -> 3bp deletion,
+            //   12 reads, AF=0.12
+            //   -> large deletion (size > 2), threshold C=0.06 -> kept
+            .allele_count =
+                MakeTestMultiAlleleCount(100, "sample", "ACTG",
+                                         {
+                                             {"AC", SupportingReadNames(8, 0)},
+                                             {"A", SupportingReadNames(12, 8)},
+                                         },
+                                         10),
+            .vsc_min_indel_fraction_for_small_indels = 0.0,
+            .vsc_min_indel_fraction_for_large_indels = 0.0,
+            .vsc_small_indel_threshold = 0,
+            .vsc_min_fraction_for_small_deletions = 0.10,
+            .vsc_min_fraction_for_large_deletions = 0.06,
+            .vsc_small_deletion_threshold = 2,
+            .min_fraction_indels = 0.0,
+            .expected_alleles = {MakeAllele("ACTG", AlleleType::DELETION, 12)},
+        },
+        {
+            // Both split insertion and deletion thresholds set.
+            // 100 reads total.
+            // Insertion "AT": 1bp insertion, 9 reads, AF=0.09
+            //   -> small insertion (size <= 1), threshold Y=0.10 -> filtered
+            // Insertion "ATTT": 3bp insertion, 7 reads, AF=0.07
+            //   -> large insertion (size > 1), threshold Z=0.06 -> kept
+            //
+            // The unified indel thresholds are also set but should be
+            // overridden by the split flags for insertions.
+            .allele_count = MakeTestMultiAlleleCount(
+                100, "sample", "A",
+                {
+                    {"AT", SupportingReadNames(9, 0)},
+                    {"ATTT", SupportingReadNames(7, 9)},
+                },
+                10),
+            // Unified flags set but overridden by split insertion flags.
+            .vsc_min_indel_fraction_for_small_indels = 0.05,
+            .vsc_min_indel_fraction_for_large_indels = 0.03,
+            .vsc_small_indel_threshold = 2,
+            .vsc_min_fraction_for_small_insertions = 0.10,
+            .vsc_min_fraction_for_large_insertions = 0.06,
+            .vsc_small_insertion_threshold = 1,
+            .min_fraction_indels = 0.0,
+            .expected_alleles = {MakeAllele("ATTT", AlleleType::INSERTION, 7)},
+        },
+    })));
+
 TEST(VariantCallingTest, TumorOnlySomaticCalling) {
   // Test the Tumor-only: where target_role is "tumor" but there are no
   // non-target (i.e., normal) samples.

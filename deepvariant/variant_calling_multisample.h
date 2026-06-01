@@ -358,6 +358,30 @@ class VariantCaller {
     if (allele.type() == AlleleType::SUBSTITUTION) {
       return options_.min_fraction_snps();
     }
+    // Try split insertion/deletion thresholds first.
+    if (allele.type() == AlleleType::INSERTION &&
+        options_.vsc_small_insertion_threshold() > 0 &&
+        options_.vsc_min_fraction_for_small_insertions() > 0.0 &&
+        options_.vsc_min_fraction_for_large_insertions() > 0.0) {
+      if (allele.bases().size() <=
+          options_.vsc_small_insertion_threshold() + 1) {
+        return options_.vsc_min_fraction_for_small_insertions();
+      } else {
+        return options_.vsc_min_fraction_for_large_insertions();
+      }
+    }
+    if (allele.type() == AlleleType::DELETION &&
+        options_.vsc_small_deletion_threshold() > 0 &&
+        options_.vsc_min_fraction_for_small_deletions() > 0.0 &&
+        options_.vsc_min_fraction_for_large_deletions() > 0.0) {
+      if (allele.bases().size() <=
+          options_.vsc_small_deletion_threshold() + 1) {
+        return options_.vsc_min_fraction_for_small_deletions();
+      } else {
+        return options_.vsc_min_fraction_for_large_deletions();
+      }
+    }
+    // Fall back to unified indel thresholds.
     if (options_.vsc_small_indel_threshold() > 0 &&
         options_.vsc_min_indel_fraction_for_small_indels() > 0.0 &&
         options_.vsc_min_indel_fraction_for_large_indels() > 0.0) {
@@ -443,6 +467,7 @@ class VariantCaller {
   FRIEND_TEST(VariantCallingTest, TestRefSitesFraction);
   FRIEND_TEST(VariantCallingTest, TestCallVariantNew);
   FRIEND_TEST(IndelAlleleFractionTest, IndelAlleleFractionTestCases);
+  FRIEND_TEST(SplitIndelAlleleFractionTest, SplitIndelAlleleFractionTestCases);
   friend class VariantCallingTest;
 };
 

@@ -912,6 +912,52 @@ _VSC_SMALL_INDEL_THRESHOLD = flags.DEFINE_integer(
     'indels.',
 )
 
+# Split insertion/deletion threshold flags.
+_VSC_MIN_FRACTION_FOR_SMALL_INSERTIONS = flags.DEFINE_float(
+    'vsc_min_fraction_for_small_insertions',
+    0.0,
+    'If > 0, along with vsc_min_fraction_for_large_insertions and '
+    'vsc_small_insertion_threshold, determines allele fraction for insertions '
+    'independently from deletions. Overrides the unified indel flags for '
+    'insertions.',
+)
+_VSC_MIN_FRACTION_FOR_LARGE_INSERTIONS = flags.DEFINE_float(
+    'vsc_min_fraction_for_large_insertions',
+    0.0,
+    'If > 0, along with vsc_min_fraction_for_small_insertions and '
+    'vsc_small_insertion_threshold, determines allele fraction for large '
+    'insertions.',
+)
+_VSC_SMALL_INSERTION_THRESHOLD = flags.DEFINE_integer(
+    'vsc_small_insertion_threshold',
+    0,
+    'If > 0, along with vsc_min_fraction_for_small_insertions and '
+    'vsc_min_fraction_for_large_insertions, determines size cutoff for '
+    'insertion allele fraction.',
+)
+_VSC_MIN_FRACTION_FOR_SMALL_DELETIONS = flags.DEFINE_float(
+    'vsc_min_fraction_for_small_deletions',
+    0.0,
+    'If > 0, along with vsc_min_fraction_for_large_deletions and '
+    'vsc_small_deletion_threshold, determines allele fraction for deletions '
+    'independently from insertions. Overrides the unified indel flags for '
+    'deletions.',
+)
+_VSC_MIN_FRACTION_FOR_LARGE_DELETIONS = flags.DEFINE_float(
+    'vsc_min_fraction_for_large_deletions',
+    0.0,
+    'If > 0, along with vsc_min_fraction_for_small_deletions and '
+    'vsc_small_deletion_threshold, determines allele fraction for large '
+    'deletions.',
+)
+_VSC_SMALL_DELETION_THRESHOLD = flags.DEFINE_integer(
+    'vsc_small_deletion_threshold',
+    0,
+    'If > 0, along with vsc_min_fraction_for_small_deletions and '
+    'vsc_min_fraction_for_large_deletions, determines size cutoff for '
+    'deletion allele fraction.',
+)
+
 _USE_REJECTED_ALLELES = flags.DEFINE_bool(
     'use_rejected_alleles',
     False,
@@ -1520,6 +1566,60 @@ def check_options_are_valid(
         'vsc_min_fraction_indels is ignored when vsc_small_indel_threshold is'
         ' set.'
     )
+
+  # Validate split insertion threshold flags.
+  ins_small = _VSC_MIN_FRACTION_FOR_SMALL_INSERTIONS.value
+  ins_large = _VSC_MIN_FRACTION_FOR_LARGE_INSERTIONS.value
+  ins_thresh = _VSC_SMALL_INSERTION_THRESHOLD.value
+  ins_flags_present = [ins_small > 0, ins_large > 0, ins_thresh > 0]
+  if any(ins_flags_present) and not all(ins_flags_present):
+    errors.log_and_raise(
+        '--vsc_min_fraction_for_small_insertions, '
+        '--vsc_min_fraction_for_large_insertions, and '
+        '--vsc_small_insertion_threshold must be specified together.'
+    )
+  if all(ins_flags_present):
+    if not 0 < ins_small < 1.0:
+      errors.log_and_raise(
+          '--vsc_min_fraction_for_small_insertions must be between 0 and 1.'
+      )
+    if not 0 < ins_large < 1.0:
+      errors.log_and_raise(
+          '--vsc_min_fraction_for_large_insertions must be between 0 and 1.'
+      )
+    if ins_thresh < 1:
+      errors.log_and_raise('--vsc_small_insertion_threshold must be >= 1.')
+    if all(new_flags_present):
+      logging.warning(
+          'Split insertion flags override unified indel flags for insertions.'
+      )
+
+  # Validate split deletion threshold flags.
+  del_small = _VSC_MIN_FRACTION_FOR_SMALL_DELETIONS.value
+  del_large = _VSC_MIN_FRACTION_FOR_LARGE_DELETIONS.value
+  del_thresh = _VSC_SMALL_DELETION_THRESHOLD.value
+  del_flags_present = [del_small > 0, del_large > 0, del_thresh > 0]
+  if any(del_flags_present) and not all(del_flags_present):
+    errors.log_and_raise(
+        '--vsc_min_fraction_for_small_deletions, '
+        '--vsc_min_fraction_for_large_deletions, and '
+        '--vsc_small_deletion_threshold must be specified together.'
+    )
+  if all(del_flags_present):
+    if not 0 < del_small < 1.0:
+      errors.log_and_raise(
+          '--vsc_min_fraction_for_small_deletions must be between 0 and 1.'
+      )
+    if not 0 < del_large < 1.0:
+      errors.log_and_raise(
+          '--vsc_min_fraction_for_large_deletions must be between 0 and 1.'
+      )
+    if del_thresh < 1:
+      errors.log_and_raise('--vsc_small_deletion_threshold must be >= 1.')
+    if all(new_flags_present):
+      logging.warning(
+          'Split deletion flags override unified indel flags for deletions.'
+      )
 
   multiplier = _VSC_MIN_FRACTION_MULTIPLIER.value
   if (multiplier <= 0 or multiplier > 1.0) and multiplier != float('inf'):

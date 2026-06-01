@@ -226,6 +226,12 @@ def make_vc_options(
       vsc_min_indel_fraction_for_small_indels=flags_obj.vsc_min_indel_fraction_for_small_indels,
       vsc_min_indel_fraction_for_large_indels=flags_obj.vsc_min_indel_fraction_for_large_indels,
       vsc_small_indel_threshold=flags_obj.vsc_small_indel_threshold,
+      vsc_min_fraction_for_small_insertions=flags_obj.vsc_min_fraction_for_small_insertions,
+      vsc_min_fraction_for_large_insertions=flags_obj.vsc_min_fraction_for_large_insertions,
+      vsc_small_insertion_threshold=flags_obj.vsc_small_insertion_threshold,
+      vsc_min_fraction_for_small_deletions=flags_obj.vsc_min_fraction_for_small_deletions,
+      vsc_min_fraction_for_large_deletions=flags_obj.vsc_min_fraction_for_large_deletions,
+      vsc_small_deletion_threshold=flags_obj.vsc_small_deletion_threshold,
       # Not specified by default: fraction_reference_sites_to_emit,
       # Fixed random seed produced with 'od -vAn -N4 -tu4 < /dev/urandom'.
       random_seed=1400605801,

@@ -401,7 +401,7 @@ message CallVariantsOutput {
 }
 
 // Options to control how our candidate VariantCaller works.
-// Next ID: 30
+// Next ID: 36
 message VariantCallerOptions {
   // Alleles occurring at least this many times in our AlleleCount are
   // considered candidate variants.
@@ -486,6 +486,22 @@ message VariantCallerOptions {
   float vsc_min_indel_fraction_for_small_indels = 27;
   float vsc_min_indel_fraction_for_large_indels = 28;
   int32 vsc_small_indel_threshold = 29;
+
+  // Split insertion/deletion thresholds. When set (all > 0), these override
+  // the unified indel thresholds above for the respective allele type.
+  // For insertions: if allele size <= vsc_small_insertion_threshold,
+  // use vsc_min_fraction_for_small_insertions, else use
+  // vsc_min_fraction_for_large_insertions.
+  float vsc_min_fraction_for_small_insertions = 30;
+  float vsc_min_fraction_for_large_insertions = 31;
+  int32 vsc_small_insertion_threshold = 32;
+
+  // For deletions: if allele size <= vsc_small_deletion_threshold,
+  // use vsc_min_fraction_for_small_deletions, else use
+  // vsc_min_fraction_for_large_deletions.
+  float vsc_min_fraction_for_small_deletions = 33;
+  float vsc_min_fraction_for_large_deletions = 34;
+  int32 vsc_small_deletion_threshold = 35;
 
   reserved 26;
 }
