@@ -10,7 +10,7 @@
 *   [DeepVariant PacBio case study](deepvariant-pacbio-model-case-study.md)
 *   [DeepVariant ONT R10.4 simplex case study](deepvariant-ont-r104-simplex-case-study.md)
 *   [DeepVariant hybrid (PacBio and Illumina) case study](deepvariant-hybrid-case-study.md)
-*   [DeepVariant Complete Genomics T7 case study](deepvariant-complete-t7-case-study.md)
+*   [Pangenome-aware DeepVariant Complete Genomics T7+ case study](deepvariant-complete-t7plus-case-study.md)
 *   [DeepVariant Complete Genomics G400 case study](deepvariant-complete-g400-case-study.md)
 *   [RNA-seq Case Study](deepvariant-rnaseq-case-study.md) for Illumina RNA-seq.
 *   [PacBio Iso-Seq/MAS-Seq Case Study](deepvariant-masseq-case-study.md).
