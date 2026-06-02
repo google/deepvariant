@@ -336,8 +336,7 @@ elif [[ "${MODEL_PRESET}" = "PACBIO_T2T" ]]; then
   BASE="${HOME}/pacbio-case-study"
 
   REF="${REF:=${GCS_DATA_DIR}/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-  # TODO: If we want to externalize this, we need to use a public BAM.
-  BAM="${BAM:=gs://brain-genomics/awcarroll/pacbio_training_2024/kudu/aligned.sorted.hg002.m84034_240730_194815_s1.hifi_reads.ccs.bam}"
+  BAM="${BAM:=gs://brain-genomics-public/publications/chang2025_long_read_giraffe/aligned.sorted.hg002.m84034_240730_194815_s1.hifi_reads.ccs.bam}"
   TRUTH_VCF="${TRUTH_VCF:=gs://deepvariant/GIAB_v5q0/HG002_GRCh38_v5.0q_smvar.vcf.gz}"
   TRUTH_BED="${TRUTH_BED:=gs://deepvariant/GIAB_v5q0/HG002_GRCh38_v5.0q_smvar.benchmark.bed}"
 elif [[ "${MODEL_PRESET}" = "ONT_R104" ]]; then
