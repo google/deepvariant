@@ -1306,6 +1306,51 @@ TEST_F(AlleleCounterTest, NormalizeCigarIns) {
   EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
 }
 
+// Normal case of non-normalized INS surrounded by REFs. Read has 2 bases
+// insertion in the middle. There is a SNP preceding the INS. In this case INS
+// cannot be shifted left. After normalization INS stays the same.
+TEST_F(AlleleCounterTest, NormalizeCigarInsFollowingSnp) {
+  int kNum = 1;
+  std::vector<ContigInfo> contigs(kNum);
+  std::vector<ReferenceSequence> seqs(kNum);
+
+  // Creating a InMemoryFastaReader with a test sequence.
+  CreateTestSeq("chr1", 0, 0, 151,
+                "GTCAAAGGGTGTTGCATCTGCTTAAACTCACACATCTCGAAGGTTGCTGTGAAGGTAAACAG"
+                "AAAGCAACGTAAGGCACGGATGTTGATTCGTGTGTCGTGTGTGTGTGTGTGTGTGTGTGTGT"
+                "GCGAAATTTGTACAGCAGTACCTGCAT", &contigs, &seqs);
+  std::unique_ptr<nucleus::InMemoryFastaReader> ref = std::move(
+      nucleus::InMemoryFastaReader::Create(contigs, seqs).ValueOrDie());
+
+  // Create AlleleCounter object with our test reference.
+  std::unique_ptr<AlleleCounter> allele_counts =
+      MakeCounter(ref.get(), "chr1", 0, 151);
+
+  // Read is made by taking substring of a reference and removing 12 bases to
+  // create a deletion. Deletion is deliberately created non left aligned.
+  auto read = MakeRead(
+      "chr1", 82,
+      "TGTTGATTCGTGAGTGTCGTGTGTGTGTGTGTGTGTGTGTGTGTGCGAAATTTGTACAGCAGTACCTGCAT",
+      {"13M", "2I", "56M"});
+
+  // After shifting the deletion to the left we should get the following cigar.
+  // Note that extra REF is added following the deletion to fill the sampe after
+  // the deletion.
+  std::vector<CigarUnit> expected_cigar =
+      nucleus::MakeCigar({"13M", "2I", "56M"});
+
+  // Initialize input/output norm_cigar with the original alignment.
+  std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
+                                    read.alignment().cigar().end());
+  int read_shift = 0;
+  allele_counts->NormalizeCigar(read.aligned_sequence(), 0 + 82, norm_cigar,
+                                read_shift);
+
+  EXPECT_EQ(read_shift, 0);
+  EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
+}
+
+
 TEST_F(AlleleCounterTest, NormalizeCigarInsDel) {
   int kNum = 1;
   std::vector<ContigInfo> contigs(kNum);
@@ -1480,10 +1525,11 @@ TEST_F(AlleleCounterTest, NormalizeCigarInsShiftedToEdge) {
   // at 8th position.
   int interval_offset = 8;
   auto read = MakeRead("chr1", interval_offset,
-                       "TCCTTCCTTCCTTCCTTCCTTCCTTCCACT", {"4M", "4I", "22M"});
+                       "TCCTTCCTTCCTTCCTTCCTTCCTTCCTTCCACT",
+                       {"4M", "4I", "26M"});
 
   // INS at the beginning has to be replaced to M and position is shifted by 4.
-  std::vector<CigarUnit> expected_cigar = nucleus::MakeCigar({"30M"});
+  std::vector<CigarUnit> expected_cigar = nucleus::MakeCigar({"4I", "30M"});
 
   // Initialize input/output norm_cigar with the original alignment.
   std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
@@ -1492,7 +1538,7 @@ TEST_F(AlleleCounterTest, NormalizeCigarInsShiftedToEdge) {
   allele_counts->NormalizeCigar(read.aligned_sequence(), interval_offset,
                                 norm_cigar, read_shift);
 
-  EXPECT_EQ(read_shift, -4);
+  EXPECT_EQ(read_shift, 0);
   EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
 }
 
@@ -1517,12 +1563,13 @@ TEST_F(AlleleCounterTest, NormalizeCigarInsShiftedAllTheWayToSoftClip) {
   // bases. Read is aligned starting from 4th base (first 3 bases are clipped).
   int interval_offset = 8;
   auto read =
-      MakeRead("chr1", interval_offset, "GGGTCCTTCCTTCCTTCCTTCCTTCCTTCCACT",
-               {"3S", "4M", "4I", "22M"});
+      MakeRead("chr1", interval_offset, "GGGTCCTTCCTTCCTTCCTTCCTTCCTTCCTTCCACT",
+               {"3S", "4M", "4I", "26M"});
 
   // INS is shifted to the beginning of the read. INS at the beginning is
   // converted to reference and read alignment is shifted by -4.
-  std::vector<CigarUnit> expected_cigar = nucleus::MakeCigar({"3S", "30M"});
+  std::vector<CigarUnit> expected_cigar =
+      nucleus::MakeCigar({"3S", "4I", "30M"});
 
   // Initialize input/output norm_cigar with the original alignment.
   std::vector<CigarUnit> norm_cigar(read.alignment().cigar().begin(),
@@ -1531,7 +1578,7 @@ TEST_F(AlleleCounterTest, NormalizeCigarInsShiftedAllTheWayToSoftClip) {
   allele_counts->NormalizeCigar(read.aligned_sequence(), interval_offset,
                                 norm_cigar, read_shift);
 
-  EXPECT_EQ(read_shift, -4);
+  EXPECT_EQ(read_shift, 0);
   EXPECT_THAT(norm_cigar, UnorderedPointwise(EqualsProto(), expected_cigar));
 }
 

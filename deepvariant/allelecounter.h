@@ -501,6 +501,7 @@ class AlleleCounter {
   // Following tests call protected method NormalizeCigar.
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarDel);
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarIns);
+  FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsFollowingSnp);
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsDel);
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarInsertAtTheEnd);
   FRIEND_TEST(AlleleCounterTest, NormalizeCigarTwoDelsMerged);

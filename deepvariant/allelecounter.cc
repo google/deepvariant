@@ -624,9 +624,6 @@ int HandleHeadingIndel(
   if (it->operation() == CigarUnit::DELETE) {
     read_alignment_shift = it->operation_length();
     norm_cigar.erase(it);
-  } else if (it->operation() == CigarUnit::INSERT) {
-    read_alignment_shift = -it->operation_length();
-    it->set_operation(CigarUnit::ALIGNMENT_MATCH);
   }
   return read_alignment_shift;
 }
@@ -760,13 +757,13 @@ bool AlleleCounter::CanInsBeShifted(
   if (interval_offset <= 0 || interval_offset - 1 >= ref_bases_.size()) {
     return false;
   }
-  if (read_offset + op_len - 1 < 0 ||
+  if (read_offset - 1 < 0 ||
       read_offset + op_len - 1 >= read_seq.size()) {
     return false;
   }
 
   return read_seq[read_offset + op_len - 1] ==
-                     ref_bases_[interval_offset - 1];
+                     read_seq[read_offset - 1];
 }
 
 // Normalize cigar of a given read following
