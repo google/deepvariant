@@ -1086,9 +1086,8 @@ void FastPassAligner::PopulateDpMatrix(absl::string_view query,
 }
 
 FastPassAligner::GlobalAlignment FastPassAligner::BackTrackBestAlignment(
-    absl::string_view query, absl::string_view target,
-    const std::vector<int>& M, const std::vector<int>& E,
-    const std::vector<int>& F) const {
+    absl::string_view query, absl::string_view target, absl::Span<const int> M,
+    absl::Span<const int> E, absl::Span<const int> F) const {
   const int n = query.size();
   const int m = target.size();
   const int match = match_score_;
@@ -1186,7 +1185,6 @@ FastPassAligner::GlobalAlignment FastPassAligner::BackTrackBestAlignment(
   alignment.cigar_string = cigar_str;
   return alignment;
 }
-
 
 }  // namespace deepvariant
 }  // namespace genomics

@@ -455,9 +455,9 @@ class FastPassAligner {
 
   GlobalAlignment BackTrackBestAlignment(absl::string_view query,
                                          absl::string_view target,
-                                         const std::vector<int>& M,
-                                         const std::vector<int>& E,
-                                         const std::vector<int>& F) const;
+                                         absl::Span<const int> M,
+                                         absl::Span<const int> E,
+                                         absl::Span<const int> F) const;
 
   void CalculatePositionMaps();
 };
