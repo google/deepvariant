@@ -38,6 +38,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
@@ -51,6 +52,8 @@
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
+#include "third_party/nucleus/io/sam_writer.h"
+#include "third_party/nucleus/protos/reference.pb.h"
 #include "re2/re2.h"
 
 namespace learning {
@@ -447,6 +450,78 @@ void FastPassAligner::AlignHaplotypesToReference() {
         haplotype_alignment.ref_pos = alignment.ref_begin;
       }
     }
+  }
+  if (!diagnostics_dir_.empty()) {
+    WriteHaplotypesToBam();
+  }
+}
+
+void FastPassAligner::WriteHaplotypesToBam() {
+  if (diagnostics_dir_.empty()) return;
+
+  nucleus::genomics::v1::SamHeader sam_header;
+  sam_header.set_format_version("1.5");
+  sam_header.set_sorting_order(nucleus::genomics::v1::SamHeader::COORDINATE);
+
+  // Add contig info
+  auto* contig = sam_header.add_contigs();
+  contig->set_name(region_chromosome_);
+  contig->set_n_bases(contig_length_);
+
+  string bam_path = absl::StrCat(diagnostics_dir_, "/haplotypes.bam");
+  auto writer_or = nucleus::SamWriter::ToFile(bam_path, sam_header);
+  if (!writer_or.ok()) {
+    LOG(ERROR) << "Failed to create SamWriter for " << bam_path << ": "
+        << writer_or.status().ToString();
+    return;
+  }
+  auto writer = std::move(writer_or.ValueOrDie());
+
+  nucleus::genomics::v1::Read read;
+  for (size_t i = 0; i < haplotypes_.size(); ++i) {
+    read.Clear();
+    const auto& haplotype = haplotypes_[i];
+    const HaplotypeReadsAlignment* alignment = nullptr;
+    for (const auto& candidate_alignment : read_to_haplotype_alignments_) {
+      if (candidate_alignment.haplotype_index == i) {
+        alignment = &candidate_alignment;
+        break;
+      }
+    }
+
+    if (alignment == nullptr) {
+      continue;
+    }
+
+    if (alignment->cigar.empty()) {
+      continue;
+    }
+
+    read.set_fragment_name(absl::StrCat("haplotype_", i));
+    read.set_aligned_sequence(haplotype);
+    read.set_aligned_quality(string(haplotype.size(), 30));
+
+    auto* linear_alignment = read.mutable_alignment();
+    auto* position = linear_alignment->mutable_position();
+    position->set_reference_name(region_chromosome_);
+    position->set_position(region_position_in_chr_ + alignment->ref_pos);
+    linear_alignment->set_mapping_quality(60);
+
+    for (const auto& op : alignment->cigar_ops) {
+      auto* cigar_unit = linear_alignment->add_cigar();
+      cigar_unit->set_operation(op.operation);
+      cigar_unit->set_operation_length(op.length);
+    }
+
+    auto status = writer->Write(read);
+    if (!status.ok()) {
+      LOG(ERROR) << "Failed to write haplotype read to BAM: "
+          << status.ToString();
+    }
+  }
+  auto status = writer->Close();
+  if (!status.ok()) {
+      LOG(ERROR) << "Failed to close BAM writer: " << status.ToString();
   }
 }
 

@@ -62,6 +62,10 @@ PYBIND11_MODULE(fast_pass_aligner, m) {
       .def("set_is_debug", &FastPassAligner::set_is_debug, py::arg("isDebug"))
       .def("set_normalize_reads", &FastPassAligner::set_normalize_reads,
            py::arg("normalizeReads"))
+      .def("set_diagnostics_dir", &FastPassAligner::set_diagnostics_dir,
+           py::arg("diagnostics_dir"))
+      .def("set_contig_length", &FastPassAligner::set_contig_length,
+           py::arg("contig_length"))
       .def("set_debug_read_id", &FastPassAligner::set_debug_read_id,
            py::arg("readId"))
       .def("set_ref_prefix_len", &FastPassAligner::set_ref_prefix_len,

@@ -783,7 +783,7 @@ class Realigner(object):
 
     return windows_haplotypes
 
-  def call_fast_pass_aligner(self, assembled_region):
+  def call_fast_pass_aligner(self, assembled_region, sample_role='main'):
     """Helper function to call fast pass aligner module."""
     if not assembled_region.reads:
       return []
@@ -840,6 +840,18 @@ class Realigner(object):
           ref_prefix + target + ref_suffix
           for target in assembled_region.haplotypes
       ])
+    fast_pass_realigner.set_contig_length(
+        self.ref_reader.contig(contig).n_bases
+    )
+    if self.config.diagnostics.enabled:
+      region_dir = os.path.join(
+          self.config.diagnostics.output_root,
+          ranges.to_literal(assembled_region.region),
+          sample_role,
+      )
+      epath.Path(region_dir).mkdir(parents=True, exist_ok=True)
+      fast_pass_realigner.set_diagnostics_dir(region_dir)
+
     return fast_pass_realigner.realign_reads(assembled_region.reads)
 
   def realign_reads(self, reads, region, sample_role='main'):
@@ -905,8 +917,9 @@ class Realigner(object):
     # Walk over each region and align the reads in that region, adding them to
     # our realigned_reads.
     for assembled_region in assembled_regions:
-      realigned_reads_copy = self.call_fast_pass_aligner(assembled_region)
-      realigned_reads.extend(realigned_reads_copy)
+      realigned_reads.extend(
+          self.call_fast_pass_aligner(assembled_region, sample_role)
+      )
 
     self.diagnostic_logger.log_realigned_reads(
         region, realigned_reads, sample_role, self.shared_header

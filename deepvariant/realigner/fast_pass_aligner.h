@@ -241,6 +241,12 @@ class FastPassAligner {
   void set_normalize_reads(bool normalize_reads) {
     normalize_reads_ = normalize_reads;
   }
+  void set_diagnostics_dir(absl::string_view diagnostics_dir) {
+    diagnostics_dir_ = string(diagnostics_dir);
+  }
+  void set_contig_length(int64_t contig_length) {
+    contig_length_ = contig_length;
+  }
   uint8_t get_match_score() const { return match_score_; }
   uint8_t get_mismatch_penalty() const { return mismatch_penalty_; }
   void set_options(const AlignerOptions& options);
@@ -439,6 +445,12 @@ class FastPassAligner {
 
   // Set to the same value of --normalize_reads flag from make_examples.
   bool normalize_reads_ = false;
+
+  string diagnostics_dir_;
+  int64_t contig_length_ = 0;
+
+  // Used for debug output.
+  void WriteHaplotypesToBam();
 
   // Alingn reads to haplotypes by simply comparing strings. This way we will
   // be able align all the reads that are aligned to haplotypes w/o indels.

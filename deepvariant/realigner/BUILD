@@ -195,9 +195,11 @@ cc_library(
     deps = [
         ":ssw",
         "//deepvariant/protos:realigner_cc_pb2",
+        "//third_party/nucleus/io:sam_writer",
         "//third_party/nucleus/protos:cigar_cc_pb2",
         "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
+        "//third_party/nucleus/protos:reference_cc_pb2",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/log",
