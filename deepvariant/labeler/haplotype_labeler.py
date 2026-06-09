@@ -712,11 +712,15 @@ def enumerate_all_possible_haplotypes(
       )
       return None
     if n_genotype_combos % 5000 == 0:
-      logging.info(
+      progress_elapsed = time.time() - t0_enum
+      progress_log_fn = (
+          logging.info if progress_elapsed > 1.0 else logging.debug
+      )
+      progress_log_fn(
           'enumerate_all_possible_haplotypes progress: processed %d genotype '
           'combos (%.1fs elapsed)',
           n_genotype_combos,
-          time.time() - t0_enum,
+          progress_elapsed,
       )
     paired = [VariantAndGenotypes(v, g) for v, g in zip(variants, genotypes)]
     for haplotypes in create_haplotypes(paired, ref.start):
@@ -724,11 +728,13 @@ def enumerate_all_possible_haplotypes(
       if key not in haplotypes_to_genotypes_dict:
         haplotypes_to_genotypes_dict[key] = []
       haplotypes_to_genotypes_dict[key].append(genotypes)
-  logging.info(
+  elapsed = time.time() - t0_enum
+  log_fn = logging.info if elapsed > 1.0 else logging.debug
+  log_fn(
       'enumerate_all_possible_haplotypes done: processed %d genotype combos '
       'in %.1fs',
       n_genotype_combos,
-      time.time() - t0_enum,
+      elapsed,
   )
   return haplotypes_to_genotypes_dict
 
