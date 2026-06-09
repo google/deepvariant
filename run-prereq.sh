@@ -51,6 +51,7 @@ APT_ARGS=(
 "-y"
 )
 
+UV_ARGS=()
 if [[ "$EUID" = "0" ]]; then
   # Just in case:
   # https://github.com/NVIDIA/nvidia-docker/issues/1632#issuecomment-1112667716
@@ -59,12 +60,7 @@ if [[ "$EUID" = "0" ]]; then
   # Ensure sudo exists, even if we don't need it.
   apt-get update "${APT_ARGS[@]}" > /dev/null
   apt-get install "${APT_ARGS[@]}" sudo > /dev/null
-  PIP_ARGS=(
-    "-qq")
-else
-  PIP_ARGS=(
-    "--user"
-    "-qq")
+  UV_ARGS+=("--system")
 fi
 
 note_build_stage "Update package list"
@@ -77,85 +73,80 @@ note_build_stage "run-prereq.sh: Install development packages"
 wait_for_dpkg_lock
 
 # See https://askubuntu.com/questions/909277.
-sudo -H DEBIAN_FRONTEND=noninteractive apt-get install "${APT_ARGS[@]}" pkg-config zip zlib1g-dev unzip curl git wget > /dev/null
-sudo -H apt-get install --fix-missing "${APT_ARGS[@]}" python3-distutils > /dev/null
+sudo -H DEBIAN_FRONTEND=noninteractive apt-get install "${APT_ARGS[@]}" \
+  gcc \
+  git \
+  curl \
+  pkg-config \
+  python3-distutils \
+  python3-testresources \
+  unzip \
+  wget \
+  zip \
+  zlib1g-dev > /dev/null
 
-note_build_stage "Install python3 packaging infrastructure"
+# Install uv
+note_build_stage "Install uv package manager"
 
-# Avoid issue with pip's dependency resolver not accounting for all installed
-# packages.
-sudo -H apt-get install "${APT_ARGS[@]}" "python3-testresources"
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
 
-# Fix this error:
-# "error: command 'x86_64-linux-gnu-gcc' failed: No such file or directory"
-sudo -H apt-get install "${APT_ARGS[@]}" "gcc"
-
-# If we install python3-pip directly, the pip3 version points to:
-#   pip 8.1.1 from /usr/lib/python3/dist-packages (python 3.5)
-# Use the following lines to ensure correct Python version.
-curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
-python3 get-pip.py --force-reinstall --user
-rm -f get-pip.py
+# Verify uv is installed
+uv --version
 
 echo "$(python3 --version)"
-
-export PATH="$HOME/.local/bin":$PATH
-echo "$(pip3 --version)"
 
 ################################################################################
 # python packages
 ################################################################################
 
-note_build_stage "Install python3 packages"
+note_build_stage "Install python3 packages (batch with uv)"
 
-# Altair version 5.5.0 requires typing-extensions>=4.10.0.
-pip3 install "${PIP_ARGS[@]}" 'typing-extensions>=4.10.0'
-pip3 install "${PIP_ARGS[@]}" contextlib2
-pip3 install "${PIP_ARGS[@]}" etils
-pip3 install "${PIP_ARGS[@]}" 'importlib_resources'
-pip3 install "${PIP_ARGS[@]}" 'enum34==1.1.8'
-pip3 install "${PIP_ARGS[@]}" 'sortedcontainers==2.1.0'
-pip3 install "${PIP_ARGS[@]}" 'intervaltree==3.1.0'
-pip3 install "${PIP_ARGS[@]}" 'mock>=2.0.0'
-pip3 install "${PIP_ARGS[@]}" ml_collections
-pip3 install "${PIP_ARGS[@]}" --ignore-installed PyYAML
-pip3 install "${PIP_ARGS[@]}" 'clu==0.0.9'
-# Note that protobuf installed with pip needs to be 3.13 because of the pyclif
-# version we're using. This is currently inconsistent with C++ protobuf version
-# in WORKSPACE and protobuf.BUILD, but we can't update those, because those
-# files need to be consistent with what TensorFlow needs, which is currently
-# still 3.9.2.
-# Ideally we want to make these protobuf versions all match, eventually.
-pip3 install "${PIP_ARGS[@]}" 'protobuf==4.21.9'
-pip3 install "${PIP_ARGS[@]}" 'argparse==1.4.0'
+# NOTE: Some packages are excluded from this batch because they have
+# transitive dependency conflicts that uv's strict resolver catches.
+# They are installed separately after TensorFlow.
+cat > /tmp/requirements-dv.txt << 'EOF'
+contextlib2
+etils
+importlib_resources
+enum34==1.1.8
+sortedcontainers==2.1.0
+intervaltree==3.1.0
+mock>=2.0.0
+ml_collections
+PyYAML
+clu==0.0.9
+protobuf==4.21.9
+argparse==1.4.0
+pyasn1<0.5.0,>=0.4.6
+requests>=2.18
+oauth2client>=4.0.0
+crcmod>=1.7
+six>=1.11.0
+joblib
+psutil
+google-api-python-client==2.187.0
+google-auth==2.47.0
+google-auth-httplib2==0.3.0
+httplib2==0.31.0
+pandas==1.3.4
+altair==5.5.0
+jsonschema==4.17.3
+Pillow==9.5.0
+ipython==8.22.2
+pysam==0.20.0
+scikit-learn==1.0.2
+setuptools==61.0.0
+packaging==25.0
+pyparsing>=3.0.0,<4.0.0
+EOF
 
-# Reason:
-# ========== [Wed Dec 11 19:57:32 UTC 2019] Stage 'Install python3 packages' starting
-# ERROR: pyasn1-modules 0.2.7 has requirement pyasn1<0.5.0,>=0.4.6, but you'll have pyasn1 0.1.9 which is incompatible.
-pip3 install "${PIP_ARGS[@]}" 'pyasn1<0.5.0,>=0.4.6'
-pip3 install "${PIP_ARGS[@]}" 'requests>=2.18'
-pip3 install "${PIP_ARGS[@]}" --ignore-installed 'oauth2client>=4.0.0'
-pip3 install "${PIP_ARGS[@]}" 'crcmod>=1.7'
-pip3 install "${PIP_ARGS[@]}" 'six>=1.11.0'
-pip3 install "${PIP_ARGS[@]}" joblib
-pip3 install "${PIP_ARGS[@]}" psutil
-pip3 install "${PIP_ARGS[@]}" 'google-api-python-client==2.187.0'
-pip3 install "${PIP_ARGS[@]}" 'google-auth==2.47.0'
-pip3 install "${PIP_ARGS[@]}" 'google-auth-httplib2==0.3.0'
-pip3 install "${PIP_ARGS[@]}" 'httplib2==0.31.0'
-pip3 install "${PIP_ARGS[@]}" 'pandas==1.3.4'
-pip3 install "${PIP_ARGS[@]}" 'altair==5.5.0'
-pip3 install "${PIP_ARGS[@]}" "jsonschema==4.17.3"
-pip3 install "${PIP_ARGS[@]}" 'Pillow==9.5.0'
-pip3 install "${PIP_ARGS[@]}" 'ipython==8.22.2'
-pip3 install "${PIP_ARGS[@]}" 'pysam==0.20.0'
-pip3 install "${PIP_ARGS[@]}" 'scikit-learn==1.0.2'
-pip3 install "${PIP_ARGS[@]}" 'setuptools==61.0.0'
-pip3 install "${PIP_ARGS[@]}" 'packaging==25.0'
-pip3 install "${PIP_ARGS[@]}" 'pyparsing>=3.0.0,<4.0.0'
-# This is to avoid ERROR: No matching distribution found for opencv-python-headless==4.5.2.52.
-# TODO: Make this the same as ${DV_GCP_OPTIMIZED_TF_WHL_VERSION}" later
-pip3 install "${PIP_ARGS[@]}"  "tf-models-official==2.13.1"
+uv pip install "${UV_ARGS[@]}" -r /tmp/requirements-dv.txt
+rm -f /tmp/requirements-dv.txt
+
+# tf-models-official has transitive deps that conflict with TF 2.16.1's
+# typing-extensions requirements. Install it separately without deps.
+uv pip install "${UV_ARGS[@]}" --no-deps "tf-models-official==2.13.1"
 
 ################################################################################
 # TensorFlow
@@ -177,32 +168,32 @@ else
   if [[ "${DV_TF_NIGHTLY_BUILD}" = "1" ]]; then
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow nightly wheel"
-      pip3 install "${PIP_ARGS[@]}" --upgrade tf_nightly_gpu
+      uv pip install "${UV_ARGS[@]}" --upgrade tf_nightly_gpu
     else
       echo "Installing CPU-only TensorFlow nightly wheel"
-      pip3 install "${PIP_ARGS[@]}" --upgrade tf_nightly
+      uv pip install "${UV_ARGS[@]}" --upgrade tf_nightly
     fi
   else
     # Use the official TF release pip package.
     if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       echo "Installing GPU-enabled TensorFlow ${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION} wheel"
-      pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow[and-cuda]==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
+      uv pip install "${UV_ARGS[@]}" --upgrade "tensorflow[and-cuda]==${DV_TENSORFLOW_STANDARD_GPU_WHL_VERSION}"
     else
       echo "Installing CPU TensorFlow ${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION} wheel"
-      pip3 install "${PIP_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
+      uv pip install "${UV_ARGS[@]}" --upgrade "tensorflow==${DV_TENSORFLOW_STANDARD_CPU_WHL_VERSION}"
     fi
   fi
 fi
 
-# A temporary fix.
-# Context: intel-tensorflow 2.7.0 will end up updating markupsafe to 2.1.1,
-# which caused the issue here: https://github.com/pallets/markupsafe/issues/286.
-# Specifically:
-# ImportError: cannot import name 'soft_unicode' from 'markupsafe'.
-# So, forcing a downgrade. This isn't the best solution, but we need it to get
-# our tests pass.
-pip3 install "${PIP_ARGS[@]}" --upgrade 'markupsafe==2.0.1'
-pip3 install "${PIP_ARGS[@]}"  "tf_keras==2.16.0"
+# Post-TF install fixups.
+# These packages have mutually incompatible transitive dependencies with TF,
+# so they must be installed after TF in controlled groups.
+uv pip install "${UV_ARGS[@]}" 'markupsafe==2.0.1' 'tf_keras==2.16.0' 'protobuf==4.21.9'
+# jax must come after TF because it needs ml-dtypes>=0.4.0 which conflicts with
+# TF's ml-dtypes<0.4.0 pin. Install jax without deps, then jaxlib+ml-dtypes.
+uv pip install "${UV_ARGS[@]}" --no-deps 'jax==0.4.35'
+uv pip install "${UV_ARGS[@]}" 'jaxlib==0.4.35' 'ml-dtypes>=0.4.0'
+
 ################################################################################
 # CUDA
 ################################################################################
@@ -240,12 +231,9 @@ if [[ "${DV_GPU_BUILD}" = "1" ]]; then
       sudo chmod a+r /usr/local/cuda-12/lib64/libcudnn*
       sudo ldconfig
     fi
-    # Tensorflow says to do this.
     sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libcupti-dev > /dev/null
   fi
 
-  # If we are doing a gpu-build, nvidia-smi should be install. Run it so we
-  # can see what gpu is installed.
   nvidia-smi || :
 fi
 
@@ -258,10 +246,11 @@ note_build_stage "Install TensorRT"
 # Address the issue:
 # 'dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory'
 # It's unclear whether we need this or not. Setting up to get rid of the errors.
+
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then
-  pip3 install "${PIP_ARGS[@]}" tensorrt==8.5.3.1
+  uv pip install "${UV_ARGS[@]}" tensorrt==8.5.3.1
   echo "For debugging:"
-  pip3 show tensorrt
+  uv pip show tensorrt
   TENSORRT_PATH=$(python3 -c 'import tensorrt; print(tensorrt.__path__[0])')
   sudo ln -sf "${TENSORRT_PATH}/libnvinfer.so.8" "${TENSORRT_PATH}/libnvinfer.so.7"
   sudo ln -sf "${TENSORRT_PATH}/libnvinfer_plugin.so.8" "${TENSORRT_PATH}/libnvinfer_plugin.so.7"
@@ -283,17 +272,13 @@ fi
 
 note_build_stage "Install other packages"
 
-# for htslib
-sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libssl-dev libcurl4-openssl-dev liblz-dev libbz2-dev liblzma-dev > /dev/null
-
-# for the debruijn graph
-sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libboost-graph-dev > /dev/null
-
-# Just being safe, downgrade load-bearing dependencies at the end if needed.
-pip3 install "${PIP_ARGS[@]}" 'protobuf==4.21.9'
-
-# internal#comment9
-pip3 install "${PIP_ARGS[@]}" "jax==0.4.35"
+sudo -H NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" \
+  libboost-graph-dev \
+  libbz2-dev \
+  libcurl4-openssl-dev \
+  liblz-dev \
+  liblzma-dev \
+  libssl-dev > /dev/null
 
 note_build_stage "Linking Cuda and TF shared libraries"
 if [[ "${DV_GPU_BUILD}" = "1" ]]; then

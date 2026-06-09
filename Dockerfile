@@ -23,10 +23,10 @@ ARG TF_ENABLE_ONEDNN_OPTS=1
 #======================================#
 FROM condaforge/miniforge3:24.9.2-0 AS hts_utils
 RUN conda config --add channels bioconda
-RUN conda create -n bio \
+RUN mamba create -y -n bio \
                     bioconda::bcftools=1.15 \
                     bioconda::samtools=1.15 \
-    && conda clean -a
+    && mamba clean -y -a
 
 #==========================#
 # Stage 2: Download Models #

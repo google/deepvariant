@@ -42,33 +42,30 @@ APT_ARGS=(
 )
 
 
-apt-get update  "${APT_ARGS[@]}"
+apt-get update "${APT_ARGS[@]}"
 NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" --no-install-recommends \
     autoconf \
     automake \
+    clang-11 \
     cmake \
     curl \
-    gpg-agent \
     g++ \
-    libtool \
-    make \
-    pkg-config \
-    software-properties-common \
-    wget \
-    unzip
-
-# Install dependencies
-apt-get update "${APT_ARGS[@]}"
-NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" \
-    clang-11 \
+    gpg-agent \
     libclang-11-dev \
     libgoogle-glog-dev \
     libgtest-dev \
     libllvm11 \
+    libstdc++-12-dev \
+    libtool \
     llvm-11 \
     llvm-11-dev \
     llvm-11-linker-tools \
+    make \
+    pkg-config \
     python3-dev \
+    software-properties-common \
+    unzip \
+    wget \
     zlib1g-dev
 
 # Compile and install absl-cpp from source
@@ -79,22 +76,14 @@ if [[ ! -z ${ABSL_PIN} ]]; then
 fi
 mkdir build && cd build
 cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE=true
-make install
+make -j"$(nproc)" install
 cd ../..
 rm -rf abseil-cpp
 
-curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
-python3 get-pip.py --force-reinstall --user
-rm -f get-pip.py
-
-export PATH="$HOME/.local/bin":$PATH
-echo "$(pip3 --version)"
+export PATH="$HOME/.local/bin:/root/.local/bin:$PATH"
 
 # Install python runtime and test dependencies
-pip3 install \
+uv pip install --system \
     absl-py \
     parameterized
 
-# On GPU machines, this might be necessary because of the reason mentioned in:
-# https://stackoverflow.com/a/74605488
-NEEDRESTART_MODE=a apt-get install "${APT_ARGS[@]}" libstdc++-12-dev

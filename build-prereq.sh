@@ -43,12 +43,9 @@ note_build_stage "Install the runtime packages"
 
 ./run-prereq.sh
 
-note_build_stage "Update package list"
-
-sudo -H apt-get -qq -y update
-
 note_build_stage "build-prereq.sh: Install development packages"
 
+# run-prereq.sh already ran apt-get update, so skip the redundant call.
 # Need to wait for dpkg lock (see internal)
 wait_for_dpkg_lock
 sudo -H NEEDRESTART_MODE=a apt-get -qq -y install pkg-config zip g++ zlib1g-dev unzip curl git wget > /dev/null
@@ -96,7 +93,7 @@ DV_DIR=$(pwd)
 
 if [[ ! -d ../tensorflow ]]; then
   note_build_stage "Cloning TensorFlow from github as ../tensorflow doesn't exist"
-  (cd .. && git clone --depth 1 --branch "${DV_CPP_TENSORFLOW_TAG}" https://github.com/tensorflow/tensorflow)
+  (cd .. && git clone --depth 1 --single-branch --branch "${DV_CPP_TENSORFLOW_TAG}" https://github.com/tensorflow/tensorflow)
 fi
 
 # PYTHON_BIN_PATH and PYTHON_LIB_PATH are set in settings.sh.
@@ -136,11 +133,19 @@ sed -i -e 's|832e2f309c57da9c1e6d4542dedd34b24e4192ecb4d62f6f4866a737454c9970|09
 sed -i -e 's|pybind11-2.10.4|pybind11-a7b91e33269ab6f3f90167291af2c4179fc878f5|g' ../tensorflow/tensorflow/workspace2.bzl
 
 # TODO: Test removing this version pinning.
+# Use uv for remaining pip installs in build-prereq too.
+export PATH="$HOME/.local/bin:$PATH"
+
+UV_ARGS=()
+if [[ "$EUID" = "0" ]]; then
+  UV_ARGS+=("--system")
+fi
+
 note_build_stage "Set pyparsing to 2.2.2 for CLIF."
-export PATH="$HOME/.local/bin":$PATH
-pip3 uninstall -y pyparsing && pip3 install -Iv 'pyparsing==2.2.2'
+uv pip install "${UV_ARGS[@]}" 'pyparsing==2.2.2'
 
 # internal - Pin httplib2, pyopenssl, and cryptography to mitigate build failures.
-pip3 install "${PIP_ARGS[@]}" 'httplib2==0.31.0' 'pyopenssl==23.2.0' 'cryptography==41.0.3'
+# Separate from pyparsing because httplib2 requires pyparsing>=3.0.4.
+uv pip install "${UV_ARGS[@]}" 'httplib2==0.31.0' 'pyopenssl==23.2.0' 'cryptography==41.0.3'
 
 note_build_stage "build-prereq.sh complete"
