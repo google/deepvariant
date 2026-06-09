@@ -2289,5 +2289,243 @@ class LabelExamplesTest(parameterized.TestCase):
     )
 
 
+class HaplotypeLabelerMismatchCasesTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      # Case 1: chr1:4639231 Truth(FN) REF=CT ALT=C,CTT GT=2|1  |
+      # chr1:4639231 Oracle(FP) REF=C ALT=CT GT=0/1
+      dict(
+          truths=[
+              _test_variant(
+                  start=4639230, alleles=('CT', 'C', 'CTT'), gt=(2, 1)
+              )
+          ],
+          candidates=[_test_variant(start=4639230, alleles=('C', 'CT'))],
+          expected_genotype=(0, 0),
+      ),
+      # Case 2: chr1:7111885 Truth(FN) REF=CA ALT=C,CAA GT=1|2  |
+      # chr1:7111885 Oracle(FP) REF=C ALT=CA GT=0/1
+      dict(
+          truths=[
+              _test_variant(
+                  start=7111884, alleles=('CA', 'C', 'CAA'), gt=(1, 2)
+              )
+          ],
+          candidates=[_test_variant(start=7111884, alleles=('C', 'CA'))],
+          expected_genotype=(0, 0),
+      ),
+      # Case 3: chr1:9380276 Truth(FN) REF=G ALT=A GT=1|0  |
+      # chr1:9380279 Oracle(FP) REF=G ALT=A GT=0/1
+      dict(
+          truths=[_test_variant(start=9380275, alleles=('G', 'A'), gt=(1, 0))],
+          candidates=[_test_variant(start=9380278, alleles=('G', 'A'))],
+          expected_genotype=(0, 0),
+      ),
+      # Case 4: chr1:9380279 Truth(FN) REF=GGAGGAA ALT=AGAGGAA,G GT=2|1  |
+      # chr1:9380279 Oracle(FP) REF=G ALT=A GT=0/1
+      dict(
+          truths=[
+              _test_variant(
+                  start=9380278, alleles=('GGAGGAA', 'AGAGGAA', 'G'), gt=(2, 1)
+              )
+          ],
+          candidates=[_test_variant(start=9380278, alleles=('G', 'A'))],
+          expected_genotype=(0, 0),
+      ),
+      # Case 5: chr1:9470066 Truth(FN) REF=AAAGGAAGGAAGGAAGGAAGG
+      # ALT=A,AAAGGAAGGAAGGAAGGAAGGAAGGAAGG GT=2|1  |  chr1:9470066
+      # Oracle(FP) REF=A ALT=AAAGGAAGG GT=0/1
+      dict(
+          truths=[
+              _test_variant(
+                  start=9470065,
+                  alleles=(
+                      'AAAGGAAGGAAGGAAGGAAGG',
+                      'A',
+                      'AAAGGAAGGAAGGAAGGAAGGAAGGAAGG',
+                  ),
+                  gt=(2, 1),
+              )
+          ],
+          candidates=[_test_variant(start=9470065, alleles=('A', 'AAAGGAAGG'))],
+          expected_genotype=(0, 0),
+      ),
+      # Case 6: chr1:10586628 Truth(FN) REF=CT ALT=C,CTT GT=2|1  |
+      # chr1:10586628 Oracle(FP) REF=C ALT=CT GT=0/1
+      dict(
+          truths=[
+              _test_variant(
+                  start=10586627, alleles=('CT', 'C', 'CTT'), gt=(2, 1)
+              )
+          ],
+          candidates=[_test_variant(start=10586627, alleles=('C', 'CT'))],
+          expected_genotype=(0, 0),
+      ),
+      # Case 7: chr1:11427156 Truth(FN) REF=TTGTGTGTGTG ALT=T,TTGAG GT=2|1  |
+      # chr1:11427160 Oracle(FP) REF=GTGTGTG ALT=G GT=0/1
+      dict(
+          truths=[
+              _test_variant(
+                  start=11427155,
+                  alleles=('TTGTGTGTGTG', 'T', 'TTGAG'),
+                  gt=(2, 1),
+              )
+          ],
+          candidates=[_test_variant(start=11427159, alleles=('GTGTGTG', 'G'))],
+          expected_genotype=(0, 0),
+      ),
+      # Case 8: chr1:14133377 Truth(FN)
+      # REF=AAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAG
+      # ALT=AAA,AAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAG GT=2|1  |
+      # chr1:14133377 Oracle(FP) REF=AAAAGAAAG ALT=A GT=0/1
+      dict(
+          truths=[
+              _test_variant(
+                  start=14133376,
+                  alleles=(
+                      'AAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAG',
+                      'AAA',
+                      'AAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAG',
+                  ),
+                  gt=(2, 1),
+              )
+          ],
+          candidates=[
+              _test_variant(start=14133376, alleles=('AAAAGAAAG', 'A'))
+          ],
+          expected_genotype=(0, 0),
+      ),
+      # Case 9: chr1:14149099 Truth(FN) REF=C ALT=T GT=0|1  |
+      # chr1:14149104 Oracle(FP) REF=C ALT=CTTTT GT=0/1
+      dict(
+          truths=[_test_variant(start=14149098, alleles=('C', 'T'), gt=(0, 1))],
+          candidates=[_test_variant(start=14149103, alleles=('C', 'CTTTT'))],
+          expected_genotype=(0, 0),
+      ),
+      # Case 10: chr1:14149102 Truth(FN) REF=TCC ALT=T,TCCTTTT GT=2|1  |
+      # chr1:14149104 Oracle(FP) REF=C ALT=CTTTT GT=0/1
+      dict(
+          truths=[
+              _test_variant(
+                  start=14149101, alleles=('TCC', 'T', 'TCCTTTT'), gt=(2, 1)
+              )
+          ],
+          candidates=[_test_variant(start=14149103, alleles=('C', 'CTTTT'))],
+          expected_genotype=(0, 0),
+      ),
+  )
+  def test_representation_mismatch(self, truths, candidates, expected_genotype):
+    # This test proves that the haplotype_labeler algorithm confidently assigns
+    # labels to variants that have representation mismatches with the truth,
+    # causing downstream hap.py evaluation failures (FN for Truth, FP for
+    # Query).
+
+    start = min(v.start for v in truths + candidates) - 100
+    end = max(v.end for v in truths + candidates) + 100
+
+    ref_bases = bytearray(b'A' * (end - start))
+    for v in truths + candidates:
+      v_start_idx = v.start - start
+      for i, b in enumerate(v.reference_bases.encode('utf-8')):
+        ref_bases[v_start_idx + i] = b
+
+    ref_reader = fasta.InMemoryFastaReader(
+        [('20', start, ref_bases.decode('utf-8'))]
+    )
+
+    labeler = _make_labeler(
+        truths=truths,
+        max_separation=100,
+        ref_reader=ref_reader,
+    )
+    region = ranges.make_range('20', start, end)
+
+    result = list(labeler.label_variants(candidates, region))
+    self.assertLen(result, len(candidates))
+
+    for label in result:
+      self.assertTrue(label.is_confident)
+      if label.variant.start == candidates[0].start:
+        # We assert that it assigns (0, 0), but the test will fail because
+        # haplotype_labeler incorrectly assigns the FP genotype (0, 1).
+        self.assertEqual(
+            tuple(label.variant.calls[0].genotype), expected_genotype
+        )
+
+
+class HaplotypeLabelerInternalHelpersTest(parameterized.TestCase):
+
+  def test_is_partial_representation_cases(self):
+    # Case 1: Same start, different REF -> True
+    candidate = _test_variant(start=10, alleles=('A', 'C'))
+    truth = _test_variant(start=10, alleles=('AT', 'A'))
+    self.assertTrue(
+        haplotype_labeler._is_partial_representation(candidate, truth)
+    )
+
+    # Case 2: Same start, same REF (subset of ALT alleles) -> False
+    candidate = _test_variant(start=10, alleles=('A', 'C'))
+    truth = _test_variant(start=10, alleles=('A', 'C', 'G'))
+    self.assertFalse(
+        haplotype_labeler._is_partial_representation(candidate, truth)
+    )
+
+    # Case 3: Candidate starts within truth reference span -> True
+    candidate = _test_variant(start=12, alleles=('A', 'C'))
+    truth = _test_variant(start=10, alleles=('AAAA', 'A'))
+    # truth.start=10, candidate.start=12, truth.end=14. 10 < 12 < 14.
+    self.assertTrue(
+        haplotype_labeler._is_partial_representation(candidate, truth)
+    )
+
+    # Case 4: Candidate starts before truth, but overlaps
+    # (covers line 1269) -> False
+    candidate = _test_variant(start=8, alleles=('AAA', 'C'))  # end=11
+    truth = _test_variant(start=10, alleles=('AAAA', 'A'))  # end=14
+    # Overlaps because 8 < 14 and 10 < 11.
+    # candidate.start (8) != truth.start (10)
+    # truth.start < candidate.start < truth.end (10 < 8 < 14) is False.
+    # Should fall through to line 1269.
+    self.assertFalse(
+        haplotype_labeler._is_partial_representation(candidate, truth)
+    )
+
+  def test_demote_partial_matches_returns_same_instance_if_no_changes(self):
+    # Setup a degraded truth at pos 10
+    truth = _test_variant(start=10, alleles=('A', 'C'), gt=(1, 1))
+    # Setup a candidate at pos 100 (no overlap)
+    candidate = _test_variant(start=100, alleles=('A', 'C'))
+
+    match = haplotype_labeler.HaplotypeMatch(
+        haplotypes=['A'],
+        candidates=[candidate],
+        candidate_genotypes=[(0, 1)],
+        truths=[truth],
+        truth_genotypes=[(0, 1)],  # Degraded
+    )
+
+    result = haplotype_labeler._demote_partial_matches(match)
+    # Asserts identity to kill changed=True mutant.
+    self.assertIs(result, match)
+
+  def test_demote_partial_matches_returns_new_instance_if_changed(self):
+    # Setup a degraded truth at pos 10
+    truth = _test_variant(start=10, alleles=('AAAA', 'A'), gt=(1, 1))  # end=14
+    # Setup an overlapping candidate at pos 12 (starts inside)
+    candidate = _test_variant(start=12, alleles=('AA', 'C'))  # end=14
+
+    match = haplotype_labeler.HaplotypeMatch(
+        haplotypes=['AAAA'],
+        candidates=[candidate],
+        candidate_genotypes=[(0, 1)],
+        truths=[truth],
+        truth_genotypes=[(0, 1)],  # Degraded
+    )
+
+    result = haplotype_labeler._demote_partial_matches(match)
+    self.assertIsNot(result, match)
+    self.assertEqual(result.candidate_genotypes, [(0, 0)])  # Genotype demoted
+
+
 if __name__ == '__main__':
   absltest.main()

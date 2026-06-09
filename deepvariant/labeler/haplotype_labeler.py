@@ -1232,6 +1232,113 @@ def deduplicate_haplotypes(haplotypes_to_genotypes_dict):
   return retval
 
 
+def _is_partial_representation(candidate, truth):
+  """Checks if candidate is a partial representation of a truth variant.
+
+  A candidate is considered partial when it represents a different
+  normalization or subset of a truth variant that cannot be reconciled by
+  downstream evaluation tools like hap.py. Specifically:
+
+  1. Same position, different REF: The candidate uses a different reference
+     representation than truth, meaning its ALT alleles encode a different
+     genomic span and cannot directly correspond to truth alleles.
+
+  2. Candidate within truth's span: The candidate starts at a position
+     strictly within the truth variant's reference span, indicating it
+     captures only a portion of the truth's larger event.
+
+  Note: Same position and same REF with fewer ALT alleles is NOT considered
+  partial — the candidate legitimately represents a subset of truth alleles.
+
+  Args:
+    candidate: nucleus.protos.Variant. The candidate variant.
+    truth: nucleus.protos.Variant. The truth variant.
+
+  Returns:
+    True if the candidate is a partial representation of the truth.
+  """
+  if candidate.start == truth.start:
+    # Same position but different REF alleles: the candidate uses a different
+    # reference representation, so its ALT alleles cannot directly correspond
+    # to truth ALT alleles. This is a representation mismatch.
+    if candidate.reference_bases != truth.reference_bases:
+      return True
+    # Same position, same REF: candidate legitimately represents a subset of
+    # truth alleles (e.g., truth has ALTs G,C and candidate has ALT C).
+    return False
+
+  # Candidate starts within the truth variant's reference span: the candidate
+  # captures only a sub-region of a larger truth event.
+  if truth.start < candidate.start < truth.end:
+    return True
+
+  return False
+
+
+def _demote_partial_matches(match):
+  """Demotes candidates that are partial representations of degraded truths.
+
+  When the best haplotype match has false negatives (truth variants whose
+  assigned genotype has fewer non-ref alleles than the original), this function
+  checks if any candidate with a non-ref genotype positionally overlaps a
+  degraded truth variant and is a partial representation of it. If so, the
+  candidate's genotype is demoted to hom-ref (0, 0).
+
+  This prevents the labeler from confidently assigning non-ref genotypes to
+  candidates that only partially capture a complex truth variant. Such partial
+  matches cause downstream evaluation tools (e.g., hap.py) to reject the
+  candidate as a false positive while counting the truth as a false negative.
+
+  Args:
+    match: HaplotypeMatch. The best match from select_best_haplotype_match.
+
+  Returns:
+    A HaplotypeMatch with demoted candidate genotypes, or the original match
+    if no candidates were demoted.
+  """
+  if match.n_false_negatives == 0:
+    return match
+
+  new_candidate_genotypes = list(match.candidate_genotypes)
+  changed = False
+
+  for truth, orig_gt, assigned_gt in zip(
+      match.truths, match.original_truth_genotypes, match.truth_genotypes
+  ):
+    # Check if this truth variant was degraded (assigned fewer non-ref
+    # alleles than the original genotype).
+    orig_nonref = sum(1 for g in orig_gt if g > 0)
+    assigned_nonref = sum(1 for g in assigned_gt if g > 0)
+    if assigned_nonref >= orig_nonref:
+      continue
+
+    # This truth has missed alleles. Check for overlapping candidates.
+    for c_idx, (candidate, c_gt) in enumerate(
+        zip(match.candidates, new_candidate_genotypes)
+    ):
+      if sum(c_gt) == 0:
+        continue  # Already hom-ref, skip.
+
+      # Check positional overlap between candidate and truth.
+      if not (candidate.start < truth.end and truth.start < candidate.end):
+        continue
+
+      # Check if this candidate is a partial representation of the truth.
+      if _is_partial_representation(candidate, truth):
+        new_candidate_genotypes[c_idx] = (0, 0)
+        changed = True
+
+  if changed:
+    return HaplotypeMatch(
+        haplotypes=match.haplotypes,
+        candidates=match.candidates,
+        candidate_genotypes=new_candidate_genotypes,
+        truths=match.truths,
+        truth_genotypes=match.truth_genotypes,
+    )
+  return match
+
+
 # TODO: Create a comparison engine that accepts an iterable of
 # variants and truths, and yields information about each variant and
 # truth variant sequentially. This should be the primary API. Refactor
@@ -1327,7 +1434,12 @@ def find_best_matching_haplotypes(candidates, truths, ref):
   if not found:
     return None
   else:
-    return select_best_haplotype_match(found)
+    best = select_best_haplotype_match(found)
+    # Post-process: demote candidates that are partial representations of
+    # degraded truth variants. This prevents confident labeling of candidates
+    # that only partially capture a complex truth variant.
+    best = _demote_partial_matches(best)
+    return best
 
 
 def select_best_haplotype_match(all_matches):
