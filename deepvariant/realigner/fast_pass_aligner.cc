@@ -1114,7 +1114,7 @@ void FastPassAligner::CalculateReadToRefAlignment(
 }
 
 FastPassAligner::GlobalAlignment FastPassAligner::GlobalAlign(
-    absl::string_view query, absl::string_view target) const {
+    absl::string_view query, absl::string_view target, int edge_range) const {
   const int n = query.size();
   const int m = target.size();
   if (n == 0 || m == 0) return FastPassAligner::GlobalAlignment();
@@ -1124,12 +1124,12 @@ FastPassAligner::GlobalAlignment FastPassAligner::GlobalAlign(
   std::vector<int> E((n + 1) * (m + 1), -kInf);
   std::vector<int> F((n + 1) * (m + 1), -kInf);
 
-  PopulateDpMatrix(query, target, M, E, F);
+  PopulateDpMatrix(query, target, edge_range, M, E, F);
   return BackTrackBestAlignment(query, target, M, E, F);
 }
 
 void FastPassAligner::PopulateDpMatrix(absl::string_view query,
-                                       absl::string_view target,
+                                       absl::string_view target, int edge_range,
                                        std::vector<int>& M, std::vector<int>& E,
                                        std::vector<int>& F) const {
   const int n = query.size();
@@ -1138,6 +1138,11 @@ void FastPassAligner::PopulateDpMatrix(absl::string_view query,
   const int mismatch = -static_cast<int>(mismatch_penalty_);
   const int gap_open = -static_cast<int>(gap_opening_penalty_);
   const int gap_extend = -static_cast<int>(gap_extending_penalty_);
+  const int edge_indel_penalty = -static_cast<int>(gap_opening_penalty_);
+
+  auto is_edge = [&](int i) {
+    return i > 0 && (i <= edge_range || i > n - edge_range);
+  };
 
   auto idx = [&](int i, int j) { return i * (m + 1) + j; };
 
@@ -1149,10 +1154,23 @@ void FastPassAligner::PopulateDpMatrix(absl::string_view query,
 
   for (int i = 1; i <= n; ++i) {
     for (int j = 1; j <= m; ++j) {
-      E[idx(i, j)] = std::max(M[idx(i, j - 1)] + gap_open + gap_extend,
-                              E[idx(i, j - 1)] + gap_extend);
-      F[idx(i, j)] = std::max(M[idx(i - 1, j)] + gap_open + gap_extend,
-                              F[idx(i - 1, j)] + gap_extend);
+      int edge_penalty_open = is_edge(i) ? edge_indel_penalty : 0;
+      // We only want to penalize INDEL within the edge regions once. Since
+      // INDEL can start outside the edge regions and continue into the edge we
+      // need the extra check to see if previous position was not an edge.
+      // The penalty would be applied either through edge_pentalty_open OR
+      // edge_penalty_extend.
+      int edge_penalty_extend =
+          (is_edge(i) && !is_edge(i - 1)) ? edge_indel_penalty : 0;
+
+      E[idx(i, j)] = std::max(
+          M[idx(i, j - 1)] + gap_open + gap_extend + edge_penalty_open,
+          E[idx(i, j - 1)] + gap_extend + edge_penalty_extend);
+
+      F[idx(i, j)] = std::max(
+          M[idx(i - 1, j)] + gap_open + gap_extend + edge_penalty_open,
+          F[idx(i - 1, j)] + gap_extend + edge_penalty_extend);
+
       int score = (query[i - 1] == target[j - 1]) ? match : mismatch;
       M[idx(i, j)] =
           std::max({M[idx(i - 1, j - 1)] + score, E[idx(i, j)], F[idx(i, j)]});

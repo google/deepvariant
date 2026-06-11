@@ -56,7 +56,7 @@ class GlobalAlignTest : public ::testing::Test {
 
 TEST_F(GlobalAlignTest, ExactMatch) {
   SetPenalties(4, 6, 8, 1);
-  auto alignment = aligner_.GlobalAlign("ACGT", "ACGT");
+  auto alignment = aligner_.GlobalAlign("ACGT", "ACGT", 0);
   EXPECT_EQ(alignment.sw_score, 16);
   EXPECT_EQ(alignment.cigar_string, "4=");
   EXPECT_EQ(alignment.ref_begin, 0);
@@ -66,7 +66,7 @@ TEST_F(GlobalAlignTest, ExactMatch) {
 TEST_F(GlobalAlignTest, SingleMismatch) {
   SetPenalties(4, 6, 8, 1);
   // Match, Mismatch, Match, Match
-  auto alignment = aligner_.GlobalAlign("ACGT", "AGGT");
+  auto alignment = aligner_.GlobalAlign("ACGT", "AGGT", 0);
   EXPECT_EQ(alignment.sw_score, 4 * 3 - 6);
   EXPECT_EQ(alignment.cigar_string, "1=1X2=");
 }
@@ -74,7 +74,7 @@ TEST_F(GlobalAlignTest, SingleMismatch) {
 TEST_F(GlobalAlignTest, SingleInsertionInQuery) {
   SetPenalties(4, 6, 10, 2);
   // ACGT in A-GT -> ACGT aligns with 'C' as insertion.
-  auto alignment = aligner_.GlobalAlign("ACGT", "AGT");
+  auto alignment = aligner_.GlobalAlign("ACGT", "AGT", 0);
   EXPECT_EQ(alignment.sw_score, 4 * 3 - (10 + 2));
   EXPECT_EQ(alignment.cigar_string, "1=1I2=");
 }
@@ -83,7 +83,7 @@ TEST_F(GlobalAlignTest, SingleDeletionInQuery) {
   SetPenalties(4, 6, 10, 2);
   // AGT in ACGT -> AGT aligns with 'C' as mismatch because mismatch (6) is
   // cheaper than a gap (12).
-  auto alignment = aligner_.GlobalAlign("AGT", "ACGT");
+  auto alignment = aligner_.GlobalAlign("AGT", "ACGT", 0);
   EXPECT_EQ(alignment.sw_score, 2);
   EXPECT_EQ(alignment.cigar_string, "1X2=");
 }
@@ -91,7 +91,7 @@ TEST_F(GlobalAlignTest, SingleDeletionInQuery) {
 TEST_F(GlobalAlignTest, AnchorAtEnd) {
   SetPenalties(4, 6, 8, 1);
   // Query "ACGT" should match at the end of "TTTTACGT"
-  auto alignment = aligner_.GlobalAlign("ACGT", "TTTTACGT");
+  auto alignment = aligner_.GlobalAlign("ACGT", "TTTTACGT", 0);
   EXPECT_EQ(alignment.sw_score, 16);
   EXPECT_EQ(alignment.ref_begin, 4);
   EXPECT_EQ(alignment.cigar_string, "4=");
@@ -100,7 +100,7 @@ TEST_F(GlobalAlignTest, AnchorAtEnd) {
 
 TEST_F(GlobalAlignTest, AnchorAtStart) {
   SetPenalties(4, 6, 8, 1);
-  auto alignment = aligner_.GlobalAlign("ACGT", "ACGTTTTT");
+  auto alignment = aligner_.GlobalAlign("ACGT", "ACGTTTTT", 0);
   EXPECT_EQ(alignment.sw_score, 16);
   EXPECT_EQ(alignment.ref_begin, 0);
   EXPECT_EQ(alignment.ref_end, 3);
@@ -111,7 +111,7 @@ TEST_F(GlobalAlignTest, AnchorAtStart) {
 
 TEST_F(GlobalAlignTest, AnchorInMiddle) {
   SetPenalties(4, 6, 8, 1);
-  auto alignment = aligner_.GlobalAlign("ACGT", "GGGACGTGGG");
+  auto alignment = aligner_.GlobalAlign("ACGT", "GGGACGTGGG", 0);
   EXPECT_EQ(alignment.sw_score, 16);
   EXPECT_EQ(alignment.ref_begin, 3);
   EXPECT_EQ(alignment.ref_end, 6);
@@ -122,20 +122,20 @@ TEST_F(GlobalAlignTest, AnchorInMiddle) {
 
 TEST_F(GlobalAlignTest, HighMismatchPenaltyFavorsGap) {
   SetPenalties(4, 20, 2, 1);
-  auto alignment = aligner_.GlobalAlign("ACGT", "AGGT");
+  auto alignment = aligner_.GlobalAlign("ACGT", "AGGT", 0);
   EXPECT_EQ(alignment.cigar_string, "1=1D1I2=");
 }
 
 TEST_F(GlobalAlignTest, HighGapPenaltyFavorsMismatch) {
   SetPenalties(4, 2, 20, 10);
-  auto alignment = aligner_.GlobalAlign("ACGT", "GGGAGTAAAA");
+  auto alignment = aligner_.GlobalAlign("ACGT", "GGGAGTAAAA", 0);
   EXPECT_EQ(alignment.cigar_string, "2X2=");
 }
 
 TEST_F(GlobalAlignTest, AffineGapLongGap) {
   SetPenalties(4, 6, 10, 1);
   // ACGTTTGT (8bp) vs ACGTGT (6bp)
-  auto alignment = aligner_.GlobalAlign("ACGTTTGT", "ACGTGT");
+  auto alignment = aligner_.GlobalAlign("ACGTTTGT", "ACGTGT", 0);
   // The tie-breaking in backtrack yields 3=2I3=
   EXPECT_EQ(alignment.cigar_string, "3=2I3=");
   EXPECT_EQ(alignment.sw_score, 4 * 6 - 12);
@@ -146,7 +146,7 @@ TEST_F(GlobalAlignTest, SoftClipPrefix) {
   // Query: TTTTACGT
   // Target: GGGGACGT
   // Current implementation forces full query alignment.
-  auto alignment = aligner_.GlobalAlign("TTTTACGT", "GGGGACGT");
+  auto alignment = aligner_.GlobalAlign("TTTTACGT", "GGGGACGT", 0);
   EXPECT_EQ(alignment.cigar_string, "4I4=");
   EXPECT_EQ(alignment.sw_score, -2);
 }
@@ -154,20 +154,20 @@ TEST_F(GlobalAlignTest, SoftClipPrefix) {
 TEST_F(GlobalAlignTest, AllSoftClipped) {
   SetPenalties(4, 10, 10, 10);
   // Query: AAAA, Target: TTTT. Score 4 * -10 = -40.
-  auto alignment = aligner_.GlobalAlign("AAAA", "TTTT");
+  auto alignment = aligner_.GlobalAlign("AAAA", "TTTT", 0);
   EXPECT_EQ(alignment.cigar_string, "4X");
   EXPECT_EQ(alignment.sw_score, -40);
 }
 
 TEST_F(GlobalAlignTest, TieBreakerLastMatch) {
   SetPenalties(4, 6, 8, 1);
-  auto alignment = aligner_.GlobalAlign("AAAA", "AAAA_AAAA");
+  auto alignment = aligner_.GlobalAlign("AAAA", "AAAA_AAAA", 0);
   EXPECT_EQ(alignment.ref_begin, 5);
 }
 
 TEST_F(GlobalAlignTest, ShortQuery) {
   SetPenalties(4, 6, 8, 1);
-  auto alignment = aligner_.GlobalAlign("A", "TTTATT");
+  auto alignment = aligner_.GlobalAlign("A", "TTTATT", 0);
   EXPECT_EQ(alignment.sw_score, 4);
   EXPECT_EQ(alignment.ref_begin, 3);
   EXPECT_EQ(alignment.cigar_string, "1=");
@@ -176,46 +176,46 @@ TEST_F(GlobalAlignTest, ShortQuery) {
 TEST_F(GlobalAlignTest, QueryLongerThanTarget) {
   SetPenalties(4, 6, 8, 1);
   // Query: AAAACCCC, Target: CCCC.
-  auto alignment = aligner_.GlobalAlign("AAAACCCC", "CCCC");
+  auto alignment = aligner_.GlobalAlign("AAAACCCC", "CCCC", 0);
   EXPECT_EQ(alignment.cigar_string, "5I3=");
   EXPECT_EQ(alignment.sw_score, -1);
 }
 
 TEST_F(GlobalAlignTest, EmptyQuery) {
-  auto alignment = aligner_.GlobalAlign("", "ACGT");
+  auto alignment = aligner_.GlobalAlign("", "ACGT", 0);
   EXPECT_EQ(alignment.sw_score, 0);
   EXPECT_EQ(alignment.cigar_string, "");
 }
 
 TEST_F(GlobalAlignTest, EmptyTarget) {
-  auto alignment = aligner_.GlobalAlign("ACGT", "");
+  auto alignment = aligner_.GlobalAlign("ACGT", "", 0);
   EXPECT_EQ(alignment.sw_score, 0);
   EXPECT_EQ(alignment.cigar_string, "");
 }
 
 TEST_F(GlobalAlignTest, MixedIndelMismatch) {
   SetPenalties(4, 6, 10, 2);
-  auto alignment = aligner_.GlobalAlign("ACGTA", "AGCA");
+  auto alignment = aligner_.GlobalAlign("ACGTA", "AGCA", 0);
   EXPECT_EQ(alignment.cigar_string, "1=1I1=1X1=");
 }
 
 TEST_F(GlobalAlignTest, LowComplexityRegion) {
   SetPenalties(4, 6, 10, 2);
-  auto alignment = aligner_.GlobalAlign("AAAAA", "AAAAAA");
+  auto alignment = aligner_.GlobalAlign("AAAAA", "AAAAAA", 0);
   EXPECT_EQ(alignment.cigar_string, "5=");
   EXPECT_EQ(alignment.sw_score, 20);
 }
 
 TEST_F(GlobalAlignTest, DifferentMatchScore) {
   SetPenalties(1, 6, 8, 1);
-  auto alignment = aligner_.GlobalAlign("ACGT", "ACGT");
+  auto alignment = aligner_.GlobalAlign("ACGT", "ACGT", 0);
   EXPECT_EQ(alignment.sw_score, 4);
   EXPECT_EQ(alignment.cigar_string, "4=");
 }
 
 TEST_F(GlobalAlignTest, AffineGapBacktrackingBugTest) {
   SetPenalties(3, 10, 2, 1);
-  auto alignment = aligner_.GlobalAlign("C", "AC");
+  auto alignment = aligner_.GlobalAlign("C", "AC", 0);
   EXPECT_EQ(alignment.cigar_string, "1=");
 }
 

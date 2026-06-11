@@ -293,8 +293,8 @@ class FastPassAligner {
     std::string cigar_string;
   };
 
-  GlobalAlignment GlobalAlign(absl::string_view query,
-                              absl::string_view target) const;
+  GlobalAlignment GlobalAlign(absl::string_view query, absl::string_view target,
+                              int edge_range) const;
 
   // Build K-mer index for all reads.
   void BuildIndex();
@@ -462,8 +462,8 @@ class FastPassAligner {
                       KmerOffset pos);
 
   void PopulateDpMatrix(absl::string_view query, absl::string_view target,
-                        std::vector<int>& M, std::vector<int>& E,
-                        std::vector<int>& F) const;
+                        int edge_range, std::vector<int>& M,
+                        std::vector<int>& E, std::vector<int>& F) const;
 
   GlobalAlignment BackTrackBestAlignment(absl::string_view query,
                                          absl::string_view target,
