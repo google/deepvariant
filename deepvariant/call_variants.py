@@ -882,6 +882,9 @@ def call_variants(
       # Jax/Flax based saved-models may integrate preprocessing into the
       # model itself.
       if (
+          hasattr(model, 'model_performs_preprocessing')
+          and model.model_performs_preprocessing.numpy()
+      ) or (
           hasattr(model, 'preprocessing_applied')
           and model.preprocessing_applied.numpy()
       ):
