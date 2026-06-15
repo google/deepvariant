@@ -111,6 +111,54 @@ class RunOracleInferenceTest(parameterized.TestCase):
         '--output_vcf "your_vcf"',
     )
 
+  @flagsaver.flagsaver
+  def test_basic_commands_pangenome(self):
+    FLAGS.model_type = 'WGS'
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads = 'your_bam'
+    FLAGS.output_vcf = 'your_vcf'
+    FLAGS.num_shards = 64
+    FLAGS.truth_variants = 'your_truth.vcf'
+    FLAGS.confident_regions = 'your_conf.bed'
+    FLAGS.labeler_algorithm = 'HAPLOTYPE_LABELER'
+    FLAGS.pangenome = 'your_pangenome.gbz'
+    FLAGS.gbz_shared_memory_size_gb = 20
+    FLAGS.channel_list = 'read_base,base_quality,mapping_quality'
+    commands = run_oracle_inference.create_all_commands_and_logfiles(
+        '/tmp/deepvariant_tmp_output'
+    )
+
+    # First command should be load_gbz_into_shared_memory.
+    self.assertIn(
+        '/opt/deepvariant/bin/load_gbz_into_shared_memory',
+        commands[0][0],
+    )
+    self.assertIn('your_pangenome.gbz', commands[0][0])
+    self.assertIn('--shared_memory_size_gb 20', commands[0][0])
+
+    # Second command should be make_examples_pangenome_aware_dv.
+    self.assertIn(
+        '/opt/deepvariant/bin/make_examples_pangenome_aware_dv',
+        commands[1][0],
+    )
+    self.assertIn('--mode training', commands[1][0])
+    self.assertIn('--pangenome "your_pangenome.gbz"', commands[1][0])
+    self.assertIn('--use_loaded_gbz_shared_memory', commands[1][0])
+    self.assertIn('make_examples_pangenome.tfrecord@64.gz', commands[1][0])
+    self.assertIn(
+        '--channel_list "read_base,base_quality,mapping_quality"',
+        commands[1][0],
+    )
+
+    # Third command should be labeled_examples_to_vcf.
+    self.assertEqual(
+        commands[2][0],
+        'time /opt/deepvariant/bin/labeled_examples_to_vcf '
+        '--ref "your_ref" --examples'
+        ' "/tmp/deepvariant_tmp_output/make_examples_pangenome.tfrecord@64.gz" '
+        '--output_vcf "your_vcf"',
+    )
+
 
 if __name__ == '__main__':
   absltest.main()

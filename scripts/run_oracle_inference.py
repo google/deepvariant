@@ -193,6 +193,54 @@ _MAKE_EXAMPLES_EXTRA_ARGS = flags.DEFINE_string(
     ),
 )
 
+# Pangenome-aware DeepVariant flags.
+_PANGENOME = flags.DEFINE_string(
+    'pangenome',
+    None,
+    (
+        'Optional. Pangenome graph (GBZ file) to use for pangenome-aware'
+        ' oracle inference. When set, uses make_examples_pangenome_aware_dv'
+        ' binary instead of make_examples.'
+    ),
+)
+_REF_NAME_PANGENOME = flags.DEFINE_string(
+    'ref_name_pangenome',
+    'GRCh38',
+    (
+        'The name of the reference genome in the pangenome gbz file.'
+        ' This reference should match the reference used for the reads.'
+    ),
+)
+_SAMPLE_NAME_PANGENOME = flags.DEFINE_string(
+    'sample_name_pangenome',
+    'hprc_v1.1',
+    (
+        'Sample name for the pangenome panel. The default here is'
+        ' corresponding to the default pangenome graph.'
+    ),
+)
+_GBZ_SHARED_MEMORY_SIZE_GB = flags.DEFINE_integer(
+    'gbz_shared_memory_size_gb',
+    12,
+    'Optional. Size of the shared memory region for GBZ loading, in GB.',
+)
+_GBZ_SHARED_MEMORY_NAME = flags.DEFINE_string(
+    'gbz_shared_memory_name',
+    None,
+    (
+        'Optional. Name of the shared memory region for GBZ. If not set,'
+        ' a default name is used.'
+    ),
+)
+_CHANNEL_LIST = flags.DEFINE_string(
+    'channel_list',
+    'BASE_CHANNELS',
+    (
+        'Comma-separated list of channels to use for make_examples.'
+        ' Default is BASE_CHANNELS which includes the 6 standard channels.'
+    ),
+)
+
 
 # Current release version of DeepVariant.
 # Should be the same in dv_vcf_constants.py.
@@ -227,7 +275,17 @@ def split_extra_args(input_string: str) -> list[str]:
 
 
 def _extra_args_to_dict(extra_args: str) -> dict[str, Any]:
-  """Parses comma-separated list of flag_name=flag_value to dict."""
+  """Parses comma-separated list of flag_name=flag_value to dict.
+
+  Note: Values containing commas (e.g. channel_list) cannot be passed through
+  extra_args. Use dedicated flags for such values instead.
+
+  Args:
+    extra_args: Comma-separated list of flag_name=flag_value pairs.
+
+  Returns:
+    A dict mapping flag names to their values.
+  """
   args_dict = {}
   if extra_args is None:
     return args_dict
@@ -272,15 +330,54 @@ def _update_kwargs_with_warning(kwargs, extra_args):
   return kwargs
 
 
+def load_gbz_into_shared_memory_command(
+    gbz: str,
+    *,
+    ref_name_pangenome: str,
+    gbz_shared_memory_name: str | None,
+    gbz_shared_memory_size_gb: int,
+) -> tuple[str, str | None]:
+  """Returns a load_gbz_into_shared_memory (command, logfile) for subprocess.
+
+  Args:
+    gbz: Input pangenome GBZ file.
+    ref_name_pangenome: Reference name to use for the GBZ file.
+    gbz_shared_memory_name: Name of the shared memory region to create.
+    gbz_shared_memory_size_gb: Size of the shared memory region to create.
+
+  Returns:
+    (string, string) A command to run, and a log file to output to.
+  """
+  command = ['time', '/opt/deepvariant/bin/load_gbz_into_shared_memory']
+  command.extend(['--pangenome_gbz', '"{}"'.format(gbz)])
+  command.extend(['--ref_name_pangenome', '"{}"'.format(ref_name_pangenome)])
+  if gbz_shared_memory_name is not None:
+    command.extend(
+        ['--shared_memory_name', '"{}"'.format(gbz_shared_memory_name)]
+    )
+  command.extend(['--shared_memory_size_gb', str(gbz_shared_memory_size_gb)])
+  command.extend(['--num_shards', '"{}"'.format(_NUM_SHARDS.value)])
+
+  logfile = None
+  if _LOGGING_DIR.value:
+    logfile = '{}/load_gbz_into_shared_memory.log'.format(_LOGGING_DIR.value)
+  return (' '.join(command), logfile)
+
+
 def make_examples_command(
     ref: str,
     reads: str,
     examples: str,
     labeler_algorithm: str,
     extra_args: str | None,
+    *,
+    pangenome: str | None = None,
     **kwargs,
 ) -> tuple[str, str | None]:
   """Returns a make_examples (command, logfile) for subprocess.
+
+  When pangenome is set, uses make_examples_pangenome_aware_dv binary and
+  adds pangenome-specific flags (GBZ shared memory, ref/sample names).
 
   Args:
     ref: Input FASTA file.
@@ -288,29 +385,52 @@ def make_examples_command(
     examples: Output tfrecord file containing tensorflow.Example files.
     labeler_algorithm: Labeler algorithm to use for calling variants.
     extra_args: Comma-separated list of flag_name=flag_value.
+    pangenome: Optional. Input pangenome GBZ file. When set, uses
+      make_examples_pangenome_aware_dv instead of make_examples.
     **kwargs: Additional arguments to pass in for make_examples.
 
   Returns:
     (string, string) A command to run, and a log file to output to.
   """
+  if pangenome:
+    binary = '/opt/deepvariant/bin/make_examples_pangenome_aware_dv'
+  else:
+    binary = '/opt/deepvariant/bin/make_examples'
+
   command = [
       'time',
       'seq 0 {} |'.format(_NUM_SHARDS.value - 1),
       'parallel -q --halt 2 --line-buffer',
-      '/opt/deepvariant/bin/make_examples',
+      binary,
   ]
   command.extend(['--mode', 'training'])
   command.extend(['--ref', '"{}"'.format(ref)])
   command.extend(['--reads', '"{}"'.format(reads)])
+  if pangenome:
+    command.extend(['--pangenome', '"{}"'.format(pangenome)])
   command.extend(['--labeler_algorithm', '"{}"'.format(labeler_algorithm)])
   command.extend(['--examples', '"{}"'.format(examples)])
-  command.extend(['--channel_list', '"BASE_CHANNELS"'])
+  command.extend(['--channel_list', '"{}"'.format(_CHANNEL_LIST.value)])
 
-  command.extend(['--max_reads_per_partition', '1500'])
-  partition_size = 1000
-  if _MODEL_TYPE.value in (ModelType.PACBIO.value, ModelType.ONT_R104.value):
-    partition_size = 25000
-  command.extend(['--partition_size', '"{}"'.format(partition_size)])
+  if pangenome:
+    # Add pangenome-specific flags for GBZ shared memory.
+    special_args = {}
+    if pangenome.endswith('.gbz'):
+      special_args['use_loaded_gbz_shared_memory'] = True
+    if _GBZ_SHARED_MEMORY_NAME.value is not None:
+      special_args['gbz_shared_memory_name'] = _GBZ_SHARED_MEMORY_NAME.value
+    if _REF_NAME_PANGENOME.value is not None:
+      special_args['ref_name_pangenome'] = _REF_NAME_PANGENOME.value
+    if _SAMPLE_NAME_PANGENOME.value is not None:
+      special_args['sample_name_pangenome'] = _SAMPLE_NAME_PANGENOME.value
+    kwargs = _update_kwargs_with_warning(kwargs, special_args)
+  else:
+    # Standard make_examples flags.
+    command.extend(['--max_reads_per_partition', '1500'])
+    partition_size = 1000
+    if _MODEL_TYPE.value in (ModelType.PACBIO.value, ModelType.ONT_R104.value):
+      partition_size = 25000
+    command.extend(['--partition_size', '"{}"'.format(partition_size)])
 
   # Extend the command with all items in kwargs and extra_args.
   kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
@@ -382,7 +502,10 @@ def check_flags():
 def create_all_commands_and_logfiles(
     intermediate_results_dir: str,
 ) -> list[tuple[str, str | None]]:
-  """Creates 3 (command, logfile) to be executed later.
+  """Creates (command, logfile) tuples to be executed later.
+
+  When --pangenome is set, uses make_examples_pangenome_aware_dv binary
+  and loads GBZ into shared memory first if the pangenome file is a .gbz.
 
   Args:
     intermediate_results_dir: Directory to store intermediate results.
@@ -392,10 +515,34 @@ def create_all_commands_and_logfiles(
   """
   check_flags()
   commands = []
-  # make_examples
+
+  if _PANGENOME.value:
+    # Pangenome-aware oracle inference path.
+    examples_prefix = 'make_examples_pangenome'
+    pangenome_kwargs = dict(
+        pangenome=_PANGENOME.value,
+        sample_name_reads=_SAMPLE_NAME.value,
+    )
+    # Load pangenome GBZ into shared memory first.
+    if _PANGENOME.value.endswith('.gbz'):
+      commands.append(
+          load_gbz_into_shared_memory_command(
+              gbz=_PANGENOME.value,
+              ref_name_pangenome=_REF_NAME_PANGENOME.value,
+              gbz_shared_memory_name=_GBZ_SHARED_MEMORY_NAME.value,
+              gbz_shared_memory_size_gb=_GBZ_SHARED_MEMORY_SIZE_GB.value,
+          )
+      )
+  else:
+    # Standard oracle inference path.
+    examples_prefix = 'make_examples'
+    pangenome_kwargs = dict(
+        sample_name=_SAMPLE_NAME.value,
+    )
+
   examples = os.path.join(
       intermediate_results_dir,
-      'make_examples.tfrecord@{}.gz'.format(_NUM_SHARDS.value),
+      '{}.tfrecord@{}.gz'.format(examples_prefix, _NUM_SHARDS.value),
   )
   commands.append(
       make_examples_command(
@@ -404,13 +551,12 @@ def create_all_commands_and_logfiles(
           examples=examples,
           labeler_algorithm=_LABELER_ALGORITHM.value,
           extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
-          # kwargs:
           truth_variants=_TRUTH_VARIANTS.value,
           confident_regions=_CONFIDENT_REGIONS.value,
           regions=_REGIONS.value,
-          sample_name=_SAMPLE_NAME.value,
           haploid_contigs=_HAPLOID_CONTIGS.value,
           par_regions_bed=_PAR_REGIONS.value,
+          **pangenome_kwargs,
       )
   )
 

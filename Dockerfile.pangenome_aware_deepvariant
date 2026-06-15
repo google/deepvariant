@@ -66,7 +66,9 @@ COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/vcf_stats_
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/show_examples.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/runtime_by_region_vis.zip  .
 COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/load_gbz_into_shared_memory.zip  .
+COPY --from=builder /opt/deepvariant/bazel-out/k8-opt/bin/deepvariant/labeler/labeled_examples_to_vcf.zip  .
 COPY --from=builder /opt/deepvariant/scripts/run_pangenome_aware_deepvariant.py .
+COPY --from=builder /opt/deepvariant/scripts/run_oracle_inference.py .
 RUN ./run-prereq.sh
 
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 0 && \
@@ -105,8 +107,16 @@ RUN \
     /opt/deepvariant/bin/load_gbz_into_shared_memory && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
+    'python3 -u /opt/deepvariant/bin/labeled_examples_to_vcf.zip "$@"' > \
+    /opt/deepvariant/bin/labeled_examples_to_vcf && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
     'python3 -u /opt/deepvariant/bin/run_pangenome_aware_deepvariant.py "$@"' > \
     /opt/deepvariant/bin/run_pangenome_aware_deepvariant && \
+  printf "%s\n%s\n" \
+    "${BASH_HEADER}" \
+    'python3 -u /opt/deepvariant/bin/run_oracle_inference.py "$@"' > \
+    /opt/deepvariant/bin/run_oracle_inference && \
   chmod +x /opt/deepvariant/bin/make_examples_pangenome_aware_dv \
     /opt/deepvariant/bin/call_variants \
     /opt/deepvariant/bin/postprocess_variants \
@@ -114,7 +124,9 @@ RUN \
     /opt/deepvariant/bin/show_examples \
     /opt/deepvariant/bin/runtime_by_region_vis \
     /opt/deepvariant/bin/load_gbz_into_shared_memory \
-    /opt/deepvariant/bin/run_pangenome_aware_deepvariant
+    /opt/deepvariant/bin/labeled_examples_to_vcf \
+    /opt/deepvariant/bin/run_pangenome_aware_deepvariant \
+    /opt/deepvariant/bin/run_oracle_inference
 
 # Copy models
 WORKDIR /opt/models/pangenome_aware_deepvariant/wgs
