@@ -930,9 +930,6 @@ function main() {
 
   setup_test
   copy_data
-  if [[ ${DOCKER_SOURCE} =~ ^gcr.io ]]; then
-    run "gcloud auth print-access-token | sudo docker login -u oauth2accesstoken --password-stdin https://gcr.io"
-  fi
   get_docker_image
   setup_args
   run_deeptrio

@@ -1,0 +1,88 @@
+# DeepVariant Release Case Studies
+# These case studies are used to generate metrics on GitHub:
+# https://github.com/google/deepvariant/blob/HEAD/docs/metrics.md
+
+
+---
+
+uid: wgs
+sample: HG003
+bam: gs://deepvariant/case-study-testdata/HG003.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam
+model_type: WGS
+model: ''
+truth_vcf: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+truth_bed: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+docker_image: google/deepvariant:1.10.0
+regions: ''
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+
+---
+
+# WES (Illumina)
+uid: exome
+sample: HG003
+bam: gs://deepvariant/exome-case-study-testdata/HG003.novaseq.wes_idt.100x.dedup.bam
+model_type: WES
+model: ''
+truth_vcf: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+truth_bed: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+capture_bed: gs://deepvariant/exome-case-study-testdata/idt_capture_novogene.grch38.bed
+docker_image: google/deepvariant:1.10.0
+regions: ''
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+
+---
+
+# PacBio (HiFi)
+uid: pacbio
+sample: HG003
+bam: gs://deepvariant/pacbio-case-study-testdata/HG003.SPRQ.pacbio.GRCh38.nov2024.bam
+model_type: PACBIO
+model: ''
+truth_vcf: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+truth_bed: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+docker_image: google/deepvariant:1.10.0
+regions: ''
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+
+
+---
+
+uid: ont-r104
+sample: HG003
+bam: gs://deepvariant/ont-case-study-testdata/HG003_PAY87794.calls.sorted.bam
+model_type: ONT_R104
+model: ''
+truth_vcf: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+truth_bed: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+docker_image: google/deepvariant:1.10.0
+regions: ''
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+
+---
+
+uid: hybrid-pacbio-illumina
+sample: HG003
+bam: gs://deepvariant/hybrid-case-study-testdata/HG003_hybrid_35x_ilmn_35x_pacb.grch38.phased.bam
+model_type: HYBRID_PACBIO_ILLUMINA
+model: ''
+truth_vcf: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+truth_bed: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+docker_image: google/deepvariant:1.10.0
+regions: ''
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+
+---
+
+# See internal#comment15 for details on how the bed files are generated.
+uid: rnaseq
+sample: HG005
+bam: gs://brain-genomics-public/research/sequencing/grch38/bam/rna/illumina/mrna/hg005_gm26107.mrna.grch38.bam
+model_type: RNASEQ
+model: ''
+truth_vcf: gs://deepvariant/rnaseq_case_study/HG005_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+truth_bed: gs://deepvariant/rnaseq_case_study/HG005_CDS_3x.benchmark_regions.bed
+docker_image: google/deepvariant:1.10.0
+regions: gs://deepvariant/rnaseq_case_study/HG005_CDS_3x.bed
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+disable_small_model: true

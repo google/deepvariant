@@ -1,0 +1,52 @@
+#==================#
+# T2T Case Studies #
+#==================#
+
+uid: wgs-40x-vg-t2t-linear
+sample: HG002
+bam: gs://deepvariant/vg-case-study/HG002.novaseq.pcr-free.40x.vg-1.55.0.bam
+model_type: WGS
+model: ''
+truth_vcf: gs://deepvariant/GIAB_v5q0/HG002_GRCh38_v5.0q_smvar.vcf.gz
+truth_bed: gs://deepvariant/GIAB_v5q0/HG002_GRCh38_v5.0q_smvar.benchmark.bed
+docker_image: google/deepvariant:1.10.0
+regions: ''
+haploid_contigs: "chrX,chrY"
+par_regions_bed: "gs://deepvariant/case-study-testdata/GRCh38_PAR.bed"
+make_examples_args:
+  min_mapping_quality: 0
+  keep_legacy_allele_counter_behavior: true
+  normalize_reads: true
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+
+---
+
+uid: pacbio-35x-t2t-linear
+sample: HG002
+bam: gs://deepvariant/pacbio-case-study-testdata/HG002.SPRQ.pacbio.GRCh38.nov2024.bam
+model_type: PACBIO
+model: ''
+truth_vcf: gs://deepvariant/GIAB_v5q0/HG002_GRCh38_v5.0q_smvar.vcf.gz
+truth_bed: gs://deepvariant/GIAB_v5q0/HG002_GRCh38_v5.0q_smvar.benchmark.bed
+docker_image: google/deepvariant:1.10.0
+regions: ''
+haploid_contigs: "chrX,chrY"
+par_regions_bed: "gs://deepvariant/case-study-testdata/GRCh38_PAR.bed"
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+
+---
+
+uid: ont-r104-sup-50x-t2t-linear
+sample: HG002
+bam: gs://deepvariant/ont-case-study-testdata/HG002_R104_sup_merged.50x.bam
+model_type: ONT_R104
+model: ''
+truth_vcf: gs://deepvariant/GIAB_v5q0/HG002_GRCh38_v5.0q_smvar.vcf.gz
+truth_bed: gs://deepvariant/GIAB_v5q0/HG002_GRCh38_v5.0q_smvar.benchmark.bed
+docker_image: google/deepvariant:1.10.0
+regions: ''
+haploid_contigs: "chrX,chrY"
+par_regions_bed: "gs://deepvariant/case-study-testdata/GRCh38_PAR.bed"
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+
+---

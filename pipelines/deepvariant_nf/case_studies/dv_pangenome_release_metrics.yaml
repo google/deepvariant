@@ -1,0 +1,37 @@
+# DeepVariant 1.10.0 Case Studies
+# These case studies are used to generate metrics on GitHub:
+# https://github.com/google/deepvariant/blob/r1.10/docs/metrics.md
+
+# Do not add new case studies unless they are needed for release metrics on github.
+
+---
+
+uid: wgs-pangenome
+sample: HG003
+bam: gs://deepvariant/vg-case-study/HG003.novaseq.pcr-free.35x.vg-1.55.0.bam
+model_type: WGS
+model: ''
+truth_vcf: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+truth_bed: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+docker_image: deepvariant/pangenome_aware_deepvariant-1.10.0
+regions: ''
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+pangenome_graph: gs://deepvariant/pangenome-case-study-testdata/hprc-v1.1-mc-grch38.gbz
+
+
+---
+
+uid: wes-pangenome
+sample: HG003
+bam: gs://deepvariant/exome-case-study-testdata/HG003.novaseq.wes_idt.100x.dedup.bam
+model_type: WES
+model: ''
+truth_vcf: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+truth_bed: gs://deepvariant/case-study-testdata/HG003_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+capture_bed: gs://deepvariant/exome-case-study-testdata/idt_capture_novogene.grch38.bed
+docker_image: deepvariant/pangenome_aware_deepvariant-1.10.0
+regions: ''
+ref: gs://deepvariant/case-study-testdata/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+pangenome_graph: gs://deepvariant/pangenome-case-study-testdata/hprc-v1.1-mc-grch38.gbz
+
+

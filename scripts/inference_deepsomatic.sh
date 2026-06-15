@@ -890,9 +890,6 @@ function main() {
   # Get or build Docker image first, before downloading data.
   # They're independent steps, but might be nice to know if the Docker soource
   # doesn't exist.
-  if [[ ${DOCKER_SOURCE} =~ ^gcr.io ]] || [[ ${SOMPY_DOCKER_SOURCE} =~ ^gcr.io ]]; then
-    run "gcloud auth print-access-token | sudo docker login -u oauth2accesstoken --password-stdin https://gcr.io"
-  fi
   get_docker_image
   copy_data
   setup_args
