@@ -1144,7 +1144,7 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
             sample_names=[MAIN_SAMPLE],
         )
     )
-    training_examples = small_model_example_factory.encode_training_examples(
+    training_examples, _ = small_model_example_factory.encode_training_examples(
         [
             (FAKE_VARIANT_CALL_HET, FAKE_VARIANT_CALL_HET_LABEL),
         ],
@@ -1218,7 +1218,9 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         )
     )
     example_set = small_model_example_factory.encode_inference_examples(
-        [FAKE_VARIANT_CALL_HET, FAKE_VARIANT_MULTIALLELIC_INSERTION], {}, [0]
+        [FAKE_VARIANT_CALL_HET, FAKE_VARIANT_MULTIALLELIC_INSERTION],
+        {},
+        [0],
     )
     self.assertEqual(example_set.skipped_candidates, [])
     self.assertEqual(
@@ -1272,7 +1274,9 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         )
     )
     example_set = small_model_example_factory.encode_inference_examples(
-        [FAKE_VARIANT_CALL_HET], READ_PHASES, [0]
+        [FAKE_VARIANT_CALL_HET],
+        READ_PHASES,
+        [0],
     )
     self.assertEqual(example_set.skipped_candidates, [])
     self.assertEqual(
@@ -1347,6 +1351,80 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         ],
     )
 
+  def test_update_stats(self):
+    factory = make_small_model_examples.SmallModelExampleFactory(
+        vaf_context_window_size=3,
+        sample_names=[MAIN_SAMPLE],
+    )
+
+    # Test case 1: SNP, no label
+    n_stats = deepvariant_pb2.MakeExamplesStats()
+    factory._update_stats(n_stats, FAKE_VARIANT_CALL_HET, tf.train.Example())
+    self.assertEqual(n_stats.num_examples, 1)
+    self.assertEqual(n_stats.num_snps, 1)
+    self.assertEqual(n_stats.num_indels, 0)
+    self.assertEqual(n_stats.num_denovo, 0)
+    self.assertEqual(n_stats.num_nondenovo, 0)
+
+    # Test case 2: Indel, with non-denovo label
+    n_stats = deepvariant_pb2.MakeExamplesStats()
+    example = tf.train.Example(
+        features=tf.train.Features(
+            feature={
+                make_small_model_examples.LABEL_ENCODED: tf.train.Feature(
+                    int64_list=tf.train.Int64List(value=[0, 1, 0])
+                )
+            }
+        )
+    )
+    label_nondenovo = variant_labeler.VariantLabel(
+        is_confident=True,
+        variant=FAKE_VARIANT_MULTIALLELIC_INSERTION.variant,
+        genotype=(0, 1),
+        is_denovo=False,
+    )
+    factory._update_stats(
+        n_stats,
+        FAKE_VARIANT_MULTIALLELIC_INSERTION,
+        example,
+        label_nondenovo,
+    )
+    self.assertEqual(n_stats.num_examples, 1)
+    self.assertEqual(n_stats.num_snps, 0)
+    self.assertEqual(n_stats.num_indels, 1)
+    self.assertEqual(n_stats.num_denovo, 0)
+    self.assertEqual(n_stats.num_nondenovo, 1)
+    self.assertEqual(n_stats.num_class_0, 0)
+    self.assertEqual(n_stats.num_class_1, 1)
+    self.assertEqual(n_stats.num_class_2, 0)
+
+    # Test case 3: Denovo label
+    n_stats = deepvariant_pb2.MakeExamplesStats()
+    example = tf.train.Example(
+        features=tf.train.Features(
+            feature={
+                make_small_model_examples.LABEL_ENCODED: tf.train.Feature(
+                    int64_list=tf.train.Int64List(value=[1, 0, 0])
+                )
+            }
+        )
+    )
+    label_denovo = variant_labeler.VariantLabel(
+        is_confident=True,
+        variant=FAKE_VARIANT_CALL_HET.variant,
+        genotype=(0, 1),
+        is_denovo=True,
+    )
+    factory._update_stats(n_stats, FAKE_VARIANT_CALL_HET, example, label_denovo)
+    self.assertEqual(n_stats.num_examples, 1)
+    self.assertEqual(n_stats.num_snps, 1)
+    self.assertEqual(n_stats.num_indels, 0)
+    self.assertEqual(n_stats.num_denovo, 1)
+    self.assertEqual(n_stats.num_nondenovo, 0)
+    self.assertEqual(n_stats.num_class_0, 1)
+    self.assertEqual(n_stats.num_class_1, 0)
+    self.assertEqual(n_stats.num_class_2, 0)
+
   @parameterized.parameters(
       dict(
           sample_order=[0, 1],
@@ -1375,7 +1453,9 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         )
     )
     example_set = small_model_example_factory.encode_inference_examples(
-        [FAKE_VARIANT_MULTI_SAMPLE_SNP], {}, sample_order
+        [FAKE_VARIANT_MULTI_SAMPLE_SNP],
+        {},
+        sample_order,
     )
     self.assertEqual(example_set.skipped_candidates, [])
     self.assertEqual(

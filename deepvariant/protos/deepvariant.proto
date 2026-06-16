@@ -1274,29 +1274,40 @@ message LabelingMetrics {
   int32 n_truth_multiallelics_sites_with_missed_alleles = 16;
 }
 
+// Statistics about regions and candidates.
+message CandidateMetrics {
+  int32 n_regions = 1;
+  int32 n_candidates = 2;
+  int32 n_phased_candidates = 3;
+  int32 n_filtered_low_vaf = 4;
+}
+
 // Statistics about MakeExamples.
-// Next ID: 9.
+// Next ID: 10.
+// LINT.IfChange
 message MakeExamplesStats {
   int32 num_examples = 1;
-
   int32 num_indels = 2;
   int32 num_snps = 3;
-
   int32 num_class_0 = 4;
   int32 num_class_1 = 5;
   int32 num_class_2 = 6;
   int32 num_denovo = 7;
   int32 num_nondenovo = 8;
+  int32 num_small_model_calls = 9;
 }
+// LINT.ThenChange(make_examples_core.py:_accumulate_make_examples_stats)
 
 // Configuration and runtime information about a MakeExamples run in
 // DeepVariant.
-// Next ID: 5.
+// Next ID: 7.
 message MakeExamplesRunInfo {
   MakeExamplesOptions options = 1;
   LabelingMetrics labeling_metrics = 2;
   ResourceMetrics resource_metrics = 3;
-  MakeExamplesStats stats = 4;
+  MakeExamplesStats cnn_stats = 4;
+  MakeExamplesStats small_model_stats = 5;
+  CandidateMetrics candidate_metrics = 6;
 }
 
 // Next ID: 31.

@@ -74,10 +74,9 @@ PYBIND11_MODULE(make_examples_native, m) {
               const std::vector<int>& sample_order, const std::string& role,
               const std::vector<float>& mean_coverage_per_sample) {
              std::vector<int> image_shape;
-             std::unordered_map<std::string, int> cpp_result =
-                 self->WriteExamplesInRegion(
-                     candidates, reads_per_sample, sample_order, role,
-                     mean_coverage_per_sample, &image_shape);
+             MakeExamplesStats cpp_result = self->WriteExamplesInRegion(
+                 candidates, reads_per_sample, sample_order, role,
+                 mean_coverage_per_sample, &image_shape);
              py::object ret0 = py::cast(std::move(cpp_result));
              py::object ret1 = py::cast(std::move(image_shape));
              return py::make_tuple(ret0, ret1);

@@ -330,20 +330,23 @@ bool HasAtLeastOneNonSingleBaseAllele(const Variant& variant) {
 
 void UpdateStats(enum EncodedVariantType variant_type,
                  const VariantLabel* label, int label_value,
-                 std::unordered_map<std::string, int>& stats) {
-  stats["n_examples"] += 1;
+                 MakeExamplesStats& stats) {
+  stats.set_num_examples(stats.num_examples() + 1);
   if (variant_type == EncodedVariantType::kIndel) {
-    stats["n_indels"] += 1;
+    stats.set_num_indels(stats.num_indels() + 1);
   } else {
-    stats["n_snps"] += 1;
+    stats.set_num_snps(stats.num_snps() + 1);
   }
 
   if (label != nullptr) {
-    stats["n_class_0"] += (label_value == 0 ? 1 : 0);
-    stats["n_class_1"] += (label_value == 1 ? 1 : 0);
-    stats["n_class_2"] += (label_value == 2 ? 1 : 0);
-    stats["n_non_denovo"] += (label->is_denovo ? 0 : 1);
-    stats["n_denovo"] += (label->is_denovo ? 1 : 0);
+    if (label_value == 0) stats.set_num_class_0(stats.num_class_0() + 1);
+    if (label_value == 1) stats.set_num_class_1(stats.num_class_1() + 1);
+    if (label_value == 2) stats.set_num_class_2(stats.num_class_2() + 1);
+    if (label->is_denovo) {
+      stats.set_num_denovo(stats.num_denovo() + 1);
+    } else {
+      stats.set_num_nondenovo(stats.num_nondenovo() + 1);
+    }
   }
 }
 
@@ -390,7 +393,7 @@ std::string ExamplesGenerator::EncodeExample(
     std::vector<std::vector<std::vector<std::unique_ptr<ImageRow>>>>&
         alt_image_per_sample,
     const Variant& variant, absl::Span<const std::string> alt_combination,
-    std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
+    MakeExamplesStats& stats, std::vector<int>& image_shape,
     const std::unique_ptr<VariantLabel>& label) const {
   // Height
   image_shape[0] = pileup_image_height_;
@@ -632,8 +635,8 @@ void ExamplesGenerator::CreateAltAlignedImages(
 void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     const DeepVariantCall& candidate, const Sample& sample,
     absl::Span<const int> sample_order,
-    absl::Span<const InMemoryReader> readers,
-    std::unordered_map<std::string, int>& stats, std::vector<int>& image_shape,
+    absl::Span<const InMemoryReader> readers, MakeExamplesStats& stats,
+    std::vector<int>& image_shape,
     absl::Span<const float> mean_coverage_per_sample,
     const std::unique_ptr<VariantLabel>& label) {
   const auto& variant = candidate.variant();
@@ -739,7 +742,7 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
 // depends on the role.
 // reads_per_sample contain reads for each sample. In a multisample mode reads
 // are stacked according to the reads_per_sample order.
-std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
+MakeExamplesStats ExamplesGenerator::WriteExamplesInRegion(
     absl::Span<const nucleus::ConstProtoPtr<DeepVariantCall>> candidates,
     absl::Span<const std::vector<nucleus::ConstProtoPtr<Read>>>
         reads_per_sample,
@@ -758,7 +761,7 @@ std::unordered_map<std::string, int> ExamplesGenerator::WriteExamplesInRegion(
   image_shape->resize(3);
   // Load reads.
   std::vector<InMemoryReader> readers;
-  std::unordered_map<std::string, int> stats;
+  MakeExamplesStats stats;
   // Cache reads passed from Python. The order of samples is preserved as
   // passed from the caller.
   readers.reserve(reads_per_sample.size());

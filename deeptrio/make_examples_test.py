@@ -465,18 +465,18 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
             testdata.GOLDEN_ONT_DENOVO_MAKE_EXAMPLES_OUTPUT + '.run_info.pbtxt'
         )
         self.assertEqual(
-            runinfo.stats.num_examples,
-            golden_runinfo.stats.num_examples,
+            runinfo.cnn_stats.num_examples,
+            golden_runinfo.cnn_stats.num_examples,
             msg='ONT denovo golden test: Run info comparison num_examples.',
         )
         self.assertEqual(
-            runinfo.stats.num_denovo,
-            golden_runinfo.stats.num_denovo,
+            runinfo.cnn_stats.num_denovo,
+            golden_runinfo.cnn_stats.num_denovo,
             msg='ONT denovo golden test: Run info comparison num_denovo.',
         )
         self.assertEqual(
-            runinfo.stats.num_nondenovo,
-            golden_runinfo.stats.num_nondenovo,
+            runinfo.cnn_stats.num_nondenovo,
+            golden_runinfo.cnn_stats.num_nondenovo,
             msg='ONT denovo golden test: Run info comparison num_nondenovo.',
         )
 

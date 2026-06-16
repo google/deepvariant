@@ -95,6 +95,175 @@ def _from_literals(literals, contig_map=None):
 
 class MakeExamplesCoreUnitTest(parameterized.TestCase):
 
+  def test_accumulate_make_examples_stats(self):
+    target = deepvariant_pb2.MakeExamplesStats(
+        num_examples=1,
+        num_snps=2,
+        num_indels=3,
+        num_class_0=4,
+        num_class_1=5,
+        num_class_2=6,
+        num_denovo=7,
+        num_nondenovo=8,
+    )
+    source = deepvariant_pb2.MakeExamplesStats(
+        num_examples=10,
+        num_snps=20,
+        num_indels=30,
+        num_class_0=40,
+        num_class_1=50,
+        num_class_2=60,
+        num_denovo=70,
+        num_nondenovo=80,
+    )
+    make_examples_core._accumulate_make_examples_stats(target, source)
+    self.assertEqual(target.num_examples, 11)
+    self.assertEqual(target.num_snps, 22)
+    self.assertEqual(target.num_indels, 33)
+    self.assertEqual(target.num_class_0, 44)
+    self.assertEqual(target.num_class_1, 55)
+    self.assertEqual(target.num_class_2, 66)
+    self.assertEqual(target.num_denovo, 77)
+    self.assertEqual(target.num_nondenovo, 88)
+
+  @parameterized.parameters(
+      # Test default options (no extra stats printed)
+      dict(
+          options_dict=dict(
+              output_phase_info=False,
+              skip_pileup_image_generation=True,
+              write_small_model_examples=False,
+              call_small_model_examples=False,
+              filter_low_vaf_candidates=False,
+          ),
+          expected_substrings=[
+              'Summary stats:',
+              '10 candidate variants found',
+          ],
+          unexpected_substrings=[
+              'variants phased',
+              'CNN examples written',
+              'small model examples written',
+              'small model examples called',
+              'candidates filtered due to low VAF',
+          ],
+      ),
+      # Test output_phase_info
+      dict(
+          options_dict=dict(
+              output_phase_info=True,
+              skip_pileup_image_generation=True,
+              write_small_model_examples=False,
+              call_small_model_examples=False,
+              filter_low_vaf_candidates=False,
+          ),
+          expected_substrings=[
+              '10 candidate variants found',
+              '5 candidate variants phased',
+          ],
+          unexpected_substrings=[
+              'CNN examples written',
+          ],
+      ),
+      # Test skip_pileup_image_generation=False
+      dict(
+          options_dict=dict(
+              output_phase_info=False,
+              skip_pileup_image_generation=False,
+              write_small_model_examples=False,
+              call_small_model_examples=False,
+              filter_low_vaf_candidates=False,
+          ),
+          expected_substrings=[
+              '10 candidate variants found',
+              '20 CNN examples written',
+          ],
+          unexpected_substrings=[
+              'variants phased',
+          ],
+      ),
+      # Test write_small_model_examples
+      dict(
+          options_dict=dict(
+              output_phase_info=False,
+              skip_pileup_image_generation=True,
+              write_small_model_examples=True,
+              call_small_model_examples=False,
+              filter_low_vaf_candidates=False,
+          ),
+          expected_substrings=[
+              '10 candidate variants found',
+              '30 small model examples written',
+          ],
+          unexpected_substrings=[],
+      ),
+      # Test call_small_model_examples
+      dict(
+          options_dict=dict(
+              output_phase_info=False,
+              skip_pileup_image_generation=True,
+              write_small_model_examples=False,
+              call_small_model_examples=True,
+              filter_low_vaf_candidates=False,
+          ),
+          expected_substrings=[
+              '10 candidate variants found',
+              '40 small model examples called',
+          ],
+          unexpected_substrings=[],
+      ),
+      # Test filter_low_vaf_candidates
+      dict(
+          options_dict=dict(
+              output_phase_info=False,
+              skip_pileup_image_generation=True,
+              write_small_model_examples=False,
+              call_small_model_examples=False,
+              filter_low_vaf_candidates=True,
+          ),
+          expected_substrings=[
+              '10 candidate variants found',
+              '2 candidates filtered due to low VAF',
+          ],
+          unexpected_substrings=[],
+      ),
+  )
+  @mock.patch(
+      'deepvariant.make_examples_core.logging.info'
+  )
+  def test_log_summary_stats(
+      self,
+      mock_logging_info,
+      options_dict,
+      expected_substrings,
+      unexpected_substrings,
+  ):
+    options = deepvariant_pb2.MakeExamplesOptions(**options_dict)
+    candidate_metrics = deepvariant_pb2.CandidateMetrics(
+        n_candidates=10,
+        n_phased_candidates=5,
+        n_filtered_low_vaf=2,
+    )
+    cnn_stats = deepvariant_pb2.MakeExamplesStats(num_examples=20)
+    small_model_stats = deepvariant_pb2.MakeExamplesStats(
+        num_examples=30, num_small_model_calls=40
+    )
+
+    make_examples_core.log_summary_stats(
+        options,
+        candidate_metrics,
+        cnn_stats,
+        small_model_stats,
+    )
+
+    mock_logging_info.assert_called_once()
+    logged_message = mock_logging_info.call_args[0][2]
+
+    for substring in expected_substrings:
+      self.assertIn(substring, logged_message)
+    for substring in unexpected_substrings:
+      self.assertNotIn(substring, logged_message)
+
   def test_read_write_run_info(self):
     def _read_lines(path):
       with open(path) as fin:
@@ -1690,7 +1859,7 @@ class RegionProcessorTest(parameterized.TestCase):
     self.processor.options.mode = deepvariant_pb2.MakeExamplesOptions.CALLING
     self.processor.options.call_small_model_examples = True
     candidate1, candidate2 = mock.Mock(), mock.Mock()
-    n_stats = {'n_small_model_calls': 0}
+    n_stats = deepvariant_pb2.MakeExamplesStats()
     mock_writer = mock.Mock()
     self.processor.small_model_example_factory = mock.Mock()
     fake_inference_example_set = make_small_model_examples.InferenceExampleSet(
@@ -1712,7 +1881,7 @@ class RegionProcessorTest(parameterized.TestCase):
     )
 
     candidates = [candidate1, candidate2]
-    self.processor.call_small_model_examples_in_region(
+    _, num_calls = self.processor.call_small_model_examples_in_region(
         candidates=candidates,
         read_phases={},
         sample=main_sample,
@@ -1731,7 +1900,7 @@ class RegionProcessorTest(parameterized.TestCase):
     mock_writer.write_call_variant_outputs.assert_called_once_with(
         cvo_candidate1, cvo_candidate2
     )
-    self.assertEqual(n_stats['n_small_model_calls'], 2)
+    self.assertEqual(num_calls, 2)
 
   def test_candidates_in_region_no_reads(self):
     main_sample = self.processor.samples[0]
@@ -1952,6 +2121,36 @@ class RegionProcessorTest(parameterized.TestCase):
       with open(FLAGS.output_local_read_phasing, 'rb') as f:
         read_phasing = f.read()
       self.assertNotEmpty(read_phasing)
+
+  @mock.patch(
+      'deepvariant.small_model.inference.SmallModelVariantCaller.from_model_path'
+  )
+  @flagsaver.flagsaver
+  def test_make_examples_runner_with_small_model(self, mock_from_model_path):
+    mock_caller = mock.Mock()
+    mock_caller.call_variants.return_value = ([], [])
+    mock_from_model_path.return_value = mock_caller
+
+    FLAGS.mode = 'calling'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.regions = 'chr20:10006000-10007612'
+    FLAGS.examples = self.create_tempfile('examples.tfrecord.gz').full_path
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.call_small_model_examples = True
+    FLAGS.trained_small_model_path = 'fake_model_path'
+
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+
+    mock_from_model_path.assert_called_once_with(
+        model_path='fake_model_path',
+        snp_gq_threshold=options.small_model_snp_gq_threshold,
+        indel_gq_threshold=options.small_model_indel_gq_threshold,
+        batch_size=options.small_model_inference_batch_size,
+        emit_all_candidates=options.small_model_emit_all_candidates,
+    )
+    mock_caller.call_variants.assert_called()
 
   def test_assign_phase_from_normal(self):
     processor = make_examples_core.RegionProcessor(self.options)

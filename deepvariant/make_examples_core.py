@@ -393,46 +393,40 @@ def logging_with_options(
 
 def log_summary_stats(
     options: deepvariant_pb2.MakeExamplesOptions,
-    n_stats: dict[str, int],
+    candidate_metrics: deepvariant_pb2.CandidateMetrics,
+    cnn_stats: deepvariant_pb2.MakeExamplesStats,
+    small_model_stats: deepvariant_pb2.MakeExamplesStats,
 ) -> None:
-  """Prints the summary stats in a neatly-formatted way.
-
-  Example output:
-  '''
-  Summary stats:
-        2869 candidate variants found
-        2500 candidate variants phased
-         253 examples written
-        2493 small model examples called
-  '''
-
-  Args:
-    options: The MakeExamplesOptions proto.
-    n_stats: A dictionary of stats to log.
-  """
-  stat_to_description = {
-      'n_candidates': 'candidate variants found',
-      'n_examples': 'examples written',
-  }
+  """Prints the summary stats in a neatly-formatted way."""
+  message_rows = ['Summary stats:']
+  message_rows.append(
+      f'\t{str(candidate_metrics.n_candidates).rjust(12)} candidate variants'
+      ' found'
+  )
   if options.output_phase_info:
-    stat_to_description['n_phased_candidates'] = 'candidate variants phased'
+    message_rows.append(
+        f'\t{str(candidate_metrics.n_phased_candidates).rjust(12)} candidate'
+        ' variants phased'
+    )
+  if not options.skip_pileup_image_generation:
+    message_rows.append(
+        f'\t{str(cnn_stats.num_examples).rjust(12)} CNN examples written'
+    )
   if options.write_small_model_examples:
-    stat_to_description['n_small_model_examples'] = (
-        'small model examples written'
+    message_rows.append(
+        f'\t{str(small_model_stats.num_examples).rjust(12)} small model'
+        ' examples written'
     )
   if options.call_small_model_examples:
-    stat_to_description['n_small_model_calls'] = 'small model examples called'
-  if options.filter_low_vaf_candidates:
-    stat_to_description['n_filtered_low_vaf'] = (
-        'candidates filtered due to low VAF'
+    message_rows.append(
+        f'\t{str(small_model_stats.num_small_model_calls).rjust(12)} small'
+        ' model examples called'
     )
-
-  stats_to_log = {k: v for k, v in n_stats.items() if k in stat_to_description}
-  longest_stat = max((len(str(x)) for x in stats_to_log.values()))
-  message_rows = ['Summary stats:']
-  for stat_name, description in stat_to_description.items():
-    message = f'\t{str(n_stats[stat_name]).rjust(longest_stat)} {description}'
-    message_rows.append(message)
+  if options.filter_low_vaf_candidates:
+    message_rows.append(
+        f'\t{str(candidate_metrics.n_filtered_low_vaf).rjust(12)} candidates'
+        ' filtered due to low VAF'
+    )
   logging_with_options(options, '\n'.join(message_rows))
 
 
@@ -1256,6 +1250,22 @@ class DiagnosticLogger:
         writer.write(read)
 
 
+def _accumulate_make_examples_stats(
+    target: deepvariant_pb2.MakeExamplesStats,
+    source: deepvariant_pb2.MakeExamplesStats,
+):
+  """Accumulates fields from source MakeExamplesStats into target."""
+  target.num_examples += source.num_examples
+  target.num_indels += source.num_indels
+  target.num_snps += source.num_snps
+  target.num_class_0 += source.num_class_0
+  target.num_class_1 += source.num_class_1
+  target.num_class_2 += source.num_class_2
+  target.num_denovo += source.num_denovo
+  target.num_nondenovo += source.num_nondenovo
+  target.num_small_model_calls += source.num_small_model_calls
+
+
 class RawFd3Writer:
   """Writes length-prefixed serialized protos directly to file descriptor 3."""
 
@@ -2022,23 +2032,23 @@ class RegionProcessor:
   def writes_examples_in_region(
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
-      region: range_pb2.Range,
       sample_order: List[int],
-      n_stats: Dict[str, int],
+      n_stats: deepvariant_pb2.MakeExamplesStats,
       runtimes: Dict[str, float],
       role: str,
-      denovo_regions: Optional[ranges.RangeSet],
+      labeled_candidates: Sequence[
+          tuple[deepvariant_pb2.DeepVariantCall, variant_labeler.VariantLabel]
+      ],
   ) -> Optional[List[int]]:
     """Generates and writes out the examples in a region.
 
     Args:
       candidates: List of candidates to be processed into examples.
-      region: The region to generate examples.
       sample_order: Order of the samples to use when generating examples.
-      n_stats: A dictionary that is used to accumulate counts for reporting.
+      n_stats: A MakeExamplesStats proto that accumulates counts for reporting.
       runtimes: A dictionary that recorded runtime information for reporting.
       role: The role that we make examples for.
-      denovo_regions: The regions that contain denovo variants.
+      labeled_candidates: List of candidates and their labels to be processed.
 
     Returns:
       example_shape: a list of 3 integers, representing the example shape in the
@@ -2058,18 +2068,16 @@ class RegionProcessor:
         pileup_height += sample.options.pileup_height
       # Unzip list of tuples.
       candidates_list = []
-      for candidate, label in self.label_candidates(candidates, region):
+      for candidate, label in labeled_candidates:
         candidates_list.append(candidate)
-        is_denovo = False
-        if denovo_regions and denovo_regions.variant_overlaps(
-            candidate.variant
-        ):
-          is_denovo = True
         # pylint: disable=unidiomatic-typecheck
         if type(label) is variant_labeler.VariantLabel:
           self.make_examples_native.append_label(
               make_examples_native_module.VariantLabel(
-                  label.is_confident, label.variant, label.genotype, is_denovo
+                  label.is_confident,
+                  label.variant,
+                  label.genotype,
+                  label.is_denovo,
               )
           )
         elif (
@@ -2099,12 +2107,11 @@ class RegionProcessor:
           )
       )
 
-      for stat, val in n_stats_one_region.items():
-        n_stats[stat] += val
-        if stat == 'n_examples':
-          if 'num examples' not in runtimes:
-            runtimes['num examples'] = 0
-          runtimes['num examples'] += val
+      _accumulate_make_examples_stats(n_stats, n_stats_one_region)
+      if n_stats_one_region.num_examples > 0:
+        if 'num examples' not in runtimes:
+          runtimes['num examples'] = 0
+        runtimes['num examples'] += n_stats_one_region.num_examples
 
       if example_shape is None and example_shape_one[0] > 0:
         example_shape = example_shape_one
@@ -2126,12 +2133,11 @@ class RegionProcessor:
           )
       )
 
-      for stat, val in n_stats_one_region.items():
-        n_stats[stat] += val
-        if stat == 'n_examples':
-          if 'num examples' not in runtimes:
-            runtimes['num examples'] = 0
-          runtimes['num examples'] += val
+      _accumulate_make_examples_stats(n_stats, n_stats_one_region)
+      if n_stats_one_region.num_examples > 0:
+        if 'num examples' not in runtimes:
+          runtimes['num examples'] = 0
+        runtimes['num examples'] += n_stats_one_region.num_examples
 
       if example_shape is None and example_shape_one[0] > 0:
         example_shape = example_shape_one
@@ -2143,23 +2149,23 @@ class RegionProcessor:
 
   def write_small_model_examples_in_region(
       self,
-      candidates: Sequence[deepvariant_pb2.DeepVariantCall],
+      labeled_candidates: Sequence[
+          tuple[deepvariant_pb2.DeepVariantCall, variant_labeler.VariantLabel]
+      ],
       read_phases: Dict[str, int],
       sample: sample_lib.Sample,
-      region: range_pb2.Range,
       writer: OutputsWriter,
-      n_stats: Dict[str, int],
+      n_stats: deepvariant_pb2.MakeExamplesStats,
       runtimes: Dict[str, float],
   ) -> None:
     """Writes out the small model training examples in a region.
 
     Args:
-      candidates: List of candidates to be processed into examples.
+      labeled_candidates: List of candidates and their labels to be processed.
       read_phases: A dictionary of read names to haplotype phases.
       sample: The sample for which to generate small model examples.
-      region: The region to generate examples.
       writer: A OutputsWriter used to write out examples.
-      n_stats: A dictionary that is used to accumulate counts for reporting.
+      n_stats: A MakeExamplesStats proto used to accumulate counts.
       runtimes: A dictionary that recorded runtime information for reporting.
     """
     before_make_summaries = time.time()
@@ -2167,19 +2173,18 @@ class RegionProcessor:
       raise ValueError(
           'Writing small model examples is only supported in training mode.'
       )
-    training_examples = (
+    training_examples, n_stats_one_region = (
         self.small_model_example_factory.encode_training_examples(
-            list(self.label_candidates(candidates, region)),
+            labeled_candidates,
             read_phases,
             sample.options.order,
         )
     )
     writer.write_small_model_examples(*training_examples)
-
-    n_stats['n_small_model_examples'] += len(training_examples)
     runtimes['make small_model_examples'] = trim_runtime(
         time.time() - before_make_summaries
     )
+    _accumulate_make_examples_stats(n_stats, n_stats_one_region)
 
   def call_small_model_examples_in_region(
       self,
@@ -2187,9 +2192,9 @@ class RegionProcessor:
       read_phases: Dict[str, int],
       sample: sample_lib.Sample,
       writer: OutputsWriter,
-      n_stats: Dict[str, int],
+      n_stats: deepvariant_pb2.MakeExamplesStats,
       runtimes: Dict[str, float],
-  ) -> Sequence[deepvariant_pb2.DeepVariantCall]:
+  ) -> Tuple[Sequence[deepvariant_pb2.DeepVariantCall], int]:
     """Creates and calls small model examples on candidates in a region.
 
     Args:
@@ -2197,12 +2202,12 @@ class RegionProcessor:
       read_phases: A dictionary of read names to haplotype phases.
       sample: The sample for which to call small model examples.
       writer: A OutputsWriter used to write out examples.
-      n_stats: A dictionary that is used to accumulate counts for reporting.
+      n_stats: A MakeExamplesStats proto used to accumulate counts.
       runtimes: A dictionary that recorded runtime information for reporting.
 
     Returns:
       A list of all candidates to be passed to the regular model, either
-        because they were skipped or did not pass quality filters.
+          because they were skipped or did not pass quality filters.
     """
     before_generate_small_model_examples = time.time()
 
@@ -2211,11 +2216,12 @@ class RegionProcessor:
             candidates, read_phases, sample.options.order
         )
     )
+    _accumulate_make_examples_stats(n_stats, inference_example_set.n_stats)
     runtimes['small model generate examples'] = trim_runtime(
         time.time() - before_generate_small_model_examples
     )
     if not inference_example_set.candidates_with_alt_allele_indices:
-      return inference_example_set.skipped_candidates
+      return inference_example_set.skipped_candidates, 0
 
     # filtered candidates did not pass the GQ threshold.
     before_call_small_model_examples = time.time()
@@ -2235,13 +2241,12 @@ class RegionProcessor:
         time.time() - before_write_variants
     )
 
-    n_stats['n_small_model_calls'] += len(call_variant_outputs)
     runtimes['small model total'] = trim_runtime(
         time.time() - before_generate_small_model_examples
     )
     # pass skipped and filtered candidates to the large model
     inference_example_set.skipped_candidates.extend(candidates_not_called)
-    return inference_example_set.skipped_candidates
+    return inference_example_set.skipped_candidates, len(call_variant_outputs)
 
   def find_candidate_positions(self, region: range_pb2.Range) -> Iterator[int]:
     """Finds all candidate positions within a given region."""
@@ -2344,7 +2349,7 @@ class RegionProcessor:
   def process(
       self,
       region: range_pb2.Range,
-      n_stats: Dict[str, int],
+      n_stats: deepvariant_pb2.CandidateMetrics,
       region_n: Optional[int] = None,
   ) -> Tuple[
       Dict[str, Sequence[deepvariant_pb2.DeepVariantCall]],
@@ -2485,7 +2490,7 @@ class RegionProcessor:
         candidates_after_filtering = len(candidates)
         num_filtered = candidates_before_filtering - candidates_after_filtering
         if num_filtered > 0:
-          n_stats['n_filtered_low_vaf'] += num_filtered
+          n_stats.n_filtered_low_vaf += num_filtered
         candidates_by_sample[role] = candidates
 
       if (
@@ -3354,6 +3359,7 @@ class RegionProcessor:
       self,
       candidates: Sequence[deepvariant_pb2.DeepVariantCall],
       region: range_pb2.Range,
+      denovo_regions: Optional[ranges.RangeSet],
   ) -> Iterator[
       Tuple[deepvariant_pb2.DeepVariantCall, variant_labeler.VariantLabel]
   ]:
@@ -3364,6 +3370,8 @@ class RegionProcessor:
         want to label.
       region: A nucleus.genomics.v1.Range object specifying the region we want
         to get candidates for.
+      denovo_regions: Optional[ranges.RangeSet]: The denovo regions to be used
+        for labeling.
 
     Yields:
       Tuples of (candidate, label_variants.Label objects) for each candidate in
@@ -3395,6 +3403,10 @@ class RegionProcessor:
               > self.options.downsample_classes[label.get_class()]
           ):
             continue
+        is_denovo = denovo_regions and denovo_regions.variant_overlaps(
+            candidate.variant
+        )
+        label.is_denovo = is_denovo
         yield candidate, label
 
 
@@ -3746,22 +3758,9 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   running_timer = timer.TimerStart()
   # Ideally this would use dv_constants.NUM_CLASSES, which requires generalizing
   # deepvariant_pb2.MakeExamplesStats to use an array for the class counts.
-  n_stats = {
-      'n_class_0': 0,
-      'n_class_1': 0,
-      'n_class_2': 0,
-      'n_denovo': 0,
-      'n_non_denovo': 0,
-      'n_snps': 0,
-      'n_indels': 0,
-      'n_regions': 0,
-      'n_candidates': 0,
-      'n_examples': 0,
-      'n_small_model_examples': 0,
-      'n_small_model_calls': 0,
-      'n_phased_candidates': 0,
-      'n_filtered_low_vaf': 0,
-  }
+  n_stats = deepvariant_pb2.CandidateMetrics()
+  n_cnn_stats = deepvariant_pb2.MakeExamplesStats()
+  n_small_model_stats = deepvariant_pb2.MakeExamplesStats()
   example_shape = None
   region_n = 0
   # Get all denovo regions
@@ -3807,49 +3806,55 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
         continue
       writer = writers_dict[role]
 
+      labeled_candidates = []
+      if in_training_mode(options):
+        labeled_candidates = list(
+            region_processor.label_candidates(
+                candidates_by_sample[role], region, denovo_regions
+            )
+        )
+
       if options.write_small_model_examples:
         region_processor.write_small_model_examples_in_region(
-            candidates_by_sample[role],
+            labeled_candidates,
             read_phases_by_sample[role],
             sample,
-            region,
             writer,
-            n_stats,
+            n_small_model_stats,
             runtimes,
         )
-      if options.skip_pileup_image_generation:
-        continue
 
       candidates_for_pileup_images = candidates_by_sample[role]
       if options.call_small_model_examples:
-        candidates_not_called_by_small_model = (
+        candidates_not_called_by_small_model, num_calls = (
             region_processor.call_small_model_examples_in_region(
                 candidates_by_sample[role],
                 read_phases_by_sample[role],
                 sample,
                 writer,
-                n_stats,
+                n_small_model_stats,
                 runtimes,
             )
         )
+        n_small_model_stats.num_small_model_calls += num_calls
         candidates_for_pileup_images = candidates_not_called_by_small_model
 
-      region_example_shape = region_processor.writes_examples_in_region(  # pytype: disable=wrong-arg-types
-          candidates_for_pileup_images,
-          region,
-          sample.options.order,
-          n_stats,
-          runtimes,
-          role,
-          denovo_regions,
-      )
-      if example_shape is None and region_example_shape is not None:
-        example_shape = region_example_shape
+      if not options.skip_pileup_image_generation:
+        region_example_shape = region_processor.writes_examples_in_region(  # pytype: disable=wrong-arg-types
+            candidates_for_pileup_images,
+            sample.options.order,
+            n_cnn_stats,
+            runtimes,
+            role,
+            labeled_candidates,
+        )
+        if example_shape is None and region_example_shape is not None:
+          example_shape = region_example_shape
       gvcfs = gvcfs_by_sample[role]
 
-      n_stats['n_candidates'] += len(candidates_by_sample[role])
-      n_stats['n_regions'] += 1
-      n_stats['n_phased_candidates'] += phased_candidates_count
+      n_stats.n_candidates += len(candidates_by_sample[role])
+      n_stats.n_regions += 1
+      n_stats.n_phased_candidates += phased_candidates_count
 
       before_write_outputs = time.time()
       writer.write_candidates(*candidates_by_sample[role])
@@ -3869,19 +3874,19 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
 
       # Output timing for every N candidates.
       if (
-          int(n_stats['n_candidates'] / options.logging_every_n_candidates)
+          int(n_stats.n_candidates / options.logging_every_n_candidates)
           > last_reported
-          or n_stats['n_regions'] == 1
+          or n_stats.n_regions == 1
       ):
         last_reported = int(
-            n_stats['n_candidates'] / options.logging_every_n_candidates
+            n_stats.n_candidates / options.logging_every_n_candidates
         )
         logging_with_options(
             options,
             '%s candidates (%s examples) [%0.2fs elapsed]'
             % (
-                n_stats['n_candidates'],
-                n_stats['n_examples'],
+                n_stats.n_candidates,
+                n_cnn_stats.num_examples + n_small_model_stats.num_examples,
                 running_timer.Stop(),
             ),
         )
@@ -3899,20 +3904,12 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
 
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:
-    make_examples_stats = deepvariant_pb2.MakeExamplesStats(
-        num_examples=n_stats['n_examples'],
-        num_snps=n_stats['n_snps'],
-        num_indels=n_stats['n_indels'],
-        num_class_0=n_stats['n_class_0'],
-        num_class_1=n_stats['n_class_1'],
-        num_class_2=n_stats['n_class_2'],
-        num_denovo=n_stats['n_denovo'],
-        num_nondenovo=n_stats['n_non_denovo'],
-    )
     run_info = deepvariant_pb2.MakeExamplesRunInfo(
         options=options,
         resource_metrics=resource_monitor.metrics(),
-        stats=make_examples_stats,
+        cnn_stats=n_cnn_stats,
+        small_model_stats=n_small_model_stats,
+        candidate_metrics=n_stats,
     )
     if in_training_mode(options):
       if (
@@ -3960,7 +3957,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       )
 
   region_processor.make_examples_native.signal_shard_finished()
-  log_summary_stats(options, n_stats)
+  log_summary_stats(options, n_stats, n_cnn_stats, n_small_model_stats)
 
 
 def get_model_example_info_json_path(

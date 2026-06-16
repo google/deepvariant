@@ -52,9 +52,10 @@ class VariantLabel(object):
       the standard nucleus.proto.VariantCall style. Genotype can be None if the
       labeler doesn't have any genotype to assign. If Genotype is not None, the
       genotype of variant will be set to genotype.
+    is_denovo: bool. True if the variant is a de novo mutation.
   """
 
-  def __init__(self, is_confident, variant, genotype=None):
+  def __init__(self, is_confident, variant, genotype=None, is_denovo=False):
     if genotype is not None:
       if not variant.calls:
         variant.calls.add(genotype=genotype)
@@ -64,6 +65,7 @@ class VariantLabel(object):
     self.is_confident = is_confident
     self.variant = variant
     self.genotype = genotype
+    self.is_denovo = is_denovo
 
   def label_for_alt_alleles(self, alt_alleles_indices):
     """Computes the label value for an example using alt_alleles_indices.

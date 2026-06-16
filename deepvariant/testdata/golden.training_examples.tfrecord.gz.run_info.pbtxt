@@ -3594,7 +3594,7 @@ resource_metrics {
   memory_peak_rss_mb: 945
   write_bytes: 278528
 }
-stats {
+cnn_stats {
   num_examples: 49
   num_indels: 4
   num_snps: 45

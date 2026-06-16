@@ -618,6 +618,9 @@ class InferenceExampleSet:
   inference_examples: list[Sequence[int]] = dataclasses.field(
       default_factory=list
   )
+  n_stats: deepvariant_pb2.MakeExamplesStats = dataclasses.field(
+      default_factory=deepvariant_pb2.MakeExamplesStats
+  )
 
 
 class SmallModelExampleFactory:
@@ -873,6 +876,29 @@ class SmallModelExampleFactory:
             )
     return num_overlapping_deletion_alleles_by_position
 
+  def _update_stats(
+      self,
+      n_stats: deepvariant_pb2.MakeExamplesStats,
+      candidate: deepvariant_pb2.DeepVariantCall,
+      example: tf.train.Example,
+      label: variant_labeler.VariantLabel | None = None,
+  ):
+    """Updates the stats for the small model."""
+    n_stats.num_examples += 1
+    if variant_utils.is_snp(candidate.variant):
+      n_stats.num_snps += 1
+    else:
+      n_stats.num_indels += 1
+    if label:
+      if label.is_denovo:
+        n_stats.num_denovo += 1
+      else:
+        n_stats.num_nondenovo += 1
+      encoded_label = example.features.feature[LABEL_ENCODED].int64_list.value
+      n_stats.num_class_0 += encoded_label[0]
+      n_stats.num_class_1 += encoded_label[1]
+      n_stats.num_class_2 += encoded_label[2]
+
   def encode_training_examples(
       self,
       candidates_with_label: Sequence[
@@ -880,7 +906,7 @@ class SmallModelExampleFactory:
       ],
       read_phases: dict[str, int],
       sample_order: Sequence[int],
-  ) -> Sequence[tf.train.Example]:
+  ) -> tuple[Sequence[tf.train.Example], deepvariant_pb2.MakeExamplesStats]:
     """Generates examples from the given candidates for training.
 
     Args:
@@ -893,6 +919,7 @@ class SmallModelExampleFactory:
       A list of encoded candidate examples.
     """
     training_examples = []
+    n_stats = deepvariant_pb2.MakeExamplesStats()
     num_overlapping_deletion_alleles_by_position = (
         self._compute_overlapping_deletion_alleles(
             [candidate for candidate, _ in candidates_with_label]
@@ -914,7 +941,13 @@ class SmallModelExampleFactory:
             sample_order,
         )
         training_examples.append(candidate_example)
-    return training_examples
+        self._update_stats(
+            n_stats,
+            candidate,
+            candidate_example,
+            label,
+        )
+    return training_examples, n_stats
 
   def encode_inference_examples(
       self,
@@ -936,6 +969,7 @@ class SmallModelExampleFactory:
         alt-allele-indices pairs for which
         examples were generated.
         inference_examples: A list of encoded candidate examples.
+        n_stats: A MakeExamplesStats proto used to accumulate counts.
     """
     example_set = InferenceExampleSet()
     num_overlapping_deletion_alleles_by_position = (
@@ -958,6 +992,11 @@ class SmallModelExampleFactory:
             ),
             read_phases,
             sample_order,
+        )
+        self._update_stats(
+            example_set.n_stats,
+            candidate,
+            candidate_example,
         )
         example_set.inference_examples.append(candidate_example)
     return example_set

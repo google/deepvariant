@@ -162,7 +162,7 @@ class ExamplesGenerator {
 
   // Encodes candidates into TensorFlow examples containing pileup images
   // and writes them to TFRecord.
-  std::unordered_map<std::string, int> WriteExamplesInRegion(
+  MakeExamplesStats WriteExamplesInRegion(
       absl::Span<const nucleus::ConstProtoPtr<DeepVariantCall>> candidates,
       absl::Span<const std::vector<
           nucleus::ConstProtoPtr<nucleus::genomics::v1::Read>>>
@@ -212,8 +212,7 @@ class ExamplesGenerator {
       std::vector<std::vector<std::vector<std::unique_ptr<ImageRow>>>>&
           alt_image_per_sample,
       const nucleus::genomics::v1::Variant& variant,
-      absl::Span<const std::string> alt_combination,
-      std::unordered_map<std::string, int>& stats,
+      absl::Span<const std::string> alt_combination, MakeExamplesStats& stats,
       std::vector<int>& image_shape,
       const std::unique_ptr<VariantLabel>& label) const;
 
@@ -222,8 +221,7 @@ class ExamplesGenerator {
   void CreateAndWriteExamplesForCandidate(
       const DeepVariantCall& candidate, const Sample& sample,
       absl::Span<const int> sample_order,
-      absl::Span<const InMemoryReader> readers,
-      std::unordered_map<std::string, int>& stats,
+      absl::Span<const InMemoryReader> readers, MakeExamplesStats& stats,
       std::vector<int>& image_shape,
       absl::Span<const float> mean_coverage_per_sample,
       const std::unique_ptr<VariantLabel>& label);
