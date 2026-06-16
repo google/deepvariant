@@ -49,10 +49,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "third_party/nucleus/io/sam_writer.h"
 #include "third_party/nucleus/protos/cigar.pb.h"
 #include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
-#include "third_party/nucleus/io/sam_writer.h"
 #include "third_party/nucleus/protos/reference.pb.h"
 #include "re2/re2.h"
 
