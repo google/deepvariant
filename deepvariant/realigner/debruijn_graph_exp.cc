@@ -367,13 +367,19 @@ void DeBruijnGraphExp::CandidatePathsRankedHelper(
     }
   }
 
+  bool is_cycle = (visit_count > 1);
   if (sink_nodes.contains(u) || boost::out_degree(u, g_) == 0
-      || visit_count > 1) {
+      || is_cycle) {
     num_paths++;
     pq.push(current_path);
 
     if (pq.size() > kMaxNumPathsToKeep) {
       pq.pop();
+    }
+
+    // If it was a cycle, stop recursing further down this path.
+    if (is_cycle) {
+      return;
     }
   }
 
