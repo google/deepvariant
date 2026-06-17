@@ -50,13 +50,27 @@ HAPPY_COLUMNS = [
 
 
 def df_to_markdown(dataframe: pd.DataFrame) -> str:
-  """Convert a DataFrame to a markdown table string."""
+  """Convert a DataFrame to a markdown table string with aligned columns."""
   cols = list(dataframe.columns)
-  header = '| ' + ' | '.join(str(c) for c in cols) + ' |'
-  separator = '| ' + ' | '.join('---' for _ in cols) + ' |'
+  # Convert all values to string. NaNs should have been handled by fillna
+  # earlier if we wanted them to be empty.
+  str_df = dataframe.astype(str)
+  widths = {}
+  for col in cols:
+    max_val_width = str_df[col].str.len().max()
+    # Handle empty dataframe case
+    if pd.isna(max_val_width):
+      max_val_width = 0
+    max_col_width = max(len(str(col)), max_val_width)
+    widths[col] = max_col_width
+
+  header = '| ' + ' | '.join(str(c).ljust(widths[c]) for c in cols) + ' |'
+  separator = (
+      '| ' + ' | '.join('---'.ljust(widths[c], '-') for c in cols) + ' |'
+  )
   rows = []
-  for _, row in dataframe.iterrows():
-    rows.append('| ' + ' | '.join(str(v) for v in row) + ' |')
+  for _, row in str_df.iterrows():
+    rows.append('| ' + ' | '.join(row[c].ljust(widths[c]) for c in cols) + ' |')
   return '\n'.join([header, separator] + rows)
 
 
@@ -221,6 +235,7 @@ if glob.glob('*.happy.summary.csv') and glob.glob('*.info.tsv'):
     info_frames.append(df_part)
   happy_info = pd.concat(info_frames, ignore_index=True)
   happy_info['uid'] = happy_info['uid'].astype(str)
+  happy_info['dataset_name'] = happy_info['dataset_name'].fillna('')
 
   happy_frames = []
   for fpath in sorted(glob.glob('*.happy.summary.csv')):
