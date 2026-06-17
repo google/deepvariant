@@ -159,9 +159,9 @@ void Status::SetPayload(absl::string_view type_url, absl::Cord payload) {
 }
 
 std::optional<absl::Cord> Status::GetPayload(absl::string_view type_url) const {
-  if (ok()) return absl::nullopt;
+  if (ok()) return std::nullopt;
   auto payload_iter = state_->payloads.find(std::string(type_url));
-  if (payload_iter == state_->payloads.end()) return absl::nullopt;
+  if (payload_iter == state_->payloads.end()) return std::nullopt;
   return payload_iter->second;
 }
 
