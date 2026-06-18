@@ -884,9 +884,6 @@ def call_variants(
       if (
           hasattr(model, 'model_performs_preprocessing')
           and model.model_performs_preprocessing.numpy()
-      ) or (
-          hasattr(model, 'preprocessing_applied')
-          and model.preprocessing_applied.numpy()
       ):
         skip_preprocessing = True
         logging.info(
