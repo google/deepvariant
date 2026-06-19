@@ -187,8 +187,9 @@ class DeBruijnGraphExp {
   // otherwise we return nullptr.
   static std::unique_ptr<DeBruijnGraphExp> Build(
       absl::string_view ref,
-      const std::vector<
-          nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>& reads,
+      absl::Span<
+          const nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>>
+          reads,
       const Options& options);
 
   // Collapses linear paths.
