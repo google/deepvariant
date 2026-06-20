@@ -41,7 +41,7 @@ process run_post_processing {
   Runs DeepVariant using the `run_deepvariant` command.
   */
 
-  label 'xl'
+  label params.label ?: 'xl'
   tag { "${uid}" }
   stageInMode { task.executor == 'local' ? 'symlink' : 'copy' }
   container { "${docker_image}" }

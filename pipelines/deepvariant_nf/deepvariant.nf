@@ -43,6 +43,7 @@ params.limit=-1
 // Do not manually specify params.overrides.
 // This is used to indicate non-default values passed in via command line.
 params.override_vars=""
+params.label=""
 
 // Params
 params.uid="" // A unique id for the set of parameters for the given sample.

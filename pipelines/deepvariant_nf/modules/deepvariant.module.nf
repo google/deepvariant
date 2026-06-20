@@ -44,7 +44,7 @@ process run_deepvariant {
   Runs DeepVariant using the `run_deepvariant` command.
   */
 
-  label params.gpu ? 'gpu' : 'xl'
+  label params.label ?: (params.gpu ? 'gpu' : 'xl')
   tag { "${uid}" }
   stageInMode { task.executor == 'local' ? 'symlink' : 'copy' }
   container { "${docker_image}" }
@@ -168,7 +168,7 @@ process run_pangenome_aware_deepvariant {
   binary, and several different options.
   */
 
-  label 'xxl_highmem'
+  label params.label ?: 'xxl_highmem'
   tag { "${uid}" }
   stageInMode { task.executor == 'local' ? 'symlink' : 'copy' }
   errorStrategy 'retry'

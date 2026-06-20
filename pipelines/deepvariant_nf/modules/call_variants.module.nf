@@ -41,7 +41,7 @@ process run_call_variants {
   Runs DeepVariant using the `run_deepvariant` command.
   */
 
-  label 'xl'
+  label params.label ?: 'xl'
   tag { "${uid}" }
   stageInMode { task.executor == 'local' ? 'symlink' : 'copy' }
   container { "${docker_image}" }
