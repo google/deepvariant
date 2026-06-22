@@ -217,6 +217,7 @@ genrule(
         echo '#define HAVE_GMTIME_R 1'
         echo '#define HAVE_INTTYPES_H 1'
         echo '#define HAVE_LIBBZ2 1'
+        echo '#define HAVE_LIBDEFLATE 1'
         echo '#define HAVE_LIBLZMA 1'
         echo '#define HAVE_LIBZ 1'
         echo '#define HAVE_MEMORY_H 1'
@@ -273,7 +274,10 @@ cc_library(
     linkopts = extra_libs,
     textual_hdrs = textual_hdrs,
     visibility = ["//visibility:public"],
-    deps = [":htslib_deps"],
+    deps = [
+        ":htslib_deps",
+        "@libdeflate",
+    ],
 )
 
 # Misc binaries that might be exported.
