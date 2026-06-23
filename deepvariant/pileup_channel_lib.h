@@ -174,7 +174,8 @@ class Channels {
       const nucleus::genomics::v1::Read& read, absl::string_view ref_bases,
       const DeepVariantCall& dv_call,
       const std::vector<std::string>& alt_alleles, int image_start_pos,
-      absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank = {});
+      const absl::flat_hash_set<DeepVariantChannelEnum>&
+          channels_enum_to_blank = {});
 
   // Calculate values for channels that only depend on information at the
   // granularity of an entire read.

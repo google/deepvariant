@@ -143,7 +143,8 @@ class PileupImageEncoderNative {
       // Contains original alignment positions for trimmed reads. This array has
       // the same order as reads.
       const std::vector<int64_t>* alignment_positions = nullptr,
-      absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank = {});
+      const absl::flat_hash_set<DeepVariantChannelEnum>&
+          channels_enum_to_blank = {});
 
   // Simple wrapper around BuildPileupForOneSample that allows us to efficiently
   // pass large protobufs in from Python. Simply unwraps the ConstProtoPtr
@@ -173,7 +174,8 @@ class PileupImageEncoderNative {
       const learning::genomics::deepvariant::DeepVariantCall& dv_call,
       absl::string_view ref_bases, const nucleus::genomics::v1::Read& read,
       int image_start_pos, const std::vector<std::string>& alt_alleles,
-      absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank = {});
+      const absl::flat_hash_set<DeepVariantChannelEnum>&
+          channels_enum_to_blank = {});
 
   // Simple wrapper around EncodeRead that allows us to efficiently pass large
   // protobufs in from Python. Simply unwraps the ConstProtoPtr objects and

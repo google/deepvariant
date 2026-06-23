@@ -31,17 +31,14 @@
 
 #include "deepvariant/channels/homopolymer_indel_quality_channel.h"
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <vector>
 
 #include "deepvariant/channels/channel.h"
 #include "deepvariant/channels/channel_utils.h"
 #include "deepvariant/protos/deepvariant.pb.h"
-#include "absl/strings/string_view.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 
 namespace learning {
@@ -88,41 +85,6 @@ std::vector<int8_t> HomopolymerInDelQualityChannel::GetTPValues(
   return int_tps;
 }
 
-std::vector<std::uint8_t> HomopolymerInDelQualityChannel::HomoPolymerWeighted(
-    const Read& read) {
-  // Generates a vector reflecting the number of repeats observed
-  std::vector<std::uint8_t> homopolymer_weighted(read.aligned_sequence().size(),
-                                                 1);
-  const absl::string_view seq = read.aligned_sequence();
-
-  if (seq.empty()) {
-    return homopolymer_weighted;
-  }
-
-  int i = 0;
-  while (i < seq.size()) {
-    int hmer_length = 1;
-    char current_base = seq[i];
-    int j = i + 1;
-
-    // Count consecutive identical bases
-    while (j < seq.size() && seq[j] == current_base) {
-      hmer_length++;
-      j++;
-    }
-
-    // Fill all positions in this homopolymer with its length
-    for (int k = i; k < j; k++) {
-      // Maximum value of uint8_t is 255.
-      homopolymer_weighted[k] = std::min(
-          hmer_length, static_cast<int>(std::numeric_limits<uint8_t>::max()));
-    }
-
-    i = j;
-  }
-
-  return homopolymer_weighted;
-}
 
 std::vector<std::uint8_t>
 HomopolymerInDelQualityChannel::HomoPolymerInDelQuality(const Read& read,
@@ -138,7 +100,6 @@ HomopolymerInDelQualityChannel::HomoPolymerInDelQuality(const Read& read,
       channels::internal::MaxQualityColor(quality_cap));
 
   std::string seq(read.aligned_sequence());
-  auto hmer_lengths = HomoPolymerWeighted(read);
   auto tps = GetTPValues(read);
 
   // If tp tag is not present, return default quality values
@@ -147,8 +108,14 @@ HomopolymerInDelQualityChannel::HomoPolymerInDelQuality(const Read& read,
   }
 
   int i = 0;
-  while (i < hmer_lengths.size()) {
-    int hmer_length = hmer_lengths[i];
+  while (i < seq.size()) {
+    int hmer_length = 1;
+    char current_base = seq[i];
+    int hmer_end = i + 1;
+    while (hmer_end < seq.size() && seq[hmer_end] == current_base) {
+      hmer_length++;
+      hmer_end++;
+    }
     float hmer_directed_error_prob = 0;
 
     // Iterate quality encodings for hmer [i], and sum them up to upward

@@ -48,6 +48,7 @@
 //     Encodes inter-homopolymer insertion probability. Each char is
 //     a Phred score + 33. For example, '5' = Q20, 'I' = Q40.
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -225,6 +226,34 @@ TEST_F(HomopolymerInDelQualityTest, SingleBaseHomopolymers) {
   EXPECT_EQ(ins_qual[2], max_color);
   // Position 3: tp=1 (insertion) → has insertion error
   EXPECT_LT(ins_qual[3], max_color);
+}
+
+// Regression test: A homopolymer run longer than 255 bases previously caused a
+// crash. The old code stored homopolymer lengths in a uint8_t (max 255), so a
+// 300-base run was seen as length 255. This caused the loop to only advance by
+// 255, then re-process positions 255-299 as a new 45-base run, reading
+// tps[255+j] out of bounds.
+TEST_F(HomopolymerInDelQualityTest, LongHomopolymer_DoesNotCrash) {
+  const int long_hmer_len = 300;  // Longer than uint8_t max (255).
+  std::string seq(long_hmer_len, 'A');
+  seq += "GG";  // Append a short second homopolymer.
+  const size_t total_len = seq.size();
+
+  // All TP = 0 (no errors). Any quality values work.
+  std::vector<int> tps(total_len, 0);
+  std::vector<int> quals(total_len, 30);
+
+  Read read = MakeReadWithTP(seq, tps, quals);
+  // This call would crash before the fix due to out-of-bounds read.
+  auto result = channel_.HomoPolymerInDelQuality(read, /*is_deletion=*/false);
+
+  ASSERT_EQ(result.size(), total_len);
+  // With no errors (all TP=0), every position should be at max quality.
+  uint8_t max_color =
+      channels::internal::MaxQualityColor(options_.base_quality_cap());
+  for (size_t i = 0; i < total_len; i++) {
+    EXPECT_EQ(result[i], max_color) << "Mismatch at position " << i;
+  }
 }
 
 // ---------------------------------------------------------------------------

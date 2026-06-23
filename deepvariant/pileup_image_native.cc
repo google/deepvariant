@@ -300,7 +300,7 @@ PileupImageEncoderNative::BuildPileupForOneSample(
     int image_start_pos, const vector<std::string>& alt_alleles,
     const SampleOptions& sample_options, const float mean_coverage,
     const std::vector<int64_t>* alignment_positions,
-    absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank) {
+    const absl::flat_hash_set<DeepVariantChannelEnum>& channels_enum_to_blank) {
   // The width of a pileup is defined by the length of ref_bases. ref_bases must
   // have the correct length.
   CHECK(alignment_positions == nullptr || alignment_positions->empty() ||
@@ -478,7 +478,7 @@ std::unique_ptr<ImageRow> PileupImageEncoderNative::EncodeRead(
     const DeepVariantCall& dv_call, absl::string_view ref_bases,
     const Read& read, int image_start_pos,
     const vector<std::string>& alt_alleles,
-    const absl::flat_hash_set<DeepVariantChannelEnum> channels_enum_to_blank) {
+    const absl::flat_hash_set<DeepVariantChannelEnum>& channels_enum_to_blank) {
   int num_channels = AllChannelsEnum("").size();
   ImageRow img_row(ref_bases.size(), num_channels);
 

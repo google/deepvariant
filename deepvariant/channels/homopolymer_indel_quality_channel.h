@@ -33,7 +33,6 @@
 #define LEARNING_GENOMICS_DEEPVARIANT_CHANNELS_HOMOPOLYMER_INDEL_QUALITY_CHANNEL_H_
 
 #include <cstdint>
-#include <string>
 #include <vector>
 
 #include "deepvariant/channels/channel.h"
@@ -60,10 +59,7 @@ class HomopolymerInDelQualityChannel : public Channel {
  protected:
   // Helper functions for reading and processing tags from reads
   std::vector<int8_t> GetTPValues(const Read& read);
-  std::vector<std::uint8_t> HomoPolymerWeighted(const Read& read);
-
   static const constexpr int kMaxQScore = 93;
-  static const constexpr int kMaxHomoPolymerWeighted = 30;
 };
 
 }  // namespace deepvariant
