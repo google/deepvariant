@@ -36,6 +36,7 @@ import numpy.testing as npt
 from deepvariant import testdata
 from deepvariant import variant_caller
 from deepvariant.protos import deepvariant_pb2
+from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 
@@ -539,6 +540,67 @@ class VariantCallerTests(parameterized.TestCase):
       )
     else:
       self.assertEmpty(gvcfs)
+
+  def test_make_gvcfs_applies_par_regions_on_haploid_contigs(self):
+    """Verifies that par_regions_bed is applied correctly in make_gvcfs."""
+    # Mock the BED file read so we don't need a real file.
+    # PAR region covers positions 100-200 on chrY.
+    mock_par_rangeset = mock.Mock()
+    mock_par_rangeset.overlaps = mock.Mock(
+        side_effect=lambda chrom, pos: chrom == 'chrY' and 100 <= pos <= 200
+    )
+
+    with mock.patch.object(
+        ranges.RangeSet, 'from_bed', return_value=mock_par_rangeset
+    ):
+      options = deepvariant_pb2.VariantCallerOptions(
+          sample_name='SAMPLE',
+          p_error=0.01,
+          max_gq=100,
+          gq_resolution=1,
+          ploidy=2,
+          haploid_contigs=['chrY'],
+          par_regions_bed='/fake/par.bed',
+      )
+      caller = PlaceholderVariantCaller.__new__(PlaceholderVariantCaller)
+      variant_caller.VariantCaller.__init__(
+          caller, options=options, use_cache_table=False, max_cache_coverage=100
+      )
+
+    # Two positions on chrY with identical coverage (20 ref, 0 alt):
+    #   - position 150: inside PAR  -> should be treated as DIPLOID
+    #   - position 300: outside PAR -> should be treated as HAPLOID
+    allele_counts = [
+        deepvariant_pb2.AlleleCountSummary(
+            reference_name='chrY',
+            position=150,
+            ref_supporting_read_count=20,
+            total_read_count=20,
+            ref_base='A',
+        ),
+        deepvariant_pb2.AlleleCountSummary(
+            reference_name='chrY',
+            position=300,
+            ref_supporting_read_count=20,
+            total_read_count=20,
+            ref_base='A',
+        ),
+    ]
+
+    gvcfs = list(caller.make_gvcfs(allele_counts))
+
+    self.assertLen(gvcfs, 2)
+    gq_in_par = variantcall_utils.get_gq(gvcfs[0].calls[0])
+    gq_outside_par = variantcall_utils.get_gq(gvcfs[1].calls[0])
+    # Diploid GQ (in PAR) should differ from haploid GQ (outside PAR),
+    # proving that PAR regions are read and applied in make_gvcfs.
+    self.assertNotEqual(
+        gq_in_par,
+        gq_outside_par,
+        'GQ should differ between PAR (diploid) and non-PAR (haploid) sites.',
+    )
+    self.assertEqual(gq_in_par, 59)  # diploid: 20 ref, 0 alt
+    self.assertEqual(gq_outside_par, 100)  # haploid: 20 ref, 0 alt
 
 
 _CACHE_COVERAGE = 20  # Outside class so we can refer to it in @Parameters.

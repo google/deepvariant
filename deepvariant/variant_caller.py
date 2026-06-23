@@ -281,11 +281,7 @@ class VariantCaller(metaclass=abc.ABCMeta):
       coordinate-sorted order containing gVCF records.
     """
 
-    par_regions = None
-    if self.options.par_regions_bed:
-      par_regions = ranges.RangeSet.from_bed(
-          self.options.par_regions_bed, enable_logging=False
-      )
+    par_regions = self.par_regions
 
     def with_gq_and_likelihoods(summary_counts):
       """Returns summary_counts along with GQ and genotype likelihoods.
