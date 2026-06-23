@@ -240,6 +240,28 @@ _CALL_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
         ' has to be flag_name=true or flag_name=false.'
     ),
 )
+_EXAMPLES_COMPRESSION = flags.DEFINE_enum(
+    'examples_compression',
+    'GZIP',
+    ['GZIP', 'SNAPPY'],
+    (
+        'Codec for the make_examples tf.Example output. SNAPPY trades larger'
+        ' intermediate files for less make_examples CPU, which can help when'
+        ' output throughput is generously provisioned. The side outputs (gVCF,'
+        ' call_variant_outputs, small_model) are always GZIP regardless of this'
+        ' flag. This only affects the standard DeepVariant pipeline; the'
+        ' DeepTrio, DeepSomatic, and pangenome wrappers always use GZIP.'
+    ),
+)
+_EXAMPLES_COMPRESSION_LEVEL = flags.DEFINE_integer(
+    'examples_compression_level',
+    None,
+    (
+        'GZIP compression level for the make_examples output (-1, or 0..9;'
+        ' -1 selects the zlib default). Only applies when --examples_compression'
+        ' is GZIP; ignored for SNAPPY.'
+    ),
+)
 # Optional flag for postprocess variants
 _POSTPROCESS_CPUS = flags.DEFINE_integer(
     'postprocess_cpus',
@@ -704,6 +726,21 @@ def check_flags():
           ' models.'
       )
 
+  if _EXAMPLES_COMPRESSION_LEVEL.value is not None:
+    level = _EXAMPLES_COMPRESSION_LEVEL.value
+    if level != -1 and not 0 <= level <= 9:
+      raise RuntimeError(
+          '--examples_compression_level must be -1 or in [0, 9], got'
+          f' {level}.'
+      )
+    if _EXAMPLES_COMPRESSION.value == 'SNAPPY':
+      logging.warning(
+          '--examples_compression_level is set to %d but'
+          ' --examples_compression is SNAPPY; the level only applies to GZIP'
+          ' output and will be ignored.',
+          level,
+      )
+
 
 def get_model_ckpt(model_type: str, customized_model: str) -> str:
   """Return the path to the model checkpoint based on the input args."""
@@ -725,9 +762,20 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
         'gvcf.tfrecord@{}.gz'.format(_NUM_SHARDS.value),
     )
 
+  # The examples codec is inferred downstream from the file-name suffix
+  # (.snappy -> Snappy, else GZIP), so selecting the suffix here is the single
+  # control point: the same `examples` path feeds both make_examples (writer)
+  # and call_variants (reader), keeping them aligned. The side outputs below
+  # stay .gz: make_examples force-renames its auxiliary outputs to .gz (they go
+  # through the Python TFRecord writer, which cannot emit Snappy).
+  examples_suffix = (
+      'snappy' if _EXAMPLES_COMPRESSION.value == 'SNAPPY' else 'gz'
+  )
   examples = os.path.join(
       intermediate_results_dir,
-      'make_examples.tfrecord@{}.gz'.format(_NUM_SHARDS.value),
+      'make_examples.tfrecord@{}.{}'.format(
+          _NUM_SHARDS.value, examples_suffix
+      ),
   )
   small_model_cvo_records = os.path.join(
       intermediate_results_dir,
@@ -771,6 +819,15 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
     if tf.io.gfile.exists(potential_json):
       model_ckpt_json = potential_json
 
+  # The GZIP level only applies to GZIP output; check_flags() has already
+  # warned if a level was supplied alongside SNAPPY.
+  examples_compression_level = None
+  if (
+      _EXAMPLES_COMPRESSION.value == 'GZIP'
+      and _EXAMPLES_COMPRESSION_LEVEL.value is not None
+  ):
+    examples_compression_level = _EXAMPLES_COMPRESSION_LEVEL.value
+
   commands.append(
       make_examples_command(
           ref=_REF.value,
@@ -787,6 +844,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
           haploid_contigs=_HAPLOID_CONTIGS.value,
           par_regions_bed=_PAR_REGIONS.value,
           output_local_read_phasing=local_read_phasing_tsv_files,
+          examples_compression_level=examples_compression_level,
       )
   )
 

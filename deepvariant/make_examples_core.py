@@ -1207,7 +1207,7 @@ class OutputsWriter:
 
     if options.examples_filename:
       clean_basename = re.sub(
-          r'(\@[0-9]+|-\*?\d*-of-\*?\d*|\.gz)',
+          r'(\@[0-9]+|-\*?\d*-of-\*?\d*|\.gz|\.snappy)',
           '',
           os.path.basename(options.examples_filename.lower()),
       )
@@ -1241,7 +1241,11 @@ class OutputsWriter:
       self._add_writer(
           'call_variant_outputs',
           dv_utils.get_tf_record_writer(
-              self._add_suffix(self.examples_filename, 'call_variant_outputs')
+              self._as_gzip_path(
+                  self._add_suffix(
+                      self.examples_filename, 'call_variant_outputs'
+                  )
+              )
           ),
       )
 
@@ -1289,7 +1293,9 @@ class OutputsWriter:
       self._add_writer(
           'small_model_examples',
           dv_utils.get_tf_record_writer(
-              self._add_suffix(self.examples_filename, 'small_model')
+              self._as_gzip_path(
+                  self._add_suffix(self.examples_filename, 'small_model')
+              )
           ),
       )
 
@@ -1308,6 +1314,23 @@ class OutputsWriter:
 
     new_file = os.path.join(file_dir, new_file_base)
     return new_file
+
+  @staticmethod
+  def _as_gzip_path(file_path):
+    """Returns file_path with a '.gz' suffix in place of a '.snappy' one.
+
+    The auxiliary make_examples outputs (the small-model call_variant_outputs
+    and small_model_examples) are always GZIP-compressed, even when the main
+    examples output uses Snappy. They inherit their name from the examples
+    path, so swap a trailing '.snappy' for '.gz' to keep each file name
+    consistent with its actual codec. The suffix match is case-insensitive to
+    agree with the codec detection in
+    dv_utils.compression_type_for_examples_path and the C++ writer (both
+    lower-case the path before comparing).
+    """
+    if file_path.lower().endswith('.snappy'):
+      return file_path[: -len('.snappy')] + '.gz'
+    return file_path
 
   def write_examples(self, *examples):
     self._write('examples', *examples)

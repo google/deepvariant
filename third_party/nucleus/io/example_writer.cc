@@ -39,6 +39,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
@@ -49,13 +50,23 @@
 
 namespace nucleus {
 
+// Returns the TfRecord compression codec implied by the file-name suffix:
+// "SNAPPY" for a ".snappy" extension, otherwise "GZIP". This mirrors the
+// reader-side autodetection in dv_utils.compression_type_for_examples_path so a
+// single source of truth (the file name) drives both ends.
+std::string CompressionTypeForPath(absl::string_view path) {
+  return absl::EndsWith(absl::AsciiStrToLower(path), ".snappy") ? "SNAPPY"
+                                                                : "GZIP";
+}
+
 ExampleFormat AutodetectFormat(absl::string_view path,
                                ExampleFormat format) {
   if (format != ExampleFormat::kAuto) return format;
   std::string path_str = absl::AsciiStrToLower(path);
   std::string extension;
-  // Replace shard strings and .gz extension.
-  RE2::GlobalReplace(&path_str, R"(\@[0-9]+|-\*?\d*-of-\*?\d*|\.gz)", "");
+  // Replace shard strings and the compression extension (.gz or .snappy).
+  RE2::GlobalReplace(&path_str,
+                     R"(\@[0-9]+|-\*?\d*-of-\*?\d*|\.gz|\.snappy)", "");
   RE2::PartialMatch(path_str,
                     R"(\.(bagz|tfrecords?)$)",  // extension
                     &extension);
@@ -88,7 +99,7 @@ class ExampleWriter::Impl {
 
 class ExampleWriter::TfRecordImpl : public ExampleWriter::Impl {
  public:
-  explicit TfRecordImpl(absl::string_view path) {
+  TfRecordImpl(absl::string_view path, int compression_level) {
     UpdateStatus(tensorflow::Env::Default()->NewWritableFile(std::string(path),
                                                              &tf_file_));
     if (ABSL_PREDICT_FALSE(!status().ok())) {
@@ -96,14 +107,28 @@ class ExampleWriter::TfRecordImpl : public ExampleWriter::Impl {
       return;
     }
 
-    const tensorflow::io::RecordWriterOptions& options =
-        tensorflow::io::RecordWriterOptions::CreateRecordWriterOptions(
-            "GZIP");
+    // The codec is inferred from the file-name suffix (".snappy" -> SNAPPY,
+    // otherwise GZIP) so it always agrees with what the readers autodetect.
+    const std::string codec = CompressionTypeForPath(path);
+    tensorflow::io::RecordWriterOptions options =
+        tensorflow::io::RecordWriterOptions::CreateRecordWriterOptions(codec);
+    // The level only applies to the zlib-based codecs (GZIP/ZLIB); a negative
+    // value leaves the library default (Z_DEFAULT_COMPRESSION) in place. Snappy
+    // has no notion of a level, so a level set alongside a ".snappy" path is
+    // ignored -- warn rather than silently dropping it.
+    if (compression_level >= 0) {
+      if (codec == "SNAPPY") {
+        LOG(WARNING) << "Ignoring compression level " << compression_level
+                     << " for Snappy output " << path
+                     << " (Snappy does not support compression levels).";
+      } else {
+        options.zlib_options.compression_level = compression_level;
+      }
+    }
 
     tf_ = std::make_unique<tensorflow::io::RecordWriter>(
             tf_file_.get(),
             options);
-
   }
 
   bool Add(absl::string_view value,
@@ -128,7 +153,8 @@ class ExampleWriter::TfRecordImpl : public ExampleWriter::Impl {
 
 
 ExampleWriter::ExampleWriter(absl::string_view path,
-                             ExampleFormat format) {
+                             ExampleFormat format,
+                             int compression_level) {
   std::filesystem::path p = std::filesystem::path(path);
   if (!std::filesystem::is_directory(p.parent_path())
       && p.parent_path() != "") {
@@ -143,7 +169,7 @@ ExampleWriter::ExampleWriter(absl::string_view path,
       return;
     case ExampleFormat::kTfRecord:
       LOG(INFO) << "Writing output using TfRecord";
-      impl_ = std::make_unique<TfRecordImpl>(path);
+      impl_ = std::make_unique<TfRecordImpl>(path, compression_level);
       break;
     case ExampleFormat::kBagz:
       break;

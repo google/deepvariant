@@ -33,6 +33,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 
@@ -47,11 +48,23 @@ enum class ExampleFormat {
   kBagz = 2,
 };
 
+// Returns the TfRecord compression codec implied by a file-name suffix:
+// "SNAPPY" for a (case-insensitive) ".snappy" extension, otherwise "GZIP".
+// Mirrors the reader-side detection in
+// dv_utils.compression_type_for_examples_path so the file name is the single
+// source of truth for both writing and reading.
+std::string CompressionTypeForPath(absl::string_view path);
+
 // Local writer for records, supports only a single file.
 class ExampleWriter {
  public:
+  // The TfRecord compression codec is inferred from the file-name suffix: a
+  // ".snappy" extension selects SNAPPY, otherwise GZIP. compression_level only
+  // applies to GZIP; a negative value uses the library default
+  // (Z_DEFAULT_COMPRESSION).
   explicit ExampleWriter(absl::string_view path,
-                         ExampleFormat format = ExampleFormat::kAuto);
+                         ExampleFormat format = ExampleFormat::kAuto,
+                         int compression_level = -1);
   ~ExampleWriter();
   bool Add(absl::string_view value,
            absl::string_view chrom = {},

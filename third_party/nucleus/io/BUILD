@@ -1335,5 +1335,6 @@ cc_test(
     deps = [
         ":example_writer",
         "@com_google_googletest//:gtest_main",
+        "@org_tensorflow//tensorflow/core:lib",
     ],
 )

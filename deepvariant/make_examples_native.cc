@@ -148,8 +148,14 @@ ExamplesGenerator::ExamplesGenerator(
         LOG(INFO) << "Example filename not found for role: " << role;
         continue;
       }
-      sample.writer =
-          std::make_unique<nucleus::ExampleWriter>(it->second);
+      // An unset compression level (no explicit presence) maps to -1, which
+      // tells the writer to keep the library default rather than apply level 0.
+      const int compression_level =
+          options_.has_examples_compression_level()
+              ? options_.examples_compression_level()
+              : -1;
+      sample.writer = std::make_unique<nucleus::ExampleWriter>(
+          it->second, nucleus::ExampleFormat::kAuto, compression_level);
       if (!sample.writer->status().ok()) {
         LOG(FATAL) << "Failed to create Example writer for " << it->second;
       }

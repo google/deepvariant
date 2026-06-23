@@ -780,6 +780,13 @@ message MakeExamplesOptions {
   string candidates_filename = 12;
   // Path to examples.
   string examples_filename = 13;
+  // Compression level for the examples output. Only applies to GZIP-compressed
+  // examples (i.e. a non-".snappy" examples_filename, whose codec is inferred
+  // from its suffix). A negative value uses the library default level (zlib
+  // Z_DEFAULT_COMPRESSION). Declared `optional` for explicit presence so that
+  // an unset field is distinguishable from a deliberate level 0 (store): when
+  // unset, the writer keeps the library default rather than disabling deflate.
+  optional int32 examples_compression_level = 102;
   // Path to a list of regions we are confident in, for determining which
   // candidate variants get labels.
   string confident_regions_filename = 14;

@@ -92,6 +92,21 @@ _EXAMPLES = flags.DEFINE_string(
     None,
     'Required. Path to write tf.Example protos in TFRecord format.',
 )
+_EXAMPLES_COMPRESSION_LEVEL = flags.DEFINE_integer(
+    'examples_compression_level',
+    -1,
+    (
+        'Compression level for the examples output, -1 or in [0, 9]. The'
+        ' examples codec is inferred from the --examples suffix (".snappy" ->'
+        ' Snappy, otherwise GZIP); this level only applies to GZIP output. A'
+        ' negative value (the default) uses the library default level.'
+    ),
+)
+flags.register_validator(
+    'examples_compression_level',
+    lambda v: v == -1 or 0 <= v <= 9,
+    message='--examples_compression_level must be -1 or in [0, 9].',
+)
 _CHECKPOINT = flags.DEFINE_string(
     'checkpoint',
     None,
@@ -1203,6 +1218,7 @@ def shared_flags_to_options(
         _OUTPUT_PHASING_ERROR_STATS.value or '',
     )
     options.examples_filename = examples
+    options.examples_compression_level = _EXAMPLES_COMPRESSION_LEVEL.value
     options.candidates_filename = candidates
     options.gvcf_filename = gvcf
     options.include_med_dp = _INCLUDE_MED_DP.value

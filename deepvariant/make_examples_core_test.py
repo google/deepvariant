@@ -367,6 +367,31 @@ class MakeExamplesCoreUnitTest(parameterized.TestCase):
     ):
       make_examples_core.OutputsWriter(options)
 
+  def test_as_gzip_path_rewrites_snappy_suffix(self):
+    self.assertEqual(
+        make_examples_core.OutputsWriter._as_gzip_path(
+            'examples.tfrecord.snappy'
+        ),
+        'examples.tfrecord.gz',
+    )
+
+  def test_as_gzip_path_rewrites_uppercase_snappy_suffix(self):
+    # Codec detection is case-insensitive, so the side-output rename must be
+    # too; otherwise a '.SNAPPY' path yields GZIP bytes under a name readers
+    # treat as Snappy.
+    self.assertEqual(
+        make_examples_core.OutputsWriter._as_gzip_path(
+            'examples.tfrecord.SNAPPY'
+        ),
+        'examples.tfrecord.gz',
+    )
+
+  def test_as_gzip_path_passes_through_gz_suffix(self):
+    self.assertEqual(
+        make_examples_core.OutputsWriter._as_gzip_path('examples.tfrecord.gz'),
+        'examples.tfrecord.gz',
+    )
+
   @flagsaver.flagsaver
   def test_gvcf_output_enabled_is_false_without_gvcf_flag(self):
     FLAGS.mode = 'training'

@@ -1564,6 +1564,7 @@ py_library(
     srcs = ["show_examples.py"],
     deps = [
         ":dv_constants",
+        ":dv_utils",
         "//third_party/nucleus/io:sharded_file_utils",
         "//third_party/nucleus/io:tfrecord",
         "//third_party/nucleus/protos:variants_py_pb2",

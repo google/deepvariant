@@ -29,9 +29,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "third_party/nucleus/io/example_writer.h"
+#include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <string>
+#include <vector>
 
+#include "tensorflow/core/lib/io/record_reader.h"
+#include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/platform/test.h"
 
 namespace nucleus {
@@ -62,6 +67,58 @@ TEST(ExampleWriterTest, TFWriterTest) {
   auto output_record = std::string("test_output");
   ExampleWriter writer = ExampleWriter("/tmp/out.tfrecord.gz");
   EXPECT_TRUE(writer.Add(output_record));
+}
+
+TEST(ExampleWriterTest, CompressionTypeForPathDetectsCodec) {
+  EXPECT_EQ(CompressionTypeForPath("examples.tfrecord.snappy"), "SNAPPY");
+  EXPECT_EQ(CompressionTypeForPath("examples.tfrecord.SNAPPY"), "SNAPPY");
+  EXPECT_EQ(CompressionTypeForPath("examples-00000-of-00010.tfrecord.snappy"),
+            "SNAPPY");
+  EXPECT_EQ(CompressionTypeForPath("examples.tfrecord.gz"), "GZIP");
+  EXPECT_EQ(CompressionTypeForPath("examples.tfrecord"), "GZIP");
+}
+
+TEST(ExampleWriterTest, SnappyRoundTrip) {
+  // A ".snappy" path must produce a file a SNAPPY RecordReader can decode,
+  // proving the writer's suffix-inferred codec agrees with the readers.
+  const std::string path = "/tmp/dv_example_writer_snappy.tfrecord.snappy";
+  const std::vector<std::string> records = {"alpha", "beta", "gamma"};
+  {
+    ExampleWriter writer(path);
+    for (const std::string& r : records) EXPECT_TRUE(writer.Add(r));
+    EXPECT_TRUE(writer.Close());
+  }
+  std::unique_ptr<tensorflow::RandomAccessFile> file;
+  ASSERT_TRUE(
+      tensorflow::Env::Default()->NewRandomAccessFile(path, &file).ok());
+  tensorflow::io::RecordReaderOptions opts =
+      tensorflow::io::RecordReaderOptions::CreateRecordReaderOptions("SNAPPY");
+  tensorflow::io::RecordReader reader(file.get(), opts);
+  tensorflow::uint64 offset = 0;
+  tensorflow::tstring value;
+  for (const std::string& expected : records) {
+    ASSERT_TRUE(reader.ReadRecord(&offset, &value).ok());
+    EXPECT_EQ(std::string(value.data(), value.size()), expected);
+  }
+}
+
+TEST(ExampleWriterTest, GzipCompressionLevelIsApplied) {
+  // A compressible payload, so level 0 (store) yields a strictly larger file
+  // than level 9 -- proving the level reaches the zlib options.
+  const std::string record(4096, 'A');
+  auto write_at_level = [&record](const std::string& path, int level) {
+    ExampleWriter writer(path, ExampleFormat::kAuto, level);
+    for (int i = 0; i < 50; ++i) EXPECT_TRUE(writer.Add(record));
+    EXPECT_TRUE(writer.Close());
+  };
+  const std::string path0 = "/tmp/dv_example_writer_l0.tfrecord.gz";
+  const std::string path9 = "/tmp/dv_example_writer_l9.tfrecord.gz";
+  write_at_level(path0, 0);
+  write_at_level(path9, 9);
+  tensorflow::uint64 size0 = 0, size9 = 0;
+  ASSERT_TRUE(tensorflow::Env::Default()->GetFileSize(path0, &size0).ok());
+  ASSERT_TRUE(tensorflow::Env::Default()->GetFileSize(path9, &size9).ok());
+  EXPECT_GT(size0, size9);
 }
 
 }  // namespace nucleus

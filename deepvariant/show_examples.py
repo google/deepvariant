@@ -53,6 +53,7 @@ import pandas as pd
 import tensorflow as tf
 
 from deepvariant import dv_constants
+from deepvariant import dv_utils
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import tfrecord
 from third_party.nucleus.protos import variants_pb2
@@ -384,8 +385,15 @@ def run():
       tsv_df = pd.read_csv(_FILTER_BY_TSV.value, sep='\t', header=None)
       ids_from_tsv = set(tsv_df[0])
 
-    # Use nucleus.io.tfrecord to read all shards.
-    dataset = tfrecord.read_tfrecords(examples_path, compression_type='GZIP')
+    # Use nucleus.io.tfrecord to read all shards. The codec is inferred from the
+    # examples file-name suffix (".snappy" -> Snappy, otherwise GZIP), matching
+    # how make_examples named the output.
+    dataset = tfrecord.read_tfrecords(
+        examples_path,
+        compression_type=dv_utils.compression_type_for_examples_path(
+            examples_path
+        ),
+    )
 
     make_rgb = _IMAGE_TYPE.value in ['both', 'RGB']
     make_channels = _IMAGE_TYPE.value in ['both', 'channels']

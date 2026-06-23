@@ -216,12 +216,14 @@ def input_fn(
     file_list = tf.random.shuffle(file_list)
 
   ds = tf.data.Dataset.from_tensor_slices(file_list)
+  # All shards of one examples set share a codec; detect it from the path.
+  compression_type = dv_utils.compression_type_for_examples_path(path)
 
   def load_dataset(filename: str) -> tf.data.Dataset:
     return tf.data.TFRecordDataset(
         filename,
         buffer_size=config.prefetch_buffer_bytes,
-        compression_type='GZIP',
+        compression_type=compression_type,
     )
 
   ds = ds.interleave(

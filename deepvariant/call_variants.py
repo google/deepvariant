@@ -511,12 +511,14 @@ def get_dataset(
         sharded_file_utils.normalize_to_sharded_file_pattern(path),
         shuffle=False,
     )
+    # All shards of one examples set share a codec; detect it from the path.
+    compression_type = dv_utils.compression_type_for_examples_path(path)
 
     def load_dataset(filename):
       dataset = tf.data.TFRecordDataset(
           filename,
           buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
-          compression_type='GZIP',
+          compression_type=compression_type,
       )
       return dataset
 

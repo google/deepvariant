@@ -177,6 +177,24 @@ def example_sequencing_type(example):
   return example.features.feature['sequencing_type'].int64_list.value[0]
 
 
+def compression_type_for_examples_path(path: str) -> str:
+  """Returns the tf.data TFRecord compression_type for an examples path.
+
+  make_examples names Snappy-compressed output with a '.snappy' suffix; any
+  other suffix is treated as 'GZIP', matching the historical default in which
+  examples were always GZIP-compressed regardless of file name.
+
+  Args:
+    path: An examples file name, or a sharded/comma-separated pattern.
+
+  Returns:
+    'SNAPPY' if the (first) path ends (case-insensitively) in '.snappy',
+    otherwise 'GZIP'.
+  """
+  first = path.split(',')[0].strip().lower()
+  return 'SNAPPY' if first.endswith('.snappy') else 'GZIP'
+
+
 def get_one_example_from_examples_path(source, proto=None):
   """Get the first record from `source`.
 
@@ -195,7 +213,9 @@ def get_one_example_from_examples_path(source, proto=None):
         'Cannot find matching files with the pattern "{}"'.format(source)
     )
   dataset = tf.data.TFRecordDataset(
-      files, compression_type='GZIP', num_parallel_reads=tf.data.AUTOTUNE
+      files,
+      compression_type=compression_type_for_examples_path(files[0]),
+      num_parallel_reads=tf.data.AUTOTUNE,
   )
   if not proto:
     proto = example_pb2.Example

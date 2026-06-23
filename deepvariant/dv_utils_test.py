@@ -242,6 +242,63 @@ class MaybeCastImagesToBfloat16Test(parameterized.TestCase):
     self.assertEqual(casted_images.dtype, tf.uint8)
 
 
+class CompressionTypeForExamplesPathTest(absltest.TestCase):
+
+  def test_snappy_suffix_selects_snappy(self):
+    self.assertEqual(
+        dv_utils.compression_type_for_examples_path('examples.tfrecord.snappy'),
+        'SNAPPY',
+    )
+
+  def test_gz_suffix_selects_gzip(self):
+    self.assertEqual(
+        dv_utils.compression_type_for_examples_path('examples.tfrecord.gz'),
+        'GZIP',
+    )
+
+  def test_no_compression_suffix_defaults_to_gzip(self):
+    self.assertEqual(
+        dv_utils.compression_type_for_examples_path('examples.tfrecord'),
+        'GZIP',
+    )
+
+  def test_snappy_suffix_is_case_insensitive(self):
+    self.assertEqual(
+        dv_utils.compression_type_for_examples_path('examples.tfrecord.SNAPPY'),
+        'SNAPPY',
+    )
+
+  def test_uses_first_of_comma_separated_paths(self):
+    self.assertEqual(
+        dv_utils.compression_type_for_examples_path(
+            'shard0.tfrecord.snappy, shard1.tfrecord.snappy'
+        ),
+        'SNAPPY',
+    )
+
+  def test_sharded_snappy_pattern_selects_snappy(self):
+    self.assertEqual(
+        dv_utils.compression_type_for_examples_path(
+            'examples-00000-of-00010.tfrecord.snappy'
+        ),
+        'SNAPPY',
+    )
+
+  def test_at_n_sharded_spec_selects_snappy(self):
+    self.assertEqual(
+        dv_utils.compression_type_for_examples_path(
+            'examples@32.tfrecord.snappy'
+        ),
+        'SNAPPY',
+    )
+
+  def test_at_n_sharded_spec_gz_selects_gzip(self):
+    self.assertEqual(
+        dv_utils.compression_type_for_examples_path('examples@32.tfrecord.gz'),
+        'GZIP',
+    )
+
+
 if __name__ == '__main__':
   tf.config.run_functions_eagerly(True)
   absltest.main()
