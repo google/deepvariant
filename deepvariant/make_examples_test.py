@@ -791,6 +791,33 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertEqual(decode_example(examples[0])['image/shape'], expected_shape)
 
   @flagsaver.flagsaver
+  def test_make_examples_training_end2end_strip_quality_scores(self):
+    """Smoke test: make_examples completes with --strip_quality_scores."""
+    region = ranges.parse_literal('chr20:10,000,000-10,010,000')
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.examples = test_utils.test_tmpfile(
+        _sharded('strip_qual.ex.tfrecord.gz')
+    )
+    FLAGS.channel_list = 'BASE_CHANNELS'
+    FLAGS.strip_quality_scores = True
+    FLAGS.mode = 'training'
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.partition_size = 1000
+    options = make_examples.default_options(add_flags=True)
+    options.bam_fname = 'NA12878_S1.chr20.10_10p1mb.bam'
+    make_examples_core.make_examples_runner(options)
+    # Verify examples were produced with correct channel count.
+    # BASE_CHANNELS has 6 channels; base_quality is auto-removed, leaving 5.
+    example_info_json = dv_utils.get_example_info_json_filename(
+        FLAGS.examples, None
+    )
+    example_info = json.load(gfile.GFile(example_info_json, 'r'))
+    self.assertLen(example_info['channels'], 5)
+
+  @flagsaver.flagsaver
   def test_make_examples_training_end2end_phased_candidates(self):
     region = ranges.parse_literal('chr20:9,000,000-9,100,000')
     FLAGS.regions = [ranges.to_literal(region)]
@@ -1411,6 +1438,67 @@ class DefaultOptionsTest(parameterized.TestCase):
     self.assertAlmostEqual(
         options.pic_options.allele_unsupporting_read_alpha, 0.6
     )
+
+  def _set_strip_quality_flags(self, channel_list=None):
+    """Sets common flags for --strip_quality_scores tests."""
+    FLAGS.strip_quality_scores = True
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.mode = 'training'
+    FLAGS.examples = 'out.tfrecord'
+    if channel_list is None:
+      channel_list = 'read_base,mapping_quality,strand,read_supports_variant,base_differs_from_ref'
+    FLAGS.channel_list = channel_list
+
+  @flagsaver.flagsaver
+  def test_strip_quality_scores_sets_thresholds_to_zero(self):
+    """All quality thresholds are auto-overridden to 0 when stripping."""
+    self._set_strip_quality_flags()
+    options = make_examples.default_options(add_flags=True)
+    self.assertEqual(options.read_requirements.min_base_quality, 0)
+    self.assertEqual(
+        options.allele_counter_options.read_requirements.min_base_quality, 0
+    )
+    self.assertEqual(options.pic_options.read_requirements.min_base_quality, 0)
+    self.assertEqual(options.realigner_options.dbg_config.min_base_quality, 0)
+    self.assertEqual(options.realigner_options.ws_config.min_base_quality, 0)
+    self.assertEqual(options.low_vaf_max_base_quality, 0)
+
+  @parameterized.parameters(
+      # Explicit channel list with quality channels included.
+      'read_base,base_quality,mapping_quality,strand,read_supports_variant,base_differs_from_ref,avg_base_quality',
+      # BASE_CHANNELS shorthand (includes base_quality).
+      'BASE_CHANNELS',
+  )
+  @flagsaver.flagsaver
+  def test_strip_quality_scores_removes_quality_channels(self, channel_list):
+    """Quality-dependent channels are auto-removed."""
+    self._set_strip_quality_flags(channel_list=channel_list)
+    options = make_examples.default_options(add_flags=True)
+    channels = list(options.pic_options.channels)
+    self.assertNotIn('base_quality', channels)
+    self.assertNotIn('avg_base_quality', channels)
+    self.assertIn('read_base', channels)
+    self.assertIn('mapping_quality', channels)
+
+  @flagsaver.flagsaver
+  def test_strip_quality_scores_errors_with_explicit_min_base_quality(self):
+    """Raises error when --min_base_quality is explicitly set alongside."""
+    self._set_strip_quality_flags()
+    # Use parse() so .present is set to True, simulating command-line usage.
+    FLAGS['min_base_quality'].parse('20')
+    with self.assertRaises(Exception):
+      make_examples.default_options(add_flags=True)
+
+  @flagsaver.flagsaver
+  def test_strip_quality_scores_errors_with_use_original_quality_scores(self):
+    """Raises error when combined with --use_original_quality_scores."""
+    self._set_strip_quality_flags()
+    FLAGS.use_original_quality_scores = True
+    with self.assertRaises(Exception):
+      make_examples.default_options(add_flags=True)
 
 
 class ResolveSamAuxFieldsTest(parameterized.TestCase):

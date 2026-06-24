@@ -160,6 +160,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
       random_seed=None,
       use_original_base_quality_scores=False,
       aux_fields_to_keep=None,
+      strip_quality_scores=False,
   ):
     """Initializes a NativeSamReader.
 
@@ -194,6 +195,10 @@ class NativeSamReader(genomics_reader.GenomicsReader):
       aux_fields_to_keep: None or list[str]. If None, we keep all aux fields if
         they are parsed. If set, we only keep the aux fields with the names in
         this list.
+      strip_quality_scores: optional bool, defaulting to False. If True,
+        quality scores are replaced with zeros at read time (aligned_quality
+        is filled with zeros matching aligned_sequence length). Functionally
+        equivalent to preprocessing the BAM/CRAM to set QUAL='*'.
 
     Raises:
       ValueError: If downsample_fraction is not None and not in the interval
@@ -245,6 +250,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
               downsample_fraction=downsample_fraction,
               random_seed=random_seed,
               use_original_base_quality_scores=use_original_base_quality_scores,
+              strip_quality_scores=strip_quality_scores,
           ),
       )
 

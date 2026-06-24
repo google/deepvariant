@@ -32,6 +32,7 @@
 
 #include "third_party/nucleus/io/sam_reader.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -154,6 +155,46 @@ TEST(SamReaderTest, TestFailIfParseAuxFieldsIsNotSetWithUseOriginalOqualities) {
       SamReader::FromFile(GetTestData(kSamTestFilename), samReaderOptions),
       "aux_field_handling must be true if use_original_quality_scores is set "
       "to true");
+}
+
+// Verify that strip_quality_scores produces reads identical to normal reads
+// except that aligned_quality is replaced with zeros. This is the same result
+// as preprocessing a BAM with: samtools view | awk '{$11="*"}' | samtools view
+TEST(SamReaderTest, TestStripQualityScoresMatchesNormalExceptQuality) {
+  // Read normally.
+  auto normal_reader = std::move(
+      SamReader::FromFile(GetTestData(kSamTestFilename), SamReaderOptions())
+          .ValueOrDie());
+  auto normal_reads = as_vector(normal_reader->Iterate());
+
+  // Read with quality stripping.
+  SamReaderOptions strip_options;
+  strip_options.set_strip_quality_scores(true);
+  auto strip_reader = std::move(
+      SamReader::FromFile(GetTestData(kSamTestFilename), strip_options)
+          .ValueOrDie());
+  auto stripped_reads = as_vector(strip_reader->Iterate());
+
+  ASSERT_EQ(normal_reads.size(), stripped_reads.size());
+  for (size_t i = 0; i < normal_reads.size(); ++i) {
+    const auto& normal = normal_reads[i];
+    const auto& stripped = stripped_reads[i];
+
+    // Everything except aligned_quality should be identical.
+    EXPECT_THAT(stripped,
+                IgnoringFieldPaths({"aligned_quality"}, EqualsProto(normal)));
+
+    // aligned_quality should be all-zeros with the same length as the
+    // normal read's aligned_sequence.
+    EXPECT_EQ(stripped.aligned_quality().size(),
+              normal.aligned_sequence().size());
+    for (char c : stripped.aligned_quality()) {
+      EXPECT_EQ(c, '\0');
+    }
+
+    // Sanity check: the normal read should have had real quality scores.
+    EXPECT_FALSE(normal.aligned_quality().empty());
+  }
 }
 
 TEST(SamReaderTest, TestEmptyAuxFieldsToKeepReadsEverything) {

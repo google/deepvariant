@@ -372,7 +372,7 @@ message Program {
 // It enables reads to be omitted from parsing based on their attributes, as
 // well as more fine-grained handling of particular fields within the SAM
 // records.
-// Next ID: 12.
+// Next ID: 13.
 message SamReaderOptions {
   // Read requirements that must be satisfied before our reader will return
   // a read to use.
@@ -415,6 +415,14 @@ message SamReaderOptions {
   // are parsed. If set, we only keep the aux fields with the names in this
   // list.
   repeated string aux_fields_to_keep = 11;
+
+  // If true, quality scores are stripped from reads at read time. The reader
+  // fills aligned_quality with zeros (same length as aligned_sequence) instead
+  // of reading real quality scores. Downstream code sees no quality
+  // information, functionally equivalent to preprocessing the BAM/CRAM with:
+  //   samtools view -h input.bam | awk '{$11="*"; print}' | samtools view -b
+  // Callers must also disable any quality-based filtering thresholds.
+  bool strip_quality_scores = 12;
 }
 
 // Describes requirements for a read for it to be returned by a SamReader.

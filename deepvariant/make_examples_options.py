@@ -68,6 +68,16 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 # across a variety of distributed filesystems!
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
 
+# Pileup channels that depend on base quality scores. These are automatically
+# removed when --strip_quality_scores is set. The json file will also be saved
+# without the removed channels.
+_QUALITY_DEPENDENT_CHANNELS = frozenset({
+    'base_quality',
+    'avg_base_quality',
+    'homopolymer_insertion_quality',
+    'homopolymer_deletion_quality',
+})
+
 _REF = flags.DEFINE_string(
     'ref',
     None,
@@ -468,6 +478,17 @@ _USE_ORIGINAL_QUALITY_SCORES = flags.DEFINE_bool(
     'use_original_quality_scores',
     False,
     'If True, base quality scores are read from OQ tag.',
+)
+_STRIP_QUALITY_SCORES = flags.DEFINE_bool(
+    'strip_quality_scores',
+    False,
+    'If True, base quality scores are replaced with zeros at read time,'
+    ' simulating BAMs/CRAMs where QUAL is set to "*". All quality-based'
+    ' filtering thresholds (min_base_quality, dbg_min_base_quality,'
+    ' ws_min_base_quality, low_vaf_max_base_quality) are automatically set'
+    ' to 0, and quality-dependent pileup channels (base_quality,'
+    ' avg_base_quality, etc.) are removed. Cannot be used'
+    ' together with --min_base_quality or --use_original_quality_scores.',
 )
 _SELECT_VARIANT_TYPES = flags.DEFINE_string(
     'select_variant_types',
@@ -1155,6 +1176,31 @@ def shared_flags_to_options(
           errors.CommandLineError,
       )
 
+    if _STRIP_QUALITY_SCORES.value and channel_set:
+      quality_channels_present = [
+          c for c in channel_set if c in _QUALITY_DEPENDENT_CHANNELS
+      ]
+      if quality_channels_present:
+        if channels_enum is not None:
+          # Calling mode: channels are dictated by the model, so we can't
+          # remove them without breaking tensor shape. Warn instead.
+          logging.warning(
+              '--strip_quality_scores is set but the model requires'
+              ' quality-dependent channels: %s. These channels will be'
+              ' all-zeros.',
+              quality_channels_present,
+          )
+        else:
+          # Training / explicit --channel_list mode: remove quality channels.
+          channel_set = [
+              c for c in channel_set if c not in _QUALITY_DEPENDENT_CHANNELS
+          ]
+          logging.info(
+              '--strip_quality_scores: automatically removed'
+              ' quality-dependent channels: %s',
+              quality_channels_present,
+          )
+
     options.pic_options.channels[:] = channel_set
     options.pic_options.num_channels += len(channel_set)
 
@@ -1278,6 +1324,7 @@ def shared_flags_to_options(
     options.aux_fields_to_keep[:] = aux_fields_to_keep
     logging.info('Parsing AUX Fields: %s', options.aux_fields_to_keep)
     options.use_original_quality_scores = _USE_ORIGINAL_QUALITY_SCORES.value
+    options.strip_quality_scores = _STRIP_QUALITY_SCORES.value
 
     if _ADD_HP_CHANNEL.value:
       errors.log_and_raise(
@@ -1338,6 +1385,35 @@ def shared_flags_to_options(
 
     options.joint_realignment = _ENABLE_JOINT_REALIGNMENT.value
     options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
+
+    # When strip_quality_scores is set, override all quality thresholds to 0
+    # so that zero-filled quality scores don't cause all reads to be filtered.
+    if _STRIP_QUALITY_SCORES.value:
+      if flags_obj['min_base_quality'].present:
+        errors.log_and_raise(
+            '--strip_quality_scores and --min_base_quality cannot both be set.'
+            ' When quality scores are stripped, min_base_quality is'
+            ' automatically set to 0.',
+            errors.CommandLineError,
+        )
+      if _USE_ORIGINAL_QUALITY_SCORES.value:
+        errors.log_and_raise(
+            '--strip_quality_scores and --use_original_quality_scores cannot'
+            ' both be set. Stripping replaces all quality scores with zeros,'
+            ' making OQ tags meaningless.',
+            errors.CommandLineError,
+        )
+      logging.info(
+          '--strip_quality_scores: setting min_base_quality,'
+          ' dbg_min_base_quality, ws_min_base_quality, and'
+          ' low_vaf_max_base_quality to 0.'
+      )
+      options.read_requirements.min_base_quality = 0
+      options.allele_counter_options.read_requirements.min_base_quality = 0
+      options.pic_options.read_requirements.min_base_quality = 0
+      options.realigner_options.dbg_config.min_base_quality = 0
+      options.realigner_options.ws_config.min_base_quality = 0
+      options.low_vaf_max_base_quality = 0
 
     if (
         options.mode == deepvariant_pb2.MakeExamplesOptions.TRAINING
