@@ -223,10 +223,7 @@ process run_pangenome_aware_deepvariant {
     // Format extra args flags.
     extra_args_flags = extra_args.join(" ")
 
-    // Always disable small model for pangenome for now - we do not package
-    // small models with the pangenome currently.
-    // disable_small_model_flag = disable_small_model ? "--disable_small_model" : "--nodisable_small_model"
-    disable_small_model_flag = "--disable_small_model"
+    disable_small_model_flag = disable_small_model ? "--disable_small_model" : "--nodisable_small_model"
 
     // Resolve region flag:
     region_bed = region_file.getName().startsWith("NO_FILE") ? "" : region_file
@@ -245,7 +242,7 @@ process run_pangenome_aware_deepvariant {
     }
 
     // Resolve customized small model flag:
-    customized_small_model_flag = small_model_file.getName().startsWith("NO_FILE") ? "" : "--customized_small_model=./model.keras"
+    customized_small_model_flag = small_model_file.getName().startsWith("NO_FILE") ? "" : "--customized_small_model=${small_model_file}/model.keras"
 
     // Intermediate results flag:
     keep_intermediate_results_flag = keep_intermediate_results ? "--intermediate_results_dir=intermediate_results" : ""

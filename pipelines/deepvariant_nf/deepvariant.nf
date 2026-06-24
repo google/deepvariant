@@ -153,6 +153,12 @@ workflow {
   reference_in = sample_sheet.map { [it.uid, it.ref, "${it.ref}.fai"] }
 
   sample_sheet.map { row ->
+    // Pangenome docker does not bundle a small model; require a custom path.
+    if (row.pangenome_graph && !row.disable_small_model && !row.small_model) {
+      error "[${row.uid}] Pangenome-aware DeepVariant does not include a " +
+            "built-in small model. Set 'small_model' to a custom model " +
+            "path, or set 'disable_small_model: true'."
+    }
     row.model = resolve_model_files(row.model, row.ignore_model_example_info)
     row.small_model = resolve_small_model_files(row.small_model)
     // Format extra_args using `--` prefix for flags if not present.
