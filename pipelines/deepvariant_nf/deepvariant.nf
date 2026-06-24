@@ -228,16 +228,31 @@ workflow {
         null, // dataset_name
         row.truth_vcf,
         resolve_vcf_index(row.truth_vcf),
-        row.truth_bed
+        row.truth_bed,
+        row.haploid_contigs ?: "",
+        get_field(row, 'par_regions_bed', "", true)
       ]
     }
   }
 
   happy_in = dv_out.to_happy \
     .concat(run_pangenome_aware_deepvariant.out.to_happy) \
-    .combine(truth_in, by: [0, 1] /* Join on uid, sample */)
-    .combine(reference_in, by: 0 /* Join on uid */)
-    .combine(regions_in, by: 0)
+    .combine(truth_in, by: [0, 1] /* Join on uid, sample */) \
+    .combine(reference_in, by: 0 /* Join on uid */) \
+    .combine(regions_in, by: 0) \
+    .map {
+      uid, sample, input_vcf, input_vcf_index,
+      dataset_name, truth_vcf, truth_vcf_index, truth_bed, haploid_contigs, par_regions_bed,
+      ref, ref_fai,
+      regions_str, regions_bed ->
+      [
+        uid, sample, input_vcf, input_vcf_index,
+        dataset_name, truth_vcf, truth_vcf_index, truth_bed,
+        ref, ref_fai,
+        regions_str, regions_bed,
+        haploid_contigs, par_regions_bed
+      ]
+    }
 
   run_happy(happy_in)
   multiqc(run_happy.out.summary.collect())

@@ -57,7 +57,9 @@ process run_happy {
             path(reference), \
             path(reference_fai), \
             val(region_str), \
-            path(region_file)
+            path(region_file), \
+            val(haploid_contigs), \
+            path(par_regions_bed)
 
   output:
       tuple path("${output_fname}.happy.summary.csv"), \
@@ -83,6 +85,13 @@ process run_happy {
     // If dataset_name is specified, use it as part of the output file name.
     output_fname = dataset_name ? "${uid}_${sample}_${dataset_name}" : "${uid}_${sample}"
 
+    gender_flag = ""
+    if (haploid_contigs && haploid_contigs.contains("chrY")) {
+      gender_flag = "--gender male"
+    } else if (haploid_contigs && haploid_contigs.contains("chrX")) {
+      gender_flag = "--gender female"
+    }
+
   """
   /opt/hap.py/bin/hap.py \\
       ${truth_vcf} \\
@@ -94,6 +103,8 @@ process run_happy {
       --report-prefix "${output_fname}.happy" \\
       --threads ${task.cpus} \\
       --engine=vcfeval \\
+      --preprocess-truth \\
+      ${gender_flag} \\
       --pass-only \\
       --verbose
 
