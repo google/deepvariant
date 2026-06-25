@@ -89,6 +89,8 @@ from third_party.nucleus.util import utils
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import variantcall_utils
 # pylint: disable=g-direct-tensorflow-import
+from tensorflow.core.example import example_pb2
+from tensorflow.core.example import feature_pb2
 from tensorflow.python.lib.io import tf_record
 # pylint: enable=g-direct-tensorflow-import
 
@@ -1304,6 +1306,32 @@ class RawFd3Writer:
   @classmethod
   def close(cls):
     pass
+
+  @classmethod
+  def stream_metadata(cls, features_dict: dict[str, bytes]):
+    """Wraps binary metadata into a tf.Example and writes it to fd3.
+
+    This is used when make_examples is run as a subprocess of the Flume
+    pipeline.
+    Metadata (e.g. RunInfo protos, example_info JSON) is wrapped in a
+    tf.Example so it can be routed through the same fd3 pipe as variant
+    examples.
+
+    Args:
+      features_dict: A mapping of feature key to raw bytes value. Each entry
+        becomes a bytes_list feature in the tf.Example.
+    """
+    feature_map = {}
+    for key, value in features_dict.items():
+      feature_map[key] = feature_pb2.Feature(
+          bytes_list=feature_pb2.BytesList(value=[value])
+      )
+    tf_example = example_pb2.Example(
+        features=feature_pb2.Features(feature=feature_map)
+    )
+    fd3_writer = cls()
+    fd3_writer.write(tf_example.SerializeToString())
+    fd3_writer.close()
 
 
 class OutputsWriter:
@@ -3903,6 +3931,10 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   if options.mode == mode_candidate_sweep and candidates_writer:
     candidates_writer.close()
 
+  is_streaming_to_fd3 = (
+      options.examples_filename and options.examples_filename.endswith('.fd3')
+  )
+
   # Construct and then write out our MakeExamplesRunInfo proto.
   if options.run_info_filename:
     run_info = deepvariant_pb2.MakeExamplesRunInfo(
@@ -3926,10 +3958,27 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
             ),
             options.labeler_algorithm,
         )
-    logging_with_options(
-        options, 'Writing MakeExamplesRunInfo to %s' % options.run_info_filename
-    )
-    write_make_examples_run_info(run_info, path=options.run_info_filename)
+    if is_streaming_to_fd3:
+      logging_with_options(
+          options, 'Streaming MakeExamplesRunInfo via fd3 wrapped in Example'
+      )
+      bam_fname = 'UNKNOWN'
+      for sample in samples_that_need_writers:
+        if sample.options.role == options.sample_role_to_train:
+          bam_fname = '+'.join(
+              os.path.basename(f) for f in sample.options.reads_filenames
+          )
+
+      RawFd3Writer.stream_metadata({
+          'make_examples_run_info/encoded': run_info.SerializeToString(),
+          'bam_fname/encoded': bam_fname.encode('utf-8'),
+      })
+    else:
+      logging_with_options(
+          options,
+          'Writing MakeExamplesRunInfo to %s' % options.run_info_filename,
+      )
+      write_make_examples_run_info(run_info, path=options.run_info_filename)
 
   # Write to .example_info file. Here we use the examples_filename as prefix.
   # If the examples_filename is sharded, we only write to the first shard.
@@ -3939,23 +3988,32 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
   example_info_filename = dv_utils.get_example_info_json_filename(
       options.examples_filename, options.task_id
   )
-  if example_info_filename is not None:
+  example_channels = region_processor.get_channels()
+  if example_shape is None:
+    example_shape = get_example_shape(options)
+  example_info_dict = {
+      'version': dv_vcf_constants.DEEP_VARIANT_VERSION,
+      'shape': example_shape,
+      'channels': example_channels,
+  }
+
+  if is_streaming_to_fd3:
+    logging_with_options(
+        options, 'Streaming example_info.json via fd3 wrapped in Example'
+    )
+    RawFd3Writer.stream_metadata({
+        'example_info_json/encoded': (
+            json.dumps(example_info_dict).encode('utf-8')
+        ),
+    })
+  elif example_info_filename is not None:
     logging_with_options(
         options, 'Writing example info to %s' % example_info_filename
     )
-    example_channels = region_processor.get_channels()
-    # example_shape was filled in during the loop above.
     logging.info('example_shape = %s', str(example_shape))
     logging.info('example_channels = %s', str(example_channels))
     with epath.Path(example_info_filename).open('w') as fout:
-      json.dump(
-          {
-              'version': dv_vcf_constants.DEEP_VARIANT_VERSION,
-              'shape': example_shape,
-              'channels': example_channels,
-          },
-          fout,
-      )
+      json.dump(example_info_dict, fout)
 
   region_processor.make_examples_native.signal_shard_finished()
   log_summary_stats(options, n_stats, n_cnn_stats, n_small_model_stats)
@@ -4099,3 +4157,38 @@ def apply_flags_for_calling(flags_obj: flags.FlagValues):
         'Both --partition_size and --max_reads_per_partition must be set '
         'together, or not at all.'
     )
+
+
+def calculate_pileup_image_height(
+    options: deepvariant_pb2.MakeExamplesOptions,
+) -> int:
+  """Calculates the height of the pileup image from options."""
+  pileup_image_height = 0
+  global_alt_aligned_pileup = options.pic_options.alt_aligned_pileup
+  for sample_options in options.sample_options:
+    sample_alt_aligned_pileup = (
+        sample_options.alt_aligned_pileup or global_alt_aligned_pileup
+    )
+    if sample_alt_aligned_pileup == 'rows':
+      num_rows_for_sample = 3
+    elif sample_alt_aligned_pileup == 'single_row':
+      num_rows_for_sample = 2
+    else:
+      num_rows_for_sample = 1
+
+    pileup_height = sample_options.pileup_height
+    if pileup_height == 0:
+      pileup_height = options.pic_options.height
+    pileup_image_height += pileup_height * num_rows_for_sample
+  return pileup_image_height
+
+
+def get_example_shape(
+    options: deepvariant_pb2.MakeExamplesOptions,
+) -> list[int]:
+  """Returns the [height, width, depth] shape of examples from options."""
+  return [
+      calculate_pileup_image_height(options),
+      options.pic_options.width,
+      len(options.pic_options.channels),
+  ]
