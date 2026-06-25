@@ -236,18 +236,15 @@ class VariantCaller {
   //   the reads of all the samples.
   // Logic is implemented in AlleleFilter() function.
   std::vector<DeepVariantCall> CallsFromAlleleCounts(
-      const std::unordered_map<std::string, AlleleCounter*>&
-          allele_counters,
-      const std::string& target_sample,
-      const std::string& target_role = "");
+      const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
+      std::string target_sample, std::string target_role = "");
 
   // High-level API for calculating potential variant position in a region.
   // This function is almost identical to CallsFromAlleleCounts except it
   // only calculates candidate positions.
   std::vector<int> CallPositionsFromAlleleCounts(
       const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-      const std::string& target_sample,
-      const std::string& target_role = "");
+      std::string target_sample, std::string target_role = "");
 
   // Iterates allele_counts for all samples and calls specified function F for
   // each candidate. Currently there are 2 use case: generate candidates,
@@ -453,8 +450,8 @@ class VariantCaller {
   // previous site.
   void TransferMethylationToPrevC(
       AlleleCount& prev_allele_count,
-      const std::vector<std::tuple<std::string, int32_t, bool>>&
-          methylated_reads) const;
+      absl::Span<const std::tuple<std::string, int32_t, bool>> methylated_reads)
+      const;
 
   FRIEND_TEST(VariantCallingTest, TestMultiAlleleWithDeletion);
   FRIEND_TEST(ComplexVariantTest, ComplexVariantTestCases);

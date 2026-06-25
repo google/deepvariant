@@ -348,9 +348,10 @@ CreateCombinedAllelesSupport(
           read_allele.type() != AlleleType::REFERENCE) {
         found_alt_allele_overlapped_by_deletion++;
       }
-      read_to_alt_alleles[read_id].push_back({.alt_bases = read_allele.bases(),
-                                              .type = read_allele.type(),
-                                              .position = allele_pos});
+      read_to_alt_alleles[read_id].push_back(
+          {.alt_bases = std::string(read_allele.bases()),
+           .type = read_allele.type(),
+           .position = allele_pos});
     }  // for (read_id, read_allele)
   }  // for (allele_counts_context)
   if (found_alt_allele_overlapped_by_deletion < 1 || overlapping_del_found) {
@@ -769,9 +770,8 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
 // Constructs an allele map with alleles that are ordered using a matched
 // tumor allele map. Only alleles found in the matched tumor will be output.
 AlleleMap BuildMatchedNormalAlleleMap(
-  const std::vector<Allele>& normal_allele_count,
-  absl::string_view ref_bases,
-  const AlleleMap& allele_map) {
+    absl::Span<const Allele> normal_allele_count, absl::string_view ref_bases,
+    const AlleleMap& allele_map) {
   const AlleleMap normal_allele_map =
       BuildAlleleMap(normal_allele_count, ref_bases, true);
 
@@ -916,14 +916,13 @@ std::vector<T> VariantCaller::AlleleCountsGenerator(
 
 std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
     const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-    const std::string& target_sample,
-    const std::string& target_role) {
+    std::string target_sample, std::string target_role) {
   this->allele_counters_per_sample_ = allele_counters;
-  this->target_sample_ = target_sample;
-  this->target_role_ = target_role;
+  this->target_sample_ = std::move(target_sample);
+  this->target_role_ = std::move(target_role);
 
   // Get Allele counts for the target sample
-  auto it = allele_counters.find(target_sample);
+  auto it = allele_counters.find(this->target_sample_);
   if (it == allele_counters.end()) {
     LOG(FATAL)
         << "allele_counters collection does not contain target sample!";
@@ -939,13 +938,12 @@ std::vector<DeepVariantCall> VariantCaller::CallsFromAlleleCounts(
 
 std::vector<int> VariantCaller::CallPositionsFromAlleleCounts(
     const std::unordered_map<std::string, AlleleCounter*>& allele_counters,
-    const std::string& target_sample,
-    const std::string& target_role) {
+    std::string target_sample, std::string target_role) {
   this->allele_counters_per_sample_ = allele_counters;
-  this->target_sample_ = target_sample;
-  this->target_role_ = target_role;
+  this->target_sample_ = std::move(target_sample);
+  this->target_role_ = std::move(target_role);
   // Get Allele counts for the target sample
-  auto it = allele_counters.find(target_sample);
+  auto it = allele_counters.find(this->target_sample_);
   if (it == allele_counters.end()) {
     LOG(FATAL)
         << "allele_counters collection does not contain target sample!";
@@ -981,7 +979,7 @@ std::optional<int> VariantCaller::CallVariantPosition(
   // However, if the methylated reference site is in X or Y chromosome,
   // we do not include it as a candidate.
   bool has_methylation = false;
-  std::string chrom = target_sample_allele_count.position().reference_name();
+  std::string chrom(target_sample_allele_count.position().reference_name());
   if (options_.enable_methylation_aware_phasing() &&
       IsReferenceSite(target_sample_allele_count) &&
       !IsExcludedMethylationContig(chrom)) {
@@ -1036,7 +1034,7 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
   bool has_methylation = false;
   bool ref_only_site = false;
   int total_reads = target_sample_allele_count.ref_supporting_read_count();
-  std::string chrom = target_sample_allele_count.position().reference_name();
+  std::string chrom(target_sample_allele_count.position().reference_name());
   if (output_options.alt_alleles.empty() &&
       !IsExcludedMethylationContig(chrom)) {
     ref_only_site = true;
@@ -1452,8 +1450,8 @@ VariantCaller::ExtractAndClearGSiteMethylation(AlleleCount& g_site) const {
 //   whether the read was marked as methylated.
 void VariantCaller::TransferMethylationToPrevC(
     AlleleCount& prev_allele_count,
-    const std::vector<std::tuple<std::string, int32_t, bool>>& methylated_reads)
-        const {
+    absl::Span<const std::tuple<std::string, int32_t, bool>> methylated_reads)
+    const {
   for (const auto& [read_key, methylation_level, was_methylated] :
        methylated_reads) {
     auto it = prev_allele_count.mutable_read_alleles()->find(read_key);
@@ -1469,7 +1467,7 @@ void VariantCaller::TransferMethylationToPrevC(
 }
 
 bool VariantCaller::IsReferenceSite(const AlleleCount& allele_count) const {
-  const std::string& ref_base = allele_count.ref_base();
+  const absl::string_view ref_base = allele_count.ref_base();
 
   for (const auto& sample_entry : allele_count.sample_alleles()) {
     for (const auto& allele : sample_entry.second.alleles()) {
