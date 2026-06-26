@@ -17,6 +17,22 @@ py_library(
     ],
 )
 
+py_library(
+    name = "small_model_json",
+    srcs = ["small_model_json.py"],
+    deps = ["//deepvariant:dv_vcf_constants"],
+)
+
+py_test(
+    name = "small_model_json_test",
+    srcs = ["small_model_json_test.py"],
+    deps = [
+        ":small_model_json",
+        "//deepvariant:dv_vcf_constants",
+        "@absl_py//absl/testing:absltest",
+    ],
+)
+
 py_test(
     name = "make_small_model_examples_test",
     srcs = ["make_small_model_examples_test.py"],
