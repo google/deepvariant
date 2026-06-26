@@ -29,6 +29,19 @@ http_archive(
     ],
 )
 
+# libdeflate is a faster DEFLATE/gzip codec than zlib. htslib uses it for bgzf
+# (BAM) (de)compression when built with HAVE_LIBDEFLATE; BAM bgzf decoding is the
+# dominant codec cost when reading reads in make_examples.
+http_archive(
+    name = "libdeflate",
+    build_file = "//:third_party/libdeflate.BUILD",
+    sha256 = "ed1454166ced78913ff3809870a4005b7170a6fd30767dc478a09b96847b9c2a",
+    strip_prefix = "libdeflate-1.20",
+    urls = [
+        "https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.20.tar.gz",
+    ],
+)
+
 http_archive(
     name = "libssw",
     build_file = "//:third_party/libssw.BUILD",
