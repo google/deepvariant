@@ -41,6 +41,7 @@
 #include "absl/log/absl_log.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "google/protobuf/message.h"
+#include "google/protobuf/message_lite.h"
 #include "python/google/protobuf/proto_api.h"
 #include "pybind11/gil_safe_call_once.h"
 
@@ -105,7 +106,7 @@ class type_caster_empty_proto_ptr
     if (!handle_get_message_pointer_errors(cpb)) {
       return false;
     }
-    this->proto_ptr.p_ = dynamic_cast<T*>(cpb);
+    this->proto_ptr.p_ = google::protobuf::DynamicCastToGenerated<T>(cpb);
     return (this->proto_ptr.p_ != nullptr);
   }
 };
@@ -123,7 +124,7 @@ class type_caster_const_proto_ptr
     if (!handle_get_message_pointer_errors(cpb)) {
       return false;
     }
-    this->proto_ptr.p_ = dynamic_cast<const T*>(cpb);
+    this->proto_ptr.p_ = google::protobuf::DynamicCastToGenerated<T>(cpb);
     return (this->proto_ptr.p_ != nullptr);
   }
 };
