@@ -30,6 +30,7 @@
  */
 
 #include "deepvariant/variant_calling.h"
+#include "deepvariant/variant_calling_utils.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -66,17 +67,8 @@ using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
 using std::string;
 
-// Declared in .h.
-const char* const kGVCFAltAllele = "<*>";
-const char* const kSupportingUncalledAllele = "UNCALLED_ALLELE";
-const char* const kDPFormatField = "DP";
-const char* const kADFormatField = "AD";
-const char* const kVAFFormatField = "VAF";
-const char* const kMFFormatField = "MF";
-const char* const kMDFormatField = "MD";
-
-// The VCF/Variant allele string to use when you don't have any alt alleles.
-const char* const kNoAltAllele = ".";
+// Constants are now defined in variant_calling_utils.cc.
+// The using declarations in the header re-export them into this namespace.
 
 namespace {
 
@@ -85,18 +77,8 @@ std::vector<T> AsVector(const google::protobuf::RepeatedPtrField<T>& container) 
   return std::vector<T>(container.begin(), container.end());
 }
 
-// Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
-// "GQ" key of info with a numerical value of gq, if provided) to variant.
-void AddGenotypes(const string& sample_name, absl::Span<const int> genotypes,
-                  Variant* variant) {
-  CHECK(variant != nullptr);
-
-  VariantCall* call = variant->add_calls();
-  call->set_call_set_name(sample_name);
-  for (const auto genotype : genotypes) {
-    call->add_genotype(genotype);
-  }
-}
+// AddGenotypes is now in variant_calling_utils.
+using variant_calling_utils::AddGenotypes;
 
 void FillVariant(const string& reference_name, int variant_start,
                  const string& ref_bases, const string& sample_name,
@@ -157,12 +139,8 @@ string GetSuffixFromTwoAlleles(const string& short_str,
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-// Get the 'deletion' size of allele, which is the length of the
-// bases if allele is a deletion, or -1 otherwise.  A helper
-// function for CalcRefBases.
-int DeletionSize(const Allele& allele) {
-  return allele.type() == AlleleType::DELETION ? allele.bases().length() : -1;
-}
+// DeletionSize is now in variant_calling_utils.
+using variant_calling_utils::DeletionSize;
 
 // Get the bases to use as the reference bases in a Variant proto.
 //
@@ -199,40 +177,8 @@ string CalcRefBases(absl::string_view ref_bases,
   }
 }
 
-// Constructs an alt allele from the prefix bases and the reference bases.
-//
-// This function helps create alt alleles for a variant proto. The complex logic
-// here is to deal with the fact that the variant_ref bases aren't the simple
-// single reference base context that the Allele objects are in but rather the
-// actual reference bases of the variant, which could include a long series of
-// bases if there's a deletion allele.
-//
-// This function takes a prefix of bases and concatenates those bases onto the
-// appropriate substring of variant_ref. The substring starts at the from
-// argument and runs to the end of variant_ref string, provided from isn't
-// beyond the end of variant_ref.
-//
-// Suppose that we have variant_ref == "ACGT" due to a deletion, and our alleles
-// are "C" [SNP] and "ATTT" [INSERTION] along with our "ACGT" [DELETION]. Each
-// allele comes into this function with the following arguments:
-//
-//   "C" [SNP]    : prefix="C" and from=1
-//   "ATTT" [INS] : prefix="ATTT" and from=1
-//   "ACGT" [DEL] : prefix="A" (original ref base) and from=4
-//
-// This function will produce appropriate alleles that correct for the new
-// reference bases due to the deletion as:
-//
-//   "C" [SNP]    => "C" + "CGT" => "CCGT", putting back deleted bases
-//   "ATTT" [INS] => "ATTT" + "CGT" => "ATTTCGT", putting back deleted bases
-//   "ACGT" [DEL] => "A" + "" (from >= "ACGT".length()) => "A"
-//
-string MakeAltAllele(absl::string_view prefix, absl::string_view variant_ref,
-                     const uint32_t from) {
-  const auto postfix =
-      from >= variant_ref.length() ? "" : variant_ref.substr(from);
-  return absl::StrCat(prefix, postfix);
-}
+// MakeAltAllele is now in variant_calling_utils.
+using variant_calling_utils::MakeAltAllele;
 
 // Is allele a good alternative allele for a Variant proto?
 //

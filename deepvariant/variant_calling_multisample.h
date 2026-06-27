@@ -53,6 +53,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "deepvariant/variant_calling_utils.h"
 #include "third_party/nucleus/util/samplers.h"
 
 namespace nucleus {
@@ -71,24 +72,17 @@ using learning::genomics::deepvariant::DeepVariantCall;
 using learning::genomics::deepvariant::VariantCallerOptions;
 using nucleus::genomics::v1::Variant;
 
-// The alternate allele string for the gVCF "any" alternate allele.
-extern const char* const kGVCFAltAllele;
-
-// In a DeepVariantCall, reads can support an allele that didn't pass our
-// calling thresholds, an so don't appear in the Variant's alternate_bases()
-// list. Such reads are added to the supporting read map keyed to this string
-// value to indicate that they don't support reference but don't support an
-// alternate allele either.
-extern const char* const kSupportingUncalledAllele;
-
-// Constants for the AD (depth by allele), DP (total depth), VAF (variant
-// allele fraction), MF (methylation fraction), and MD (methylation depth)
-// format fields.
-extern const char* const kDPFormatField;
-extern const char* const kADFormatField;
-extern const char* const kVAFFormatField;
-extern const char* const kMFFormatField;
-extern const char* const kMDFormatField;
+// Re-exported from variant_calling_utils for backwards compatibility.
+using variant_calling_utils::kGVCFAltAllele;
+using variant_calling_utils::kSupportingUncalledAllele;
+using variant_calling_utils::kDPFormatField;
+using variant_calling_utils::kADFormatField;
+using variant_calling_utils::kVAFFormatField;
+using variant_calling_utils::kMFFormatField;
+using variant_calling_utils::kMDFormatField;
+using variant_calling_utils::kNoAltAllele;
+using variant_calling_utils::OrderAllele;
+using variant_calling_utils::AlleleMap;
 
 // Constants for:
 // NDP (depth in normal),
@@ -97,20 +91,6 @@ extern const char* const kMDFormatField;
 extern const char* const kDPNormalFormatField;
 extern const char* const kADNormalFormatField;
 extern const char* const kVAFNormalFormatField;
-
-// Implements the less functionality needed to use an Allele as a key in a map.
-struct OrderAllele {
-  bool operator()(const Allele& allele1, const Allele& allele2) const {
-    // Note we ignore count (and other potential fields) because they aren't
-    // relevant in uses of this map.
-    if (allele1.type() != allele2.type()) {
-      return allele1.type() < allele2.type();
-    } else {
-      return allele1.bases() < allele2.bases();
-    }
-  }
-};
-using AlleleMap = std::map<Allele, std::string, OrderAllele>;
 
 // Helper struct to store allele and position.
 struct AlleleAtPosition {

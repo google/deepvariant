@@ -46,6 +46,7 @@
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
+#include "deepvariant/variant_calling_utils.h"
 
 namespace nucleus {
 class VcfReader;
@@ -57,37 +58,17 @@ namespace vcf_candidate_importer {
 
 using nucleus::genomics::v1::Variant;
 
-// The alternate allele string for the gVCF "any" alternate allele.
-extern const char* const kGVCFAltAllele;
-
-// In a DeepVariantCall, reads can support an allele that didn't pass our
-// calling thresholds, an so don't appear in the Variant's alternate_bases()
-// list. Such reads are added to the supporting read map keyed to this string
-// value to indicate that they don't support reference but don't support an
-// alternate allele either.
-extern const char* const kSupportingUncalledAllele;
-
-// Constants for the AD (depth by allele), DP (total depth), and VAF (variant
-// allele fraction) format fields.
-extern const char* const kDPFormatField;
-extern const char* const kADFormatField;
-extern const char* const kVAFFormatField;
-extern const char* const kMFFormatField;
-extern const char* const kMDFormatField;
-
-// Implements the less functionality needed to use an Allele as an key in a map.
-struct OrderAllele {
-  bool operator()(const Allele& allele1, const Allele& allele2) const {
-    // Note we ignore count (and other potential fields) because they aren't
-    // relevant in uses of this map.
-    if (allele1.type() != allele2.type()) {
-      return allele1.type() < allele2.type();
-    } else {
-      return allele1.bases() < allele2.bases();
-    }
-  }
-};
-using AlleleMap = std::map<Allele, std::string, OrderAllele>;
+// Re-exported from variant_calling_utils for backwards compatibility.
+using variant_calling_utils::kGVCFAltAllele;
+using variant_calling_utils::kSupportingUncalledAllele;
+using variant_calling_utils::kDPFormatField;
+using variant_calling_utils::kADFormatField;
+using variant_calling_utils::kVAFFormatField;
+using variant_calling_utils::kMFFormatField;
+using variant_calling_utils::kMDFormatField;
+using variant_calling_utils::kNoAltAllele;
+using variant_calling_utils::OrderAllele;
+using variant_calling_utils::AlleleMap;
 
 // A very simple but highly sensitive variant caller.
 //

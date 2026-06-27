@@ -165,12 +165,27 @@ cc_test(
 )
 
 cc_library(
+    name = "variant_calling_utils",
+    srcs = ["variant_calling_utils.cc"],
+    hdrs = ["variant_calling_utils.h"],
+    deps = [
+        "//deepvariant/protos:deepvariant_cc_pb2",
+        "//third_party/nucleus/protos:variants_cc_pb2",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "variant_calling",
     srcs = ["variant_calling.cc"],
     hdrs = ["variant_calling.h"],
     deps = [
         ":allelecounter",
         ":utils",
+        ":variant_calling_utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/core:statusor",
         "//third_party/nucleus/io:vcf_reader",
@@ -220,6 +235,7 @@ cc_library(
     deps = [
         ":allelecounter",
         ":utils",
+        ":variant_calling_utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
         "//third_party/nucleus/util:cpp_utils",

@@ -31,6 +31,8 @@
 
 #include "deepvariant/variant_calling_multisample.h"
 
+#include "deepvariant/variant_calling_utils.h"
+
 #include <stdlib.h>
 
 #include <algorithm>
@@ -68,22 +70,14 @@ namespace multi_sample {
 using nucleus::genomics::v1::Variant;
 using nucleus::genomics::v1::VariantCall;
 
-// Declared in .h.
-const char* const kGVCFAltAllele = "<*>";
-const char* const kSupportingUncalledAllele = "UNCALLED_ALLELE";
-const char* const kDPFormatField = "DP";
-const char* const kADFormatField = "AD";
-const char* const kVAFFormatField = "VAF";
-const char* const kMFFormatField = "MF";
-const char* const kMDFormatField = "MD";
+// Constants imported via using declarations in the header from
+// variant_calling_utils. Only normal-sample-specific constants are defined
+// here.
 
 // Paired Normal Sample fields
 const char* const kDPNormalFormatField = "NDP";
 const char* const kADNormalFormatField = "NAD";
 const char* const kVAFNormalFormatField = "NAF";
-
-// The VCF/Variant allele string to use when you don't have any alt alleles.
-const char* const kNoAltAllele = ".";
 
 namespace {
 // Used for sorting RepeatedPtrField below.
@@ -100,12 +94,8 @@ struct StringPtrLessThan {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-// Get the 'deletion' size of allele, which is the length of the
-// bases if allele is a deletion, or -1 otherwise.  A helper
-// function for CalcRefBases.
-int DeletionSize(const Allele& allele) {
-  return allele.type() == AlleleType::DELETION ? allele.bases().length() : -1;
-}
+// DeletionSize is now in variant_calling_utils.
+using variant_calling_utils::DeletionSize;
 
 // Get the bases to use as the reference bases in a Variant proto.
 //
@@ -192,40 +182,8 @@ bool CanKeepRejectedDeletion(absl::string_view ref_bases,
   return true;
 }
 
-// Constructs an alt allele from the prefix bases and the reference bases.
-//
-// This function helps create alt alleles for a variant proto. The complex logic
-// here is to deal with the fact that the variant_ref bases aren't the simple
-// single reference base context that the Allele objects are in but rather the
-// actual reference bases of the variant, which could include a long series of
-// bases if there's a deletion allele.
-//
-// This function takes a prefix of bases and concatenates those bases onto the
-// appropriate substring of variant_ref. The substring starts at the from
-// argument and runs to the end of variant_ref string, provided from isn't
-// beyond the end of variant_ref.
-//
-// Suppose that we have variant_ref == "ACGT" due to a deletion, and our alleles
-// are "C" [SNP] and "ATTT" [INSERTION] along with our "ACGT" [DELETION]. Each
-// allele comes into this function with the following arguments:
-//
-//   "C" [SNP]    : prefix="C" and from=1
-//   "ATTT" [INS] : prefix="ATTT" and from=1
-//   "ACGT" [DEL] : prefix="A" (original ref base) and from=4
-//
-// This function will produce appropriate alleles that correct for the new
-// reference bases due to the deletion as:
-//
-//   "C" [SNP]    => "C" + "CGT" => "CCGT", putting back deleted bases
-//   "ATTT" [INS] => "ATTT" + "CGT" => "ATTTCGT", putting back deleted bases
-//   "ACGT" [DEL] => "A" + "" (from >= "ACGT".length()) => "A"
-//
-std::string MakeAltAllele(const std::string_view prefix,
-                          absl::string_view variant_ref, const uint32_t from) {
-  const auto postfix =
-      from >= variant_ref.length() ? "" : variant_ref.substr(from);
-  return absl::StrCat(prefix, postfix);
-}
+// MakeAltAllele is now in variant_calling_utils.
+using variant_calling_utils::MakeAltAllele;
 
 // Is allele a good alternative allele for a Variant proto?
 //
@@ -666,18 +624,8 @@ SelectAltAllelesResult VariantCaller::SelectAltAlleles(
   }
 }
 
-// Adds a single VariantCall with sample_name, genotypes, and gq (bound to the
-// "GQ" key of info with a numerical value of gq, if provided) to variant.
-void AddGenotypes(const std::string& sample_name,
-                  absl::Span<const int> genotypes, Variant* variant) {
-  CHECK(variant != nullptr);
-
-  VariantCall* call = variant->add_calls();
-  call->set_call_set_name(sample_name);
-  for (const auto genotype : genotypes) {
-    call->add_genotype(genotype);
-  }
-}
+// AddGenotypes is now in variant_calling_utils.
+using variant_calling_utils::AddGenotypes;
 
 AlleleMap BuildAlleleMap(absl::Span<const Allele> alt_alleles,
                          absl::string_view ref_bases,
@@ -759,7 +707,11 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     for (const std::string& alt : variant->alternate_bases()) {
       const Allele& allele = *alt_to_alleles.find(alt)->second;
       ad.push_back(allele.count());
-      vaf.push_back(1.0 * allele.count() / dp);
+      if (dp > 0) {
+        vaf.push_back(1.0 * allele.count() / dp);
+      } else {
+        vaf.push_back(0.0);
+      }
     }
 
     nucleus::SetInfoField(kADFormatField, ad, call);
