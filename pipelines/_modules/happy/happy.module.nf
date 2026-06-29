@@ -41,7 +41,7 @@ process run_happy {
   errorStrategy 'retry'
   maxRetries 2
   container 'jmcdani20/hap.py:v0.3.12'
-  shell = ['/bin/bash', '-euox', 'pipefail']
+  shell = ['/bin/bash', '-euo', 'pipefail']
 
   publishDir "${params.output_dir}/${uid}", pattern: "*happy*"
 
@@ -110,5 +110,15 @@ process run_happy {
 
   echo -e "${uid}\t${sample}\t${dataset_name}\t${output_fname}.happy.summary.csv" > ${output_fname}.info.tsv
   """
+
+  stub:
+    output_fname = dataset_name ? "${uid}_${sample}_${dataset_name}" : "${uid}_${sample}"
+    """
+    touch ${output_fname}.happy.summary.csv
+    touch ${output_fname}.happy.extended.csv
+    touch ${output_fname}.happy.vcf.gz
+    touch ${output_fname}.happy.vcf.gz.tbi
+    touch ${output_fname}.info.tsv
+    """
 
 }
