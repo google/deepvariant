@@ -102,7 +102,7 @@ ENV DV_BIN_PATH=/opt/deepvariant/bin
 
 # Install libraries
 RUN apt-get -y update && \
-  apt-get install -y parallel python3-pip unzip && \
+  apt-get install -y parallel python3-pip unzip libjemalloc2 && \
   PATH="${HOME}/.local/bin:$PATH" python3 -m pip install absl-py==0.13.0 && \
   apt-get clean autoclean && \
   apt-get autoremove -y --purge && \
@@ -140,11 +140,17 @@ COPY --from=builder \
       /opt/deepvariant/bin/
 
 # Create shell wrappers for python zip files for easier use.
+#
+# The make_examples family is wrapped with LD_PRELOAD=libjemalloc.so.2: jemalloc
+# meaningfully reduces make_examples wall-clock (its pileup/realignment work is
+# allocation-heavy) while having no measurable effect on call_variants (TF
+# inference), so the preload is scoped to just those wrappers. The bare soname
+# keeps it architecture-portable (resolved from the default linker search path).
 RUN \
   BASH_HEADER='#!/bin/bash' && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    '/usr/bin/python3 /opt/deepvariant/bin/make_examples.zip "$@"' > \
+    'LD_PRELOAD=libjemalloc.so.2 /usr/bin/python3 /opt/deepvariant/bin/make_examples.zip "$@"' > \
     /opt/deepvariant/bin/make_examples && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
@@ -168,7 +174,7 @@ RUN \
     /opt/deepvariant/bin/runtime_by_region_vis && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    '/usr/bin/python3 /opt/deepvariant/bin/multisample_make_examples.zip "$@"' > \
+    'LD_PRELOAD=libjemalloc.so.2 /usr/bin/python3 /opt/deepvariant/bin/multisample_make_examples.zip "$@"' > \
     /opt/deepvariant/bin/multisample_make_examples && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
@@ -180,7 +186,7 @@ RUN \
     /opt/deepvariant/bin/convert_to_saved_model && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
-    '/usr/bin/python3 -u /opt/deepvariant/bin/make_examples_somatic.zip "$@"' > \
+    'LD_PRELOAD=libjemalloc.so.2 /usr/bin/python3 -u /opt/deepvariant/bin/make_examples_somatic.zip "$@"' > \
     /opt/deepvariant/bin/make_examples_somatic && \
   printf "%s\n%s\n" \
     "${BASH_HEADER}" \
