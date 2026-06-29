@@ -364,7 +364,7 @@ static inline bool StartsWith(const string& query, const char prefix[],
         const uint8_t sub_type = *s++;
         const int element_size = HtslibAuxSize(sub_type);
         if (element_size < 0)
-          return ::nucleus::DataLoss("element_size == 0 for tag " + tag);
+          return ::nucleus::DataLoss("invalid element_size for tag " + tag);
         // Prevents us from reading off the end of our buffer with le_to_u32.
         if (end - s < 4)
           return ::nucleus::DataLoss("data too short for tag " + tag);
@@ -372,6 +372,15 @@ static inline bool StartsWith(const string& query, const char prefix[],
         // We need to skip 4 bytes for n_elements int that occurs before the
         // array.
         s += 4;
+        // Reject an element count that would walk past the end of the
+        // record. Every scalar aux branch above already bounds-checks; the
+        // 'B' array branch must too. Compute in 64-bit: n_elements is read as
+        // a uint32 into an int, so a value >= 2^31 is itself negative.
+        if (n_elements < 0 ||
+            static_cast<int64_t>(n_elements) * element_size > (end - s)) {
+          return ::nucleus::DataLoss("B-array length exceeds record for tag " +
+                                     tag);
+        }
         if (sub_type == 'c') {
           std::vector<int8_t> all_values;
           for (int i = 0; i < n_elements; i++) {
