@@ -54,6 +54,7 @@ FLAGS = flags.FLAGS
 class ModelType(enum.Enum):
   WGS = 'WGS'
   WES = 'WES'
+  PACBIO = 'PACBIO'
 
 
 # Required flags.
