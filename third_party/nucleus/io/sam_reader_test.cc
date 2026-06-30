@@ -157,10 +157,10 @@ TEST(SamReaderTest, TestFailIfParseAuxFieldsIsNotSetWithUseOriginalOqualities) {
       "to true");
 }
 
-// Verify that strip_quality_scores produces reads identical to normal reads
+// Verify that strip_base_quality_scores produces reads identical to normal reads
 // except that aligned_quality is replaced with zeros. This is the same result
 // as preprocessing a BAM with: samtools view | awk '{$11="*"}' | samtools view
-TEST(SamReaderTest, TestStripQualityScoresMatchesNormalExceptQuality) {
+TEST(SamReaderTest, TestStripBaseQualityScoresMatchesNormalExceptQuality) {
   // Read normally.
   auto normal_reader = std::move(
       SamReader::FromFile(GetTestData(kSamTestFilename), SamReaderOptions())
@@ -169,7 +169,7 @@ TEST(SamReaderTest, TestStripQualityScoresMatchesNormalExceptQuality) {
 
   // Read with quality stripping.
   SamReaderOptions strip_options;
-  strip_options.set_strip_quality_scores(true);
+  strip_options.set_strip_base_quality_scores(true);
   auto strip_reader = std::move(
       SamReader::FromFile(GetTestData(kSamTestFilename), strip_options)
           .ValueOrDie());

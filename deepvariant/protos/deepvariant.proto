@@ -1095,7 +1095,7 @@ message MakeExamplesOptions {
   // quality-based filtering thresholds (min_base_quality, dbg_min_base_quality,
   // ws_min_base_quality, low_vaf_max_base_quality) are automatically set to 0,
   // and quality-dependent pileup channels are removed.
-  bool strip_quality_scores = 102;
+  bool strip_base_quality_scores = 102;
 }
 
 // Config describe information needed for a dataset that can be used for

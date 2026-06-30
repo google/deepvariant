@@ -1789,7 +1789,7 @@ class RegionProcessor:
                 downsample_fraction=downsample_fraction,
                 random_seed=self.options.random_seed,
                 use_original_base_quality_scores=self.options.use_original_quality_scores,
-                strip_quality_scores=self.options.strip_quality_scores,
+                strip_base_quality_scores=self.options.strip_base_quality_scores,
             )
         )
     return readers

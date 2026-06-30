@@ -422,7 +422,7 @@ message SamReaderOptions {
   // information, functionally equivalent to preprocessing the BAM/CRAM with:
   //   samtools view -h input.bam | awk '{$11="*"; print}' | samtools view -b
   // Callers must also disable any quality-based filtering thresholds.
-  bool strip_quality_scores = 12;
+  bool strip_base_quality_scores = 12;
 }
 
 // Describes requirements for a read for it to be returned by a SamReader.

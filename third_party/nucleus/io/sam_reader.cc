@@ -871,12 +871,12 @@ std::map<string, string> ParseBaseModifications(
 
   // aligned_quality may be read from aux field "OQ", therefore
   // AssignAlignedQuality function should be called after ParseAuxFields.
-  // If strip_quality_scores is set, fill aligned_quality with zeros (same
+  // If strip_base_quality_scores is set, fill aligned_quality with zeros (same
   // length as aligned_sequence) instead of reading real quality scores. This
   // maintains the size invariant that downstream code relies on, while
   // providing no quality information -- functionally equivalent to a BAM/CRAM
   // where QUAL is set to '*'.
-  if (options.strip_quality_scores()) {
+  if (options.strip_base_quality_scores()) {
     read_message->mutable_aligned_quality()->assign(b->core.l_qseq, '\0');
   } else {
     status = AssignAlignedQuality(b, options, read_message);

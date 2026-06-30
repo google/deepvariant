@@ -69,8 +69,8 @@ _RUN_INFO_FILE_EXTENSION = '.run_info.pbtxt'
 _DEFAULT_HTS_BLOCK_SIZE = 128 * (1024 * 1024)
 
 # Pileup channels that depend on base quality scores. These are automatically
-# removed when --strip_quality_scores is set. The json file will also be saved
-# without the removed channels.
+# removed when --strip_base_quality_scores is set. The json file will also be
+# saved without the removed channels.
 _QUALITY_DEPENDENT_CHANNELS = frozenset({
     'base_quality',
     'avg_base_quality',
@@ -479,8 +479,8 @@ _USE_ORIGINAL_QUALITY_SCORES = flags.DEFINE_bool(
     False,
     'If True, base quality scores are read from OQ tag.',
 )
-_STRIP_QUALITY_SCORES = flags.DEFINE_bool(
-    'strip_quality_scores',
+_STRIP_BASE_QUALITY_SCORES = flags.DEFINE_bool(
+    'strip_base_quality_scores',
     False,
     'If True, base quality scores are replaced with zeros at read time,'
     ' simulating BAMs/CRAMs where QUAL is set to "*". All quality-based'
@@ -1176,7 +1176,7 @@ def shared_flags_to_options(
           errors.CommandLineError,
       )
 
-    if _STRIP_QUALITY_SCORES.value and channel_set:
+    if _STRIP_BASE_QUALITY_SCORES.value and channel_set:
       quality_channels_present = [
           c for c in channel_set if c in _QUALITY_DEPENDENT_CHANNELS
       ]
@@ -1185,7 +1185,7 @@ def shared_flags_to_options(
           # Calling mode: channels are dictated by the model, so we can't
           # remove them without breaking tensor shape. Warn instead.
           logging.warning(
-              '--strip_quality_scores is set but the model requires'
+              '--strip_base_quality_scores is set but the model requires'
               ' quality-dependent channels: %s. These channels will be'
               ' all-zeros.',
               quality_channels_present,
@@ -1196,7 +1196,7 @@ def shared_flags_to_options(
               c for c in channel_set if c not in _QUALITY_DEPENDENT_CHANNELS
           ]
           logging.info(
-              '--strip_quality_scores: automatically removed'
+              '--strip_base_quality_scores: automatically removed'
               ' quality-dependent channels: %s',
               quality_channels_present,
           )
@@ -1324,7 +1324,7 @@ def shared_flags_to_options(
     options.aux_fields_to_keep[:] = aux_fields_to_keep
     logging.info('Parsing AUX Fields: %s', options.aux_fields_to_keep)
     options.use_original_quality_scores = _USE_ORIGINAL_QUALITY_SCORES.value
-    options.strip_quality_scores = _STRIP_QUALITY_SCORES.value
+    options.strip_base_quality_scores = _STRIP_BASE_QUALITY_SCORES.value
 
     if _ADD_HP_CHANNEL.value:
       errors.log_and_raise(
@@ -1386,25 +1386,25 @@ def shared_flags_to_options(
     options.joint_realignment = _ENABLE_JOINT_REALIGNMENT.value
     options.realigner_options.CopyFrom(realigner.realigner_config(flags_obj))
 
-    # When strip_quality_scores is set, override all quality thresholds to 0
-    # so that zero-filled quality scores don't cause all reads to be filtered.
-    if _STRIP_QUALITY_SCORES.value:
+    # When strip_base_quality_scores is set, override all quality thresholds to
+    # 0 so that zero-filled quality scores don't cause all reads to be filtered.
+    if _STRIP_BASE_QUALITY_SCORES.value:
       if flags_obj['min_base_quality'].present:
         errors.log_and_raise(
-            '--strip_quality_scores and --min_base_quality cannot both be set.'
-            ' When quality scores are stripped, min_base_quality is'
+            '--strip_base_quality_scores and --min_base_quality cannot both be'
+            ' set. When quality scores are stripped, min_base_quality is'
             ' automatically set to 0.',
             errors.CommandLineError,
         )
       if _USE_ORIGINAL_QUALITY_SCORES.value:
         errors.log_and_raise(
-            '--strip_quality_scores and --use_original_quality_scores cannot'
-            ' both be set. Stripping replaces all quality scores with zeros,'
-            ' making OQ tags meaningless.',
+            '--strip_base_quality_scores and --use_original_quality_scores'
+            ' cannot both be set. Stripping replaces all quality scores with'
+            ' zeros, making OQ tags meaningless.',
             errors.CommandLineError,
         )
       logging.info(
-          '--strip_quality_scores: setting min_base_quality,'
+          '--strip_base_quality_scores: setting min_base_quality,'
           ' dbg_min_base_quality, ws_min_base_quality, and'
           ' low_vaf_max_base_quality to 0.'
       )
