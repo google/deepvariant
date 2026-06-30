@@ -176,7 +176,7 @@ def resolve_overlapping_variants(input_vcf: str, output_vcf: str) -> None:
         and rec.contig not in ['chrX', 'chrY']
     ):
       current_group.append(rec)
-      last_pos = max(last_pos, rec.stop)
+      last_pos = max(last_pos, rec.stop)  # pyrefly: ignore[bad-specialization]
     else:
       grouped_variants.append(current_group)
       current_group = [rec]
@@ -219,7 +219,7 @@ def resolve_overlapping_variants(input_vcf: str, output_vcf: str) -> None:
 def main(argv: Sequence[str]) -> None:
   del argv
   logging.info('Truth VCF: %s', _TRUTH_VCF.value)
-  resolve_overlapping_variants(_TRUTH_VCF.value, _OUTPUT_VCF.value)
+  resolve_overlapping_variants(_TRUTH_VCF.value, _OUTPUT_VCF.value)  # pyrefly: ignore[bad-argument-type]
 
 
 if __name__ == '__main__':
