@@ -195,7 +195,11 @@ TEST_F(FastPassAlignerTest, FastAlignReadsToHaplotypeTest) {
   expected_read_scores[2] = ReadAlignment(
       0, "10=", aligner_reads[2].length() * aligner_.get_match_score());
 
-  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores);
+  aligner_.InitSswLib();
+  aligner_.set_haplotypes({haplotype});
+  aligner_.AlignHaplotypesToReference();
+  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores,
+                                     0);
   EXPECT_EQ(expected_hap_score, haplotype_score);
   EXPECT_THAT(read_scores,
               testing::UnorderedElementsAreArray(expected_read_scores));
@@ -229,7 +233,11 @@ TEST_F(FastPassAlignerTest, FastAlignReadsToHaplotypePartialReadOverlapTest) {
   expected_read_scores[2] = ReadAlignment(
       8, "8=", aligner_reads[2].length() * aligner_.get_match_score());
 
-  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores);
+  aligner_.InitSswLib();
+  aligner_.set_haplotypes({haplotype});
+  aligner_.AlignHaplotypesToReference();
+  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores,
+                                     0);
   EXPECT_EQ(expected_hap_score, haplotype_score);
   EXPECT_THAT(read_scores,
               testing::UnorderedElementsAreArray(expected_read_scores));
@@ -266,7 +274,11 @@ TEST_F(FastPassAlignerTest,
       (aligner_reads[2].length() - 1) * aligner_.get_match_score()
       - 1 * aligner_.get_mismatch_penalty());
 
-  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores);
+  aligner_.InitSswLib();
+  aligner_.set_haplotypes({haplotype});
+  aligner_.AlignHaplotypesToReference();
+  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores,
+                                     0);
   EXPECT_EQ(expected_hap_score, haplotype_score);
   EXPECT_THAT(read_scores,
               testing::UnorderedElementsAreArray(expected_read_scores));
@@ -302,7 +314,11 @@ TEST_F(FastPassAlignerTest,
   expected_read_scores[1] = ReadAlignment();
   expected_read_scores[2] = ReadAlignment();
 
-  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores);
+  aligner_.InitSswLib();
+  aligner_.set_haplotypes({haplotype});
+  aligner_.AlignHaplotypesToReference();
+  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores,
+                                     0);
   EXPECT_EQ(expected_hap_score, haplotype_score);
   EXPECT_THAT(read_scores,
               testing::UnorderedElementsAreArray(expected_read_scores));
@@ -513,6 +529,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_MatchMismatch_Test) {
 TEST_F(FastPassAlignerTest,
        CalculateReadToRefAlignment_HaplotypeSoftClipped_Test) {
   aligner_.InitSswLib();
+  aligner_.set_use_dbg_exp(true);
   aligner_.set_reference(
       "nnnnnnnnnnnTGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
@@ -536,7 +553,7 @@ TEST_F(FastPassAlignerTest,
                                        &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit::CLIP_SOFT, 5),
+      CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 5),
       CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 13)};
 
   EXPECT_THAT(read_to_ref_cigar_ops,
@@ -553,188 +570,160 @@ struct CalculateReadToRefAlignmentTestCase {
 
 TEST_F(FastPassAlignerTest, CalculateReadToRefAlignmentCommonTest) {
   aligner_.InitSswLib();
+  aligner_.set_use_dbg_exp(true);
   aligner_.set_reference(
       "CTCTGTAATCGGATCATGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
 
   std::vector<CalculateReadToRefAlignmentTestCase> test_cases{
-    {
-      // This test verifies a correct merging of INS and SNP at the same
-      // position. Specifically we verify that after merging INS and SNP we
-      // correctly generate a merged insertion. More details can be found
-      // in internal.
-      "ins_snp_merge",
-      {"CGGATCATGTTTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=2I11=1D24=
-      {"GATCATGATTTTTGGGTTTTCAG"},  // "7=1X15="
-      // Read to haplotype has one 1 base ins at 7. Read aligns to haplotype
-      // from position 2.
-      // After trimming haplotype to reference cigar we get: 7=1I34=
-      // Merging 7=2I11=1D24= and 7=1X15= we should get 7=2I11=1D3=
-      ReadAlignment(2, "7=1X15=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      {// This test verifies a correct merging of INS and SNP at the same
+       // position. Specifically we verify that after merging INS and SNP we
+       // correctly generate a merged insertion. More details can be found
+       // in internal.
+       "ins_snp_merge",
+       {"CGGATCATGTTTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=2I11=1D24=
+       {"GATCATGATTTTTGGGTTTTCAG"},                         // "7=1X15="
+                                     // Read to haplotype has one 1 base ins
+                                     // at 7. Read aligns to haplotype from
+                                     // position 2. After trimming haplotype to
+                                     // reference cigar we get: 7=1I34= Merging
+                                     // 7=2I11=1D24= and 7=1X15= we should get
+                                     // 7=2I11=1D3=
+       ReadAlignment(2, "7=1X15=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 8),
         CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 11),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 10),
         CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3)
-      }
-    },
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3)}},
 
-    // This test verifies a correct merging of two INSertions at the same
-    // position. Specifically we verify that after merging two INSes we
-    // correctly merge operations that follow. More details can be found in
-    // internal.
-    {
-      "ins_ins_merge",
-      {"CGGATCATGTTTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=2I11=1D24=
-      {"GATCATGTTTTTTTGGGTTTTCAG"},  // "7=1I16="
-      // Read to haplotype has one 1 base ins at 7. Read aligns to haplotype
-      // from position 2.
-      // After trimming haplotype to reference cigar we get: 7=1I34=
-      // Merging 7=2I11=1D24= and 7=1I16= we should get 7=3I11=1D3=
-      ReadAlignment(2, "7=1I16=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
-        CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 3),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 11),
-        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3)
-      }
-    },
-
-    // This test verifies a correct merging of two DELs at the same position.
-    // Specifically we verify that after merging two dels we correctly merge
-    // operations that follow. More details can be found in internal.
-    {
-      "del_del_merge",
-      {"CGGATCATGTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=1D10=1D24=
-      {"GATCATGTTGGGTTTTCAGGACAAA"},  // "7=1D18="
-      // Read to haplotype has one del at 7. Read aligns to haplotype
-      // from position 2.
-      // After trimming haplotype to reference cigar we get: 7=1D34=
-      // Merging 7=1D10=1D24= and 7=1D18= we should get 7=2D9=1D9=
-      ReadAlignment(2, "7=1D18=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
-        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 2),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9),
-        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)
-      }
-    },
-
-    // This test verifies a correct merging of DEL and INS at the same position.
-    {
-      "del_ins_merge",
-      {"CGGATCATGTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=1D10=1D24=
-      {"GATCATGTTTTTGGGTTTTCAGGACAAA"},  // "7=2I19="
-      ReadAlignment(2, "7=2I19=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      // This test verifies a correct merging of two INSertions at the same
+      // position. Specifically we verify that after merging two INSes we
+      // correctly merge operations that follow. More details can be found in
+      // internal.
+      {"ins_ins_merge",
+       {"CGGATCATGTTTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=2I11=1D24=
+       {"GATCATGTTTTTTTGGGTTTTCAG"},                        // "7=1I16="
+                                      // Read to haplotype has one 1 base ins
+                                      // at 7. Read aligns to haplotype from
+                                      // position 2. After trimming haplotype to
+                                      // reference cigar we get: 7=1I34= Merging
+                                      // 7=2I11=1D24= and 7=1I16= we should get
+                                      // 7=3I11=1D3=
+       ReadAlignment(2, "7=1I16=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
         CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 11),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1),
+        CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 10),
         CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)
-      }
-    },
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3)}},
 
-    // This test verifies a correct merging of DEL and INS at the same position.
-    {
-      "del_ins_merge2",
-      {"CGGATCATGTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=3D8=1D24=
-      {"GATCATGTTTGGGTTTTCAGGACAAA"},  // "7=2I17="
-      ReadAlignment(2, "7=2I17=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      // This test verifies a correct merging of two DELs at the same position.
+      // Specifically we verify that after merging two dels we correctly merge
+      // operations that follow. More details can be found in internal.
+      {"del_del_merge",
+       {"CGGATCATGTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=1D10=1D24=
+       {"GATCATGTTGGGTTTTCAGGACAAA"},                    // "7=1D18="
+                                       // Read to haplotype has one del at 7.
+                                       // Read aligns to haplotype from
+                                       // position 2. After trimming haplotype
+                                       // to reference cigar we get: 7=1D34=
+                                       // Merging 7=1D10=1D24= and 7=1D18= we
+                                       // should get 7=2D9=1D9=
+       ReadAlignment(2, "7=1D18=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1),
+        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 8),
+        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)}},
+
+      // This test verifies a correct merging of DEL and INS at the same
+      // position.
+      {"del_ins_merge",
+       {"CGGATCATGTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=1D10=1D24=
+       {"GATCATGTTTTTGGGTTTTCAGGACAAA"},                 // "7=2I19="
+       ReadAlignment(2, "7=2I19=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+        CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 2),
+        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 8),
+        CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)}},
+
+      // This test verifies a correct merging of DEL and INS at the same
+      // position.
+      {"del_ins_merge2",
+       {"CGGATCATGTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=3D8=1D24=
+       {"GATCATGTTTGGGTTTTCAGGACAAA"},                 // "7=2I17="
+       ReadAlignment(2, "7=2I17=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
         CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
         CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 10),
         CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)
-      }
-    },
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)}},
 
-    // This test verifies a correct merging of INS and DEL at the same position.
-    // The read in this test is identical to the read in del_ins_merge test,
-    // therefore read to ref alignments should be identical as well.
-    {
-      "ins_del_merge",
-      {"CGGATCATGTTTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=2I11=1D24=
-      {"GATCATGTTTTTGGGTTTTCAGGACAAA"},  // "7=1D21="
-      ReadAlignment(2, "7=1D21=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      // This test verifies a correct merging of INS and DEL at the same
+      // position.
+      // The read in this test is identical to the read in del_ins_merge test,
+      // therefore read to ref alignments should be identical as well.
+      {"ins_del_merge",
+       {"CGGATCATGTTTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=2I11=1D24=
+       {"GATCATGTTTTTGGGTTTTCAGGACAAA"},                    // "7=1D21="
+       ReadAlignment(2, "7=1D21=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 8),
         CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 11),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 10),
         CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)
-      }
-    },
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)}},
 
-    // This test verifies a correct merging of INS and DEL at the same position.
-    // The read in this test is identical to the read in del_ins_merge test,
-    // therefore read to ref alignments should be identical as well.
-    {
-      "2ins_3del_merge",
-      {"CGGATCATGTTTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=2I11=1D24=
-      {"GATCATGTTTGGGTTTTCAGGACAAA"},  // "7=3D19="
-      ReadAlignment(2, "7=3D19=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      // This test verifies a correct merging of INS and DEL at the same
+      // position.
+      // The read in this test is identical to the read in del_ins_merge test,
+      // therefore read to ref alignments should be identical as well.
+      {"2ins_3del_merge",
+       {"CGGATCATGTTTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 9=2I11=1D24=
+       {"GATCATGTTTGGGTTTTCAGGACAAA"},                      // "7=3D19="
+       ReadAlignment(2, "7=3D19=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
         CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
         CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 10),
         CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)
-      }
-    },
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9)}},
 
-    {
-      "1ins_1del_back_to_back",
-      {"CGGATCATGTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 20=1D24=
-      {"GATCATGTTTTGGGTTTTCCAGGACAAA"},  // "18=1I9="
-      ReadAlignment(2, "18=1I9=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 28)
-      }
-    },
+      {"1ins_1del_back_to_back",
+       {"CGGATCATGTTTTGGGTTTTCAGGACAAAGTATGGTTGAAACTG"},  // 20=1D24=
+       {"GATCATGTTTTGGGTTTTCCAGGACAAA"},                  // "18=1I9="
+       ReadAlignment(2, "18=1I9=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 28)}},
 
-    {
-      "1ins_1del_consecutive",
-      {"CGGATCATGTTTTGGGTTTTTTGCAGGACAAAGTATGGTTGAAACTG"},  // 16=2I29=
-      {"GATCATGTTTTGGGTTTTGCAGGACAAA"},  // "16=2D12="
-      ReadAlignment(2, "16=2D12=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 28)
-      }
-    },
+      {"1ins_1del_consecutive",
+       {"CGGATCATGTTTTGGGTTTTTTGCAGGACAAAGTATGGTTGAAACTG"},  // 16=2I29=
+       {"GATCATGTTTTGGGTTTTGCAGGACAAA"},                     // "16=2D12="
+       ReadAlignment(2, "16=2D12=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 28)}},
 
-    {
-      "1del_1ins_consecutive2",
-      {"CGGATCATGTTTTGGGTTTTGCGCAGGACAAAGTATGGTTGAAACTG"},  // 20=2I25=
-      {"GATCATGTTTTGGGTTGCGCAGGACAAA"},  // "16=2D12="
-      ReadAlignment(2, "16=2D12=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 28)
-      }
-    },
+      {"1del_1ins_consecutive2",
+       {"CGGATCATGTTTTGGGTTTTGCGCAGGACAAAGTATGGTTGAAACTG"},  // 20=2I25=
+       {"GATCATGTTTTGGGTTGCGCAGGACAAA"},                     // "16=2D12="
+       ReadAlignment(2, "16=2D12=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 28)}},
 
-    // Haplotype alignment to ref has one del.
-    // Read alignment to haplotype has one del.
-    {
-      "two_dels_different_positions",
-      // reference with 1 del at 9.
-      // haplotype to ref: 9=1D34=
-      {"CGGATCATGTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"},
-      {"GATCATGTTTGGTTTT"},  // "10=1D6="
-      ReadAlignment(2, "10=1D6=", kSomeScore),
-      {
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      // Haplotype alignment to ref has one del.
+      // Read alignment to haplotype has one del.
+      {"two_dels_different_positions",
+       // reference with 1 del at 9.
+       // haplotype to ref: 9=1D34=
+       {"CGGATCATGTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTG"},
+       {"GATCATGTTTGGTTTT"},  // "10=1D6="
+       ReadAlignment(2, "10=1D6=", kSomeScore),
+       {CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9),
         CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 1),
         CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 6)
-      }
-    }
-  };
+        CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 6)}}};
 
   for (auto& test_case : test_cases) {
     aligner_.set_haplotypes(test_case.haplotypes);
@@ -882,6 +871,7 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_MergedIns_Test) {
 // Test verifies that this type of merge is handeled correctly.
 TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_DelIns_Test) {
   aligner_.InitSswLib();
+  aligner_.set_use_dbg_exp(true);
   aligner_.set_reference(
       "CTCTGTAATCGGATCATGTTTTGGGTTTTGCAGGACAAAGTATGGTTGAAACTGAG"
       "CTGAAGATATG");
@@ -910,9 +900,9 @@ TEST_F(FastPassAlignerTest, CalculateReadToRefAlignment_DelIns_Test) {
       haplotype_alignments[0].cigar_ops, &read_to_ref_cigar_ops);
 
   std::list<CigarOp> expected_read_to_ref_cigar_ops = {
-      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 7),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 9),
       CigarOp(nucleus::genomics::v1::CigarUnit::DELETE, 1),
-      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 6),
+      CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 4),
       CigarOp(nucleus::genomics::v1::CigarUnit::INSERT, 2),
       CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 4),
   };
@@ -1010,7 +1000,7 @@ TEST_F(FastPassAlignerTest, MergeCigarOp_alignedLengthOverflow_Test) {
 }
 
 // DEL does not count towards aligned length. This test verifies that DEL can
-// be merged doesn't matter what it's length is.
+// be merged doesn't matter what its length is.
 TEST_F(FastPassAlignerTest, MergeCigarOp_alignedLengthOverflowDel_Test) {
   std::list<CigarOp> cigar = {
       CigarOp(nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH, 3),
@@ -1077,6 +1067,8 @@ TEST_F(FastPassAlignerTest, HaplotypeHasZeroCoverageOutsideInterval_Test) {
   //                                GTTTTGGGTTTTGCAGGTCA
   //                                              AGGACAAAGTATGGTT
   //                                                  CAAAGTATGGTTG---TGAGCT
+  aligner_.InitSswLib();
+  aligner_.set_use_dbg_exp(true);
   aligner_.set_reads({
       "ATCAAGGGAAAAAGTGCCCA",    // "20=", 80
       "GGGCCAAATATGTTTTG",       // "17=", 68
@@ -1112,7 +1104,10 @@ TEST_F(FastPassAlignerTest, HaplotypeHasZeroCoverageOutsideInterval_Test) {
   expected_read_scores[4] = ReadAlignment(45, "16=", 64);
   expected_read_scores[5] = ReadAlignment(ReadAlignment::kNotAligned, "", 0);
 
-  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores);
+  aligner_.set_haplotypes({haplotype});
+  aligner_.AlignHaplotypesToReference();
+  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores,
+                                     0);
   EXPECT_EQ(expected_hap_score, haplotype_score);
   EXPECT_THAT(read_scores,
               testing::UnorderedElementsAreArray(expected_read_scores));
@@ -1138,6 +1133,8 @@ TEST_F(FastPassAlignerTest, HaplotypeHasZeroCoverageInsideInterval_Test) {
   //                                GTTTTGGGTTTTGCAGGTCA
   //                                              AGGACAAAGTATGGTT
   //                                                  CAAAGTATGGTTG---TGAGCT
+  aligner_.InitSswLib();
+  aligner_.set_use_dbg_exp(true);
   aligner_.set_reads({
       "ATCAAGGGAAAAAGTGCCCA",    // "20=", 80
       "GGGAAACCAAATATGTTTTG",    // "3=3I14=", 68
@@ -1168,11 +1165,15 @@ TEST_F(FastPassAlignerTest, HaplotypeHasZeroCoverageInsideInterval_Test) {
   expected_read_scores[0] = ReadAlignment(0, "20=", 80);
   expected_read_scores[1] = ReadAlignment(ReadAlignment::kNotAligned, "", 0);
   expected_read_scores[2] = ReadAlignment(ReadAlignment::kNotAligned, "", 0);
-  expected_read_scores[3] = ReadAlignment(ReadAlignment::kNotAligned, "", 0);
+  expected_read_scores[3] = ReadAlignment(0, "20=", 6);
+  expected_read_scores[3].read_aligned_from_pos = 16;
   expected_read_scores[4] = ReadAlignment(ReadAlignment::kNotAligned, "", 0);
   expected_read_scores[5] = ReadAlignment(ReadAlignment::kNotAligned, "", 0);
 
-  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores);
+  aligner_.set_haplotypes({haplotype});
+  aligner_.AlignHaplotypesToReference();
+  aligner_.FastAlignReadsToHaplotype(haplotype, &haplotype_score, &read_scores,
+                                     0);
   EXPECT_EQ(expected_hap_score, haplotype_score);
   EXPECT_THAT(read_scores,
               testing::UnorderedElementsAreArray(expected_read_scores));
@@ -1304,100 +1305,6 @@ TEST_F(FastPassAlignerTest, SswAligner_BandedSwInt32Overflow_GH1060) {
   EXPECT_GT(alignment.sw_score, 0);
 }
 
-TEST_F(FastPassAlignerTest, FastAlignStringsWithSoftClips_Test) {
-  int soft_clip_length = 0;
-  int num_of_mismatches = 0;
-
-  // Case 1: kClipSideRight, perfect match
-  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
-                "AAAAA", "AAAAA", FastPassAligner::kClipSideRight,
-                &soft_clip_length, &num_of_mismatches),
-            20);
-  EXPECT_EQ(soft_clip_length, 0);
-  EXPECT_EQ(num_of_mismatches, 0);
-
-  // Case 2: kClipSideRight, clip at the end
-  // Scores: 4, 8, 12, 6, 0. Max score 12 at index 2.
-  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
-                "AAAAA", "AAATT", FastPassAligner::kClipSideRight,
-                &soft_clip_length, &num_of_mismatches),
-            0);  // 12 - 2*6 = 0
-  EXPECT_EQ(soft_clip_length, 2);
-  EXPECT_EQ(num_of_mismatches, 0);
-
-  // Case 3: kClipSideLeft, some matches in soft clip.
-  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
-                "ATATAAAAA", "TTTTAAAAA", FastPassAligner::kClipSideLeft,
-                &soft_clip_length, &num_of_mismatches),
-            6);  // 6*4 - 3*6 = 6
-  EXPECT_EQ(soft_clip_length, 3);
-  EXPECT_EQ(num_of_mismatches, 0);
-
-  // Case 4: kClipSideRight, some matches in soft clip.
-  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
-                "AAAAATATA", "AAAAATTTT", FastPassAligner::kClipSideRight,
-                &soft_clip_length, &num_of_mismatches),
-            6);  // 6*4 - 3*6 = 6
-  EXPECT_EQ(soft_clip_length, 3);
-  EXPECT_EQ(num_of_mismatches, 0);
-
-  // Case 5: kClipSideLeft, clip at the beginning
-  // Scores from right: 4, 8, 12, 6, 0. Max score 12 at index 2.
-  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
-                "AAAAA", "TTAAA", FastPassAligner::kClipSideLeft,
-                &soft_clip_length, &num_of_mismatches),
-            0);
-  EXPECT_EQ(soft_clip_length, 2);
-  EXPECT_EQ(num_of_mismatches, 0);
-
-  // Case 5: No match at all, should clip everything
-  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
-                "AAAA", "TTTT", FastPassAligner::kClipSideRight,
-                &soft_clip_length, &num_of_mismatches),
-            -24);
-  EXPECT_EQ(soft_clip_length, 4);
-  EXPECT_EQ(num_of_mismatches, 0);
-
-  // Case 6: 'N' handling
-  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
-                "AANAA", "AANCC", FastPassAligner::kClipSideRight,
-                &soft_clip_length, &num_of_mismatches),
-            0);  // 3*4 - 2*6 = 0
-  EXPECT_EQ(soft_clip_length, 2);
-  EXPECT_EQ(num_of_mismatches, 0);
-
-  // Case 7: Match with internal mismatch, still better than clipping early
-  // AAAAA vs AAATA
-  // kClipSideRight:
-  // i=0: A vs A -> 4 (max)
-  // i=1: AA vs AA -> 8 (max)
-  // i=2: AAA vs AAA -> 12 (max)
-  // i=3: AAAA vs AAAT -> 6
-  // i=4: AAAAA vs AAATA -> 10
-  // Max score is 12 at index 2.
-  // Wait, if max score is at index 2, it will clip 2 bases.
-  // If the mismatch is followed by matches, we should see if it "recovers".
-  // AAAAA vs AAATA
-  // i=0: 4
-  // i=1: 8
-  // i=2: 12
-  // i=3: 6
-  // i=4: 10
-  // Max is 12. So it clips 'TA'.
-  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
-                "AAAAA", "AAATA", FastPassAligner::kClipSideRight,
-                &soft_clip_length, &num_of_mismatches),
-            0);  // 12 - 2*6 = 0
-  EXPECT_EQ(soft_clip_length, 2);
-
-  // Case 8: best alignment should have 2 mismatches
-  EXPECT_EQ(aligner_.FastAlignStringsWithSoftClips(
-                "AAAAATGCTA", "TTAAATCGTA", FastPassAligner::kClipSideLeft,
-                &soft_clip_length, &num_of_mismatches),
-            0);
-  EXPECT_EQ(soft_clip_length, 2);
-  EXPECT_EQ(num_of_mismatches, 2);
-}
 
 }  // namespace deepvariant
 }  // namespace genomics

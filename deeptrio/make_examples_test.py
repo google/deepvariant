@@ -178,13 +178,11 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
       mode,
       num_shards,
       labeler_algorithm=None,
-      use_fast_pass_aligner=True,
       pileup_image_height_child=None,
       pileup_image_height_parent=None,
   ):
     self.assertIn(mode, {'calling', 'training', 'candidate_sweep'})
     region = ranges.parse_literal('20:10,000,000-10,010,000')
-    FLAGS.write_run_info = True
     FLAGS.ref = testdata.CHR20_FASTA
     FLAGS.reads = testdata.HG001_CHR20_BAM
     FLAGS.reads_parent1 = testdata.NA12891_CHR20_BAM
@@ -215,10 +213,9 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
           _sharded('candidate_positions', num_shards)
       )
     FLAGS.regions = [ranges.to_literal(region)]
-    FLAGS.partition_size = 1000
     FLAGS.mode = mode
-    FLAGS.gvcf_gq_binsize = 5
-    FLAGS.use_fast_pass_aligner = use_fast_pass_aligner
+    FLAGS.write_run_info = True
+    FLAGS.deterministic_serialization = True
     if labeler_algorithm is not None:
       FLAGS.labeler_algorithm = labeler_algorithm
 
@@ -609,20 +606,20 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
     self.assertDeepVariantExamplesNotEqual(examples1, examples2)
 
   @parameterized.parameters(
-      dict(select_types=None, expected_count=79),
-      dict(select_types='all', expected_count=79),
-      dict(select_types='snps', expected_count=64),
-      dict(select_types='indels', expected_count=12),
-      dict(select_types='snps indels', expected_count=76),
+      dict(select_types=None, expected_count=81),
+      dict(select_types='all', expected_count=81),
+      dict(select_types='snps', expected_count=65),
+      dict(select_types='indels', expected_count=13),
+      dict(select_types='snps indels', expected_count=78),
       dict(select_types='multi-allelics', expected_count=3),
-      dict(select_types=None, keep_legacy_behavior=True, expected_count=79),
-      dict(select_types='all', keep_legacy_behavior=True, expected_count=79),
-      dict(select_types='snps', keep_legacy_behavior=True, expected_count=64),
-      dict(select_types='indels', keep_legacy_behavior=True, expected_count=11),
+      dict(select_types=None, keep_legacy_behavior=True, expected_count=81),
+      dict(select_types='all', keep_legacy_behavior=True, expected_count=81),
+      dict(select_types='snps', keep_legacy_behavior=True, expected_count=65),
+      dict(select_types='indels', keep_legacy_behavior=True, expected_count=12),
       dict(
           select_types='snps indels',
           keep_legacy_behavior=True,
-          expected_count=75,
+          expected_count=77,
       ),
       dict(
           select_types='multi-allelics',
@@ -784,7 +781,7 @@ class MakeExamplesEnd2EndTest(parameterized.TestCase):
   @parameterized.parameters(
       dict(
           max_reads_per_partition=1500,
-          expected_len_examples1=88,
+          expected_len_examples1=90,
           expected_len_examples2=32,
       ),
       dict(

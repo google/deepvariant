@@ -234,6 +234,8 @@ message AlignerOptions {
   // If True, realign all regions. With this options window selector is not
   // used.
   bool realign_all = 13;
+
+  bool use_dbg_exp = 14;
 }
 
 // Config parameters for "alignment (aln)" phase.

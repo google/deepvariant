@@ -44,6 +44,7 @@ from google.protobuf import text_format
 from deepvariant.protos import realigner_pb2
 from deepvariant.realigner import window_selector
 from deepvariant.realigner.python import debruijn_graph
+from deepvariant.realigner.python import debruijn_graph_exp
 from deepvariant.realigner.python import fast_pass_aligner
 from deepvariant.vendor import timer
 from third_party.nucleus.io import sam
@@ -253,7 +254,7 @@ _MIN_HAPLOTYPE_LEN = flags.DEFINE_integer(
 )
 
 # Margin added to the reference sequence for the aligner module.
-_REF_ALIGN_MARGIN = 20
+_REF_ALIGN_MARGIN = 200
 _REF_ALIGN_MARGIN_EXP = 200
 
 _DEFAULT_MIN_SUPPORTING_READS = 2
@@ -419,6 +420,7 @@ def realigner_config(flags_obj):
       kmer_size=flags_obj.kmer_size,
       force_alignment=False,
       realign_all=flags_obj.realign_all,
+      use_dbg_exp=flags_obj.use_exp_debruijn_graph,
   )
 
   diagnostics = realigner_pb2.Diagnostics(
@@ -746,14 +748,9 @@ class Realigner(object):
 
       with timer.Timer() as t:
         if self.config.dbg_config.use_exp_debruijn_graph:
-          raise NotImplementedError(
-              'Experimental de Bruijn graph is not supported in this version.'
+          graph = debruijn_graph_exp.build(
+              ref, window_reads, self.config.dbg_config
           )
-          # TODO: Re-enable once fastpass_aligner is updated to use
-          # CandidateHaplotypesRanked.
-          # graph = debruijn_graph_exp.build(
-          #     ref, window_reads, self.config.dbg_config
-          # )
         else:
           graph = debruijn_graph.build(
               ref, window_reads, self.config.dbg_config

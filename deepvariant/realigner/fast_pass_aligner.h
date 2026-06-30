@@ -103,7 +103,8 @@ struct KmerOccurrence {
 // position.
 struct ReadAlignment {
   static constexpr uint16_t kNotAligned = std::numeric_limits<uint16_t>::max();
-  ReadAlignment() : position(kNotAligned), cigar(""), score(0) {}
+  ReadAlignment()
+      : position(kNotAligned), read_aligned_from_pos(0), cigar(""), score(0) {}
 
   ReadAlignment(uint16_t position_param, absl::string_view cigar_param,
                 int score_param)
@@ -111,16 +112,21 @@ struct ReadAlignment {
 
   bool operator==(const ReadAlignment& that) const {
     return score == that.score && position == that.position &&
-           cigar == that.cigar;
+           cigar == that.cigar &&
+           read_aligned_from_pos == that.read_aligned_from_pos;
   }
 
   void reset() {
     score = 0;
     position = kNotAligned;
     cigar = "";
+    read_aligned_from_pos = 0;
   }
 
   uint16_t position;
+  // If read is partially aligned to haplotype, this field is set to the
+  // position in the haplotype where the read is aligned from.
+  uint16_t read_aligned_from_pos = 0;
   string cigar;
   int score;
 };
@@ -196,6 +202,15 @@ struct HaplotypeReadsAlignment {
 
   // If true the haplotype is a reference.
   bool is_reference;
+
+  // Alignment score for haplotype against reference.
+  int haplotype_to_ref_score;
+};
+
+struct OriginalAlignmentInfo {
+  bool is_aligned = false;
+  int left_soft_clips = 0;
+  int right_soft_clips = 0;
 };
 
 // Calculate a shift for each position of a haplotype from a haplotype to
@@ -235,6 +250,7 @@ class FastPassAligner {
  public:
   void set_reference(absl::string_view reference);
   void set_reads(const std::vector<string>& reads);
+  void set_reads(absl::Span<const nucleus::genomics::v1::Read> reads);
   std::vector<string> get_reads() const { return reads_; }
   void set_ref_start(absl::string_view chromosome, uint64_t position);
   void set_haplotypes(const std::vector<string>& haplotypes);
@@ -247,6 +263,7 @@ class FastPassAligner {
   void set_contig_length(int64_t contig_length) {
     contig_length_ = contig_length;
   }
+  void set_use_dbg_exp(bool use_dbg_exp) { use_dbg_exp_ = use_dbg_exp; }
   uint8_t get_match_score() const { return match_score_; }
   uint8_t get_mismatch_penalty() const { return mismatch_penalty_; }
   void set_options(const AlignerOptions& options);
@@ -301,10 +318,21 @@ class FastPassAligner {
 
   KmerIndexType GetKmerIndex() const { return kmer_index_; }
 
+  // Alingn reads to haplotypes by simply comparing strings. This way we will
+  // be able align all the reads that are aligned to haplotypes w/o indels.
+  void FastAlignReadsToHaplotypes();
+
+  // Update position map for each haplotype. Position map stores shifts for
+  // each position of a haplotype in respect to haplotype to reference
+  // alignment. This map helps to quickly calculate reference position for
+  // a read from a read to haplotype alignment.
+  void CalculatePositionMaps();
+
   // Align all reads to a haplotype using fast pass alignment.
   void FastAlignReadsToHaplotype(
       absl::string_view haplotype, int* haplotype_score,
-      std::vector<ReadAlignment>* haplotype_read_alignment_scores);
+      std::vector<ReadAlignment>* haplotype_read_alignment_scores,
+      int hap_index);
 
   // Align reads to haplotypes using SSW library. Only reads that could not
   // be aligned with FastAlignReadsToHaplotype are aligned here.
@@ -360,23 +388,14 @@ class FastPassAligner {
       std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>*
           realigned_reads);
 
+  bool HasSoftClips(const Alignment& alignment) const;
+
   void CalculateSswAlignmentScoreThreshold();
 
   int FastAlignStrings(absl::string_view s1, absl::string_view s2,
                        int max_mismatches, int* num_of_mismatches) const;
 
-  // This function aligns two strings allowing soft clips. Softclips are allowed
-  // only on one side which is specified by clip_side argument.
-  // The return value is the alignment score. Soft clips are counted as
-  // mismatches for the score calculation. But num_of_mismatches is not affected
-  // by soft clips.
-  enum ClipSide { kClipSideLeft, kClipSideRight };
-  int FastAlignStringsWithSoftClips(
-                      absl::string_view s1,
-                      absl::string_view s2,
-                      ClipSide clip_side,
-                      int* soft_clip_length,
-                      int* num_of_mismatches) const;
+  const std::vector<string>& get_haplotypes() const { return haplotypes_; }
 
  private:
   // Reference sequence for the window
@@ -396,6 +415,8 @@ class FastPassAligner {
   // index of reads. Allows to find all reads that contain a given k-mer
   // and their align position.
   KmerIndexType kmer_index_;
+
+  std::vector<OriginalAlignmentInfo> original_alignments_;
 
   // Vector of reads that need to be realigned
   std::vector<string> reads_;
@@ -426,6 +447,7 @@ class FastPassAligner {
   uint8_t gap_opening_penalty_ = 8;
   uint8_t gap_extending_penalty_ = 1;
   bool force_alignment_ = false;
+  bool use_dbg_exp_ = false;
 
   // Threshold is calculated from this flag using the following formula.
   // score_threshold = match_score_ * read_size_ * <similarity_threshold_>
@@ -452,10 +474,6 @@ class FastPassAligner {
   // Used for debug output.
   void WriteHaplotypesToBam();
 
-  // Alingn reads to haplotypes by simply comparing strings. This way we will
-  // be able align all the reads that are aligned to haplotypes w/o indels.
-  void FastAlignReadsToHaplotypes();
-
   void AddReadToIndex(absl::string_view read, ReadId read_id);
 
   void AddKmerToIndex(absl::string_view kmer, ReadId read_id,
@@ -470,8 +488,6 @@ class FastPassAligner {
                                          absl::Span<const int> M,
                                          absl::Span<const int> E,
                                          absl::Span<const int> F) const;
-
-  void CalculatePositionMaps();
 };
 
 }  // namespace deepvariant

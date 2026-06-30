@@ -3586,12 +3586,13 @@ labeling_metrics {
 resource_metrics {
   host_name: "host"
   physical_core_count: 12
-  cpu_frequency_mhz: 3593.0864583333337
+  cpu_frequency_mhz: 3397.509333333334
   total_memory_mb: 128662
-  wall_time_seconds: 0.8400650024414062
-  cpu_user_time_seconds: 5.374148
-  cpu_system_time_seconds: 4.308406
-  memory_peak_rss_mb: 945
+  wall_time_seconds: 1.0664353370666504
+  cpu_user_time_seconds: 5.791246
+  cpu_system_time_seconds: 4.23729
+  memory_peak_rss_mb: 922
+  read_bytes: 16384
   write_bytes: 278528
 }
 cnn_stats {
@@ -3602,4 +3603,10 @@ cnn_stats {
   num_class_1: 12
   num_class_2: 36
   num_nondenovo: 49
+}
+small_model_stats {
+}
+candidate_metrics {
+  n_regions: 11
+  n_candidates: 76
 }

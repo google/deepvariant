@@ -60,12 +60,46 @@ namespace learning {
 namespace genomics {
 namespace deepvariant {
 
+constexpr int kEdgeRange = 10;
+
 void FastPassAligner::set_reference(absl::string_view reference) {
   this->reference_ = reference;
+  this->read_to_haplotype_alignments_.clear();
 }
 
 void FastPassAligner::set_reads(const std::vector<string>& reads) {
   this->reads_ = reads;
+  this->original_alignments_.assign(reads.size(), OriginalAlignmentInfo());
+}
+
+void FastPassAligner::set_reads(
+    absl::Span<const nucleus::genomics::v1::Read> reads) {
+  reads_.clear();
+  original_alignments_.clear();
+  reads_.reserve(reads.size());
+  original_alignments_.reserve(reads.size());
+  for (const auto& read : reads) {
+    reads_.push_back(absl::AsciiStrToUpper(read.aligned_sequence()));
+
+    OriginalAlignmentInfo info;
+    if (read.has_alignment()) {
+      info.is_aligned = true;
+      const auto& cigar = read.alignment().cigar();
+      if (!cigar.empty()) {
+        if (cigar.Get(0).operation() ==
+            nucleus::genomics::v1::CigarUnit::CLIP_SOFT) {
+          info.left_soft_clips = cigar.Get(0).operation_length();
+        }
+        if (cigar.size() > 1 &&
+            cigar.Get(cigar.size() - 1).operation() ==
+                nucleus::genomics::v1::CigarUnit::CLIP_SOFT) {
+          info.right_soft_clips =
+              cigar.Get(cigar.size() - 1).operation_length();
+        }
+      }
+    }
+    original_alignments_.push_back(info);
+  }
 }
 
 void FastPassAligner::set_ref_start(absl::string_view chromosome,
@@ -76,6 +110,7 @@ void FastPassAligner::set_ref_start(absl::string_view chromosome,
 
 void FastPassAligner::set_haplotypes(const std::vector<string>& haplotypes) {
   this->haplotypes_ = haplotypes;
+  this->read_to_haplotype_alignments_.clear();
 }
 
 void FastPassAligner::set_options(const AlignerOptions& options) {
@@ -106,6 +141,7 @@ void FastPassAligner::set_options(const AlignerOptions& options) {
     this->gap_extending_penalty_ = options.gap_extend();
   }
   this->force_alignment_ = options.force_alignment();
+  this->use_dbg_exp_ = options.use_dbg_exp();
 
   CHECK(kmer_size_ >= 3 && kmer_size_ <= 32);
   CHECK_GE(similarity_threshold_, 0.0);
@@ -133,19 +169,10 @@ void FastPassAligner::CalculateSswAlignmentScoreThreshold() {
 std::unique_ptr<std::vector<nucleus::genomics::v1::Read>>
 FastPassAligner::AlignReads(
     absl::Span<const nucleus::genomics::v1::Read> reads_param) {
-  // Copy reads
-  for (const auto& read : reads_param) {
-    reads_.push_back(absl::AsciiStrToUpper(read.aligned_sequence()));
-  }
-
-  CalculateSswAlignmentScoreThreshold();
+  set_reads(reads_param);
 
   // Build index
   BuildIndex();
-
-  // Align reads to haplotypes using reads index. This is O(n) operation per
-  // read, where n = read size.
-  FastAlignReadsToHaplotypes();
 
   // Initialize ssw library. Set reference.
   InitSswLib();
@@ -153,8 +180,15 @@ FastPassAligner::AlignReads(
   // Align haplotypes to the reference.
   AlignHaplotypesToReference();
 
+  // Alingn reads to haplotypes by simply comparing strings. This way we will
+  // be able align all the reads that are aligned to haplotypes w/o indels.
+  FastAlignReadsToHaplotypes();
+
   // calculate position shifts.
   CalculatePositionMaps();
+
+  // Calculate SSW alignment score threshold.
+  CalculateSswAlignmentScoreThreshold();
 
   // Align reads that couldn't be aligned in FastAlignReadsToHaplotypes using
   // ssw library.
@@ -162,14 +196,14 @@ FastPassAligner::AlignReads(
 
   // Sort haplotypes by number of supporting reads. First haplotype is the one
   // that has fewer supporting reads.
-  std::sort(read_to_haplotype_alignments_.begin(),
+  std::stable_sort(read_to_haplotype_alignments_.begin(),
             read_to_haplotype_alignments_.end());
 
   // Realign reads that we could successfully realign in previous steps back to
   // reference. From all read to haplotype alignments the best one is picked.
   // In the case where read alignments are equally good to ref haplotype and
   // non-ref haplotype, a non-ref haplotype is preferred.
-  std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> realigned_reads =
+  auto realigned_reads =
       std::make_unique<std::vector<nucleus::genomics::v1::Read>>();
   RealignReadsToReference(reads_param, &realigned_reads);
 
@@ -203,17 +237,20 @@ Alignment FastPassAligner::SswAlign(const string& target) const {
 
 // For each haplotype try to find all reads that can be aligned using index.
 void FastPassAligner::FastAlignReadsToHaplotypes() {
-  std::vector<ReadAlignment> read_alignment_scores(reads_.size());
+  CHECK_GE(read_to_haplotype_alignments_.size(), haplotypes_.size());
   for (int i = 0; i < haplotypes_.size(); i++) {
+    std::vector<ReadAlignment>& read_alignment_scores =
+        read_to_haplotype_alignments_[i].read_alignment_scores;
+    read_alignment_scores.resize(reads_.size());
     const auto& haplotype = haplotypes_[i];
     int haplotype_score = 0;
     for (auto& readAlignment : read_alignment_scores) {
       readAlignment.reset();
     }
-    FastAlignReadsToHaplotype(haplotype,
-                              &haplotype_score,
-                              &read_alignment_scores);
+    FastAlignReadsToHaplotype(haplotype, &haplotype_score,
+                              &read_alignment_scores, i);
 
+    read_to_haplotype_alignments_[i].haplotype_score = haplotype_score;
     // haplotype_score == 0 means we found a problem with this haplotype. In
     // this case we need to discard of this haplotype.
     if (haplotype_score == 0) {
@@ -221,15 +258,43 @@ void FastPassAligner::FastAlignReadsToHaplotypes() {
         readAlignment.reset();
       }
     }
-
-    read_to_haplotype_alignments_.push_back(
-        HaplotypeReadsAlignment(i, haplotype_score, read_alignment_scores));
   }
+}
+
+int CalculateRefPos(const HaplotypeReadsAlignment& haplotype_alignment,
+                    int target_start_pos, int span) {
+  int target_pos = target_start_pos + span;
+  int hap_pos = 0;
+  int ref_pos = haplotype_alignment.ref_pos;
+
+  for (const auto& op : haplotype_alignment.cigar_ops) {
+    if (op.operation == nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH) {
+      if (hap_pos >= target_pos) break;
+      if (hap_pos + op.length > target_pos) {
+        ref_pos += (target_pos - hap_pos);
+        hap_pos = target_pos;
+      } else {
+        hap_pos += op.length;
+        ref_pos += op.length;
+      }
+    } else if (op.operation == nucleus::genomics::v1::CigarUnit::DELETE) {
+      ref_pos += op.length;
+    } else if (op.operation == nucleus::genomics::v1::CigarUnit::INSERT) {
+      if (hap_pos >= target_pos) break;
+      if (hap_pos + op.length > target_pos) {
+        hap_pos = target_pos;
+      } else {
+        hap_pos += op.length;
+      }
+    }
+  }
+  return ref_pos;
 }
 
 void FastPassAligner::FastAlignReadsToHaplotype(
     absl::string_view haplotype, int* haplotype_score,
-    std::vector<ReadAlignment>* haplotype_read_alignment_scores) {
+    std::vector<ReadAlignment>* haplotype_read_alignment_scores,
+    int hap_index) {
   CHECK(haplotype_score != nullptr);
   CHECK(haplotype_read_alignment_scores != nullptr);
 
@@ -252,8 +317,11 @@ void FastPassAligner::FastAlignReadsToHaplotype(
       size_t target_start_pos = std::max(
           static_cast<int64_t>(0),
           static_cast<int64_t>(i) - static_cast<int64_t>(it.read_pos.pos));
+      size_t read_start_pos = std::max(
+          static_cast<int64_t>(0), static_cast<int64_t>(it.read_pos.pos) - i);
       size_t cur_read_size = reads_[read_id_index].size();
-      size_t span = cur_read_size;
+      size_t span = std::min(cur_read_size - read_start_pos,
+                             haplotype.size() - target_start_pos);
       if (target_start_pos + cur_read_size > haplotype.length()) {
         continue;
       }
@@ -267,16 +335,57 @@ void FastPassAligner::FastAlignReadsToHaplotype(
       }
       CHECK(target_start_pos + span <= haplotype.size());
       int num_of_mismatches = 0;
-      int new_read_alignment_score = FastAlignStrings(
-          haplotype.substr(target_start_pos, span),
-          reads_[read_id_index],
-          max_num_of_mismatches_ + 1, &num_of_mismatches);
+      int new_read_alignment_score =
+          FastAlignStrings(haplotype.substr(target_start_pos, span),
+                           reads_[read_id_index].substr(read_start_pos, span),
+                           max_num_of_mismatches_ + 1, &num_of_mismatches);
+
+      // Read aligns to haplotype partially starting from read_start_pos. In
+      // that case we need ot align the unaligned part of the read to the
+      // reference.
+      if (read_start_pos > 0) {
+        int num_of_mismatches_pred = 0;
+        size_t ref_start_pos =
+            std::max(0, (int)read_to_haplotype_alignments_[hap_index].ref_pos -
+                            (int)read_start_pos);
+        size_t ref_span = std::min(
+            read_to_haplotype_alignments_[hap_index].ref_pos, read_start_pos);
+        int score = FastAlignStrings(
+            reference_.substr(ref_start_pos, ref_span),
+            reads_[read_id_index].substr(read_start_pos - ref_span, ref_span),
+            max_num_of_mismatches_ + 1, &num_of_mismatches_pred);
+        new_read_alignment_score += score;
+        num_of_mismatches += num_of_mismatches_pred;
+      }
+      // If part of the read is not aligned, we need to check if the unaligned
+      // part can be aligned to the reference.
+      if (read_start_pos + span < cur_read_size) {
+        int num_of_mismatches_2 = 0;
+        size_t read_left_over_size = cur_read_size - (read_start_pos + span);
+        size_t ref_start_pos = CalculateRefPos(
+            read_to_haplotype_alignments_[hap_index], target_start_pos, span);
+        if (ref_start_pos < reference_.size() &&
+            reference_.size() - ref_start_pos >= read_left_over_size) {
+          int ref_span = read_left_over_size;
+          int score = FastAlignStrings(
+              reference_.substr(ref_start_pos, ref_span),
+              reads_[read_id_index].substr(read_start_pos + span, ref_span),
+              max_num_of_mismatches_ + 1, &num_of_mismatches_2);
+          new_read_alignment_score += score;
+          num_of_mismatches += num_of_mismatches_2;
+        } else {
+          // We cannot align this read to the reference since reference is too
+          // short. Therefore, we cannot assign a meaningful alignment score to
+          // this read.
+          num_of_mismatches += read_left_over_size;
+          return;
+        }
+      }
 
       if (num_of_mismatches <= max_num_of_mismatches_) {
         CHECK(it.read_id.is_set &&
             read_id_index < haplotype_read_alignment_scores->size());
         int oldScore = read_alignment.score;
-
         for (auto pos = target_start_pos; pos < target_start_pos + span;
              pos++) {
           coverage[pos]++;
@@ -286,8 +395,10 @@ void FastPassAligner::FastAlignReadsToHaplotype(
           read_alignment.score = new_read_alignment_score;
           *haplotype_score -= oldScore;
           *haplotype_score += read_alignment.score;
-          read_alignment.position = target_start_pos;
-          read_alignment.cigar = std::to_string(cur_read_size) + "=";
+          read_alignment.read_aligned_from_pos = read_start_pos;
+          read_alignment.position =
+              std::max(0, (int)target_start_pos - (int)read_start_pos);
+          read_alignment.cigar = absl::StrCat(cur_read_size, "=");
         }
       }
     }  // for (matching reads)
@@ -328,56 +439,6 @@ int FastPassAligner::FastAlignStrings(absl::string_view s1,
   return num_of_matches * match_score_ - *num_of_mismatches * mismatch_penalty_;
 }
 
-int FastPassAligner::FastAlignStringsWithSoftClips(
-    absl::string_view s1, absl::string_view s2, ClipSide clip_side,
-    int* soft_clip_length, int* num_of_mismatches) const {
-  CHECK_EQ(s1.size(), s2.size());
-  int n = s1.size();
-  if (n == 0) {
-    *soft_clip_length = 0;
-    *num_of_mismatches = 0;
-    return 0;
-  }
-
-  auto is_match = [](char c1, char c2) {
-    return (c1 == c2) || (c1 == 'N' || c2 == 'N');
-  };
-
-  int max_score = -1;
-  int best_index = -1;
-  int current_score = 0;
-  int current_num_of_mismatches = 0;
-  int best_num_of_mismatches = 0;
-
-  for (int j = 0; j < n; ++j) {
-    int i = (clip_side == kClipSideRight) ? j : (n - 1 - j);
-    if (is_match(s1[i], s2[i])) {
-      current_score += match_score_;
-    } else {
-      current_score -= mismatch_penalty_;
-      current_num_of_mismatches++;
-    }
-    if (current_score > max_score) {
-      max_score = current_score;
-      best_index = j;
-      best_num_of_mismatches = current_num_of_mismatches;
-    }
-  }
-
-  if (best_index == -1) {
-    *soft_clip_length = n;
-    *num_of_mismatches = 0;
-  } else {
-    *soft_clip_length = n - (best_index + 1);
-    *num_of_mismatches = best_num_of_mismatches;
-  }
-
-  // Final score = score of aligned portion -
-  // (clipped portion length * mismatch_penalty_)
-  int aligned_score = (best_index == -1) ? 0 : max_score;
-  return aligned_score - (*soft_clip_length * mismatch_penalty_);
-}
-
 CigarUnit::Operation CigarOperationFromChar(char op) {
   switch (op) {
     case '=':
@@ -414,8 +475,6 @@ inline bool AlignmentIsRef(absl::string_view cigar, size_t target_len) {
 
 // Align haplotypes to reference using ssw library.
 void FastPassAligner::AlignHaplotypesToReference() {
-  SswSetReference(reference_);
-
   // Initialize read_to_haplotype_alignments_ if it is not initialized yet.
   if (read_to_haplotype_alignments_.empty()) {
     for (int i = 0; i < haplotypes_.size(); i++) {
@@ -436,8 +495,19 @@ void FastPassAligner::AlignHaplotypesToReference() {
           CigarStringToVector(haplotype_alignment.cigar);
       haplotype_alignment.ref_pos = 0;
     } else {
-      Alignment alignment =
-          SswAlign(haplotypes_[haplotype_alignment.haplotype_index]);
+      GlobalAlignment alignment;
+      if (use_dbg_exp_) {
+        alignment =
+            GlobalAlign(haplotypes_[haplotype_alignment.haplotype_index],
+                        reference_, kEdgeRange);
+      } else {
+        SswSetReference(reference_);
+        Alignment alignment_ssw =
+            SswAlign(haplotypes_[haplotype_alignment.haplotype_index]);
+        alignment.cigar_string = alignment_ssw.cigar_string;
+        alignment.ref_begin = alignment_ssw.ref_begin;
+        alignment.sw_score = alignment_ssw.sw_score;
+      }
       if (alignment.sw_score > 0) {
         // In rare cases, the ref haplotype will be a substring of the ref, and
         // therefore not caught by the string equality check above.
@@ -448,6 +518,13 @@ void FastPassAligner::AlignHaplotypesToReference() {
         haplotype_alignment.cigar_ops =
             CigarStringToVector(haplotype_alignment.cigar);
         haplotype_alignment.ref_pos = alignment.ref_begin;
+        haplotype_alignment.haplotype_to_ref_score = alignment.sw_score;
+      } else {
+        haplotype_alignment.haplotype_score = 0;
+        haplotype_alignment.is_reference = false;
+        haplotype_alignment.cigar = "";
+        haplotype_alignment.cigar_ops = {};
+        haplotype_alignment.ref_pos = 0;
       }
     }
   }
@@ -525,12 +602,36 @@ void FastPassAligner::WriteHaplotypesToBam() {
   }
 }
 
+void GetAlignmentSoftClips(const Alignment& alignment, int* left, int* right) {
+  *left = 0;
+  *right = 0;
+  if (alignment.cigar.empty()) {
+    return;
+  }
+  uint32_t first_op = alignment.cigar.front();
+  if ((first_op & 0xF) == 4) {
+    *left = first_op >> 4;
+  }
+  if (alignment.cigar.size() > 1) {
+    uint32_t last_op = alignment.cigar.back();
+    if ((last_op & 0xF) == 4) {
+      *right = last_op >> 4;
+    }
+  }
+}
+
 void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
+  CHECK_GE(original_alignments_.size(), reads_.size());
+  for (const auto& hap_alignment : read_to_haplotype_alignments_) {
+    CHECK_GE(hap_alignment.read_alignment_scores.size(), reads_.size());
+  }
   // For each read
   for (int i = 0; i < reads_.size(); i++) {
     bool has_at_least_one_alignment = false;
     // Check if this read is aligned to at least one haplotype
+    int hap_index = 0;
     for (const auto& hap_alignment : read_to_haplotype_alignments_) {
+      hap_index++;
       if (hap_alignment.read_alignment_scores[i].score > 0) {
         has_at_least_one_alignment = true;
         break;
@@ -552,7 +653,14 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
         if (alignment.sw_score > 0) {
           // TODO Remove score_threshold condition. It is effectively
           // not used.
-          if (alignment.sw_score >= score_threshold ||
+          int new_left = 0;
+          int new_right = 0;
+          GetAlignmentSoftClips(alignment, &new_left, &new_right);
+          const auto& original_info = original_alignments_[i];
+          if ((alignment.sw_score >= score_threshold &&
+               (!original_info.is_aligned ||
+                (new_left <= original_info.left_soft_clips &&
+                 new_right <= original_info.right_soft_clips))) ||
               (force_alignment_ && hap_alignment.is_reference)) {
             hap_alignment.read_alignment_scores[i].score = alignment.sw_score;
             hap_alignment.read_alignment_scores[i].cigar =
@@ -560,6 +668,7 @@ void FastPassAligner::SswAlignReadsToHaplotypes(uint16_t score_threshold) {
             hap_alignment.read_alignment_scores[i].position =
                 alignment.ref_begin;
           }
+
         } else if (force_alignment_ && hap_alignment.is_reference) {
         }
       }
@@ -613,10 +722,10 @@ bool FastPassAligner::IsAlignmentNormalized(
         CHECK(cur_read_offset + op.length <= read_sequence.size());
         op_sequence =  read_sequence.substr(cur_read_offset, op.length);
       }
-      if (( cur_ref_offset > 0 && cur_read_offset > 0
+      if (( cur_ref_offset > 0 && cur_read_offset > 0 && !op_sequence.empty()
            && op.operation == nucleus::genomics::v1::CigarUnit::INSERT
            && op_sequence.back() == read_sequence[cur_read_offset - 1]) ||
-         (cur_read_offset > 0
+         (cur_read_offset > 0 && !op_sequence.empty()
           && op.operation == nucleus::genomics::v1::CigarUnit::DELETE
           && op_sequence.back() == read_sequence[cur_read_offset - 1])) {
         return false;
@@ -638,25 +747,36 @@ void FastPassAligner::RealignReadsToReference(
         realigned_reads) {
   // Loop through all reads
   for (size_t read_index = 0; read_index < reads.size(); read_index++) {
+    CHECK_LT(read_index, reads_.size());
     const nucleus::genomics::v1::Read& read = reads[read_index];
     nucleus::genomics::v1::Read realigned_read;
     realigned_read.MergeFrom(read);
     int best_hap_index = -1;
     // See if we have a better alignment
     if (GetBestReadAlignment(read_index, &best_hap_index)) {
+      CHECK_GE(best_hap_index, 0);
+      CHECK_LT(best_hap_index, read_to_haplotype_alignments_.size());
       const HaplotypeReadsAlignment& bestHaplotypeAlignments =
           read_to_haplotype_alignments_[best_hap_index];
-      std::unique_ptr<LinearAlignment> new_alignment =
+      CHECK_LT(read_index,
+               bestHaplotypeAlignments.read_alignment_scores.size());
+      auto new_alignment =
           std::make_unique<LinearAlignment>();
       new_alignment->MergeFrom(read.alignment());
       new_alignment->clear_cigar();
       // Calculate new alignment position.
-      std::unique_ptr<nucleus::genomics::v1::Position> new_position =
+      auto new_position =
           std::make_unique<nucleus::genomics::v1::Position>();
       new_position->MergeFrom(read.alignment().position());
       auto read_to_hap_pos = bestHaplotypeAlignments
           .read_alignment_scores[read_index]
           .position;
+      if (read_to_hap_pos >=
+          bestHaplotypeAlignments.hap_to_ref_positions_map.size()) {
+        // Keep original alignment.
+        (*realigned_reads)->push_back(realigned_read);
+        continue;
+      }
       CHECK(read_to_hap_pos < bestHaplotypeAlignments
           .hap_to_ref_positions_map.size());
       int hap_to_ref_position = bestHaplotypeAlignments
@@ -664,14 +784,21 @@ void FastPassAligner::RealignReadsToReference(
       // We only change position of original read alignment and don't change
       // chromosome, it shouldn't change anyway!
       new_position->set_position(
-          region_position_in_chr_
-              + bestHaplotypeAlignments.ref_pos
-              + read_to_hap_pos
-              + hap_to_ref_position);
+          region_position_in_chr_ + bestHaplotypeAlignments.ref_pos +
+          read_to_hap_pos + hap_to_ref_position -
+          bestHaplotypeAlignments.read_alignment_scores[read_index]
+              .read_aligned_from_pos);
       new_alignment->set_allocated_position(new_position.release());
       std::list<CigarOp> readToRefCigarOps;
       // Calculate new cigar by merging read to haplotype and haplotype to ref
       // alignments.
+      if (bestHaplotypeAlignments.read_alignment_scores[read_index]
+              .read_aligned_from_pos > 0) {
+        readToRefCigarOps.push_back(
+            CigarOp{nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH,
+                    bestHaplotypeAlignments.read_alignment_scores[read_index]
+                        .read_aligned_from_pos});
+      }
       CalculateReadToRefAlignment(
           read_index, bestHaplotypeAlignments.read_alignment_scores[read_index],
           bestHaplotypeAlignments.cigar_ops, &readToRefCigarOps);
@@ -790,6 +917,7 @@ void SetPositionsMap(size_t haplotype_size,
 
 void FastPassAligner::CalculatePositionMaps() {
   for (auto& hyplotype_alignment : read_to_haplotype_alignments_) {
+    CHECK_LT(hyplotype_alignment.haplotype_index, haplotypes_.size());
     SetPositionsMap(haplotypes_[hyplotype_alignment.haplotype_index].size(),
                     &hyplotype_alignment);
   }
@@ -798,9 +926,12 @@ void FastPassAligner::CalculatePositionMaps() {
 bool FastPassAligner::GetBestReadAlignment(
     size_t readId,
     int* best_hap_index) const {
+  CHECK_EQ(read_to_haplotype_alignments_.size(), haplotypes_.size());
   int best_score = 0;
   bool best_haplotype_found = false;
   for (int hap_index = 0; hap_index < haplotypes_.size(); hap_index++) {
+    CHECK_LT(readId,
+        read_to_haplotype_alignments_[hap_index].read_alignment_scores.size());
     int hap_score = read_to_haplotype_alignments_[hap_index]
                         .read_alignment_scores[readId]
                         .score;
@@ -814,6 +945,33 @@ bool FastPassAligner::GetBestReadAlignment(
                        .score;
       *best_hap_index = hap_index;
       best_haplotype_found = true;
+    } else if (best_score > 0 && hap_score == best_score) {
+      CHECK_GE(*best_hap_index, 0);
+      CHECK_LT(*best_hap_index, read_to_haplotype_alignments_.size());
+      // If compared scores are equal, preference is given to a haplotype with
+      // a better haplotype to reference alignment.
+      if (!read_to_haplotype_alignments_[hap_index].is_reference &&
+          read_to_haplotype_alignments_[hap_index].haplotype_to_ref_score >
+              read_to_haplotype_alignments_[*best_hap_index]
+                  .haplotype_to_ref_score) {
+        best_score = read_to_haplotype_alignments_[hap_index]
+                         .read_alignment_scores[readId]
+                         .score;
+        *best_hap_index = hap_index;
+        best_haplotype_found = true;
+      } else if (read_to_haplotype_alignments_[hap_index]
+                     .haplotype_to_ref_score ==
+                 read_to_haplotype_alignments_[*best_hap_index]
+                     .haplotype_to_ref_score) {
+        if (read_to_haplotype_alignments_[hap_index].haplotype_score >
+            read_to_haplotype_alignments_[*best_hap_index].haplotype_score) {
+          best_score = read_to_haplotype_alignments_[hap_index]
+                           .read_alignment_scores[readId]
+                           .score;
+          *best_hap_index = hap_index;
+          best_haplotype_found = true;
+        }
+      }
     }
   }
   return best_haplotype_found;
@@ -910,10 +1068,17 @@ std::list<CigarOp> LeftTrimHaplotypeToRefAlignment(
     const std::list<CigarOp>& haplotype_to_ref_cigar_ops_input,
     int read_to_haplotype_pos) {
   int cur_pos = 0;
+  if (haplotype_to_ref_cigar_ops_input.empty()) {
+    return std::list<CigarOp>();
+  }
   std::list<CigarOp> haplotype_to_ref_cigar_ops(
       haplotype_to_ref_cigar_ops_input);
   while (cur_pos != read_to_haplotype_pos) {
-    CHECK(!haplotype_to_ref_cigar_ops.empty());
+    if (haplotype_to_ref_cigar_ops.empty()) {
+      LOG(WARNING) << "Haplotype to reference alignment is empty.";
+      return std::list<CigarOp>();
+    }
+
     CigarOp cur_hap_op = haplotype_to_ref_cigar_ops.front();
     haplotype_to_ref_cigar_ops.pop_front();
     if (cur_hap_op.operation ==
@@ -932,7 +1097,8 @@ std::list<CigarOp> LeftTrimHaplotypeToRefAlignment(
 
   // If after trimming the first operation is DEL we need to remove it,
   // because read alignment cannot start with DEL.
-  if (haplotype_to_ref_cigar_ops.front().operation ==
+  if (!haplotype_to_ref_cigar_ops.empty() &&
+      haplotype_to_ref_cigar_ops.front().operation ==
       nucleus::genomics::v1::CigarUnit::DELETE) {
     haplotype_to_ref_cigar_ops.pop_front();
   }
@@ -1005,7 +1171,10 @@ void FastPassAligner::CalculateReadToRefAlignment(
 
   // Sanity check. By design haplotype is built from reads. Therefore it should
   // be impossible that read does not overlap with haplotype.
-  CHECK(!haplotype_to_ref_cigar_ops.empty());
+  if (haplotype_to_ref_cigar_ops.empty()) {
+    LOG(WARNING) << "Haplotype to reference alignment is empty.";
+    return;
+  }
 
   // Skip heading soft clips.
   if (!read_to_haplotype_cigar_ops.empty() &&
@@ -1109,7 +1278,11 @@ void FastPassAligner::CalculateReadToRefAlignment(
   // Read cannot be fully aligned to the haplotype. The tail of the read goes
   // beyond the end of the haplotype. In this we cannot realign the read.
   if (!read_to_haplotype_cigar_ops.empty() || cur_read_to_hap_op.length > 0) {
-    read_to_ref_cigar_ops->clear();
+    while (cur_read_to_hap_op.length > 0) {
+      MergeOneBaseOperations(cur_read_to_hap_op, cur_hap_to_ref_op, read_len,
+                             read_to_ref_cigar_ops);
+      cur_read_to_hap_op.length--;
+    }
   }
 }
 
@@ -1134,6 +1307,9 @@ void FastPassAligner::PopulateDpMatrix(absl::string_view query,
                                        std::vector<int>& F) const {
   const int n = query.size();
   const int m = target.size();
+  CHECK_EQ(M.size(), (n + 1) * (m + 1));
+  CHECK_EQ(E.size(), (n + 1) * (m + 1));
+  CHECK_EQ(F.size(), (n + 1) * (m + 1));
   const int match = match_score_;
   const int mismatch = -static_cast<int>(mismatch_penalty_);
   const int gap_open = -static_cast<int>(gap_opening_penalty_);

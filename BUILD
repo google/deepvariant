@@ -69,6 +69,7 @@ cc_library(
         "//deepvariant/python:variant_calling_cclib",
         "//deepvariant/python:variant_calling_multisample_cclib",
         "//deepvariant/realigner/python:debruijn_graph_cclib",
+        "//deepvariant/realigner/python:debruijn_graph_exp_cclib",
         "//deepvariant/realigner/python:fast_pass_aligner_cclib",
         "//deepvariant/realigner/python:ssw_cclib",
         "//deepvariant/realigner/python:window_selector_cclib",
