@@ -208,6 +208,6 @@ def get_keras_training_callbacks(
   )
   callbacks = [model_checkpoint_callback]
 
-  return callbacks
+  return callbacks  # pyrefly: ignore[bad-return]
 
 

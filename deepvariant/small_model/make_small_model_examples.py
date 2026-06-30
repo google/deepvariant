@@ -191,7 +191,7 @@ def get_set_of_allele_indices(
   num_alt_alleles = len(candidate.variant.alternate_bases)
   biallelic = [(i,) for i in range(num_alt_alleles)]
   multiallelic = list(itertools.combinations(range(num_alt_alleles), 2))
-  return biallelic + multiallelic
+  return biallelic + multiallelic  # pyrefly: ignore[bad-return]
 
 
 def _get_alt_read_infos(
@@ -430,7 +430,7 @@ class FeatureEncoder:
   def _genotype_label(self, label: variant_labeler.VariantLabel) -> int:
     """Returns the genotype of the candidate."""
     if variant_utils.is_biallelic(self.candidate.variant):
-      return ENCODING_BY_GENOTYPE[label.genotype]
+      return ENCODING_BY_GENOTYPE[label.genotype]  # pyrefly: ignore[bad-index]
     return label.label_for_alt_alleles(self.alt_allele_indices)
 
   def encode_base_feature(
@@ -602,7 +602,7 @@ class FeatureEncoder:
       # Class can serve as a proxy for genotype.
       return [label.get_class()]
     else:
-      return label.genotype
+      return label.genotype  # pyrefly: ignore[bad-return]
 
 
 @dataclasses.dataclass

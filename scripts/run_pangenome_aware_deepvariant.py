@@ -531,7 +531,7 @@ def make_examples_pangenome_aware_dv_command(
   kwargs = _update_kwargs_with_warning(kwargs, special_args)
 
   # Extend the command with all items in kwargs and extra_args.
-  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
+  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))  # pyrefly: ignore[bad-argument-type]
   command = _extend_command_by_args_dict(command, kwargs)
 
   command.extend(['--task {}'])
@@ -644,7 +644,7 @@ def runtime_by_region_vis_command(
     runtime_by_region_path: str, title: str = 'DeepVariant'
 ) -> tuple[str, None]:
   """Returns a runtime_by_region_vis (command, logfile=None) for subprocess."""
-  runtime_report = os.path.join(
+  runtime_report = os.path.join(  # pyrefly: ignore[no-matching-overload]
       _LOGGING_DIR.value, 'make_examples_runtime_by_region_report.html'
   )
 
@@ -777,9 +777,9 @@ def create_all_commands_and_logfiles(
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
   commands.append(
       make_examples_pangenome_aware_dv_command(
-          ref=_REF.value,
-          reads=_READS.value,
-          pangenome=_PANGENOME.value,
+          ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
+          reads=_READS.value,  # pyrefly: ignore[bad-argument-type]
+          pangenome=_PANGENOME.value,  # pyrefly: ignore[bad-argument-type]
           examples=examples,
           model_ckpt=model_ckpt,
           extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
@@ -805,7 +805,7 @@ def create_all_commands_and_logfiles(
           outfile=call_variants_output,
           examples=examples,
           model_ckpt=model_ckpt,
-          extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
+          extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,  # pyrefly: ignore[bad-argument-type]
           allow_empty_examples=_CUSTOMIZED_SMALL_MODEL.value is not None,
       )
   )
@@ -813,11 +813,11 @@ def create_all_commands_and_logfiles(
   # postprocess_variants
   commands.append(
       postprocess_variants_command(
-          ref=_REF.value,
+          ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
           infile=call_variants_output,
-          outfile=_OUTPUT_VCF.value,
+          outfile=_OUTPUT_VCF.value,  # pyrefly: ignore[bad-argument-type]
           small_model_cvo_records=small_model_cvo_records,
-          extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+          extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,  # pyrefly: ignore[bad-argument-type]
           haploid_contigs=_HAPLOID_CONTIGS.value,
           par_regions_bed=_PAR_REGIONS.value,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
@@ -829,7 +829,7 @@ def create_all_commands_and_logfiles(
   if _VCF_STATS_REPORT.value:
     commands.append(
         vcf_stats_report_command(
-            vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value
+            vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value  # pyrefly: ignore[bad-argument-type]
         )
     )
 
@@ -837,7 +837,7 @@ def create_all_commands_and_logfiles(
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
     commands.append(
         runtime_by_region_vis_command(
-            runtime_by_region_path, title=_REPORT_TITLE.value
+            runtime_by_region_path, title=_REPORT_TITLE.value  # pyrefly: ignore[bad-argument-type]
         )
     )
 
@@ -891,7 +891,7 @@ def main(_):
           executable='/bin/bash',
           universal_newlines=True,
       ) as proc:
-        for line in proc.stdout:
+        for line in proc.stdout:  # pyrefly: ignore[not-iterable]
           print(line, end='')
           if fp is not None:
             print(line, end='', file=fp)

@@ -433,7 +433,7 @@ def make_examples_command(
     command.extend(['--partition_size', '"{}"'.format(partition_size)])
 
   # Extend the command with all items in kwargs and extra_args.
-  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))
+  kwargs = _update_kwargs_with_warning(kwargs, _extra_args_to_dict(extra_args))  # pyrefly: ignore[bad-argument-type]
   command = _extend_command_by_args_dict(command, kwargs)
 
   command.extend(['--task {}'])
@@ -546,10 +546,10 @@ def create_all_commands_and_logfiles(
   )
   commands.append(
       make_examples_command(
-          ref=_REF.value,
-          reads=_READS.value,
+          ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
+          reads=_READS.value,  # pyrefly: ignore[bad-argument-type]
           examples=examples,
-          labeler_algorithm=_LABELER_ALGORITHM.value,
+          labeler_algorithm=_LABELER_ALGORITHM.value,  # pyrefly: ignore[bad-argument-type]
           extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
           truth_variants=_TRUTH_VARIANTS.value,
           confident_regions=_CONFIDENT_REGIONS.value,
@@ -563,10 +563,10 @@ def create_all_commands_and_logfiles(
   # labeled_examples_to_vcf
   commands.append(
       labeled_examples_to_vcf_command(
-          ref=_REF.value,
+          ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
           examples=examples,
-          outfile=_OUTPUT_VCF.value,
-          sample_name=_SAMPLE_NAME.value,
+          outfile=_OUTPUT_VCF.value,  # pyrefly: ignore[bad-argument-type]
+          sample_name=_SAMPLE_NAME.value,  # pyrefly: ignore[bad-argument-type]
       )
   )
 
@@ -620,7 +620,7 @@ def main(_):
           universal_newlines=True,
           env=env,
       ) as proc:
-        for line in proc.stdout:
+        for line in proc.stdout:  # pyrefly: ignore[not-iterable]
           print(line, end='')
           if fp is not None:
             print(line, end='', file=fp)

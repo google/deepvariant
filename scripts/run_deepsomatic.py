@@ -655,7 +655,7 @@ def runtime_by_region_vis_command(
     runtime_by_region_path: str, title: str = 'DeepVariant'
 ) -> tuple[str, None]:
   """Returns a runtime_by_region_vis (command, logfile=None) for subprocess."""
-  runtime_report = os.path.join(
+  runtime_report = os.path.join(  # pyrefly: ignore[no-matching-overload]
       _LOGGING_DIR.value, 'make_examples_runtime_by_region_report.html'
   )
 
@@ -847,7 +847,7 @@ def create_all_commands_and_logfiles(
           outfile=call_variants_output,
           examples=examples,
           model_ckpt=model_ckpt,
-          extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
+          extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,  # pyrefly: ignore[bad-argument-type]
       )
   )
 
@@ -860,13 +860,13 @@ def create_all_commands_and_logfiles(
   )
   commands.append(
       postprocess_variants_command(
-          ref=_REF.value,
+          ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
           infile=call_variants_output,
-          outfile=_OUTPUT_VCF.value,
+          outfile=_OUTPUT_VCF.value,  # pyrefly: ignore[bad-argument-type]
           small_model_cvo_records=small_model_cvo_records,
           process_somatic=_PROCESS_SOMATIC.value,
-          pon_filtering=_PON_FILTERING.value,
-          extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+          pon_filtering=_PON_FILTERING.value,  # pyrefly: ignore[bad-argument-type]
+          extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,  # pyrefly: ignore[bad-argument-type]
           model_ckpt_json=model_ckpt_json,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,
@@ -877,7 +877,7 @@ def create_all_commands_and_logfiles(
   if _VCF_STATS_REPORT.value:
     commands.append(
         vcf_stats_report_command(
-            vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value
+            vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value  # pyrefly: ignore[bad-argument-type]
         )
     )
 
@@ -885,7 +885,7 @@ def create_all_commands_and_logfiles(
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
     commands.append(
         runtime_by_region_vis_command(
-            runtime_by_region_path, title=_REPORT_TITLE.value
+            runtime_by_region_path, title=_REPORT_TITLE.value  # pyrefly: ignore[bad-argument-type]
         )
     )
 
@@ -950,7 +950,7 @@ def main(_):
           universal_newlines=True,
           env=env,
       ) as proc:
-        for line in proc.stdout:
+        for line in proc.stdout:  # pyrefly: ignore[not-iterable]
           print(line, end='')
           if fp is not None:
             print(line, end='', file=fp)

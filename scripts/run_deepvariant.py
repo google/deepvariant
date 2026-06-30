@@ -623,7 +623,7 @@ def runtime_by_region_vis_command(
     runtime_by_region_path: str, title: str = 'DeepVariant'
 ) -> tuple[str, None]:
   """Returns a runtime_by_region_vis (command, logfile=None) for subprocess."""
-  runtime_report = os.path.join(
+  runtime_report = os.path.join(  # pyrefly: ignore[no-matching-overload]
       _LOGGING_DIR.value, 'make_examples_runtime_by_region_report.html'
   )
 
@@ -787,7 +787,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
   else:
     runtime_by_region_path = None
 
-  model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
+  model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)  # pyrefly: ignore[bad-argument-type]
 
   model_ckpt_json = _CUSTOMIZED_MODEL_JSON.value
   if not model_ckpt_json:
@@ -829,7 +829,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
             outfile=call_variants_output,
             examples=examples,
             model_ckpt=model_ckpt,
-            extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,
+            extra_args=_CALL_VARIANTS_EXTRA_ARGS.value,  # pyrefly: ignore[bad-argument-type]
         )
     )
 
@@ -839,11 +839,11 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
       for gq in _EMIT_VCF_BY_SMALL_MODEL_GQ_VALUES.value:
         commands.append(
             postprocess_variants_command(
-                ref=_REF.value,
+                ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
                 infile=call_variants_output,
-                outfile=_rename_vcf_file_by_gq(_OUTPUT_VCF.value, gq),
+                outfile=_rename_vcf_file_by_gq(_OUTPUT_VCF.value, gq),  # pyrefly: ignore[bad-argument-type]
                 small_model_cvo_records=small_model_cvo_records,
-                extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+                extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,  # pyrefly: ignore[bad-argument-type]
                 sample_name=_SAMPLE_NAME.value,
                 haploid_contigs=_HAPLOID_CONTIGS.value,
                 par_regions_bed=_PAR_REGIONS.value,
@@ -857,11 +857,11 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
     else:
       commands.append(
           postprocess_variants_command(
-              ref=_REF.value,
+              ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
               infile=call_variants_output,
-              outfile=_OUTPUT_VCF.value,
+              outfile=_OUTPUT_VCF.value,  # pyrefly: ignore[bad-argument-type]
               small_model_cvo_records=small_model_cvo_records,
-              extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,
+              extra_args=_POSTPROCESS_VARIANTS_EXTRA_ARGS.value,  # pyrefly: ignore[bad-argument-type]
               nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
               gvcf_outfile=_OUTPUT_GVCF.value,
               sample_name=_SAMPLE_NAME.value,
@@ -876,7 +876,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
     if _VCF_STATS_REPORT.value:
       commands.append(
           vcf_stats_report_command(
-              vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value
+              vcf_path=_OUTPUT_VCF.value, title=_REPORT_TITLE.value  # pyrefly: ignore[bad-argument-type]
           )
       )
 
@@ -884,7 +884,7 @@ def create_all_commands_and_logfiles(intermediate_results_dir):
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
     commands.append(
         runtime_by_region_vis_command(
-            runtime_by_region_path, title=_REPORT_TITLE.value
+            runtime_by_region_path, title=_REPORT_TITLE.value  # pyrefly: ignore[bad-argument-type]
         )
     )
 
@@ -937,7 +937,7 @@ def main(_):
           universal_newlines=True,
           env=env,
       ) as proc:
-        for line in proc.stdout:
+        for line in proc.stdout:  # pyrefly: ignore[not-iterable]
           print(line, end='')
           if fp is not None:
             print(line, end='', file=fp)

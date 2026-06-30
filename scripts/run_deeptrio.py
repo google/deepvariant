@@ -844,7 +844,7 @@ def vcf_stats_report_command(vcf_path: str) -> str:
 
 def runtime_by_region_vis_command(runtime_by_region_path: str) -> str:
   """Returns a runtime_by_region_vis command for subprocess."""
-  runtime_report = os.path.join(
+  runtime_report = os.path.join(  # pyrefly: ignore[no-matching-overload]
       _LOGGING_DIR.value, 'make_examples_runtime_by_region_report.html'
   )
 
@@ -950,7 +950,7 @@ def generate_call_variants_command(
       ),
       model_ckpt,
       sample,
-      _CALL_VARIANTS_EXTRA_ARGS.value,
+      _CALL_VARIANTS_EXTRA_ARGS.value,  # pyrefly: ignore[bad-argument-type]
   )
 
 
@@ -1042,7 +1042,7 @@ def create_all_commands(intermediate_results_dir):
     ]
 
   model_ckpt = get_model_ckpt(
-      _MODEL_TYPE.value + '_child', _CUSTOMIZED_MODEL_CHILD.value
+      _MODEL_TYPE.value + '_child', _CUSTOMIZED_MODEL_CHILD.value  # pyrefly: ignore[unsupported-operation]
   )
 
   for candidate_partition_mode in candidate_partition_modes:
@@ -1080,7 +1080,7 @@ def create_all_commands(intermediate_results_dir):
 
   # Calling variants for parent1 sample
   model_ckpt = get_model_ckpt(
-      _MODEL_TYPE.value + '_parent', _CUSTOMIZED_MODEL_PARENT.value
+      _MODEL_TYPE.value + '_parent', _CUSTOMIZED_MODEL_PARENT.value  # pyrefly: ignore[unsupported-operation]
   )
   if _READS_PARENT1.value is not None:
     commands.append(
@@ -1102,7 +1102,7 @@ def create_all_commands(intermediate_results_dir):
           generate_postprocess_variants_command(
               CHILD,
               intermediate_results_dir,
-              _rename_vcf_file_by_gq(_OUTPUT_VCF_CHILD.value, gq),
+              _rename_vcf_file_by_gq(_OUTPUT_VCF_CHILD.value, gq),  # pyrefly: ignore[bad-argument-type]
               extra_args=_POSTPROCESS_VARIANTS_CHILD_EXTRA_ARGS.value,
               resolve_call_variants_outputs_by_model=True,
               small_model_gq_threshold=gq,
@@ -1120,7 +1120,7 @@ def create_all_commands(intermediate_results_dir):
     )
     if _VCF_STATS_REPORT.value:
       report_commands.append(
-          vcf_stats_report_command(vcf_path=_OUTPUT_VCF_CHILD.value)
+          vcf_stats_report_command(vcf_path=_OUTPUT_VCF_CHILD.value)  # pyrefly: ignore[bad-argument-type]
       )
 
   if _READS_PARENT1.value is not None:
@@ -1130,7 +1130,7 @@ def create_all_commands(intermediate_results_dir):
             generate_postprocess_variants_command(
                 PARENT1,
                 intermediate_results_dir,
-                _rename_vcf_file_by_gq(_OUTPUT_VCF_PARENT1.value, gq),
+                _rename_vcf_file_by_gq(_OUTPUT_VCF_PARENT1.value, gq),  # pyrefly: ignore[bad-argument-type]
                 extra_args=_POSTPROCESS_VARIANTS_PARENT1_EXTRA_ARGS.value,
                 resolve_call_variants_outputs_by_model=True,
                 small_model_gq_threshold=gq,
@@ -1148,7 +1148,7 @@ def create_all_commands(intermediate_results_dir):
       )
       if _VCF_STATS_REPORT.value:
         report_commands.append(
-            vcf_stats_report_command(vcf_path=_OUTPUT_VCF_PARENT1.value)
+            vcf_stats_report_command(vcf_path=_OUTPUT_VCF_PARENT1.value)  # pyrefly: ignore[bad-argument-type]
         )
 
   if _READS_PARENT2.value is not None:
@@ -1158,7 +1158,7 @@ def create_all_commands(intermediate_results_dir):
             generate_postprocess_variants_command(
                 PARENT2,
                 intermediate_results_dir,
-                _rename_vcf_file_by_gq(_OUTPUT_VCF_PARENT2.value, gq),
+                _rename_vcf_file_by_gq(_OUTPUT_VCF_PARENT2.value, gq),  # pyrefly: ignore[bad-argument-type]
                 extra_args=_POSTPROCESS_VARIANTS_PARENT2_EXTRA_ARGS.value,
                 resolve_call_variants_outputs_by_model=True,
                 small_model_gq_threshold=gq,
@@ -1176,13 +1176,13 @@ def create_all_commands(intermediate_results_dir):
       )
       if _VCF_STATS_REPORT.value:
         report_commands.append(
-            vcf_stats_report_command(vcf_path=_OUTPUT_VCF_PARENT2.value)
+            vcf_stats_report_command(vcf_path=_OUTPUT_VCF_PARENT2.value)  # pyrefly: ignore[bad-argument-type]
         )
 
   # runtime-by-region
   if _LOGGING_DIR.value and _RUNTIME_REPORT.value:
     report_commands.append(
-        runtime_by_region_vis_command(runtime_by_region_path)
+        runtime_by_region_vis_command(runtime_by_region_path)  # pyrefly: ignore[bad-argument-type]
     )
 
   return commands, post_process_commands, report_commands
