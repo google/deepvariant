@@ -108,9 +108,11 @@ def read_model_config(
     return json.load(fin)
 
 
-def get_model_features_from_model_config(
+def maybe_get_model_features_from_model_config(
     checkpoint_path: str, optional: bool = True
 ) -> Sequence[str]:
   """Returns the model features from the checkpoint."""
+  if not checkpoint_path:
+    return []
   model_config = read_model_config(checkpoint_path, optional)
   return model_config.get("model_features", [])

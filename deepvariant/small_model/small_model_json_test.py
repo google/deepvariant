@@ -67,7 +67,7 @@ class SmallModelJsonTest(absltest.TestCase):
     self.assertEqual(read_config['model_features'], features)
     self.assertEqual(read_config['config'], {'param1': 'value1'})
 
-    read_features = small_model_json.get_model_features_from_model_config(
+    read_features = small_model_json.maybe_get_model_features_from_model_config(
         checkpoint_path
     )
     self.assertEqual(read_features, features)

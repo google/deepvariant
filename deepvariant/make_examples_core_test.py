@@ -26,6 +26,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+import json
 import os
 import struct
 from unittest import mock
@@ -1861,7 +1862,8 @@ class RegionProcessorTest(parameterized.TestCase):
     candidate1, candidate2 = mock.Mock(), mock.Mock()
     n_stats = deepvariant_pb2.MakeExamplesStats()
     mock_writer = mock.Mock()
-    self.processor.small_model_example_factory = mock.Mock()
+    main_sample = self.processor.samples[0]
+    main_sample.small_model_example_factory = mock.Mock()
     fake_inference_example_set = make_small_model_examples.InferenceExampleSet(
         skipped_candidates=[],
         candidates_with_alt_allele_indices=[
@@ -1870,11 +1872,10 @@ class RegionProcessorTest(parameterized.TestCase):
         ],
         inference_examples=[[], []],
     )
-    self.processor.small_model_example_factory.encode_inference_examples.return_value = (
+    main_sample.small_model_example_factory.encode_inference_examples.return_value = (
         fake_inference_example_set
     )
     cvo_candidate1, cvo_candidate2 = mock.Mock(), mock.Mock()
-    main_sample = self.processor.samples[0]
     main_sample.small_model_variant_caller.call_variants.return_value = (
         [cvo_candidate1, cvo_candidate2],
         [],
@@ -1890,7 +1891,7 @@ class RegionProcessorTest(parameterized.TestCase):
         runtimes={},
     )
 
-    self.processor.small_model_example_factory.encode_inference_examples.assert_called_once_with(
+    main_sample.small_model_example_factory.encode_inference_examples.assert_called_once_with(
         candidates, {}, [0]
     )
     main_sample.small_model_variant_caller.call_variants.assert_called_once_with(
@@ -2151,6 +2152,43 @@ class RegionProcessorTest(parameterized.TestCase):
         emit_all_candidates=options.small_model_emit_all_candidates,
     )
     mock_caller.call_variants.assert_called()
+
+  @flagsaver.flagsaver
+  def test_make_examples_runner_write_small_model_examples(self):
+    FLAGS.mode = 'training'
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.regions = 'chr20:10006000-10007612'
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+
+    temp_dir = self.create_tempdir().full_path
+    examples_file = os.path.join(temp_dir, 'examples.tfrecord.gz')
+    FLAGS.examples = examples_file
+    FLAGS.write_small_model_examples = True
+
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+
+    # Expected small model examples file:
+    expected_small_model_examples_file = os.path.join(
+        temp_dir, 'examples_small_model.tfrecord.gz'
+    )
+    self.assertTrue(os.path.exists(expected_small_model_examples_file))
+
+    # Expected JSON info file:
+    expected_json_file = (
+        expected_small_model_examples_file + '.small_model_info.json'
+    )
+    self.assertTrue(os.path.exists(expected_json_file))
+
+    # Verify JSON content
+    with open(expected_json_file, 'r') as f:
+      data = json.load(f)
+    self.assertIn('model_features', data)
+    self.assertNotEmpty(data['model_features'])
+    self.assertIn('num_reads_supports_ref', data['model_features'])
 
   def test_assign_phase_from_normal(self):
     processor = make_examples_core.RegionProcessor(self.options)

@@ -72,6 +72,7 @@ from deepvariant.python import pileup_image_native
 from deepvariant.realigner import realigner as realigner_module
 from deepvariant.small_model import inference as small_model_inference
 from deepvariant.small_model import make_small_model_examples
+from deepvariant.small_model import small_model_json
 from deepvariant.vendor import timer
 from tensorflow.python.platform import gfile
 from third_party.nucleus.io import fasta
@@ -1351,6 +1352,7 @@ class OutputsWriter:
     ]
     self._writers = {k: None for k in outputs}
     self.examples_filename = None
+    self.small_model_examples_filename = None
 
     if options.candidates_filename:
       self._add_writer(
@@ -1441,14 +1443,15 @@ class OutputsWriter:
       self._add_writer('sitelist', epath.Path(sitelist_fname).open('w'))
 
     if options.write_small_model_examples:
+      self.small_model_examples_filename = self._add_suffix(
+          self.examples_filename, 'small_model'
+      )
       if self.examples_filename and self.examples_filename.endswith('.fd3'):
         self._add_writer('small_model_examples', RawFd3Writer())
       else:
         self._add_writer(
             'small_model_examples',
-            dv_utils.get_tf_record_writer(
-                self._add_suffix(self.examples_filename, 'small_model')
-            ),
+            dv_utils.get_tf_record_writer(self.small_model_examples_filename),
         )
 
     self._deterministic_serialization = options.deterministic_serialization
@@ -1636,16 +1639,6 @@ class RegionProcessor:
     self.writers_dict = {}
     self.contig_dict = ranges.contigs_dict(
         fasta.IndexedFastaReader(self.options.reference_filename).header.contigs
-    )
-    self.small_model_example_factory = (
-        make_small_model_examples.SmallModelExampleFactory(
-            self.options.small_model_vaf_context_window_size,
-            sample_names=[sample.options.name for sample in self.samples],
-            accept_snps=self.options.small_model_snp_gq_threshold > -1,
-            accept_indels=self.options.small_model_indel_gq_threshold > -1,
-            accept_multiallelics=self.options.small_model_call_multiallelics,
-            expand_by_haplotype=self.options.phase_reads,
-        )
     )
 
   @property
@@ -1899,6 +1892,24 @@ class RegionProcessor:
           sample.options.variant_caller_options,
           sample.options.proposed_variants_filename,
       )
+      if (
+          self.options.call_small_model_examples
+          or self.options.write_small_model_examples
+      ):
+        model_features = (
+            small_model_json.maybe_get_model_features_from_model_config(
+                sample.options.small_model_path
+            )
+        )
+        sample.small_model_example_factory = make_small_model_examples.SmallModelExampleFactory(
+            self.options.small_model_vaf_context_window_size,
+            sample_names=[sample.options.name for sample in self.samples],
+            accept_snps=self.options.small_model_snp_gq_threshold > -1,
+            accept_indels=self.options.small_model_indel_gq_threshold > -1,
+            accept_multiallelics=self.options.small_model_call_multiallelics,
+            expand_by_haplotype=self.options.phase_reads,
+            model_features=model_features,
+        )
       if (
           self.options.call_small_model_examples
           and sample.options.small_model_path
@@ -2202,8 +2213,9 @@ class RegionProcessor:
       raise ValueError(
           'Writing small model examples is only supported in training mode.'
       )
+    assert sample.small_model_example_factory is not None
     training_examples, n_stats_one_region = (
-        self.small_model_example_factory.encode_training_examples(
+        sample.small_model_example_factory.encode_training_examples(
             labeled_candidates,
             read_phases,
             sample.options.order,
@@ -2240,8 +2252,9 @@ class RegionProcessor:
     """
     before_generate_small_model_examples = time.time()
 
+    assert sample.small_model_example_factory is not None
     inference_example_set = (
-        self.small_model_example_factory.encode_inference_examples(
+        sample.small_model_example_factory.encode_inference_examples(
             candidates, read_phases, sample.options.order
         )
     )
@@ -4014,6 +4027,17 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
     logging.info('example_channels = %s', str(example_channels))
     with epath.Path(example_info_filename).open('w') as fout:
       json.dump(example_info_dict, fout)
+
+  # Write small model example JSON.
+  if options.write_small_model_examples and options.task_id == 0:
+    for sample in samples_that_need_writers:
+      if sample.small_model_example_factory is None:
+        continue
+      writer = writers_dict[sample.options.role]
+      small_model_json.write_model_info_from_model_features(
+          writer.small_model_examples_filename,
+          model_features=sample.small_model_example_factory.model_features,
+      )
 
   region_processor.make_examples_native.signal_shard_finished()
   log_summary_stats(options, n_stats, n_cnn_stats, n_small_model_stats)

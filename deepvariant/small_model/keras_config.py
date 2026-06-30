@@ -31,7 +31,7 @@
 This module is used by the training and inference libraries.
 """
 import os
-from typing import Any
+from typing import Any, Sequence
 import keras
 import ml_collections
 import tensorflow as tf
@@ -136,19 +136,39 @@ def get_learning_rate(
   )
 
 
+def init_factory_from_config(
+    config: ml_collections.ConfigDict,
+) -> make_small_model_examples.SmallModelExampleFactory:
+  """Initializes the small model example factory from the config."""
+  model_features = None
+  if config.model_params.features:
+    model_features = config.model_params.features.split(",")
+  exclude_features = None
+  if config.model_params.exclude_features:
+    exclude_features = config.model_params.exclude_features.split(",")
+  return make_small_model_examples.SmallModelExampleFactory(
+      vaf_context_window_size=config.model_params.vaf_context_window_size,
+      sample_names=[str(i) for i in range(config.model_params.num_samples)],
+      expand_by_haplotype=config.model_params.expand_by_haplotype,
+      model_features=model_features,
+      exclude_features=exclude_features,
+  )
+
+
+def get_model_features(
+    config: ml_collections.ConfigDict,
+) -> Sequence[str]:
+  """Returns the model features for the model."""
+  example_factory = init_factory_from_config(config)
+  return example_factory.model_features
+
+
 def keras_mlp_model(config: ml_collections.ConfigDict) -> keras.Model:
   """Creates a Keras MLP model."""
   model_params = config.model_params
   model = keras.Sequential()
-  input_shape = len(
-      make_small_model_examples.SmallModelExampleFactory(
-          vaf_context_window_size=model_params.vaf_context_window_size,
-          sample_names=[str(i) for i in range(model_params.num_samples)],
-          expand_by_haplotype=model_params.expand_by_haplotype,
-      ).model_features
-  )
-  if model_params.features:
-    input_shape = len(model_params.features)
+  model_features = get_model_features(config)
+  input_shape = len(model_features)
   hidden_layers = model_params.hidden_layer_sizes
   model.add(
       keras.layers.Dense(

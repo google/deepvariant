@@ -35,6 +35,7 @@ from deepvariant import variant_caller as vc_base
 from deepvariant.protos import deepvariant_pb2
 from deepvariant.python import allelecounter
 from deepvariant.small_model import inference as small_model_inference
+from deepvariant.small_model import make_small_model_examples
 from third_party.nucleus.io import sam
 from third_party.nucleus.protos import reads_pb2
 
@@ -69,6 +70,9 @@ class Sample:
   variant_caller: Optional[vc_base.VariantCaller] = None
   small_model_variant_caller: Optional[
       small_model_inference.SmallModelVariantCaller
+  ] = None
+  small_model_example_factory: Optional[
+      make_small_model_examples.SmallModelExampleFactory
   ] = None
 
   def __repr__(self):

@@ -88,7 +88,8 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   model_params.learning_rate_decay_rate = 0.99
   model_params.weight_decay = 0.0000001
   model_params.steps_per_execution = 128
-  model_params.features = ()
+  model_params.features = ""
+  model_params.exclude_features = ""
   model_params.vaf_context_window_size = 51
   model_params.expand_by_haplotype = False
   model_params.num_samples = 1

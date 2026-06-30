@@ -32,6 +32,7 @@ import collections
 from collections.abc import Sequence
 import dataclasses
 import enum
+import functools
 import itertools
 
 import tensorflow as tf
@@ -635,6 +636,7 @@ class SmallModelExampleFactory:
       accept_multiallelics: bool = True,
       expand_by_haplotype: bool = False,
       model_features: Sequence[str] | None = None,
+      exclude_features: Sequence[str] | None = None,
   ):
     self.sample_names = sample_names
     self.accept_snps = accept_snps
@@ -642,14 +644,13 @@ class SmallModelExampleFactory:
     self.accept_multiallelics = accept_multiallelics
     self.expand_by_haplotype = expand_by_haplotype
     self.vaf_context_window_size = vaf_context_window_size
+    self.exclude_features = exclude_features
     self.model_features = self._get_and_validate_model_features(model_features)
 
-  def _get_and_validate_model_features(
-      self,
-      model_features: Sequence[str] | None,
-  ) -> Sequence[str]:
-    """Returns the model features for the small model."""
-    all_features = list(
+  @functools.cached_property
+  def _all_possible_features(self) -> Sequence[str]:
+    """Returns all possible features for the small model."""
+    return list(
         self._encode_candidate_feature_dict(
             candidate=FAKE_CANDIDATE,
             alt_allele_indices=DEFAULT_ALT_ALLELE_INDICES,
@@ -658,21 +659,47 @@ class SmallModelExampleFactory:
             sample_order=list(range(len(self.sample_names))),
         ).keys()
     )
+
+  @functools.cached_property
+  def all_available_features(self) -> Sequence[str]:
+    """Returns all possible features (excluding experimental)."""
+
+    # TODO: Remove once all models have a config file.
+    def is_experimental(feature: str) -> bool:
+      return any(
+          exp_feature in feature for exp_feature in _EXPERIMENTAL_FEATURES
+      )
+
+    return [
+        feature
+        for feature in self._all_possible_features
+        if not is_experimental(feature)
+    ]
+
+  def _get_and_validate_model_features(
+      self,
+      model_features: Sequence[str] | None,
+  ) -> Sequence[str]:
+    """Returns the model features for the small model."""
     if model_features:
-      if not set(model_features).issubset(all_features):
-        unrecognized_features = set(model_features).difference(all_features)
+      # Validate that all specified model features are valid.
+      if not set(model_features).issubset(self._all_possible_features):
+        unrecognized_features = set(model_features).difference(
+            self._all_possible_features
+        )
         raise ValueError(
             'The specified small model features are invalid:'
             f' {",".join(unrecognized_features)}'
         )
-      return model_features
     else:
-      # TODO: Remove once all models have a config file.
-      return [
-          f
-          for f in all_features
-          if not any(exp_feature in f for exp_feature in _EXPERIMENTAL_FEATURES)
+      model_features = self.all_available_features
+    if self.exclude_features:
+      model_features = [
+          feature
+          for feature in model_features
+          if feature not in self.exclude_features
       ]
+    return model_features
 
   def _pass_candidate_to_small_model(
       self,

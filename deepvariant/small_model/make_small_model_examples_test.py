@@ -1137,6 +1137,44 @@ class SmallModelMakeExamplesTest(parameterized.TestCase):
         small_model_example_factory.model_features,
     )
 
+  def test_exclude_features(self):
+    # Get default features first to pick some to exclude.
+    default_factory = make_small_model_examples.SmallModelExampleFactory(
+        vaf_context_window_size=0,
+        sample_names=[MAIN_SAMPLE],
+    )
+    self.assertIn("num_reads_supports_ref", default_factory.model_features)
+    self.assertIn("num_reads_supports_alt", default_factory.model_features)
+
+    # Exclude them.
+    factory = make_small_model_examples.SmallModelExampleFactory(
+        vaf_context_window_size=0,
+        sample_names=[MAIN_SAMPLE],
+        exclude_features=["num_reads_supports_ref", "num_reads_supports_alt"],
+    )
+    self.assertNotIn("num_reads_supports_ref", factory.model_features)
+    self.assertNotIn("num_reads_supports_alt", factory.model_features)
+    # Check that other features are still there.
+    self.assertIn("total_depth", factory.model_features)
+
+  def test_invalid_model_features(self):
+    with self.assertRaises(ValueError):
+      make_small_model_examples.SmallModelExampleFactory(
+          vaf_context_window_size=0,
+          sample_names=[MAIN_SAMPLE],
+          model_features=["invalid_feature_name"],
+      )
+
+  def test_valid_model_features(self):
+    factory = make_small_model_examples.SmallModelExampleFactory(
+        vaf_context_window_size=0,
+        sample_names=[MAIN_SAMPLE],
+        model_features=["num_reads_supports_ref", "total_depth"],
+    )
+    self.assertEqual(
+        factory.model_features, ["num_reads_supports_ref", "total_depth"]
+    )
+
   def test_encode_training_examples(self):
     small_model_example_factory = (
         make_small_model_examples.SmallModelExampleFactory(
