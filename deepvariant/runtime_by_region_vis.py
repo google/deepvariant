@@ -120,7 +120,7 @@ def read_sharded_runtime_tsvs(path_string: str) -> pd.DataFrame:
     d['Task'] = i
     list_of_dataframes.append(d)
 
-  return pd.concat(list_of_dataframes, axis=0, ignore_index=True)
+  return pd.concat(list_of_dataframes, axis=0, ignore_index=True)  # pyrefly: ignore[bad-return]
 
 
 def format_runtime_string(raw_seconds: float) -> str:
@@ -195,7 +195,7 @@ def stage_histogram(d: pd.DataFrame, title: str = '') -> alt.Chart:
   d = d[columns_used]
   return (
       alt.Chart(d)
-      .transform_fold(RUNTIME_COLUMNS, as_=['Stage', 'runtime_by_stage'])
+      .transform_fold(RUNTIME_COLUMNS, as_=['Stage', 'runtime_by_stage'])  # pyrefly: ignore[bad-argument-type]
       .mark_bar(opacity=0.3)
       .encode(
           x=alt.X(
@@ -447,7 +447,7 @@ def individual_region_bars(
   d = small_df[columns_used]
   return (
       alt.Chart(d)
-      .transform_fold(RUNTIME_COLUMNS, as_=['Stage', 'runtime_by_stage'])
+      .transform_fold(RUNTIME_COLUMNS, as_=['Stage', 'runtime_by_stage'])  # pyrefly: ignore[bad-argument-type]
       .mark_bar()
       .encode(
           x=alt.X('region:N', sort=None),
@@ -475,7 +475,7 @@ def selected_longest_and_median_regions(df: pd.DataFrame) -> alt.Chart:
   num_rows = len(df)
   mid = round(num_rows / 2)
 
-  return individual_region_bars(
+  return individual_region_bars(  # pyrefly: ignore[bad-return]
       df.iloc[0:20], 'Top runtime regions'
   ) | individual_region_bars(
       df.iloc[mid - 10 : mid + 11], 'Median runtime regions'
@@ -648,7 +648,7 @@ def make_report(
 
   # Write the HTML report with all the charts.
   dashboard_utils.create_html_report(
-      specs=charts, html_output=html_output, title=title, subtitle=subtitle
+      specs=charts, html_output=html_output, title=title, subtitle=subtitle  # pyrefly: ignore[bad-argument-type]
   )
 
 

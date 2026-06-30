@@ -139,7 +139,7 @@ def create_html_report(
           f'id="vis_{chart_id}"></div>\n'
       )
     elif 'html' in spec:
-      html_string += spec['html']
+      html_string += spec['html']  # pyrefly: ignore[unsupported-operation]
   # End the chart container and start the JavaScript section.
   html_string += '</div><script>\n'
 

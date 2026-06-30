@@ -64,7 +64,7 @@ def build_classification_head(inputs: tf.Tensor, l2: float = 0.0) -> tf.Tensor:
       name='classification',
       kernel_regularizer=l2_regularizer,
   )
-  return head(inputs)
+  return head(inputs)  # pyrefly: ignore[not-callable]
 
 
 def add_l2_regularizers(
@@ -97,7 +97,7 @@ def add_l2_regularizers(
   def add_l2_regularization(layer):
     def _add_l2():
       l2_reg = tf.keras.regularizers.l2(l2=l2)
-      return l2_reg(layer.kernel)
+      return l2_reg(layer.kernel)  # pyrefly: ignore[not-callable]
 
     return _add_l2
 
@@ -216,8 +216,8 @@ def inceptionv3_with_imagenet(
   Returns:
     An InceptionV3-based model with 3 channels and init with `weights=imagenet`.
   """
-  input_shape = list(input_shape)
-  input_shape = [input_shape[0], input_shape[1], 3]
+  input_shape = list(input_shape)  # pyrefly: ignore[bad-assignment]
+  input_shape = [input_shape[0], input_shape[1], 3]  # pyrefly: ignore[bad-assignment]
 
   backbone = tf.keras.applications.InceptionV3(
       include_top=False,
@@ -230,7 +230,7 @@ def inceptionv3_with_imagenet(
   weight_decay = _DEFAULT_WEIGHT_DECAY
   backbone_drop_rate = _DEFAULT_BACKBONE_DROPOUT_RATE
 
-  hid = tf.keras.layers.Dropout(backbone_drop_rate)(backbone.output)
+  hid = tf.keras.layers.Dropout(backbone_drop_rate)(backbone.output)  # pyrefly: ignore[not-callable]
 
   outputs = []
   outputs.append(build_classification_head(hid, l2=weight_decay))
@@ -280,7 +280,7 @@ def inceptionv3(
     weight_decay = _DEFAULT_WEIGHT_DECAY
     backbone_dropout_rate = _DEFAULT_BACKBONE_DROPOUT_RATE
 
-  hid = tf.keras.layers.Dropout(backbone_dropout_rate)(backbone.output)
+  hid = tf.keras.layers.Dropout(backbone_dropout_rate)(backbone.output)  # pyrefly: ignore[not-callable]
 
   outputs = []
   outputs.append(build_classification_head(hid, l2=weight_decay))
@@ -309,7 +309,7 @@ def inceptionv3(
     logging.info('inceptionv3: No initial checkpoint specified.')
     return model
 
-  weights_num_channels = num_channels_from_checkpoint(weights)
+  weights_num_channels = num_channels_from_checkpoint(weights)  # pyrefly: ignore[bad-argument-type]
   # If the input weights have different number of channels, need some special
   # care:
   model_num_channels = input_shape[2]
@@ -321,7 +321,7 @@ def inceptionv3(
     weights_input_shape = list(input_shape)
     weights_input_shape[2] = weights_num_channels
     input_model = inceptionv3(
-        tuple(weights_input_shape), weights, init_backbone_with_imagenet=False
+        tuple(weights_input_shape), weights, init_backbone_with_imagenet=False  # pyrefly: ignore[bad-argument-type]
     )
     logging.info(
         'inceptionv3: Assigning weights from %s channels to %s channels',
@@ -342,7 +342,7 @@ def print_model_summary(
   """Runs a forward pass with dummy data then prints the model summary."""
   # Without calling this forward pass, we won't be able to print the summary.
   dummy_data = np.zeros(input_shape)
-  _ = model(dummy_data)
+  _ = model(dummy_data)  # pyrefly: ignore[not-callable]
   model.summary()
 
 

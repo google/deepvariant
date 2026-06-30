@@ -1126,7 +1126,7 @@ def shared_flags_to_options(
     if make_examples_core.in_calling_mode(options) and flags_obj.checkpoint:
       model_example_info_json = (
           make_examples_core.get_model_example_info_json_path(
-              _CHECKPOINT.value, _CHECKPOINT_JSON.value
+              _CHECKPOINT.value, _CHECKPOINT_JSON.value  # pyrefly: ignore[bad-argument-type]
           )
       )
       _, channels_enum, _ = dv_utils.get_shape_and_channels_from_json(

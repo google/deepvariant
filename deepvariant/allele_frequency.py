@@ -375,7 +375,7 @@ def make_population_vcf_readers(
       break
     # There should not be more than one VCFs including variants in
     # reference_name.
-    if population_vcf_readers.get(reference_name):
+    if population_vcf_readers.get(reference_name):  # pyrefly: ignore[unbound-name]
       raise ValueError(
           'Variants on %s are included in multiple VCFs' % reference_name
       )

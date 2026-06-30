@@ -174,7 +174,7 @@ def create_parse_example_fn(
       del result['image/encoded']
       return result
 
-  return parse_example
+  return parse_example  # pyrefly: ignore[bad-return]
 
 
 def input_fn(
@@ -237,10 +237,10 @@ def input_fn(
   if is_training:
     file_list = tf.random.shuffle(file_list)
 
-  ds = tf.data.Dataset.from_tensor_slices(file_list)
+  ds = tf.data.Dataset.from_tensor_slices(file_list)  # pyrefly: ignore[bad-argument-type]
 
   def load_dataset(filename: str) -> tf.data.Dataset:
-    return tf.data.TFRecordDataset(
+    return tf.data.TFRecordDataset(  # pyrefly: ignore[bad-instantiation]
         filename,
         buffer_size=config.prefetch_buffer_bytes,
         compression_type='GZIP',

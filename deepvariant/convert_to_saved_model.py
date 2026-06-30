@@ -123,15 +123,15 @@ def convert_gs_to_bigstore(gs_path: str) -> str:
 def main(_):
   """Main entry point."""
   loaded_model = initialize_model(
-      model_example_info_json=_MODEL_EXAMPLE_INFO_JSON.value,
-      checkpoint_path=_CHECKPOINT.value,
+      model_example_info_json=_MODEL_EXAMPLE_INFO_JSON.value,  # pyrefly: ignore[bad-argument-type]
+      checkpoint_path=_CHECKPOINT.value,  # pyrefly: ignore[bad-argument-type]
   )
   tf.saved_model.save(loaded_model, _OUTPUT.value)
   # Copy over the example_info.json.
   gfile.Copy(
-      convert_gs_to_bigstore(_MODEL_EXAMPLE_INFO_JSON.value),
+      convert_gs_to_bigstore(_MODEL_EXAMPLE_INFO_JSON.value),  # pyrefly: ignore[bad-argument-type]
       convert_gs_to_bigstore(
-          os.path.join(_OUTPUT.value, 'model.example_info.json')
+          os.path.join(_OUTPUT.value, 'model.example_info.json')  # pyrefly: ignore[no-matching-overload]
       ),
       overwrite=True,
   )

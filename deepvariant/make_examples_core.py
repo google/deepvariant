@@ -861,7 +861,7 @@ def regions_to_process(
   if num_shards:
     if num_shards < 0:
       raise ValueError('num_shards={} must be >= 0'.format(num_shards))
-    if task_id < 0 or task_id >= num_shards:
+    if task_id < 0 or task_id >= num_shards:  # pyrefly: ignore[unsupported-operation]
       raise ValueError(
           'task_id={} should be >= 0 and < num_shards={}'.format(
               task_id, num_shards
@@ -885,7 +885,7 @@ def regions_to_process(
     else:
       regions_per_shard = math.ceil(len(partitioned) / num_shards)
       return partitioned[
-          task_id * regions_per_shard : (task_id + 1) * regions_per_shard
+          task_id * regions_per_shard : (task_id + 1) * regions_per_shard  # pyrefly: ignore[unsupported-operation]
       ]
   else:
     return partitioned
@@ -1171,10 +1171,10 @@ def reservoir_sample_reads(
     # Because this function is now used both for selecting up to `k` or
     # covering `max_bases_to_cover`, if k is 0, we should set it to a large
     # number (meaning not limiting on that).
-    k = float('inf')
+    k = float('inf')  # pyrefly: ignore[bad-assignment]
 
   if random_generator is None:
-    random_generator = np.random
+    random_generator = np.random  # pyrefly: ignore[bad-assignment]
 
   sampled_reads = []
   # Keep a list of the number of bases each `sampled_reads` have in the region.
@@ -1188,7 +1188,7 @@ def reservoir_sample_reads(
       sampled_reads_overlap_len.append(overlap_len)
       bases_covered += overlap_len
     else:
-      j = random_generator.randint(0, i + 1)
+      j = random_generator.randint(0, i + 1)  # pyrefly: ignore[missing-attribute]
       if j < len(sampled_reads):
         # Because this replaces the read at sampled_reads[j], subtract first.
         bases_covered -= sampled_reads_overlap_len[j]
@@ -1746,7 +1746,7 @@ class RegionProcessor:
   def _encode_tensor(
       self, image_tensor: np.ndarray
   ) -> Tuple[str, Tuple[int, int, int]]:
-    return image_tensor.tostring(), image_tensor.shape
+    return image_tensor.tostring(), image_tensor.shape  # pyrefly: ignore[missing-attribute]
 
   def _make_sam_readers(
       self,
@@ -2093,7 +2093,7 @@ class RegionProcessor:
       reads_per_sample = []
       pileup_height = 0
       for sample in self.samples:
-        reads_per_sample.append(sample.in_memory_sam_reader.iterate())
+        reads_per_sample.append(sample.in_memory_sam_reader.iterate())  # pyrefly: ignore[missing-attribute]
         pileup_height += sample.options.pileup_height
       # Unzip list of tuples.
       candidates_list = []
@@ -2149,7 +2149,7 @@ class RegionProcessor:
       reads_per_sample = []
       pileup_height = 0
       for sample in self.samples:
-        reads_per_sample.append(sample.in_memory_sam_reader.iterate())
+        reads_per_sample.append(sample.in_memory_sam_reader.iterate())  # pyrefly: ignore[missing-attribute]
         pileup_height += sample.options.pileup_height
 
       n_stats_one_region, example_shape_one = (
@@ -2282,7 +2282,7 @@ class RegionProcessor:
     main_sample = self.samples[self.options.main_sample_index]
     for sample in self.samples:
       reads = itertools.chain()
-      for _, sam_reader in enumerate(sample.sam_readers):
+      for _, sam_reader in enumerate(sample.sam_readers):  # pyrefly: ignore[bad-argument-type]
         reads = itertools.chain(reads, sam_reader.query(region))
       try:
         sample.in_memory_sam_reader.replace_reads(reads)  # pytype: disable=attribute-error
@@ -2459,7 +2459,7 @@ class RegionProcessor:
             sample_reads_list_to_realign[sample_index]
         )
       elif sample_reads_list[sample_index]:
-        sample.in_memory_sam_reader.replace_reads(
+        sample.in_memory_sam_reader.replace_reads(  # pyrefly: ignore[missing-attribute]
             sample_reads_list[sample_index]
         )
 
@@ -3079,7 +3079,7 @@ class RegionProcessor:
       that were phased.
     """
     for sample in self.samples:
-      sample.reads = sample.in_memory_sam_reader.query(region)
+      sample.reads = sample.in_memory_sam_reader.query(region)  # pyrefly: ignore[missing-attribute]
 
     main_sample = self.samples[self.options.main_sample_index]
     if not main_sample.reads and not gvcf_output_enabled(self.options):
@@ -3100,15 +3100,15 @@ class RegionProcessor:
               effective_region, []
           )
 
-          for read in sample.reads:
+          for read in sample.reads:  # pyrefly: ignore[not-iterable]
             sample.allele_counter.add(read, sample.options.name)
         # Reads iterator needs to be reset since it used in the code below.
-        sample.reads = sample.in_memory_sam_reader.query(region)
+        sample.reads = sample.in_memory_sam_reader.query(region)  # pyrefly: ignore[missing-attribute]
       allele_counters = {s.options.name: s.allele_counter for s in self.samples}
 
     for sample in self.samples:
       if self.options.allele_counter_options.track_ref_reads:
-        candidate_positions = sample.variant_caller.get_candidate_positions(
+        candidate_positions = sample.variant_caller.get_candidate_positions(  # pyrefly: ignore[missing-attribute]
             allele_counters=allele_counters, sample_name=sample.options.name
         )
       if sample.options.reads_filenames:
@@ -3118,7 +3118,7 @@ class RegionProcessor:
         ):
           reads_start = region.start
           reads_end = region.end
-          for read in sample.reads:
+          for read in sample.reads:  # pyrefly: ignore[not-iterable]
             read_last_pos = min(
                 self.ref_reader.contig(region.reference_name).n_bases - 1,
                 utils.read_end(read),
@@ -3132,7 +3132,7 @@ class RegionProcessor:
               start=reads_start,
               end=reads_end,
           )
-          sample.reads = sample.in_memory_sam_reader.query(region)
+          sample.reads = sample.in_memory_sam_reader.query(region)  # pyrefly: ignore[missing-attribute]
 
           sample.allele_counter = (
               self._make_allele_counter_for_read_overlap_region(
@@ -3144,7 +3144,7 @@ class RegionProcessor:
               effective_region, candidate_positions
           )
 
-        for read in sample.reads:
+        for read in sample.reads:  # pyrefly: ignore[not-iterable]
           if (
               self.options.allele_counter_options.normalize_reads
               and not sample.options.skip_normalization
@@ -3182,7 +3182,7 @@ class RegionProcessor:
       if not sample.options.reads_filenames:
         continue
       read_phases_by_sample[role] = {}
-      candidates[role], gvcfs[role] = sample.variant_caller.calls_and_gvcfs(
+      candidates[role], gvcfs[role] = sample.variant_caller.calls_and_gvcfs(  # pyrefly: ignore[missing-attribute]
           allele_counters=allele_counters,
           target_sample=sample.options.name,
           target_role=sample.options.role,
@@ -3218,7 +3218,7 @@ class RegionProcessor:
 
       if self.options.phase_reads and not sample.options.skip_phasing:
         reads_to_phase = list(
-            sample.in_memory_sam_reader.query(effective_region)
+            sample.in_memory_sam_reader.query(effective_region)  # pyrefly: ignore[missing-attribute]
         )
 
         # We need to delete phasing tag here if phasing cannot be done for the
@@ -3607,7 +3607,7 @@ def processing_regions_from_options(
   # Add in confident regions and vcf_contigs if in training mode.
   vcf_contigs = None
   if in_training_mode(options):
-    vcf_contigs = vcf.VcfReader(options.truth_variants_filename).header.contigs
+    vcf_contigs = vcf.VcfReader(options.truth_variants_filename).header.contigs  # pyrefly: ignore[missing-attribute]
     if all([x.n_bases == 0 for x in vcf_contigs]):
       logging.info(
           (
@@ -3620,7 +3620,7 @@ def processing_regions_from_options(
 
   main_sample = options.sample_options[options.main_sample_index]
   all_sam_contigs = [
-      sam.SamReader(reads_file).header.contigs
+      sam.SamReader(reads_file).header.contigs  # pyrefly: ignore[missing-attribute]
       for reads_file in main_sample.reads_filenames
   ]
   sam_contigs = common_contigs(only_true(*all_sam_contigs))
@@ -3811,7 +3811,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
           np.array(candidates_in_region, dtype=np.int32).tobytes()
       )
       # Here we mark the end of the calling region
-      for cr in calling_regions:
+      for cr in calling_regions:  # pyrefly: ignore[not-iterable]
         if cr.reference_name == region.reference_name and cr.end == region.end:
           candidates_writer.write(
               np.array([END_OF_REGION], dtype=np.int32).tobytes()
@@ -3871,7 +3871,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
       if not options.skip_pileup_image_generation:
         region_example_shape = region_processor.writes_examples_in_region(  # pytype: disable=wrong-arg-types
             candidates_for_pileup_images,
-            sample.options.order,
+            sample.options.order,  # pyrefly: ignore[bad-argument-type]
             n_cnn_stats,
             runtimes,
             role,

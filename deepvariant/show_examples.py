@@ -366,7 +366,7 @@ def run():
 
     filter_to_vcf = _VCF.value is not None
     if filter_to_vcf:
-      ids_from_vcf = parse_vcf(_VCF.value)
+      ids_from_vcf = parse_vcf(_VCF.value)  # pyrefly: ignore[bad-argument-type]
       logging.info(
           (
               'Found %d loci in VCF. '
@@ -378,7 +378,7 @@ def run():
     filter_to_region = _REGIONS.value is not None
     if filter_to_region:
       passes_region_filter = create_region_filter(
-          region_flag_string=_REGIONS.value, verbose=_VERBOSE.value
+          region_flag_string=_REGIONS.value, verbose=_VERBOSE.value  # pyrefly: ignore[bad-argument-type]
       )
     if _FILTER_BY_TSV.value:
       tsv_df = pd.read_csv(_FILTER_BY_TSV.value, sep='\t', header=None)
@@ -437,14 +437,14 @@ def run():
       # Optionally filter to variants in the VCF.
       if filter_to_vcf:
         # Check if the locus is in the VCF.
-        if locus_id not in ids_from_vcf:
+        if locus_id not in ids_from_vcf:  # pyrefly: ignore[unbound-name]
           # Skip this example since it doesn't match the VCF.
           continue
 
-      if filter_to_region and not passes_region_filter(variant):
+      if filter_to_region and not passes_region_filter(variant):  # pyrefly: ignore[unbound-name]
         continue
 
-      if _FILTER_BY_TSV.value and locus_with_alt_id not in ids_from_tsv:
+      if _FILTER_BY_TSV.value and locus_with_alt_id not in ids_from_tsv:  # pyrefly: ignore[unbound-name]
         continue
 
       if _VERBOSE.value:
@@ -514,7 +514,7 @@ def run():
         tags = curation_to_dict(tags)
         example_width = channels[0].shape[1]
         buffer = int(example_width / 2)
-        curation_tags.append({
+        curation_tags.append({  # pyrefly: ignore[unbound-name]
             'id': locus_with_alt_id,
             'pos': f'{variant.reference_name}:{variant.start}',
             # Pileup window, e.g. for IGV automation "goto" command:
@@ -526,7 +526,7 @@ def run():
             **tags,
         })
       if _WRITE_TFRECORDS.value:
-        tfrecord_writer.write(example.SerializeToString())
+        tfrecord_writer.write(example.SerializeToString())  # pyrefly: ignore[unbound-name]
 
       # Check if --num_records quota has been hit yet.
       num_output += 1
@@ -538,10 +538,10 @@ def run():
     )
 
     if _WRITE_TFRECORDS.value:
-      tfrecord_writer.close()
+      tfrecord_writer.close()  # pyrefly: ignore[unbound-name]
 
     if _CURATE.value:
-      df = pd.DataFrame(curation_tags)
+      df = pd.DataFrame(curation_tags)  # pyrefly: ignore[unbound-name]
       df.to_csv(f'{output_prefix}curation.tsv', index=False, sep='\t')
 
     if num_scanned == 0 and examples_path.startswith('gs://'):

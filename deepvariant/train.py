@@ -307,7 +307,7 @@ def train(config: ml_collections.ConfigDict):
     )
 
     def compute_loss(probabilities, labels, sample_weight, model_losses):
-      per_example_loss = loss_function(
+      per_example_loss = loss_function(  # pyrefly: ignore[not-callable]
           y_pred=probabilities, y_true=labels, sample_weight=sample_weight
       )
       # We divide per-replica losses by global batch size and sum this value
@@ -332,7 +332,7 @@ def train(config: ml_collections.ConfigDict):
       )
       labels = tf.squeeze(tf.one_hot(labels, dv_constants.NUM_CLASSES))
       with tf.GradientTape() as tape:
-        probabilities = model(model_input, training=True)
+        probabilities = model(model_input, training=True)  # pyrefly: ignore[not-callable]
         loss = compute_loss(
             probabilities=probabilities,
             labels=labels,
@@ -393,7 +393,7 @@ def train(config: ml_collections.ConfigDict):
         probabilities = ema_model(model_input, training=False)
         model_losses = ema_model.losses
       else:
-        probabilities = model(model_input, training=False)
+        probabilities = model(model_input, training=False)  # pyrefly: ignore[not-callable]
         model_losses = model.losses
       loss = compute_loss(
           probabilities=probabilities,

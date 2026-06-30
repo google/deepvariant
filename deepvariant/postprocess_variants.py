@@ -1222,7 +1222,7 @@ def merge_predictions(
         canonical_variant
     )
     if is_non_autosome(canonical_variant) and not is_in_regions(
-        canonical_variant, par_regions
+        canonical_variant, par_regions  # pyrefly: ignore[bad-argument-type]
     ):
       return canonical_variant, correct_nonautosome_probabilities(
           list(first_call.genotype_probabilities), canonical_variant
@@ -1231,7 +1231,7 @@ def merge_predictions(
 
   # Special handling of multiallelic variants
   alt_alleles_to_remove = get_alt_alleles_to_remove(
-      call_variants_outputs, qual_filter
+      call_variants_outputs, qual_filter  # pyrefly: ignore[bad-argument-type]
   )
 
   # flattened_probs_dict is only used with the multiallelic model
@@ -1257,7 +1257,7 @@ def merge_predictions(
     cvo_probs = get_multiallelic_distributions(
         call_variants_outputs, alt_alleles_to_remove
     )
-    normalized_predictions = multiallelic_model(cvo_probs).numpy().tolist()[0]
+    normalized_predictions = multiallelic_model(cvo_probs).numpy().tolist()[0]  # pyrefly: ignore[not-callable]
   elif _MULTIALLELIC_MODE.value == 'product':
     # New logic: "overlap-count" with product fusion.
     # 1. Collect information about each CVO's example.
@@ -1325,10 +1325,10 @@ def merge_predictions(
   # simplify can change those alleles so we cannot simplify until afterwards.
   canonical_variant = variant_utils.simplify_variant_alleles(canonical_variant)
   if is_non_autosome(canonical_variant) and not is_in_regions(
-      canonical_variant, par_regions
+      canonical_variant, par_regions  # pyrefly: ignore[bad-argument-type]
   ):
     return canonical_variant, correct_nonautosome_probabilities(
-        normalized_predictions, canonical_variant
+        normalized_predictions, canonical_variant  # pyrefly: ignore[bad-argument-type]
     )
   else:
     return canonical_variant, normalized_predictions
@@ -2268,9 +2268,9 @@ def run_postprocessing_over_multiple_partitions(
         num_partitions=num_partitions,
     )
 
-  _concat_vcf(_OUTFILE.value, temp_vcf_files)
+  _concat_vcf(_OUTFILE.value, temp_vcf_files)  # pyrefly: ignore[bad-argument-type]
   if _NONVARIANT_SITE_TFRECORD_PATH.value:
-    _concat_vcf(_GVCF_OUTFILE.value, temp_gvcf_files)
+    _concat_vcf(_GVCF_OUTFILE.value, temp_gvcf_files)  # pyrefly: ignore[bad-argument-type]
   for temp_vcf_file in temp_vcf_files:
     temp_vcf_file.close()
   for temp_gvcf_file in temp_gvcf_files:
@@ -2311,8 +2311,8 @@ def run_postprocessing_without_partitioning(
     tmp_tfrecord_file = tempfile.NamedTemporaryFile(suffix='.tfrecord')
     tmp_tfrecord_file_name = tmp_tfrecord_file.name
   run_postprocess_variants_on_region(
-      _OUTFILE.value,
-      _GVCF_OUTFILE.value,
+      _OUTFILE.value,  # pyrefly: ignore[bad-argument-type]
+      _GVCF_OUTFILE.value,  # pyrefly: ignore[bad-argument-type]
       [],
       contigs,
       all_cvo_paths,
@@ -2330,8 +2330,8 @@ def run_postprocessing_without_partitioning(
         output_tfrecord_paths=[output_tfrecord_file.name],
     )
     emit_variants_to_vcf(
-        _OUTFILE.value,
-        _GVCF_OUTFILE.value,
+        _OUTFILE.value,  # pyrefly: ignore[bad-argument-type]
+        _GVCF_OUTFILE.value,  # pyrefly: ignore[bad-argument-type]
         header,
         [],
         iter([]),
@@ -2431,7 +2431,7 @@ def main(argv=()):
     logging_level.set_from_flag()
 
     fasta_reader = pysam.FastaFile(
-        filename=_pysam_resolve_file_path(_REF.value)
+        filename=_pysam_resolve_file_path(_REF.value)  # pyrefly: ignore[bad-argument-type]
     )
     contigs = []
     for reference_index in range(fasta_reader.nreferences):
@@ -2443,7 +2443,7 @@ def main(argv=()):
           )
       )
 
-    cvo_paths = get_cvo_paths(_INFILE.value)
+    cvo_paths = get_cvo_paths(_INFILE.value)  # pyrefly: ignore[bad-argument-type]
     small_model_cvo_paths = []
     if _SMALL_MODEL_CVO_RECORDS.value:
       small_model_cvo_paths = get_cvo_paths(_SMALL_MODEL_CVO_RECORDS.value)
@@ -2517,11 +2517,11 @@ def main(argv=()):
     start_time = time.time()
     use_csi = _decide_to_use_csi(contigs)
     if str(_OUTFILE.value).endswith('.gz'):
-      build_index(_OUTFILE.value, use_csi)
+      build_index(_OUTFILE.value, use_csi)  # pyrefly: ignore[bad-argument-type]
     if _NONVARIANT_SITE_TFRECORD_PATH.value and str(
         _GVCF_OUTFILE.value
     ).endswith('.gz'):
-      build_index(_GVCF_OUTFILE.value, use_csi)
+      build_index(_GVCF_OUTFILE.value, use_csi)  # pyrefly: ignore[bad-argument-type]
     logging.info(
         'Indexing VCF and gVCF took %s minutes.',
         (time.time() - start_time) / 60,

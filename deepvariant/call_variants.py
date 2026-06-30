@@ -379,14 +379,14 @@ def _create_cvo_proto(
         has_insertion=variant_utils.has_insertion(variant),
         has_deletion=variant_utils.has_deletion(variant),
         is_snp=variant_utils.is_snp(variant),
-        predicted_label=np.argmax(gls),
+        predicted_label=np.argmax(gls),  # pyrefly: ignore[bad-argument-type]
         true_label=true_labels,
         logits=logits,
         prelogits=prelogits,
         image_encoded=image_encoded,
         layer_output_encoded=layer_outputs_encoded,
     )
-    debug_info = add_pileup_curation_to_debug_info(debug_info, pileup_curation)
+    debug_info = add_pileup_curation_to_debug_info(debug_info, pileup_curation)  # pyrefly: ignore[bad-argument-type]
 
   call_variants_output = deepvariant_pb2.CallVariantsOutput(
       variant=variant,
@@ -440,7 +440,7 @@ class FromStreamDataset(tf.data.Dataset):
     return []
 
   @property
-  def element_spec(self):
+  def element_spec(self):  # pyrefly: ignore[bad-override]
     return self._dataset.element_spec
 
 
@@ -518,7 +518,7 @@ def get_dataset(
     )
 
     def load_dataset(filename):
-      dataset = tf.data.TFRecordDataset(
+      dataset = tf.data.TFRecordDataset(  # pyrefly: ignore[bad-instantiation]
           filename,
           buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
           compression_type='GZIP',
@@ -1110,9 +1110,9 @@ def main(argv=()):
         )
 
     call_variants(
-        examples_filename=_EXAMPLES.value,
+        examples_filename=_EXAMPLES.value,  # pyrefly: ignore[bad-argument-type]
         checkpoint_path=_CHECKPOINT.value,
-        output_file=_OUTFILE.value,
+        output_file=_OUTFILE.value,  # pyrefly: ignore[bad-argument-type]
         writer_threads=_WRITER_THREADS.value,
         kmp_blocktime=_KMP_BLOCKTIME.value,
         batch_size=_BATCH_SIZE.value,
@@ -1121,7 +1121,7 @@ def main(argv=()):
         activation_layers=_ACTIVATION_LAYERS.value,
         use_dataset_from_stream=_STREAM_EXAMPLES.value,
         shm_prefix=_SHM_PREFIX.value,
-        num_shards=_NUM_INPUT_SHARDS.value,
+        num_shards=_NUM_INPUT_SHARDS.value,  # pyrefly: ignore[bad-argument-type]
         allow_empty_examples=_ALLOW_EMPTY_EXAMPLES.value,
     )
     logging.info('Complete: call_variants.')
