@@ -612,14 +612,8 @@ def parse_sample_sheet(sample_sheet,
                            sort: 'index')
 
   if (params.check_for_errors) {
-    // Check UIDs are unique, and uid characters are valid.
-    // uids can contain `-`, but not `_`.
-    uids_ch = sample_sheet.map {
-      if (it.uid.toString().contains('_')) {
-        throw new IllegalArgumentException("uid value ${it.uid} contains an underscore. The uid column in your sample sheet must not contain underscores. You can use dashes instead.")
-      }
-      it.uid
-    }
+    // Check UIDs are unique.
+    uids_ch = sample_sheet.map { it.uid }
     uids_ch.unique().count().join(uids_ch.count()).ifEmpty {
       throw new IllegalArgumentException("The uid column in your sample sheet must be unique.")
     }

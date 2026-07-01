@@ -124,13 +124,11 @@ if glob.glob('*.runtimes.tsv'):
     dfs.append(df_part)
   df_raw = pd.concat(dfs, ignore_index=True)
 
-  df_raw['uid'] = (
-      df_raw['group']
-      .str.split('_')
-      .str[0]
-      .str.replace(r'-trial[0-9]+$', '', regex=True)
+  split_group = df_raw['group'].str.rsplit('_', n=1)
+  df_raw['uid'] = split_group.str[0].str.replace(
+      r'-trial[0-9]+$', '', regex=True
   )
-  df_raw['sample'] = df_raw['group'].str.split('_').str[1]
+  df_raw['sample'] = split_group.str[1]
 
   # Aggregate by stage
   df_stage = (
@@ -202,10 +200,9 @@ if glob.glob('*.md5sum.txt'):
   md5['group'] = md5['source_file'].str.replace(
       r'\.md5sum\.txt$', '', regex=True
   )
-  md5['uid'] = (
-      md5['group'].str.split('_').str[0].str.replace(r'-[0-9]+', '', regex=True)
-  )
-  md5['sample'] = md5['group'].str.split('_').str[1]
+  split_group = md5['group'].str.rsplit('_', n=1)
+  md5['uid'] = split_group.str[0].str.replace(r'-[0-9]+', '', regex=True)
+  md5['sample'] = split_group.str[1]
   md5 = md5.drop(columns=['group', 'source_file'])
   md5 = md5.drop_duplicates()
   md5 = md5.sort_values(['uid', 'sample']).reset_index(drop=True)
