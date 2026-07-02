@@ -30,12 +30,9 @@
  */
 
 #include "deepvariant/variant_calling.h"
-#include "deepvariant/variant_calling_utils.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <functional>
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -44,6 +41,7 @@
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
+#include "deepvariant/variant_calling_utils.h"
 #include "absl/container/btree_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"

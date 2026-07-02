@@ -31,14 +31,11 @@
 
 #include "deepvariant/variant_calling_multisample.h"
 
-#include "deepvariant/variant_calling_utils.h"
-
 #include <stdlib.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
-#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -50,6 +47,7 @@
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
+#include "deepvariant/variant_calling_utils.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
