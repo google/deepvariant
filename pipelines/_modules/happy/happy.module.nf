@@ -82,6 +82,12 @@ process run_happy {
       target_regions_flag = ""
     }
 
+    if (truth_bed.getName().startsWith("NO_FILE") ? "" : truth_bed) {
+      fp_flag = "--false-positives ${truth_bed}"
+    } else {
+      fp_flag = ""
+    }
+
     // If dataset_name is specified, use it as part of the output file name.
     output_fname = dataset_name ? "${uid}_${sample}_${dataset_name}" : "${uid}_${sample}"
 
@@ -96,7 +102,7 @@ process run_happy {
   /opt/hap.py/bin/hap.py \\
       ${truth_vcf} \\
       ${input_vcf} \\
-      --false-positives ${truth_bed} \\
+      ${fp_flag} \\
       ${location_flag} \\
       ${target_regions_flag} \\
       --reference ${reference} \\

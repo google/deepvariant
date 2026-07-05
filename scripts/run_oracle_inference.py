@@ -83,9 +83,27 @@ _READS = flags.DEFINE_string(
     'reads',
     None,
     (
-        'Required. Aligned, sorted, indexed BAM file containing the reads we'
-        ' want to call. Should be aligned to a reference genome compatible with'
-        ' --ref.'
+        'Required (unless --somatic). Aligned, sorted, indexed BAM file'
+        ' containing the reads we want to call. Should be aligned to a'
+        ' reference genome compatible with --ref.'
+    ),
+)
+_READS_TUMOR = flags.DEFINE_string(
+    'reads_tumor',
+    None,
+    (
+        'Required (if --somatic). Aligned, sorted, indexed BAM file containing'
+        ' the reads from the tumor sample. Should be aligned to a reference'
+        ' genome compatible with --ref.'
+    ),
+)
+_READS_NORMAL = flags.DEFINE_string(
+    'reads_normal',
+    None,
+    (
+        'Optional (if --somatic). Aligned, sorted, indexed BAM file containing'
+        ' the reads from the normal sample. Should be aligned to a reference'
+        ' genome compatible with --ref.'
     ),
 )
 _OUTPUT_VCF = flags.DEFINE_string(
@@ -182,6 +200,16 @@ _SAMPLE_NAME = flags.DEFINE_string(
         ' (SM tag in the header). This flag is used for both make_examples and'
         ' postprocess_variants.'
     ),
+)
+_SAMPLE_NAME_TUMOR = flags.DEFINE_string(
+    'sample_name_tumor',
+    None,
+    'Sample name to use for the tumor sample in somatic mode.',
+)
+_SAMPLE_NAME_NORMAL = flags.DEFINE_string(
+    'sample_name_normal',
+    None,
+    'Sample name to use for the normal sample in somatic mode.',
 )
 _MAKE_EXAMPLES_EXTRA_ARGS = flags.DEFINE_string(
     'make_examples_extra_args',
@@ -366,11 +394,13 @@ def load_gbz_into_shared_memory_command(
 
 def make_examples_command(
     ref: str,
-    reads: str,
     examples: str,
     labeler_algorithm: str,
     extra_args: str | None,
     *,
+    reads: str | None = None,
+    reads_tumor: str | None = None,
+    reads_normal: str | None = None,
     pangenome: str | None = None,
     **kwargs,
 ) -> tuple[str, str | None]:
@@ -381,10 +411,12 @@ def make_examples_command(
 
   Args:
     ref: Input FASTA file.
-    reads: Input BAM file.
     examples: Output tfrecord file containing tensorflow.Example files.
     labeler_algorithm: Labeler algorithm to use for calling variants.
     extra_args: Comma-separated list of flag_name=flag_value.
+    reads: Input BAM file (for germline).
+    reads_tumor: Input tumor BAM file (for somatic).
+    reads_normal: Input normal BAM file (for somatic).
     pangenome: Optional. Input pangenome GBZ file. When set, uses
       make_examples_pangenome_aware_dv instead of make_examples.
     **kwargs: Additional arguments to pass in for make_examples.
@@ -392,7 +424,9 @@ def make_examples_command(
   Returns:
     (string, string) A command to run, and a log file to output to.
   """
-  if pangenome:
+  if reads_tumor:
+    binary = '/opt/deepvariant/bin/make_examples_somatic'
+  elif pangenome:
     binary = '/opt/deepvariant/bin/make_examples_pangenome_aware_dv'
   else:
     binary = '/opt/deepvariant/bin/make_examples'
@@ -405,7 +439,12 @@ def make_examples_command(
   ]
   command.extend(['--mode', 'training'])
   command.extend(['--ref', '"{}"'.format(ref)])
-  command.extend(['--reads', '"{}"'.format(reads)])
+  if reads_tumor:
+    command.extend(['--reads_tumor', '"{}"'.format(reads_tumor)])
+    if reads_normal:
+      command.extend(['--reads_normal', '"{}"'.format(reads_normal)])
+  else:
+    command.extend(['--reads', '"{}"'.format(reads)])
   if pangenome:
     command.extend(['--pangenome', '"{}"'.format(pangenome)])
   command.extend(['--labeler_algorithm', '"{}"'.format(labeler_algorithm)])
@@ -496,7 +535,30 @@ def check_or_create_intermediate_results_dir(
 
 def check_flags():
   """Additional logic to make sure flags are set appropriately."""
-  pass
+  is_somatic = _READS_TUMOR.value is not None
+  if is_somatic:
+    if _READS.value is not None:
+      raise ValueError('Cannot set both --reads and --reads_tumor.')
+    if _PANGENOME.value is not None:
+      raise ValueError('Somatic mode does not support pangenome.')
+    if _SAMPLE_NAME.value is not None:
+      raise ValueError(
+          'Cannot set --sample_name in somatic mode. Use'
+          ' --sample_name_tumor and --sample_name_normal.'
+      )
+  else:
+    if _READS.value is None:
+      raise ValueError('--reads is required.')
+    if _READS_NORMAL.value is not None:
+      raise ValueError('Cannot set --reads_normal without --reads_tumor.')
+    if (
+        _SAMPLE_NAME_TUMOR.value is not None
+        or _SAMPLE_NAME_NORMAL.value is not None
+    ):
+      raise ValueError(
+          'Cannot set --sample_name_tumor or --sample_name_normal in germline'
+          ' mode. Use --sample_name.'
+      )
 
 
 def create_all_commands_and_logfiles(
@@ -516,7 +578,15 @@ def create_all_commands_and_logfiles(
   check_flags()
   commands = []
 
-  if _PANGENOME.value:
+  is_somatic = _READS_TUMOR.value is not None
+  if is_somatic:
+    examples_prefix = 'make_examples_somatic'
+    pangenome_kwargs = {}
+    if _SAMPLE_NAME_TUMOR.value:
+      pangenome_kwargs['sample_name_tumor'] = _SAMPLE_NAME_TUMOR.value
+    if _SAMPLE_NAME_NORMAL.value:
+      pangenome_kwargs['sample_name_normal'] = _SAMPLE_NAME_NORMAL.value
+  elif _PANGENOME.value:
     # Pangenome-aware oracle inference path.
     examples_prefix = 'make_examples_pangenome'
     pangenome_kwargs = dict(
@@ -548,6 +618,8 @@ def create_all_commands_and_logfiles(
       make_examples_command(
           ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
           reads=_READS.value,  # pyrefly: ignore[bad-argument-type]
+          reads_tumor=_READS_TUMOR.value,  # pyrefly: ignore[bad-argument-type]
+          reads_normal=_READS_NORMAL.value,  # pyrefly: ignore[bad-argument-type]
           examples=examples,
           labeler_algorithm=_LABELER_ALGORITHM.value,  # pyrefly: ignore[bad-argument-type]
           extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
@@ -566,7 +638,9 @@ def create_all_commands_and_logfiles(
           ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
           examples=examples,
           outfile=_OUTPUT_VCF.value,  # pyrefly: ignore[bad-argument-type]
-          sample_name=_SAMPLE_NAME.value,  # pyrefly: ignore[bad-argument-type]
+          sample_name=_SAMPLE_NAME_TUMOR.value
+          if is_somatic
+          else _SAMPLE_NAME.value,  # pyrefly: ignore[bad-argument-type]
       )
   )
 
@@ -578,14 +652,20 @@ def main(_):
     print('DeepVariant version {}'.format(DEEP_VARIANT_VERSION))
     return
 
-  for flag_key in [
+  required_flags = [
       'model_type',
       'ref',
-      'reads',
       'output_vcf',
       'truth_variants',
       'confident_regions',
-  ]:
+  ]
+  is_somatic = _READS_TUMOR.value is not None
+  if is_somatic:
+    required_flags.append('reads_tumor')
+  else:
+    required_flags.append('reads')
+
+  for flag_key in required_flags:
     if FLAGS.get_flag_value(flag_key, None) is None:
       sys.stderr.write('--{} is required.\n'.format(flag_key))
       sys.stderr.write('Pass --helpshort or --helpfull to see help on flags.\n')

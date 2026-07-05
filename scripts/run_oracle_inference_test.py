@@ -159,6 +159,81 @@ class RunOracleInferenceTest(parameterized.TestCase):
         '--output_vcf "your_vcf"',
     )
 
+  @flagsaver.flagsaver
+  def test_basic_commands_somatic(self):
+    FLAGS.model_type = 'WES'
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads_tumor = 'tumor_bam'
+    FLAGS.reads_normal = 'normal_bam'
+    FLAGS.output_vcf = 'your_vcf'
+    FLAGS.num_shards = 64
+    FLAGS.truth_variants = 'your_truth.vcf'
+    FLAGS.confident_regions = 'your_conf.bed'
+    FLAGS.labeler_algorithm = 'HAPLOTYPE_LABELER'
+    commands = run_oracle_inference.create_all_commands_and_logfiles(
+        '/tmp/deepvariant_tmp_output'
+    )
+
+    self.assertEqual(
+        first=commands[0][0],
+        second=(
+            'time seq 0 63 | parallel -q --halt 2 --line-buffer'
+            ' /opt/deepvariant/bin/make_examples_somatic --mode training --ref'
+            ' "your_ref" --reads_tumor "tumor_bam" --reads_normal "normal_bam"'
+            ' --labeler_algorithm "HAPLOTYPE_LABELER" --examples'
+            ' "/tmp/deepvariant_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+            ' --channel_list "BASE_CHANNELS" --max_reads_per_partition 1500'
+            ' --partition_size "1000" --confident_regions "your_conf.bed"'
+            ' --truth_variants "your_truth.vcf" --task {}'
+        ),
+    )
+    self.assertEqual(
+        commands[1][0],
+        'time /opt/deepvariant/bin/labeled_examples_to_vcf '
+        '--ref "your_ref" --examples'
+        ' "/tmp/deepvariant_tmp_output/make_examples_somatic.tfrecord@64.gz" '
+        '--output_vcf "your_vcf"',
+    )
+
+  @flagsaver.flagsaver
+  def test_basic_commands_somatic_with_sample_name(self):
+    FLAGS.model_type = 'WES'
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads_tumor = 'tumor_bam'
+    FLAGS.reads_normal = 'normal_bam'
+    FLAGS.output_vcf = 'your_vcf'
+    FLAGS.num_shards = 64
+    FLAGS.truth_variants = 'your_truth.vcf'
+    FLAGS.confident_regions = 'your_conf.bed'
+    FLAGS.labeler_algorithm = 'HAPLOTYPE_LABELER'
+    FLAGS.sample_name_tumor = 'tumor_sample'
+    FLAGS.sample_name_normal = 'normal_sample'
+    commands = run_oracle_inference.create_all_commands_and_logfiles(
+        '/tmp/deepvariant_tmp_output'
+    )
+
+    self.assertEqual(
+        first=commands[0][0],
+        second=(
+            'time seq 0 63 | parallel -q --halt 2 --line-buffer'
+            ' /opt/deepvariant/bin/make_examples_somatic --mode training --ref'
+            ' "your_ref" --reads_tumor "tumor_bam" --reads_normal "normal_bam"'
+            ' --labeler_algorithm "HAPLOTYPE_LABELER" --examples'
+            ' "/tmp/deepvariant_tmp_output/make_examples_somatic.tfrecord@64.gz"'
+            ' --channel_list "BASE_CHANNELS" --max_reads_per_partition 1500'
+            ' --partition_size "1000" --confident_regions "your_conf.bed"'
+            ' --sample_name_normal "normal_sample" --sample_name_tumor'
+            ' "tumor_sample" --truth_variants "your_truth.vcf" --task {}'
+        ),
+    )
+    self.assertEqual(
+        commands[1][0],
+        'time /opt/deepvariant/bin/labeled_examples_to_vcf '
+        '--ref "your_ref" --examples'
+        ' "/tmp/deepvariant_tmp_output/make_examples_somatic.tfrecord@64.gz" '
+        '--output_vcf "your_vcf" --sample_name "tumor_sample"',
+    )
+
 
 if __name__ == '__main__':
   absltest.main()
