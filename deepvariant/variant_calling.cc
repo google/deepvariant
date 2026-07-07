@@ -137,43 +137,8 @@ string GetSuffixFromTwoAlleles(const string& short_str,
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-// DeletionSize is now in variant_calling_utils.
-using variant_calling_utils::DeletionSize;
-
-// Get the bases to use as the reference bases in a Variant proto.
-//
-// The reference bases in a variant proto represent the longest substitution
-// of bases on the reference genome needed to describe a substitution by
-// one of alt_alleles in a sample. What this means is that if alt_alleles
-// doesn't include any deletions, this is simply the reference bases of our
-// AlleleCount. But if one of the alt_alleles is a deletion, we need to
-// use those bases as our reference.  And if there are multiple deletions
-// at a site, we need to use the longest deletion allele.
-string CalcRefBases(absl::string_view ref_bases,
-                    absl::Span<const Allele> alt_alleles) {
-  if (alt_alleles.empty()) {
-    // We don't have any alternate alleles, so used the provided ref_bases.
-    return std::string(ref_bases);
-  }
-
-  const auto max_elt =
-      std::max_element(alt_alleles.cbegin(), alt_alleles.cend(),
-                       [](const Allele& allele1, const Allele& allele2) {
-                         return DeletionSize(allele1) < DeletionSize(allele2);
-                       });
-  if (max_elt->type() != AlleleType::DELETION) {
-    return std::string(ref_bases);
-  } else {
-    // Deletion alleles may have an anchor base that is the reference or some
-    // other base, but a Variant must have a reference sequence that starts with
-    // the reference base. The index 1 skips the first base of the deletion,
-    // which is the anchor base of the deletion.
-    CHECK(max_elt->bases().size() > 1)
-        << "Saw invalid deletion allele with too few bases"
-        << max_elt->ShortDebugString();
-    return absl::StrCat(ref_bases, max_elt->bases().substr(1));
-  }
-}
+// CalcRefBases is now in variant_calling_utils.
+using variant_calling_utils::CalcRefBases;
 
 // MakeAltAllele is now in variant_calling_utils.
 using variant_calling_utils::MakeAltAllele;
@@ -207,8 +172,7 @@ std::vector<Allele> VariantCaller::SelectAltAlleles(
   return alt_alleles;
 }
 
-AlleleMap BuildAlleleMap(const AlleleCount& allele_count,
-                         absl::Span<const Allele> alt_alleles,
+AlleleMap BuildAlleleMap(absl::Span<const Allele> alt_alleles,
                          absl::string_view ref_bases) {
   AlleleMap allele_map;
 
@@ -476,7 +440,7 @@ std::optional<DeepVariantCall> VariantCaller::ComputeVariant(
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
   const AlleleMap allele_map =
-      BuildAlleleMap(allele_count_match, alt_alleles, refbases);
+      BuildAlleleMap(alt_alleles, refbases);
 
   AddReadDepths(allele_count_match, allele_map, refbases, m_variant);
   AddSupportingReads(allele_count_match.read_alleles(), allele_map, refbases,
@@ -583,7 +547,7 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
   // Compute the map from read alleles to the alleles we'll use in our Variant.
   // Add the alternate alleles from our allele_map to the variant.
   const AlleleMap allele_map =
-      BuildAlleleMap(allele_count, alt_alleles, refbases);
+      BuildAlleleMap(alt_alleles, refbases);
   for (const auto& elt : allele_map) {
     alternate_bases.push_back(elt.second);
   }

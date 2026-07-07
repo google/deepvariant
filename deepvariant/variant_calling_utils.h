@@ -91,6 +91,22 @@ using AlleleMap = absl::btree_map<Allele, std::string, OrderAllele>;
 // function for CalcRefBases.
 int DeletionSize(const Allele& allele);
 
+// Get the bases to use as the reference bases in a Variant proto.
+//
+// The reference bases in a variant proto represent the longest substitution
+// of bases on the reference genome needed to describe a substitution by
+// one of alt_alleles in a sample. What this means is that if alt_alleles
+// doesn't include any deletions, this is simply the reference bases of our
+// AlleleCount. But if one of the alt_alleles is a deletion, we need to
+// use those bases as our reference.  And if there are multiple deletions
+// at a site, we need to use the longest deletion allele.
+//
+// If rejected_alleles is provided (used in multisample calling), it will also
+// be considered when finding the longest deletion.
+std::string CalcRefBases(absl::string_view ref_bases,
+                         absl::Span<const Allele> alt_alleles,
+                         absl::Span<const Allele> rejected_alleles = {});
+
 // Constructs an alt allele from the prefix bases and the reference bases.
 //
 // This function helps create alt alleles for a variant proto. The complex logic

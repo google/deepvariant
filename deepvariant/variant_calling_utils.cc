@@ -31,6 +31,7 @@
 
 #include "deepvariant/variant_calling_utils.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 
@@ -61,6 +62,45 @@ const char* const kNoAltAllele = ".";
 
 int DeletionSize(const Allele& allele) {
   return allele.type() == AlleleType::DELETION ? allele.bases().length() : -1;
+}
+
+std::string CalcRefBases(absl::string_view ref_bases,
+                         absl::Span<const Allele> alt_alleles,
+                         absl::Span<const Allele> rejected_alleles) {
+  if (alt_alleles.empty()) {
+    // We don't have any alternate alleles, so used the provided ref_bases.
+    return std::string(ref_bases);
+  }
+
+  const auto max_element_main =
+      std::max_element(alt_alleles.cbegin(), alt_alleles.cend(),
+                       [](const Allele& allele1, const Allele& allele2) {
+                         return DeletionSize(allele1) < DeletionSize(allele2);
+                       });
+  const auto max_element_rejected =
+      std::max_element(rejected_alleles.cbegin(), rejected_alleles.cend(),
+                       [](const Allele& allele1, const Allele& allele2) {
+                         return DeletionSize(allele1) < DeletionSize(allele2);
+                       });
+  // rejected_alleles may be empty, so we need to check for that.
+  auto max_element =
+      (max_element_rejected == rejected_alleles.cend() ||
+       DeletionSize(*max_element_main) > DeletionSize(*max_element_rejected))
+          ? max_element_main
+          : max_element_rejected;
+
+  if (max_element->type() != AlleleType::DELETION) {
+    return std::string(ref_bases);
+  } else {
+    // Deletion alleles may have an anchor base that is the reference or some
+    // other base, but a Variant must have a reference sequence that starts with
+    // the reference base. The index 1 skips the first base of the deletion,
+    // which is the anchor base of the deletion.
+    CHECK(max_element->bases().size() > 1)
+        << "Saw invalid deletion allele with too few bases"
+        << max_element->ShortDebugString();
+    return absl::StrCat(ref_bases, max_element->bases().substr(1));
+  }
 }
 
 std::string MakeAltAllele(absl::string_view prefix,
