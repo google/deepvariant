@@ -41,12 +41,12 @@
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/variant_calling_utils.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/range.pb.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/samplers.h"
-#include "deepvariant/variant_calling_utils.h"
 
 namespace nucleus {
 class VcfReader;

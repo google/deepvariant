@@ -46,6 +46,7 @@
 
 #include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/variant_calling_utils.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/log/check.h"
@@ -53,7 +54,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
-#include "deepvariant/variant_calling_utils.h"
 #include "third_party/nucleus/util/samplers.h"
 
 namespace nucleus {
