@@ -638,7 +638,7 @@ def create_all_commands_and_logfiles(
           ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
           examples=examples,
           outfile=_OUTPUT_VCF.value,  # pyrefly: ignore[bad-argument-type]
-          sample_name=_SAMPLE_NAME_TUMOR.value
+          sample_name=_SAMPLE_NAME_TUMOR.value  # pyrefly: ignore[bad-argument-type]
           if is_somatic
           else _SAMPLE_NAME.value,  # pyrefly: ignore[bad-argument-type]
       )
