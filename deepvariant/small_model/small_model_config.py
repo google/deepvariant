@@ -93,6 +93,7 @@ def get_config(config_name: str) -> ml_collections.ConfigDict:
   model_params.vaf_context_window_size = 51
   model_params.expand_by_haplotype = False
   model_params.num_samples = 1
+  model_params.dropout_rate = 0.2
 
   # Training parameters
   config = ml_collections.ConfigDict()

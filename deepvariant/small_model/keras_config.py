@@ -166,22 +166,20 @@ def get_model_features(
 def keras_mlp_model(config: ml_collections.ConfigDict) -> keras.Model:
   """Creates a Keras MLP model."""
   model_params = config.model_params
-  model = keras.Sequential()
   model_features = get_model_features(config)
   input_shape = len(model_features)
   hidden_layers = model_params.hidden_layer_sizes
-  model.add(
-      keras.layers.Dense(
-          hidden_layers[0],
-          activation=model_params.activation,
-          input_shape=(input_shape,),
-      )
-  )
-  if len(hidden_layers) > 1:
-    for layer_size in hidden_layers[1:]:
-      model.add(
-          keras.layers.Dense(layer_size, activation=model_params.activation)
-      )
+
+  model = keras.Sequential()
+  model.add(keras.layers.Normalization(input_shape=(input_shape,)))
+
+  for layer_size in hidden_layers:
+    model.add(keras.layers.Dense(layer_size))
+    model.add(keras.layers.LayerNormalization())
+    model.add(keras.layers.Activation(model_params.activation))
+    if model_params.dropout_rate > 0:
+      model.add(keras.layers.Dropout(model_params.dropout_rate))
+
   output_shape = len(make_small_model_examples.GenotypeEncoding)
   model.add(keras.layers.Dense(output_shape, activation="softmax"))
 
