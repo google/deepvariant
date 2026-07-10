@@ -72,7 +72,11 @@ def secs_to_ms(secs):
 
 LOG_FILES_BY_PIPELINE = {
     Pipeline.DEEPVARIANT: {
-        'make_examples': glob.glob('make_examples*log')[0],
+        'make_examples': (
+            glob.glob('make_examples*log')[0]
+            if glob.glob('make_examples*log')
+            else 'make_examples.log'
+        ),
         'call_variants': 'call_variants.log',
         'postprocess_variants': 'postprocess_variants.log',
         'vcf_stats': 'vcf_stats_report.log',
