@@ -815,10 +815,10 @@ def genotype_options_for_variants(variants, enumeration_type):
     ]
   elif enumeration_type == EnumerationType.CANDIDATES:
     return [
-        {
+        [
             (i, j)
             for i, j, _, _ in variant_utils.genotype_ordering_in_likelihoods(v)
-        }
+        ]
         for v in variants
     ]
   elif enumeration_type == EnumerationType.ONLY_HOM_REF:
@@ -868,12 +868,12 @@ def extend_haplotypes(prefix_haplotypes_list, haplotypes):
       (f,) = prefix_haplotypes
       yield {f + h for h in haplotypes}
     else:
-      f1, f2 = prefix_haplotypes
+      f1, f2 = sorted(prefix_haplotypes)
       if len(haplotypes) == 1:
         (h,) = haplotypes
         yield {f1 + h, f2 + h}
       else:
-        h1, h2 = haplotypes
+        h1, h2 = sorted(haplotypes)
         yield {f1 + h1, f2 + h2}
         yield {f1 + h2, f2 + h1}
 
@@ -1226,9 +1226,11 @@ def deduplicate_haplotypes(haplotypes_to_genotypes_dict):
   """
   retval = {}
   for haplotypes, genotypes in haplotypes_to_genotypes_dict.items():
-    # Keep the last element in the dedup process. The reason is for the
-    # behavior to be the same as the previous implementation using list.
-    retval[haplotypes] = genotypes[-1]
+    # Pick the lexicographically largest genotype combination for
+    # determinism and to prefer left-aligned variant representations.
+    # Previously we kept genotypes[-1] from a sorted list, which had the
+    # same effect.
+    retval[haplotypes] = max(genotypes)
   return retval
 
 
@@ -1442,11 +1444,31 @@ def find_best_matching_haplotypes(candidates, truths, ref):
     return best
 
 
+def _match_sort_key(match):
+  """Returns a fully-deterministic sort key for a HaplotypeMatch.
+
+  The primary key is match_metrics (lower is better).  When multiple matches
+  tie on match_metrics we break ties by the candidate and truth genotype
+  tuples so that the same match is always selected regardless of iteration
+  order.
+
+  Args:
+    match: HaplotypeMatch. The match object to get the sort key for.
+  """
+  return (
+      match.match_metrics,
+      tuple(match.candidate_genotypes),
+      tuple(match.truth_genotypes),
+  )
+
+
 def select_best_haplotype_match(all_matches):
   """Returns the best HaplotypeMatch among all_matches.
 
   The best matching HaplotypeMatch is the one with the lowest match_metrics
-  score.
+  score.  When multiple matches tie on match_metrics, the one with the
+  lexicographically smallest (candidate_genotypes, truth_genotypes) is chosen
+  for determinism.
 
   Args:
     all_matches: iterable[HaplotypeMatch]. An iterable of HaplotypeMatch objects
@@ -1455,7 +1477,7 @@ def select_best_haplotype_match(all_matches):
   Returns:
     The best matching HaplotypeMatch object.
   """
-  sorted_matches = sorted(all_matches, key=lambda x: x.match_metrics)
+  sorted_matches = sorted(all_matches, key=_match_sort_key)
   best = sorted_matches[0]
   equivalents = [
       f for f in all_matches if f.match_metrics == best.match_metrics
@@ -1468,7 +1490,7 @@ def select_best_haplotype_match(all_matches):
       if _DEBUG_PRINTING_IS_ENABLED:
         logging.warning('Equivalent match to best: %s [%s]', f, extra_info)
 
-  return equivalents[0]
+  return sorted_matches[0]
 
 
 # -----------------------------------------------------------------------------

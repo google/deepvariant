@@ -1606,13 +1606,13 @@ class LabelExamplesTest(parameterized.TestCase):
         haplotype_labeler.genotype_options_for_variants(
             [_test_variant(1)], enum_type
         ),
-        [{(0, 0), (0, 1), (1, 1)}],
+        [[(0, 0), (0, 1), (1, 1)]],
     )
     self.assertEqual(
         haplotype_labeler.genotype_options_for_variants(
             [_test_variant(1, alleles=('A', 'C', 'G'))], enum_type
         ),
-        [{(0, 0), (0, 1), (1, 1), (0, 2), (1, 2), (2, 2)}],
+        [[(0, 0), (0, 1), (1, 1), (0, 2), (1, 2), (2, 2)]],
     )
 
   def test_genotype_options_for_variants_only_hom_ref(self):
@@ -2525,6 +2525,42 @@ class HaplotypeLabelerInternalHelpersTest(parameterized.TestCase):
     result = haplotype_labeler._demote_partial_matches(match)
     self.assertIsNot(result, match)
     self.assertEqual(result.candidate_genotypes, [(0, 0)])  # Genotype demoted
+
+  def test_select_best_haplotype_match_determinism(self):
+    candidate = _test_variant(start=10, alleles=('C', 'CT', 'CTT'))
+
+    # Match 1: GT 1/1 -> candidate_genotypes=[(1, 1)]
+    match1 = haplotype_labeler.HaplotypeMatch(
+        haplotypes=['CT', 'CT'],
+        candidates=[candidate],
+        candidate_genotypes=[(1, 1)],
+        truths=[],
+        truth_genotypes=[],
+    )
+
+    # Match 2: GT 0/2 -> candidate_genotypes=[(0, 2)]
+    match2 = haplotype_labeler.HaplotypeMatch(
+        haplotypes=['C', 'CTT'],
+        candidates=[candidate],
+        candidate_genotypes=[(0, 2)],
+        truths=[],
+        truth_genotypes=[],
+    )
+
+    # Both have 0 FN, 0 FP, 1 TP (match_metrics = (0, 0, 1))
+    self.assertEqual(match1.match_metrics, (0, 0, 1))
+    self.assertEqual(match2.match_metrics, (0, 0, 1))
+
+    # Since (0, 2) < (1, 1), match2 should always be selected as it is
+    # lexicographically smaller.
+
+    # Order 1: [match1, match2]
+    best1 = haplotype_labeler.select_best_haplotype_match([match1, match2])
+    self.assertEqual(best1.candidate_genotypes, [(0, 2)])
+
+    # Order 2: [match2, match1]
+    best2 = haplotype_labeler.select_best_haplotype_match([match2, match1])
+    self.assertEqual(best2.candidate_genotypes, [(0, 2)])
 
 
 if __name__ == '__main__':
