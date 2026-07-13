@@ -913,6 +913,12 @@ _ASSIGN_PHASE_FROM_NORMAL = flags.DEFINE_bool(
     'If True, in a DeepSomatic run, use phase information from the normal '
     'sample to assign phase to the tumor sample.',
 )
+_ASSIGN_PHASE_FROM_PANGENOME = flags.DEFINE_bool(
+    'assign_phase_from_pangenome',
+    False,
+    'If True, in a Pangenome run, use phase information from the pangenome '
+    'sample to assign phase to the reads.',
+)
 _VSC_MIN_INDEL_FRACTION_FOR_SMALL_INDELS = flags.DEFINE_float(
     'vsc_min_indel_fraction_for_small_indels',
     0.0,
@@ -1073,6 +1079,7 @@ def shared_flags_to_options(
       methylation_calling_threshold=_METHYLATION_CALLING_THRESHOLD.value,
       enable_methylation_aware_phasing=_ENABLE_METHYLATION_AWARE_PHASING.value,
       assign_phase_from_normal=_ASSIGN_PHASE_FROM_NORMAL.value,
+      assign_phase_from_pangenome=_ASSIGN_PHASE_FROM_PANGENOME.value,
       filter_low_vaf_candidates=_FILTER_LOW_VAF_CANDIDATES.value,
       low_vaf_threshold=_LOW_VAF_THRESHOLD.value,
       low_vaf_max_base_quality=_LOW_VAF_MAX_BASE_QUALITY.value,

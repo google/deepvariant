@@ -80,6 +80,7 @@ from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.io import vcf
+from third_party.nucleus.protos import cigar_pb2
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
@@ -155,6 +156,9 @@ MIN_DIFF_READS_FOR_ALLELE_PHASE = 3
 # calculated. If number of reads for an opposite phase is larger than this
 # value, we will assign phase 0 to the allele.
 MAX_NUM_READS_FOR_OPPOSITE_PHASE = 2
+
+# Ploidy of the organism.
+PLOIDY = 2
 
 # ---------------------------------------------------------------------------
 # Selecting variants of specific types (e.g., SNPs)
@@ -243,7 +247,7 @@ def make_vc_options(
       p_error=flags_obj.p_error,
       max_gq=50,
       gq_resolution=flags_obj.gvcf_gq_binsize,
-      ploidy=2,
+      ploidy=PLOIDY,
       skip_uncalled_genotypes=flags_obj.mode == 'training',
       phase_reads_region_padding_pct=dv_constants.PHASE_READS_REGION_PADDING_PCT,
       track_ref_reads=flags_obj.track_ref_reads,
@@ -1267,6 +1271,9 @@ def _accumulate_make_examples_stats(
   target.num_denovo += source.num_denovo
   target.num_nondenovo += source.num_nondenovo
   target.num_small_model_calls += source.num_small_model_calls
+  target.num_reads_unphased += source.num_reads_unphased
+  target.num_reads_hp1 += source.num_reads_hp1
+  target.num_reads_hp2 += source.num_reads_hp2
 
 
 class RawFd3Writer:
@@ -2821,19 +2828,27 @@ class RegionProcessor:
         f.write(graph.graphviz())
 
   def _get_phased_genotype_from_counts(
-      self, phase_1_count: int, phase_2_count: int
+      self,
+      phase_1_count: int,
+      phase_2_count: int,
+      min_diff_reads_for_allele_phase: int,
+      max_num_reads_for_opposite_phase: int,
   ) -> int:
     """Determines the phased genotype (1, 2, or 0) from phase counts.
 
     Assigns phase to the allele that is supported by more reads. The difference
     between the number of reads supporting each phase must be at least
-    MIN_DIFF_READS_FOR_ALLELE_PHASE, and the count of the opposite phase must
-    not exceed MAX_NUM_READS_FOR_OPPOSITE_PHASE. Returns 0 if no phase is
+    min_diff_reads_for_allele_phase, and the count of the opposite phase must
+    not exceed max_num_reads_for_opposite_phase. Returns 0 if no phase is
     assigned.
 
     Args:
       phase_1_count: The number of reads supporting phase 1.
       phase_2_count: The number of reads supporting phase 2.
+      min_diff_reads_for_allele_phase: The minimum difference in read counts
+        between the two phases to assign a phase.
+      max_num_reads_for_opposite_phase: The maximum number of reads that can
+        support the opposite phase.
 
     Returns:
       1 if phase 1 is confidently assigned, 2 if phase 2 is confidently
@@ -2841,14 +2856,14 @@ class RegionProcessor:
     """
     if (
         phase_1_count > phase_2_count
-        and phase_1_count - phase_2_count > MIN_DIFF_READS_FOR_ALLELE_PHASE
-        and phase_2_count <= MAX_NUM_READS_FOR_OPPOSITE_PHASE
+        and phase_1_count - phase_2_count > min_diff_reads_for_allele_phase
+        and phase_2_count <= max_num_reads_for_opposite_phase
     ):
       return 1
     elif (
         phase_2_count > phase_1_count
-        and phase_2_count - phase_1_count > MIN_DIFF_READS_FOR_ALLELE_PHASE
-        and phase_1_count <= MAX_NUM_READS_FOR_OPPOSITE_PHASE
+        and phase_2_count - phase_1_count > min_diff_reads_for_allele_phase
+        and phase_1_count <= max_num_reads_for_opposite_phase
     ):
       return 2
     else:
@@ -2914,7 +2929,10 @@ class RegionProcessor:
             phases[read_id_to_phase[read_name]] += 1
 
       phased_genotype[index] = self._get_phased_genotype_from_counts(
-          phases[1], phases[2]
+          phases[1],
+          phases[2],
+          MIN_DIFF_READS_FOR_ALLELE_PHASE,
+          MAX_NUM_READS_FOR_OPPOSITE_PHASE,
       )
       index += 1
     return phased_genotype
@@ -3049,9 +3067,149 @@ class RegionProcessor:
       phase_1_count = read_phase_counter.get(1, 0)
       phase_2_count = read_phase_counter.get(2, 0)
       phase = self._get_phased_genotype_from_counts(
-          phase_1_count, phase_2_count
+          phase_1_count,
+          phase_2_count,
+          MIN_DIFF_READS_FOR_ALLELE_PHASE,
+          MAX_NUM_READS_FOR_OPPOSITE_PHASE,
       )
       read_phases.append(phase)
+
+    return read_phases
+
+  def assign_phase_from_pangenome_reads(
+      self,
+      reads_to_phase: List[reads_pb2.Read],
+      pangenome_reads: List[reads_pb2.Read],
+      pangenome_phases: List[int],
+  ) -> List[int]:
+    """Assigns phase to reads by comparing them to pangenome reads.
+
+    Args:
+      reads_to_phase: List of reads to assign phase to.
+      pangenome_reads: List of pangenome reads (haplotypes).
+      pangenome_phases: List of phases for pangenome reads.
+
+    Returns:
+      A list of phases (0, 1, or 2) corresponding to reads_to_phase.
+    """
+
+    def _get_seq_idx_for_genomic_pos(read, target_pos):
+      left_soft_clip_length = 0
+      if (
+          read.alignment.cigar
+          and read.alignment.cigar[0].operation
+          == cigar_pb2.CigarUnit.Operation.CLIP_SOFT
+      ):
+        left_soft_clip_length = read.alignment.cigar[0].operation_length
+
+      current_ref_pos = read.alignment.position.position
+      current_seq_idx = 0 - left_soft_clip_length
+
+      for cigar_unit in read.alignment.cigar:
+        op = cigar_unit.operation
+        length = cigar_unit.operation_length
+
+        if op in [
+            cigar_pb2.CigarUnit.Operation.ALIGNMENT_MATCH,
+            cigar_pb2.CigarUnit.Operation.SEQUENCE_MATCH,
+            cigar_pb2.CigarUnit.Operation.SEQUENCE_MISMATCH,
+        ]:
+          if current_ref_pos + length > target_pos:
+            return current_seq_idx + (target_pos - current_ref_pos)
+          current_ref_pos += length
+          current_seq_idx += length
+        elif op == cigar_pb2.CigarUnit.Operation.INSERT:
+          current_seq_idx += length
+        elif op in [
+            cigar_pb2.CigarUnit.Operation.DELETE,
+            cigar_pb2.CigarUnit.Operation.SKIP,
+        ]:
+          if current_ref_pos + length > target_pos:
+            return current_seq_idx
+          current_ref_pos += length
+        elif op == cigar_pb2.CigarUnit.Operation.CLIP_SOFT:  # CLIP_SOFT
+          current_seq_idx += length
+        elif op in [
+            cigar_pb2.CigarUnit.Operation.CLIP_HARD,
+            cigar_pb2.CigarUnit.Operation.PAD,
+        ]:
+          pass
+
+        if current_ref_pos == target_pos:
+          return current_seq_idx
+
+      return current_seq_idx
+
+    # Group reads by key
+    read_keys = collections.defaultdict(list)
+    for read in reads_to_phase:
+      read_keys[read.fragment_name + '/' + str(read.read_number)].append(read)
+
+    fragment_phases = {}
+
+    for key, reads in read_keys.items():
+      min_mismatches = sys.maxsize
+      best_haplotypes_phases = []
+
+      for hap_read, pang_phase in zip(pangenome_reads, pangenome_phases):
+        if pang_phase not in range(1, PLOIDY + 1):
+          continue
+
+        fragment_mismatches = 0
+        has_overlap = False
+
+        for read in reads:
+          read_pos = read.alignment.position.position
+          read_seq = read.aligned_sequence
+          hap_pos = hap_read.alignment.position.position
+          hap_seq = hap_read.aligned_sequence
+
+          overlap_start = max(read_pos, hap_pos)
+          overlap_end = min(utils.read_end(read), utils.read_end(hap_read))
+
+          if overlap_start >= overlap_end:
+            continue
+
+          has_overlap = True
+          read_offset = _get_seq_idx_for_genomic_pos(read, overlap_start)
+          hap_offset = _get_seq_idx_for_genomic_pos(hap_read, overlap_start)
+
+          comp_len = min(len(read_seq) - read_offset, len(hap_seq) - hap_offset)
+
+          if comp_len <= 0:
+            continue
+
+          # TODO: Consider using edit distance instead of
+          # mismatches.
+          mismatches = sum(
+              1
+              for i in range(comp_len)
+              if read_seq[read_offset + i] != hap_seq[hap_offset + i]
+          )
+          fragment_mismatches += mismatches
+
+        if has_overlap:
+          if fragment_mismatches < min_mismatches:
+            min_mismatches = fragment_mismatches
+            best_haplotypes_phases = [pang_phase]
+          elif fragment_mismatches == min_mismatches:
+            best_haplotypes_phases.append(pang_phase)
+
+      phase1_count = best_haplotypes_phases.count(1)
+      phase2_count = best_haplotypes_phases.count(2)
+
+      if phase1_count > phase2_count:
+        fragment_phases[key] = 1
+      elif phase2_count > phase1_count:
+        fragment_phases[key] = 2
+      else:
+        fragment_phases[key] = 0
+
+    # Reconstruct read phases in original order
+    read_phases = [
+        fragment_phases[read.fragment_name + '/' + str(read.read_number)]
+        for read in reads_to_phase
+    ]
 
     return read_phases
 
@@ -3114,7 +3272,10 @@ class RegionProcessor:
           )
 
           for read in sample.reads:  # pyrefly: ignore[not-iterable]
-            sample.allele_counter.add(read, sample.options.name)
+            if self.options.allele_counter_options.normalize_reads:
+              sample.allele_counter.normalize_and_add(read, sample.options.name)
+            else:
+              sample.allele_counter.add(read, sample.options.name)
         # Reads iterator needs to be reset since it used in the code below.
         sample.reads = sample.in_memory_sam_reader.query(region)  # pyrefly: ignore[missing-attribute]
       allele_counters = {s.options.name: s.allele_counter for s in self.samples}
@@ -3187,14 +3348,12 @@ class RegionProcessor:
     if padded_region is not None:
       left_padding = region.start - padded_region.start
       right_padding = padded_region.end - region.end
+    pangenome_reads = []
+    pangenome_phases = []
     for sample in self.samples:
       role = sample.options.role
-      writer = None
-      if role in self.writers_dict:
-        writer = self.writers_dict[role]
       if not sample.options.reads_filenames:
         continue
-      read_phases_by_sample[role] = {}
       candidates[role], gvcfs[role] = sample.variant_caller.calls_and_gvcfs(  # pyrefly: ignore[missing-attribute]
           allele_counters=allele_counters,
           target_sample=sample.options.name,
@@ -3205,6 +3364,15 @@ class RegionProcessor:
           right_padding=right_padding,
       )
 
+    for sample in self.samples:
+      role = sample.options.role
+      writer = None
+      if role in self.writers_dict:
+        writer = self.writers_dict[role]
+      if not sample.options.reads_filenames:
+        continue
+      read_phases_by_sample[role] = {}
+
       # If methylation-aware phasing is enabled, filter for methylated reference
       # sites and SNP candidates.
       # SNP candidates will be phased using direct phasing.
@@ -3212,7 +3380,7 @@ class RegionProcessor:
       # phasing after direct phasing.
       # Store candidates in a numpy array for easier indexing.
       candidates[role] = np.array(candidates[role])
-      snp_candidate_idx = np.arange(len(candidates[role]))
+      phasing_candidate_idx = np.arange(len(candidates[role]))
       methylated_ref_site_idx = np.array([])
       methylated_ref_sites = np.array([])
       if self.options.enable_methylation_aware_phasing:
@@ -3224,10 +3392,10 @@ class RegionProcessor:
         methylated_ref_site_idx = np.where(is_methylated_ref_site)[0]
         methylated_ref_sites = candidates[role][methylated_ref_site_idx]
 
-        snp_candidate_idx = np.where(~is_methylated_ref_site)[0]
+        phasing_candidate_idx = np.where(~is_methylated_ref_site)[0]
 
       # Only use SNP candidates for direct phasing
-      snp_candidates = candidates[role][snp_candidate_idx]
+      phasing_candidates = candidates[role][phasing_candidate_idx]
 
       if self.options.phase_reads and not sample.options.skip_phasing:
         reads_to_phase = list(
@@ -3247,12 +3415,12 @@ class RegionProcessor:
         # Skip phasing if number of candidates is over the phase_max_candidates.
         if (
             self.options.phase_max_candidates
-            and len(snp_candidates) > self.options.phase_max_candidates
+            and len(phasing_candidates) > self.options.phase_max_candidates
         ):
           logging_with_options(
               self.options,
               'Skip phasing: len(candidates[%s]) is %s.'
-              % (role, len(snp_candidates)),
+              % (role, len(phasing_candidates)),
           )
         else:
           # Assign phase information from normal to tumor.
@@ -3262,11 +3430,38 @@ class RegionProcessor:
               and 'normal' in candidates
           ):
             read_phases = self.assign_phase_from_normal(
-                snp_candidates, reads_to_phase
+                phasing_candidates, reads_to_phase
             )
+          # Assign phase information from pangenome.
+          elif self.options.assign_phase_from_pangenome:
+            # Here we rely on the order of samples. Pangenome goes first. By the
+            # time we get to this point, phasing is already assigned to
+            # pangenome candidates.
+            # TODO: Add a check to make sure pangenome sample is
+            # the first sample.
+            if role == 'reads':
+              read_phases = self.assign_phase_from_pangenome_reads(
+                  reads_to_phase, pangenome_reads, pangenome_phases
+              )
+            elif role == 'pangenome':
+              candidates_of_interest = candidates['reads']
+              pangenome_phases = self.direct_phasing_cpp.phase_from_candidates(
+                  phasing_candidates,
+                  candidates_of_interest,
+                  reads_to_phase,
+                  list(
+                      self.samples[self.options.main_sample_index].in_memory_sam_reader.query(effective_region)  # pyrefly: ignore[missing-attribute]
+                  ),
+              )
+              pangenome_reads = reads_to_phase
+              read_phases = pangenome_phases
+            else:
+              raise ValueError(
+                  f'Unexpected role for assign_phase_from_pangenome: {role}'
+              )
           else:
             read_phases = self.direct_phasing_cpp.phase(
-                snp_candidates, reads_to_phase
+                phasing_candidates, reads_to_phase
             )
 
           # If methylation-aware phasing is enabled, run it on unphased reads.
@@ -3350,7 +3545,9 @@ class RegionProcessor:
             if writer and self.options.read_phases_output:
               writer.write_read_phase(read, read_phase, region_n)
           if self.options.output_phase_info:
-            phased_candidates_count = self.add_phasing_to_candidate(
+            # TODO: internal - Keep track of phased candidates count per
+            # sample.
+            phased_candidates_count += self.add_phasing_to_candidate(
                 candidates[role], read_id_to_phase
             )
           # This logic below will write out the DOT files under the directory
@@ -3385,7 +3582,7 @@ class RegionProcessor:
           and self.options.enable_methylation_aware_phasing
       ):
         # Filter out methylated ref site indices from candidates.
-        candidates[role] = candidates[role][snp_candidate_idx]
+        candidates[role] = candidates[role][phasing_candidate_idx]
 
       if padded_region is not None:
         candidates[role] = self.filter_candidates_by_region(

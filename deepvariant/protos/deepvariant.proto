@@ -749,7 +749,7 @@ message DirectPhasingOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 103.
+// Next ID: 104.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -1073,6 +1073,10 @@ message MakeExamplesOptions {
   // sample to assign phase to the tumor sample.
   bool assign_phase_from_normal = 96;
 
+  // If True, in a Pangenome run, use phase information from the pangenome
+  // sample to assign phase to the reads.
+  bool assign_phase_from_pangenome = 103;
+
   // If true, use read support information from rejected alleles in pileup.
   bool use_rejected_alleles = 97;
 
@@ -1290,7 +1294,7 @@ message CandidateMetrics {
 }
 
 // Statistics about MakeExamples.
-// Next ID: 10.
+// Next ID: 13.
 // LINT.IfChange
 message MakeExamplesStats {
   int32 num_examples = 1;
@@ -1302,6 +1306,9 @@ message MakeExamplesStats {
   int32 num_denovo = 7;
   int32 num_nondenovo = 8;
   int32 num_small_model_calls = 9;
+  int32 num_reads_unphased = 10;
+  int32 num_reads_hp1 = 11;
+  int32 num_reads_hp2 = 12;
 }
 // LINT.ThenChange(../make_examples_core.py:_accumulate_make_examples_stats)
 
