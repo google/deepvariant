@@ -386,10 +386,21 @@ std::vector<Path> DeBruijnGraph::CandidatePaths() const {
     // appropriate queue.
     AdjacencyIterator vi, vend;
     std::tie(vi, vend) = boost::adjacent_vertices(last_v, g_);
-    for (; vi != vend; ++vi) {
+    std::vector<Vertex> successors(vi, vend);
+    // Sort successors deterministically. In a de Bruijn graph, edge V→U
+    // exists iff V.kmer[1:k] == U.kmer[0:k-1], so all successors of V
+    // share the same first (k-1) characters and differ only at the last
+    // character. For example, with k=3, vertex "GAT" can have successors
+    // "ATT" and "ATG" — both start with "AT", differing only at [k-1]=2.
+    // Comparing that single character is sufficient to order them.
+    std::sort(successors.begin(), successors.end(),
+              [this](Vertex v1, Vertex v2) {
+                return g_[v1].kmer[k_ - 1] < g_[v2].kmer[k_ - 1];
+              });
+    for (Vertex successor : successors) {
       Path extended_path(path);
-      extended_path.push_back(*vi);
-      if (*vi == sink_ || boost::out_degree(*vi, g_) == 0) {
+      extended_path.push_back(successor);
+      if (successor == sink_ || boost::out_degree(successor, g_) == 0) {
         terminated_paths.push_back(extended_path);
       } else {
         extendable_paths.push(extended_path);
@@ -398,6 +409,7 @@ std::vector<Path> DeBruijnGraph::CandidatePaths() const {
   }
   return terminated_paths;
 }
+
 
 string DeBruijnGraph::HaplotypeForPath(const Path& path) const {
   std::stringstream haplotype;
