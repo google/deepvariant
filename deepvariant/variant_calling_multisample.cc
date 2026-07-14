@@ -261,10 +261,9 @@ CreateCombinedAllelesSupport(
           read_allele.type() != AlleleType::REFERENCE) {
         found_alt_allele_overlapped_by_deletion++;
       }
-      read_to_alt_alleles[read_id].push_back(
-          {.alt_bases = std::string(read_allele.bases()),
-           .type = read_allele.type(),
-           .position = allele_pos});
+      read_to_alt_alleles[read_id].push_back({.alt_bases = read_allele.bases(),
+                                              .type = read_allele.type(),
+                                              .position = allele_pos});
     }  // for (read_id, read_allele)
   }  // for (allele_counts_context)
   if (found_alt_allele_overlapped_by_deletion < 1 || overlapping_del_found) {
