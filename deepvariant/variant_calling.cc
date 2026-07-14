@@ -611,6 +611,19 @@ void VariantCaller::AddSupportingReads(
       DeepVariantCall_ReadSupport* read_info = support_infos.add_read_infos();
       read_info->set_read_name(read_name);
       read_info->set_is_low_quality(allele.is_low_quality());
+      // Populate the per-read fields the small_model expects (matches the
+      // multisample variant_calling). Note: This C++ VariantCaller (defined in
+      // variant_calling.cc) is NOT used in the default DeepVariant execution
+      // path (which delegates to variant_calling_multisample.cc). It is only
+      // active when running in vcf_candidate_importer mode
+      // (e.g. force calling).
+      // Without populating these fields, running vcf_candidate_importer with
+      // the small_model results in zeroed BaseFeatures and biased predictions.
+      // Based on https://github.com/google/deepvariant/pull/1085
+      // Credit: GitHub user @BenjaminDEMAILLE
+      read_info->set_mapping_quality(allele.mapping_quality());
+      read_info->set_average_base_quality(allele.avg_base_quality());
+      read_info->set_is_reverse_strand(allele.is_reverse_strand());
     } else if (options_.track_ref_reads()) {
       call->add_ref_support(read_name);
       DeepVariantCall_SupportingReadsExt& support_infos =
@@ -618,6 +631,9 @@ void VariantCaller::AddSupportingReads(
       DeepVariantCall_ReadSupport* read_info = support_infos.add_read_infos();
       read_info->set_read_name(read_name);
       read_info->set_is_low_quality(allele.is_low_quality());
+      read_info->set_mapping_quality(allele.mapping_quality());
+      read_info->set_average_base_quality(allele.avg_base_quality());
+      read_info->set_is_reverse_strand(allele.is_reverse_strand());
     }
   }
 }
