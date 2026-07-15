@@ -10,3 +10,36 @@
 bazel-*
 
 **/.ipynb_checkpoints
+
+# v2 — Apple Silicon native port
+build/
+build-*/
+.cache/
+**/__pycache__/
+tools/conversion/venv-*/
+tools/conversion/.cache/
+tools/conversion/models/
+tools/conversion/Generated/
+tools/reference/cache/
+tools/reference/output/
+benchmarks/runs/
+benchmarks/*.log
+testdata/reference/large/
+*.mlpackage
+*.mlmodelc
+*.tfrecord
+*.bam
+*.bai
+*.fa
+*.fai
+*.fa.gz
+*.vcf
+*.vcf.gz
+*.tbi
+*.bed
+.DS_Store
+validation/work/
+validation/output/
+
+# Local Claude Code settings (do not commit)
+.claude/

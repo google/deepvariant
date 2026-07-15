@@ -276,7 +276,7 @@ std::string ExamplesGenerator::CreateHaplotype(const Variant& variant,
   int64_t var_end = var_start + ref_bases.size();
 
   std::string prefix = "";
-  int64_t ref_start = std::max(var_start - half_width_, 0L);
+  int64_t ref_start = std::max<int64_t>(var_start - half_width_, 0);
   if (ref_start < var_start) {
     prefix =
         ref_reader_->GetBases(
@@ -518,7 +518,7 @@ std::string ExamplesGenerator::GetReferenceBasesForPileup(
   int64_t start = variant.start() - half_width_;
   int64_t end = start + options_.pic_options().width();
 
-  int region_start = std::max(0L, start);
+  int region_start = std::max<int64_t>(0, start);
   int region_end = std::min(n_bases, end);
   Range region;
   region.set_reference_name(variant.reference_name());

@@ -703,6 +703,13 @@ void VariantCaller::AddSupportingReads(
       DeepVariantCall_ReadSupport* read_info = support_infos.add_read_infos();
       read_info->set_read_name(read_name);
       read_info->set_is_low_quality(allele.is_low_quality());
+      // Populate the per-read fields the small_model expects (matches the
+      // multisample variant_calling — single-sample originally only wrote
+      // read_name + is_low_quality, leaving 6/12 small_model BaseFeatures
+      // at 0 and biasing predictions toward hom_ref).
+      read_info->set_mapping_quality(allele.mapping_quality());
+      read_info->set_average_base_quality(allele.avg_base_quality());
+      read_info->set_is_reverse_strand(allele.is_reverse_strand());
     } else if (options_.track_ref_reads()) {
       call->add_ref_support(read_name);
       DeepVariantCall_SupportingReadsExt& support_infos =
@@ -710,6 +717,9 @@ void VariantCaller::AddSupportingReads(
       DeepVariantCall_ReadSupport* read_info = support_infos.add_read_infos();
       read_info->set_read_name(read_name);
       read_info->set_is_low_quality(allele.is_low_quality());
+      read_info->set_mapping_quality(allele.mapping_quality());
+      read_info->set_average_base_quality(allele.avg_base_quality());
+      read_info->set_is_reverse_strand(allele.is_reverse_strand());
     }
   }
 }

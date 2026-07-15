@@ -327,7 +327,24 @@ CreateCombinedAllelesSupport(
     if (allele_pos >= del_start + del_len) {
       break;
     }
+    // Phase 5.5d/8 — iterate proto-map in DETERMINISTIC sorted-by-read-id
+    // order. Proto map iteration is unspecified; absl-internal hashing on
+    // macOS arm64 may differ from Linux x86 (Docker) and produces the
+    // SAME entries but in different ORDER. Most downstream code is
+    // order-invariant, but the `overlapping_del_found` early break is
+    // order-sensitive: if a deletion read appears FIRST in iteration,
+    // the function returns no support map; if it appears LATER (after
+    // some pushes), partial pushes have already happened. Sorting by
+    // read_id removes this platform-dependent variability.
+    std::vector<std::pair<std::string, const Allele*>> sorted_reads;
+    sorted_reads.reserve(allele_count.read_alleles_size());
     for (const auto& [read_id, read_allele] : allele_count.read_alleles()) {
+      sorted_reads.emplace_back(read_id, &read_allele);
+    }
+    std::sort(sorted_reads.begin(), sorted_reads.end(),
+              [](const auto& a, const auto& b) { return a.first < b.first; });
+    for (const auto& [read_id, read_allele_ptr] : sorted_reads) {
+      const Allele& read_allele = *read_allele_ptr;
       // Skip alleles for the deletion itself.
       if (allele_pos == del_start &&
           read_allele.type() == AlleleType::DELETION &&
@@ -351,7 +368,7 @@ CreateCombinedAllelesSupport(
       read_to_alt_alleles[read_id].push_back({.alt_bases = read_allele.bases(),
                                               .type = read_allele.type(),
                                               .position = allele_pos});
-    }  // for (read_id, read_allele)
+    }  // for sorted (read_id, read_allele)
   }  // for (allele_counts_context)
   if (found_alt_allele_overlapped_by_deletion < 1 || overlapping_del_found) {
     read_to_alt_alleles.clear();

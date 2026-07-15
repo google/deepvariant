@@ -122,7 +122,8 @@ class ReadAllele {
   ReadAllele(int position, absl::string_view bases, const AlleleType& type,
              bool is_low_quality = false, uint8_t mapping_quality = 0,
              uint8_t avg_base_quality = 0, bool is_reverse_strand = false,
-             bool is_methylated = false, uint8_t methylation_level = 0)
+             bool is_methylated = false, uint8_t methylation_level = 0,
+             int8_t haplotype_tag = 0)
       : position_(position),
         bases_(bases),
         type_(type),
@@ -131,7 +132,8 @@ class ReadAllele {
         avg_base_quality_(avg_base_quality),
         is_reverse_strand_(is_reverse_strand),
         is_methylated_(is_methylated),
-        methylation_level_(methylation_level) {}
+        methylation_level_(methylation_level),
+        haplotype_tag_(haplotype_tag) {}
 
   // Gets the position of this ReadAllele. Can be < 0 or >= IntervalLength(),
   // indicating that the ReadAllele refers to a position outside of the
@@ -159,6 +161,9 @@ class ReadAllele {
 
   float methylation_level() const { return methylation_level_; }
 
+  // SAM HP tag: 0=unphased, 1=HP1, 2=HP2. Used for PacBio/ONT small model.
+  int8_t haplotype_tag() const { return haplotype_tag_; }
+
  private:
   static constexpr int kInvalidPosition = -1;
 
@@ -171,6 +176,7 @@ class ReadAllele {
   bool is_reverse_strand_ = false;
   bool is_methylated_ = false;
   uint8_t methylation_level_ = 0;
+  int8_t haplotype_tag_ = 0;
 };
 
 // Workhorse class to compute AlleleCounts over an interval on the genome.

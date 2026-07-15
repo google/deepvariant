@@ -1,0 +1,12 @@
+# Phase 0 Voie A — Core ML conversion venv (TF-free, PyTorch-free)
+#
+# MIL path: weights come from TensorBundle directly as numpy arrays,
+# coremltools builds the MLProgram from a mb.program() description.
+# No TensorFlow, no PyTorch, no ONNX needed.
+#
+# coremltools 9.0: works with the direct MIL path (no TF SavedModel
+# conversion). The v1 hang (9.0 + TF SavedModel) does NOT apply here.
+# Uses Python 3.12 (system Homebrew) — native .so extensions required.
+coremltools>=9.0
+numpy<2
+google-crc32c==1.5.0

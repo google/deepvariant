@@ -1,0 +1,11 @@
+# Phase 0 Voie B — MLX venv (TF-free)
+#
+# Inception-v3 is rebuilt in MLX from the safetensors weight bundle that
+# convert_savedmodel.py emits (no TF). Bench uses MLX directly.
+mlx>=0.21.0
+mlx-data>=0.0.4
+numpy<2
+protobuf==4.25.3
+absl-py==2.1.0
+safetensors>=0.4.5
+google-crc32c==1.5.0

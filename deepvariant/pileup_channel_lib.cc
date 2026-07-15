@@ -39,6 +39,13 @@
 #include <string>
 #include <vector>
 
+#if defined(__ARM_NEON) || defined(__aarch64__)
+#  include <arm_neon.h>
+#  define DV_PILEUP_HAVE_NEON 1
+#else
+#  define DV_PILEUP_HAVE_NEON 0
+#endif
+
 #include "deepvariant/channels/allele_frequency_channel.h"
 #include "deepvariant/channels/allele_sample_probability_channel.h"
 #include "deepvariant/channels/avg_base_quality_channel.h"
@@ -260,6 +267,40 @@ bool Channels::CalculateBaseLevelData(
   return true;
 }
 
+// Fill n bytes of dst with base-color values for the bases at src[0..n-1].
+// The lookup table is indexed by (base_ascii & 0x0F):
+//   'A' = 0x41 → low4 = 0x1,  'C' = 0x43 → 0x3,
+//   'G' = 0x47 → 0x7,         'T' = 0x54 → 0x4
+// All other indices → 0 (including 'N' = 0x4E → 0xE).
+// Produces byte-identical output to the switch-statement BaseColor() loop.
+static void FillBaseColorBatch(uint8_t* dst, const char* src, int n,
+                                uint8_t A_val, uint8_t C_val,
+                                uint8_t G_val, uint8_t T_val) {
+  uint8_t lut[16] = {};
+  lut[0x1] = A_val;  // 'A' & 0x0F
+  lut[0x3] = C_val;  // 'C' & 0x0F
+  lut[0x7] = G_val;  // 'G' & 0x0F
+  lut[0x4] = T_val;  // 'T' & 0x0F
+#if DV_PILEUP_HAVE_NEON
+  const uint8x16_t vlut  = vld1q_u8(lut);
+  const uint8x16_t vmask = vdupq_n_u8(0x0F);
+  int i = 0;
+  for (; i + 16 <= n; i += 16) {
+    uint8x16_t b    = vld1q_u8(reinterpret_cast<const uint8_t*>(src + i));
+    uint8x16_t idx  = vandq_u8(b, vmask);
+    uint8x16_t cols = vqtbl1q_u8(vlut, idx);
+    vst1q_u8(dst + i, cols);
+  }
+  for (; i < n; ++i) {
+    dst[i] = lut[static_cast<uint8_t>(src[i]) & 0x0Fu];
+  }
+#else
+  for (int i = 0; i < n; ++i) {
+    dst[i] = lut[static_cast<uint8_t>(src[i]) & 0x0Fu];
+  }
+#endif
+}
+
 void Channels::CalculateRefRows(
     std::vector<std::vector<unsigned char>>& ref_data,
     absl::Span<const DeepVariantChannelEnum> channel_enums,
@@ -283,11 +324,30 @@ void Channels::CalculateRefRows(
         Channels::ChannelEnumToObject(channel_enum, ref_bases.size(), options_);
   }
 
+  const int n_bases = static_cast<int>(ref_bases.size());
   for (const DeepVariantChannelEnum channel_enum : channel_enums) {
     int index = channel_enum_to_index_[channel_enum];
-    for (int i = 0; i < ref_bases.size(); ++i) {
-      channel_objects[channel_enum]->FillRefBase(ref_data[index], i,
-                                                 ref_bases[i], ref_bases);
+    if (channel_enum == DeepVariantChannelEnum::CH_READ_BASE) {
+      // A2.1 fast path: batch NEON table-lookup for base→color mapping.
+      // BaseColor() is: A=offset_ag+stride*3, G=offset_ag+stride*2,
+      //                 T=offset_tc+stride*1, C=offset_tc+stride*0.
+      // uint8_t arithmetic matches the scalar implicit narrowing.
+      const uint8_t offset_ag = static_cast<uint8_t>(
+          options_.base_color_offset_a_and_g());
+      const uint8_t offset_tc = static_cast<uint8_t>(
+          options_.base_color_offset_t_and_c());
+      const uint8_t stride    = static_cast<uint8_t>(
+          options_.base_color_stride());
+      FillBaseColorBatch(ref_data[index].data(), ref_bases.data(), n_bases,
+                         static_cast<uint8_t>(offset_ag + stride * 3),   // A
+                         static_cast<uint8_t>(offset_tc),                 // C
+                         static_cast<uint8_t>(offset_ag + stride * 2),   // G
+                         static_cast<uint8_t>(offset_tc + stride));       // T
+    } else {
+      for (int i = 0; i < n_bases; ++i) {
+        channel_objects[channel_enum]->FillRefBase(ref_data[index], i,
+                                                   ref_bases[i], ref_bases);
+      }
     }
   }
 }

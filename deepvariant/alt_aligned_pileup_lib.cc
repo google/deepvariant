@@ -149,7 +149,7 @@ void TrimCigar(const ::google::protobuf::RepeatedPtrField<CigarUnit>& cigar,
 Read TrimRead(const Read& read, const Range& region) {
   int64_t read_start = read.alignment().position().position();
   // Ref position where trimmed read should start.
-  int64_t trim_left = std::max(region.start() - read_start, 0L);
+  int64_t trim_left = std::max<int64_t>(region.start() - read_start, 0);
   // Ref length of the trimmed read.
   int64_t ref_length = region.end() - std::max(region.start(), read_start);
   CHECK_GT(ref_length, 0);
@@ -226,7 +226,7 @@ Range CalculateAlignmentRegion(const Variant& variant, int half_width,
   int64_t n_ref_bases = variant.reference_bases().size();
   int64_t ref_end = ref_start + n_ref_bases;
   alignment_region.set_reference_name(variant.reference_name());
-  alignment_region.set_start(std::max(variant.start() - half_width, 0L));
+  alignment_region.set_start(std::max<int64_t>(variant.start() - half_width, 0));
   alignment_region.set_end(std::min(
       ref_reader.Contig(variant.reference_name()).ValueOrDie()->n_bases(),
       ref_end + half_width));
@@ -291,7 +291,7 @@ std::vector<Read> RealignReadsToHaplotype(
   realigner.set_options(aln_config);
   // Both reference and haplotype are padded with typically 20 bases from the
   // reference.
-  int64_t ref_start_ext = std::max(0L, ref_start - kRefAlignMargin);
+  int64_t ref_start_ext = std::max<int64_t>(0, ref_start - kRefAlignMargin);
   int64_t ref_end_ext =
       std::min(ref_reader.Contig(std::string(contig)).ValueOrDie()->n_bases(),
                ref_end + kRefAlignMargin);

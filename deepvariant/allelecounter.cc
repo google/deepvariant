@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "deepvariant/channels/base_methylation_channel.h"
+#include "deepvariant/native/neon_cigar_classify.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/utils.h"
 #include "absl/log/check.h"
@@ -308,7 +309,7 @@ void AlleleCounter::Init() {
   auto full_interval_offset = interval_.start() - reads_interval_.start();
   // If interval_ starts before reads_interval_ start then we don't need to
   // offset reference bases.
-  full_interval_offset = std::max(full_interval_offset, 0L);
+  full_interval_offset = std::max<int64_t>(full_interval_offset, 0);
   for (int i = 0; i < len; ++i) {
     AlleleCount allele_count;
     const int64_t pos = interval_.start() + i;
@@ -901,45 +902,100 @@ void AlleleCounter::Add(const nucleus::genomics::v1::Read& read,
     switch (cigar_elt.operation()) {
       case CigarUnit::ALIGNMENT_MATCH:
       case CigarUnit::SEQUENCE_MATCH:
-      case CigarUnit::SEQUENCE_MISMATCH:
-        for (int i = 0; i < op_len; ++i) {
-          const int ref_offset = ref_interval_offset + i;
-          const int base_offset = read_offset + i;
-          bool is_low_quality_read_allele = false;
-          double methylation_calling_threshold =
-              options_.methylation_calling_threshold();
-          bool is_methylated = false;
-          int32_t methylation_level = GetMethylationLevel(read, base_offset);
-          // Store methylation probability for each read allele.
-          // Only run when methylation-calling is enabled or methylation-aware
-          // phasing is enabled.
-          if (IsMethylated(
-                  read, base_offset,
-                  options_.enable_methylation_calling() ||
-                      options_.enable_methylation_aware_phasing(),
-                  methylation_calling_threshold)) {
-            is_methylated = true;
-          }
-          if (IsValidRefOffset(ref_offset) &&
-              CanBasesBeUsed(read, base_offset, 1, options_,
-                             is_low_quality_read_allele)) {
-            const AlleleType type =
-                ref_bases_[ref_offset] == read_seq[base_offset]
-                    ? AlleleType::REFERENCE
-                    : AlleleType::SUBSTITUTION;
+      case CigarUnit::SEQUENCE_MISMATCH: {
+        // A2.2 NEON pre-classification of the M-block. Replaces per-base
+        // CanBasesBeUsed(len=1) + IsCanonicalBase + (ref==read) virtual
+        // walk with one NEON pass over the visible slice; bit-equivalent
+        // to upstream's scalar reference (validated by
+        // microtest_neon_cigar_classify, 131k+ inputs PASS).
+        const uint8_t min_q = static_cast<uint8_t>(
+            options_.read_requirements().min_base_quality());
+        const bool legacy = options_.keep_legacy_behavior();
+        const bool methylation_enabled =
+            options_.enable_methylation_calling() ||
+            options_.enable_methylation_aware_phasing();
+        const double methylation_threshold =
+            options_.methylation_calling_threshold();
+
+        // Clip M-block to the valid ref interval so the NEON loads stay
+        // in bounds (mirrors the IsValidRefOffset() guard).
+        const int reads_len = static_cast<int>(ReadsIntervalLength());
+        const int i_lo = std::max(0, -ref_interval_offset);
+        const int i_hi = std::min(op_len, reads_len - ref_interval_offset);
+
+        // Stack-allocated mask buffers. SAM CIGAR op_len is bounded by
+        // read length (≤ 1024 for short reads, ~25k for long reads).
+        // For oversized blocks, fall through to the scalar walker.
+        constexpr int kMaxStackMblock = 4096;
+        const int visible = std::max(0, i_hi - i_lo);
+        if (visible > 0 && visible <= kMaxStackMblock) {
+          uint8_t use_base[kMaxStackMblock];
+          uint8_t is_low_quality[kMaxStackMblock];
+          uint8_t is_ref_mask[kMaxStackMblock];
+          uint8_t canonical[kMaxStackMblock];
+          ::deepvariant::neon_cigar::ClassifyMasks masks{
+              use_base, is_low_quality, is_ref_mask, canonical};
+          ::deepvariant::neon_cigar::ClassifyMBlockNeon(
+              read_seq.data() + read_offset + i_lo,
+              ref_bases_.data() + ref_interval_offset + i_lo,
+              reinterpret_cast<const uint8_t*>(
+                  read.aligned_quality().data()) +
+                  read_offset + i_lo,
+              static_cast<size_t>(visible), min_q, legacy, masks);
+
+          for (int i = i_lo; i < i_hi; ++i) {
+            const int kk = i - i_lo;
+            if (!use_base[kk]) continue;
+            const int base_offset = read_offset + i;
+            int32_t methylation_level = GetMethylationLevel(read, base_offset);
+            const bool is_methylated = IsMethylated(
+                read, base_offset, methylation_enabled,
+                methylation_threshold);
+            const AlleleType type = is_ref_mask[kk]
+                                        ? AlleleType::REFERENCE
+                                        : AlleleType::SUBSTITUTION;
             to_add.emplace_back(
-                interval_offset + i, string(read_seq.substr(base_offset, 1)),
-                type, is_low_quality_read_allele,
+                interval_offset + i,
+                string(read_seq.substr(base_offset, 1)), type,
+                static_cast<bool>(is_low_quality[kk]),
                 read.alignment().mapping_quality(),
                 read.aligned_quality()[base_offset],
                 read.alignment().position().reverse_strand(), is_methylated,
                 methylation_level);
+          }
+        } else {
+          // Scalar fallback (oversized M-block or no visible bases).
+          for (int i = 0; i < op_len; ++i) {
+            const int ref_offset = ref_interval_offset + i;
+            const int base_offset = read_offset + i;
+            bool is_low_quality_read_allele = false;
+            int32_t methylation_level = GetMethylationLevel(read, base_offset);
+            const bool is_methylated = IsMethylated(
+                read, base_offset, methylation_enabled,
+                methylation_threshold);
+            if (IsValidRefOffset(ref_offset) &&
+                CanBasesBeUsed(read, base_offset, 1, options_,
+                               is_low_quality_read_allele)) {
+              const AlleleType type =
+                  ref_bases_[ref_offset] == read_seq[base_offset]
+                      ? AlleleType::REFERENCE
+                      : AlleleType::SUBSTITUTION;
+              to_add.emplace_back(
+                  interval_offset + i,
+                  string(read_seq.substr(base_offset, 1)), type,
+                  is_low_quality_read_allele,
+                  read.alignment().mapping_quality(),
+                  read.aligned_quality()[base_offset],
+                  read.alignment().position().reverse_strand(), is_methylated,
+                  methylation_level);
+            }
           }
         }
         read_offset += op_len;
         ref_interval_offset += op_len;
         interval_offset += op_len;
         break;
+      }
       case CigarUnit::CLIP_SOFT:
       case CigarUnit::INSERT:
         // Note, by convention VCF insertion/deletion are at the preceding base.

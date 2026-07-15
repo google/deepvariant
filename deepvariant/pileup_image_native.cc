@@ -41,6 +41,7 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/native/libstdcxx_shuffle.h"
 #include "deepvariant/pileup_channel_lib.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/sampling_util.h"
@@ -159,7 +160,16 @@ std::vector<int> DownsampleReadIndices(
   if (reads.size() > max_reads) {
     // Shuffle the indices instead of the reads, so that we won't change the
     // order of the reads list.
-    std::shuffle(read_indices.begin(), read_indices.end(), gen);
+    //
+    // Phase 5.5d v2: use a libstdc++-compatible shuffle (same algorithm
+    // as `google/deepvariant:1.10.0` Docker, which is built with GCC +
+    // libstdc++) so the read selection is bit-identical to upstream's.
+    // libc++'s `std::shuffle` is implementation-defined and produces a
+    // different sequence for the same generator state, which would
+    // cause our pileup image to differ from Docker's at sites with
+    // coverage > 95 → FILTER drift downstream.
+    ::deepvariant::dv_shuffle::Shuffle(read_indices.begin(),
+                                        read_indices.end(), gen);
   }
   return read_indices;
 }
