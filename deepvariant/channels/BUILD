@@ -392,7 +392,6 @@ cc_library(
         ":channel_utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
-        "@com_google_absl//absl/strings",
     ],
 )
 
