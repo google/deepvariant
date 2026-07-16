@@ -2111,7 +2111,12 @@ class RegionProcessor:
       reads_per_sample = []
       pileup_height = 0
       for sample in self.samples:
-        reads_per_sample.append(sample.in_memory_sam_reader.iterate())  # pyrefly: ignore[missing-attribute]
+        if self.options.skip_image_data_for_oracle_analysis:
+          # Skip reading BAM data — images will be skipped by the C++
+          # fast path, so reads are not needed.
+          reads_per_sample.append([])
+        else:
+          reads_per_sample.append(sample.in_memory_sam_reader.iterate())  # pyrefly: ignore[missing-attribute]
         pileup_height += sample.options.pileup_height
       # Unzip list of tuples.
       candidates_list = []
@@ -2167,7 +2172,12 @@ class RegionProcessor:
       reads_per_sample = []
       pileup_height = 0
       for sample in self.samples:
-        reads_per_sample.append(sample.in_memory_sam_reader.iterate())  # pyrefly: ignore[missing-attribute]
+        if self.options.skip_image_data_for_oracle_analysis:
+          # Skip reading BAM data — images will be skipped by the C++
+          # fast path, so reads are not needed.
+          reads_per_sample.append([])
+        else:
+          reads_per_sample.append(sample.in_memory_sam_reader.iterate())  # pyrefly: ignore[missing-attribute]
         pileup_height += sample.options.pileup_height
 
       n_stats_one_region, example_shape_one = (
@@ -4078,7 +4088,11 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
         n_small_model_stats.num_small_model_calls += num_calls
         candidates_for_pileup_images = candidates_not_called_by_small_model
 
-      if not options.skip_pileup_image_generation:
+      should_write_examples = (
+          not options.skip_pileup_image_generation
+          or options.skip_image_data_for_oracle_analysis
+      )
+      if should_write_examples:
         region_example_shape = region_processor.writes_examples_in_region(  # pytype: disable=wrong-arg-types
             candidates_for_pileup_images,
             sample.options.order,  # pyrefly: ignore[bad-argument-type]

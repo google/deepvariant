@@ -52,6 +52,7 @@
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/util/proto_ptr.h"
 #include "google/protobuf/map.h"
+#include "tensorflow/core/example/example.pb.h"
 
 namespace learning {
 namespace genomics {
@@ -214,6 +215,24 @@ class ExamplesGenerator {
       const nucleus::genomics::v1::Variant& variant,
       absl::Span<const std::string> alt_combination, MakeExamplesStats& stats,
       std::vector<int>& image_shape,
+      const std::unique_ptr<VariantLabel>& label) const;
+
+  // Encodes a variant into an example with empty image data.
+  // Used when skip_image_data_for_oracle_analysis is set to skip pileup
+  // image generation.
+  std::string EncodeExampleWithoutImage(
+      const nucleus::genomics::v1::Variant& variant,
+      absl::Span<const std::string> alt_combination, MakeExamplesStats& stats,
+      std::vector<int>& image_shape,
+      const std::unique_ptr<VariantLabel>& label) const;
+
+  // Populates shared metadata fields (locus, variant/encoded, variant_type,
+  // alt_allele_indices, sequencing_type, label, denovo_label) into a
+  // tf.Example. Used by both EncodeExample and EncodeExampleWithoutImage.
+  void PopulateExampleMetadata(
+      tensorflow::Example& example,
+      const nucleus::genomics::v1::Variant& variant,
+      absl::Span<const std::string> alt_combination, MakeExamplesStats& stats,
       const std::unique_ptr<VariantLabel>& label) const;
 
   // Generates one or more examples from a given candidate. Example(s) are

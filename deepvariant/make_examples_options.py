@@ -777,6 +777,15 @@ _SKIP_PILEUP_IMAGE_GENERATION = flags.DEFINE_bool(
     'If True, skips generating pile up images. Should be set only if'
     ' write_small_model_examples is true.',
 )
+_SKIP_IMAGE_DATA_FOR_ORACLE_ANALYSIS = flags.DEFINE_bool(
+    'skip_image_data_for_oracle_analysis',
+    False,
+    'If True, write examples with an empty image, skipping pileup image'
+    ' generation. Only variant/encoded and label will be populated.'
+    ' This is specifically for oracle inference analysis with'
+    ' labeled_examples_to_vcf. Not intended for standard variant calling'
+    ' or model training.',
+)
 _CALL_SMALL_MODEL_EXAMPLES = flags.DEFINE_bool(
     'call_small_model_examples',
     False,
@@ -1501,6 +1510,23 @@ def shared_flags_to_options(
           errors.CommandLineError,
       )
     options.skip_pileup_image_generation = _SKIP_PILEUP_IMAGE_GENERATION.value
+
+  if _SKIP_IMAGE_DATA_FOR_ORACLE_ANALYSIS.value:
+    if options.stream_examples:
+      errors.log_and_raise(
+          '--skip_image_data_for_oracle_analysis is not compatible with'
+          ' --stream_examples.',
+          errors.CommandLineError,
+      )
+    if _SKIP_PILEUP_IMAGE_GENERATION.value or _WRITE_SMALL_MODEL_EXAMPLES.value:
+      errors.log_and_raise(
+          '--skip_image_data_for_oracle_analysis is not compatible with'
+          ' small model flags (--skip_pileup_image_generation,'
+          ' --write_small_model_examples).',
+          errors.CommandLineError,
+      )
+    options.skip_image_data_for_oracle_analysis = True
+
   if (
       _SMALL_MODEL_VAF_CONTEXT_WINDOW_SIZE.value > 0
       and _SMALL_MODEL_VAF_CONTEXT_WINDOW_SIZE.value % 2 == 0

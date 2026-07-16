@@ -388,6 +388,62 @@ std::string EncodeVariant(const Variant& variant, const VariantLabel* label) {
 
 }  // namespace
 
+void ExamplesGenerator::PopulateExampleMetadata(
+    tensorflow::Example& example, const Variant& variant,
+    absl::Span<const std::string> alt_combination, MakeExamplesStats& stats,
+    const std::unique_ptr<VariantLabel>& label) const {
+  // Encode alt allele indices.
+  absl::flat_hash_set<int> alt_indices_set;
+  std::string alt_indices_encoded =
+      EncodeAltAlleles(variant, alt_combination, &alt_indices_set);
+
+  // Encode variant range.
+  std::ostringstream s;
+  // The string literal form looks like:
+  //   reference_name:start+1-end
+  // since start and end are zero-based inclusive (start) and exclusive (end),
+  // while the literal form is one-based inclusive on both ends.
+  s << variant.reference_name() << ":" << variant.start() + 1 << "-"
+    << variant.end();
+  std::string variant_range_encoded = s.str();
+
+  // Encode features of the example.
+  enum EncodedVariantType variant_type = EncodedVariantType(variant);
+  (*example.mutable_features()->mutable_feature())["locus"]
+      .mutable_bytes_list()
+      ->add_value(std::move(variant_range_encoded));
+  (*example.mutable_features()->mutable_feature())["variant/encoded"]
+      .mutable_bytes_list()
+      ->add_value(EncodeVariant(variant, label.get()));
+  (*example.mutable_features()->mutable_feature())["variant_type"]
+      .mutable_int64_list()
+      ->add_value(static_cast<int64_t>(variant_type));
+  (*example.mutable_features()->mutable_feature())["alt_allele_indices/encoded"]
+      .mutable_bytes_list()
+      ->add_value(alt_indices_encoded);
+  (*example.mutable_features()->mutable_feature())["sequencing_type"]
+      .mutable_int64_list()
+      ->add_value(options_.pic_options().sequencing_type());
+
+  // Set the label if it is provided.
+  int label_value = 0;
+  if (label != nullptr) {
+    label_value = label->LabelForAltAlleles(alt_indices_set);
+    (*example.mutable_features()->mutable_feature())["label"]
+        .mutable_int64_list()
+        ->add_value(label_value);
+  }
+
+  // Set de novo feature if de novo regions are provided.
+  if (!options_.denovo_regions_filename().empty() && label != nullptr) {
+    (*example.mutable_features()->mutable_feature())["denovo_label"]
+        .mutable_int64_list()
+        ->add_value(label->is_denovo);
+  }
+
+  UpdateStats(variant_type, label.get(), label_value, stats);
+}
+
 std::string ExamplesGenerator::EncodeExample(
     std::vector<std::vector<std::unique_ptr<ImageRow>>>& image_per_sample,
     std::vector<std::vector<std::vector<std::unique_ptr<ImageRow>>>>&
@@ -409,38 +465,11 @@ std::string ExamplesGenerator::EncodeExample(
   FillPileupArrayBySample(image_per_sample, alt_image_per_sample, options_,
                           alt_combination, &data, data.size());
 
-  // Encode alt allele indices.
-  absl::flat_hash_set<int> alt_indices_set;
-  std::string alt_indices_encoded =
-      EncodeAltAlleles(variant, alt_combination, &alt_indices_set);
-
-  // Encode variant range.
-  Range variant_range;
-  std::string variant_range_encoded;
-  std::ostringstream s;
-  // The string literal form looks like:
-  //   reference_name:start+1-end
-  // since start and end are zero-based inclusive (start) and exclusive (end),
-  // while the literal form is one-based inclusive on both ends.
-  s << variant.reference_name() << ":" << variant.start() + 1 << "-"
-    << variant.end();
-  variant_range_encoded.assign(s.str());
-
-  // Encode features of the example.
+  // Build the example proto with shared metadata.
   tensorflow::Example example;
-  enum EncodedVariantType variant_type = EncodedVariantType(variant);
-  (*example.mutable_features()->mutable_feature())["locus"]
-      .mutable_bytes_list()
-      ->add_value(std::move(variant_range_encoded));
-  (*example.mutable_features()->mutable_feature())["variant/encoded"]
-      .mutable_bytes_list()
-      ->add_value(EncodeVariant(variant, label.get()));
-  (*example.mutable_features()->mutable_feature())["variant_type"]
-      .mutable_int64_list()
-      ->add_value(static_cast<int64_t>(variant_type));
-  (*example.mutable_features()->mutable_feature())["alt_allele_indices/encoded"]
-      .mutable_bytes_list()
-      ->add_value(alt_indices_encoded);
+  PopulateExampleMetadata(example, variant, alt_combination, stats, label);
+
+  // Add image data.
   (*example.mutable_features()->mutable_feature())["image/encoded"]
       .mutable_bytes_list()
       ->add_value(data.data(), data.size());
@@ -449,30 +478,39 @@ std::string ExamplesGenerator::EncodeExample(
         .mutable_int64_list()
         ->add_value(dim);
   }
-  (*example.mutable_features()->mutable_feature())["sequencing_type"]
-      .mutable_int64_list()
-      ->add_value(options_.pic_options().sequencing_type());
 
-  // Set the label if it is provided.
-  int label_value = 0;
-  if (label != nullptr) {
-    label_value = label->LabelForAltAlleles(alt_indices_set);
-    (*example.mutable_features()->mutable_feature())["label"]
-        .mutable_int64_list()
-        ->add_value(label_value);
-  }
+  // Example is serialized to a string before it is written to a TFRecord.
+  std::string encoded_example;
+  example.SerializeToString(&encoded_example);
+  return encoded_example;
+}
 
-  // Set de novo feature if de novo regions are provided.
-  if (!options_.denovo_regions_filename().empty() && label != nullptr) {
-    (*example.mutable_features()->mutable_feature())["denovo_label"]
+std::string ExamplesGenerator::EncodeExampleWithoutImage(
+    const Variant& variant, absl::Span<const std::string> alt_combination,
+    MakeExamplesStats& stats, std::vector<int>& image_shape,
+    const std::unique_ptr<VariantLabel>& label) const {
+  // Set image shape to zeros since no image is generated.
+  image_shape[0] = 0;
+  image_shape[1] = 0;
+  image_shape[2] = 0;
+
+  // Build the example proto with shared metadata.
+  tensorflow::Example example;
+  PopulateExampleMetadata(example, variant, alt_combination, stats, label);
+
+  // Add empty image data.
+  (*example.mutable_features()->mutable_feature())["image/encoded"]
+      .mutable_bytes_list()
+      ->add_value("");
+  for (auto dim : image_shape) {
+    (*example.mutable_features()->mutable_feature())["image/shape"]
         .mutable_int64_list()
-        ->add_value(label->is_denovo);
+        ->add_value(dim);
   }
 
   // Example is serialized to a string before it is written to a TFRecord.
   std::string encoded_example;
   example.SerializeToString(&encoded_example);
-  UpdateStats(variant_type, label.get(), label_value, stats);
   return encoded_example;
 }
 
@@ -640,6 +678,26 @@ void ExamplesGenerator::CreateAndWriteExamplesForCandidate(
     absl::Span<const float> mean_coverage_per_sample,
     const std::unique_ptr<VariantLabel>& label) {
   const auto& variant = candidate.variant();
+
+  // Fast path: skip all image generation work for oracle analysis.
+  // We only need the variant and alt combinations to write examples with
+  // empty image data. This skips BAM queries, read trimming, reference
+  // lookups, and pileup construction entirely.
+  if (options_.skip_image_data_for_oracle_analysis()) {
+    CHECK(!options_.stream_examples())
+        << "skip_image_data_for_oracle_analysis is not compatible with "
+           "stream_examples.";
+    image_shape.resize(3);
+    for (const std::vector<std::string>& alt_combination :
+         AltAlleleCombinations(candidate)) {
+      sample.writer->Add(
+          EncodeExampleWithoutImage(variant, alt_combination, stats,
+                                   image_shape, label),
+          variant.reference_name(), variant.start());
+    }
+    return;
+  }
+
   const auto encoded_variant_type = EncodedVariantType(variant);
   int image_start_pos = variant.start() - half_width_;
   // Pileup range.

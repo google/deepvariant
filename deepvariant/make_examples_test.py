@@ -1506,6 +1506,56 @@ class DefaultOptionsTest(parameterized.TestCase):
     with self.assertRaises(Exception):
       make_examples.default_options(add_flags=True)
 
+  @flagsaver.flagsaver
+  def test_skip_image_data_for_oracle_analysis_sets_option(self):
+    FLAGS.skip_image_data_for_oracle_analysis = True
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.mode = 'training'
+    FLAGS.examples = 'out.tfrecord'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    options = make_examples.default_options(add_flags=True)
+    self.assertTrue(options.skip_image_data_for_oracle_analysis)
+
+  @flagsaver.flagsaver
+  def test_skip_image_data_for_oracle_analysis_incompatible_with_stream(
+      self,
+  ):
+    FLAGS.skip_image_data_for_oracle_analysis = True
+    FLAGS.stream_examples = True
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.mode = 'training'
+    FLAGS.examples = 'out.tfrecord'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    with self.assertRaises(Exception):
+      make_examples.default_options(add_flags=True)
+
+  @parameterized.parameters(
+      dict(skip_pileup=True, write_small_model=False),
+      dict(skip_pileup=False, write_small_model=True),
+  )
+  @flagsaver.flagsaver
+  def test_skip_image_data_for_oracle_analysis_incompatible_with_small_model(
+      self, skip_pileup, write_small_model
+  ):
+    FLAGS.skip_image_data_for_oracle_analysis = True
+    FLAGS.skip_pileup_image_generation = skip_pileup
+    FLAGS.write_small_model_examples = write_small_model
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.mode = 'training'
+    FLAGS.examples = 'out.tfrecord'
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    with self.assertRaises(Exception):
+      make_examples.default_options(add_flags=True)
+
 
 class ResolveSamAuxFieldsTest(parameterized.TestCase):
 
@@ -1617,6 +1667,45 @@ class MainTest(parameterized.TestCase):
       make_examples.main(['make_examples.py'])
     self.assertFalse(gfile.Exists(FLAGS.examples))
     mock_exit.assert_not_called()
+
+  @flagsaver.flagsaver
+  def test_make_examples_training_skip_image_data_for_oracle_analysis(self):
+    """Verifies examples have empty images but valid variant/label."""
+    region = ranges.parse_literal('chr20:10,000,000-10,004,000')
+    FLAGS.ref = testdata.CHR20_FASTA
+    FLAGS.reads = testdata.CHR20_BAM
+    FLAGS.truth_variants = testdata.TRUTH_VARIANTS_VCF
+    FLAGS.confident_regions = testdata.CONFIDENT_REGIONS_BED
+    FLAGS.regions = [ranges.to_literal(region)]
+    FLAGS.examples = test_utils.test_tmpfile('skip_image_oracle.tfrecord.gz')
+    FLAGS.channel_list = ','.join(dv_constants.PILEUP_DEFAULT_CHANNELS)
+    FLAGS.mode = 'training'
+    FLAGS.skip_image_data_for_oracle_analysis = True
+
+    options = make_examples.default_options(add_flags=True)
+    make_examples_core.make_examples_runner(options)
+
+    examples = list(
+        tfrecord.read_tfrecords(
+            FLAGS.examples,
+            compression_type='GZIP',
+        )
+    )
+    self.assertNotEmpty(examples)
+    for example in examples:
+      # variant/encoded must be present and non-empty.
+      self.assertIn('variant/encoded', example.features.feature)
+      self.assertNotEmpty(
+          example.features.feature['variant/encoded'].bytes_list.value
+      )
+      # label must be present.
+      self.assertIn('label', example.features.feature)
+      # image/encoded must be present but empty.
+      self.assertIn('image/encoded', example.features.feature)
+      image_bytes = example.features.feature['image/encoded'].bytes_list.value[
+          0
+      ]
+      self.assertEmpty(image_bytes)
 
 
 if __name__ == '__main__':

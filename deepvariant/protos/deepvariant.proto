@@ -749,7 +749,7 @@ message DirectPhasingOptions {
 
 // High-level options that encapsulates all of the parameters needed to run
 // DeepVariant end-to-end.
-// Next ID: 104.
+// Next ID: 105.
 message MakeExamplesOptions {
   // A list of contig names we never want to call variants on. For example,
   // chrM in humans is the mitocondrial genome and the caller isn't trained to
@@ -1100,6 +1100,13 @@ message MakeExamplesOptions {
   // ws_min_base_quality, low_vaf_max_base_quality) are automatically set to 0,
   // and quality-dependent pileup channels are removed.
   bool strip_base_quality_scores = 102;
+
+  // If true, write examples with an empty image/encoded field, skipping
+  // pileup image generation entirely. This is specifically for oracle
+  // inference analysis where only variant/encoded and label are needed
+  // (used with labeled_examples_to_vcf). Not intended for standard
+  // variant calling or model training.
+  bool skip_image_data_for_oracle_analysis = 104;
 }
 
 // Config describe information needed for a dataset that can be used for
