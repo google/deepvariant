@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <optional>
 #include <string>
@@ -654,7 +655,7 @@ AlleleMap BuildAlleleMap(absl::Span<const Allele> alt_alleles,
 // allele_map is needed to map between the Variant reference and alternate_bases
 // and the Alleles used in allele_count.
 void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
-                   Variant* variant) {
+                   absl::string_view allele_map_refbases, Variant* variant) {
   // Set the DP to the total good reads seen at this position.
   VariantCall* call = variant->mutable_calls(0);
   nucleus::SetInfoField(kDPFormatField, TotalAlleleCounts(allele_count), call);
@@ -671,20 +672,27 @@ void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
     std::vector<double> vaf;
     ad.push_back(allele_count.ref_supporting_read_count());
 
-    absl::btree_map<absl::string_view, const Allele*> alt_to_alleles;
+    absl::btree_map<std::string, const Allele*, std::less<>> alt_to_alleles;
     for (const auto& [allele, alt_bases] : allele_map) {
-      alt_to_alleles[alt_bases] = &allele;
+      const std::string key = SimplifyRefAlt(allele_map_refbases, alt_bases);
+      alt_to_alleles[key] = &allele;
     }
     CHECK(alt_to_alleles.size() == allele_map.size())
         << "Non-unique alternative alleles!";
     for (const std::string& alt : variant->alternate_bases()) {
-      const Allele& allele = *alt_to_alleles.find(alt)->second;
-      ad.push_back(allele.count());
-      if (dp > 0) {
-        vaf.push_back(1.0 * allele.count() / dp);
-      } else {
-        vaf.push_back(0.0);
+      const std::string simplified_ref_alt =
+          SimplifyRefAlt(variant->reference_bases(), alt);
+      int count_of_allele = 0;
+      auto found = alt_to_alleles.find(simplified_ref_alt);
+      if (found != alt_to_alleles.end()) {
+        count_of_allele = (*found->second).count();
       }
+      double this_vaf = 0.0;
+      if (dp > 0) {
+        this_vaf = 1.0 * count_of_allele / dp;
+      }
+      ad.push_back(count_of_allele);
+      vaf.push_back(this_vaf);
     }
 
     nucleus::SetInfoField(kADFormatField, ad, call);
@@ -1050,7 +1058,7 @@ std::optional<DeepVariantCall> VariantCaller::CallVariant(
             variant->mutable_alternate_bases()->pointer_end(),
             StringPtrLessThan());
 
-  AddReadDepths(target_sample_allele_count, allele_map, variant);
+  AddReadDepths(target_sample_allele_count, allele_map, ref_bases, variant);
   if (target_role_ == "tumor" &&
       !output_options.non_target_allele_counts.empty()) {
     // This logic handles adding NDP, NAD, and NAF to the tumor variant.
