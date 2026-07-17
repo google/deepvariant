@@ -41,6 +41,7 @@
 #include <utility>
 #include <vector>
 
+#include "deepvariant/libstdcxx_shuffle.h"
 #include "deepvariant/pileup_channel_lib.h"
 #include "deepvariant/protos/deepvariant.pb.h"
 #include "deepvariant/sampling_util.h"
@@ -157,9 +158,12 @@ std::vector<int> DownsampleReadIndices(
   std::vector<int> read_indices(reads.size());
   std::iota(read_indices.begin(), read_indices.end(), 0);
   if (reads.size() > max_reads) {
-    // Shuffle the indices instead of the reads, so that we won't change the
-    // order of the reads list.
-    std::shuffle(read_indices.begin(), read_indices.end(), gen);
+    // Use libstdc++-compatible shuffle for cross-platform reproducibility.
+    // libc++'s std::shuffle produces a different sequence for the same
+    // generator state, causing pileup image differences at high-coverage
+    // sites.
+    ::learning::genomics::deepvariant::dv_shuffle::Shuffle(
+        read_indices.begin(), read_indices.end(), gen);
   }
   return read_indices;
 }

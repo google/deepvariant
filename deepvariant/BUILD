@@ -1118,7 +1118,10 @@ cc_test(
 cc_library(
     name = "pileup_image_native",
     srcs = ["pileup_image_native.cc"],
-    hdrs = ["pileup_image_native.h"],
+    hdrs = [
+        "libstdcxx_shuffle.h",
+        "pileup_image_native.h",
+    ],
     deps = [
         ":pileup_channel_lib",
         ":sampling_util",
