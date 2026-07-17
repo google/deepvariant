@@ -271,6 +271,11 @@ _POSTPROCESS_VARIANTS_EXTRA_ARGS = flags.DEFINE_string(
 _OUTPUT_GVCF = flags.DEFINE_string(
     'output_gvcf', None, 'Optional. Path where we should write gVCF file.'
 )
+_PHASE_VCF = flags.DEFINE_boolean(
+    'phase_vcf',
+    False,
+    'Optional. If true, emit phasing information in the VCF output.',
+)
 
 # Optional flags for vcf_stats_report.
 _VCF_STATS_REPORT = flags.DEFINE_boolean(
@@ -471,6 +476,7 @@ def make_examples_pangenome_aware_dv_command(
     haploid_contigs: Optional[str] = None,
     par_regions_bed: Optional[str] = None,
     runtime_by_region_path: Optional[str] = None,
+    output_local_read_phasing: Optional[str] = None,
     **kwargs,
 ) -> tuple[str, Optional[str]]:
   """Returns a make_examples_pangenome_aware_dv (command, logfile) for subprocess.
@@ -486,6 +492,7 @@ def make_examples_pangenome_aware_dv_command(
     par_regions_bed: Optional BED file containing Human Pseudoautosomal Region
       (PAR) regions.
     runtime_by_region_path: Output path for runtime by region metrics.
+    output_local_read_phasing: Output path for local read phasing TSV files.
     **kwargs: Additional arguments to pass in for
       make_examples_pangenome_aware_dv.
 
@@ -509,6 +516,13 @@ def make_examples_pangenome_aware_dv_command(
     command.extend(
         ['--runtime_by_region', '"{}"'.format(runtime_by_region_path)]
     )
+
+  if output_local_read_phasing is not None:
+    command.extend([
+        '--output_local_read_phasing',
+        '"{}"'.format(output_local_read_phasing),
+    ])
+    command.extend(['--output_phase_info'])
 
   if haploid_contigs is not None:
     command.extend(['--haploid_contigs', '"{}"'.format(haploid_contigs)])
@@ -711,7 +725,9 @@ def check_flags():
     )
 
 
-def get_model_ckpt(model_type, customized_model):  # pylint: disable=unused-argument
+def get_model_ckpt(
+    model_type: str, customized_model: Optional[str]
+) -> str:  # pylint: disable=unused-argument
   """Return the path to the model checkpoint based on the input args."""
   if customized_model is not None:
     return customized_model
@@ -721,13 +737,18 @@ def get_model_ckpt(model_type, customized_model):  # pylint: disable=unused-argu
 
 def create_all_commands_and_logfiles(
     intermediate_results_dir: str, used_in_test: bool = False
-):
+) -> list[tuple[str, Optional[str]]]:
   """Creates 3 (command, logfile) to be executed later."""
   if not used_in_test:
     check_flags()
   commands = []
   # make_examples_pangenome_aware_dv
   nonvariant_site_tfrecord_path = None
+  local_read_phasing_tsv_files = None
+  if _PHASE_VCF.value:
+    local_read_phasing_tsv_files = os.path.join(
+        intermediate_results_dir, f'read-phasing_debug@{_NUM_SHARDS.value}.tsv'
+    )
   if _OUTPUT_GVCF.value is not None:
     nonvariant_site_tfrecord_path = os.path.join(
         intermediate_results_dir,
@@ -775,6 +796,8 @@ def create_all_commands_and_logfiles(
             gbz_shared_memory_size_gb=_GBZ_SHARED_MEMORY_SIZE_GB.value,
         )
     )
+  if _MODEL_TYPE.value is None:
+    raise ValueError('model_type is required.')
   model_ckpt = get_model_ckpt(_MODEL_TYPE.value, _CUSTOMIZED_MODEL.value)
   commands.append(
       make_examples_pangenome_aware_dv_command(
@@ -787,6 +810,7 @@ def create_all_commands_and_logfiles(
           haploid_contigs=_HAPLOID_CONTIGS.value,
           par_regions_bed=_PAR_REGIONS.value,
           runtime_by_region_path=runtime_by_region_path,
+          output_local_read_phasing=local_read_phasing_tsv_files,
           # kwargs:
           gvcf=nonvariant_site_tfrecord_path,
           regions=_REGIONS.value,
@@ -823,6 +847,7 @@ def create_all_commands_and_logfiles(
           par_regions_bed=_PAR_REGIONS.value,
           nonvariant_site_tfrecord_path=nonvariant_site_tfrecord_path,
           gvcf_outfile=_OUTPUT_GVCF.value,
+          phased_reads_input_path=local_read_phasing_tsv_files,
       )
   )
 

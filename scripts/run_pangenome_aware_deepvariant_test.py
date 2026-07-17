@@ -453,6 +453,35 @@ class RunPangenomeAwareDeepVariantTest(parameterized.TestCase):
     )
     # pyformat: enable
 
+  @parameterized.parameters('WGS', 'WES', 'PACBIO')
+  @flagsaver.flagsaver
+  def test_phase_vcf_flag(self, model_type):
+    FLAGS.model_type = model_type
+    FLAGS.ref = 'your_ref'
+    FLAGS.reads = 'your_bam'
+    FLAGS.pangenome = 'your_pangenome_bam'
+    FLAGS.output_vcf = 'your_vcf'
+    FLAGS.output_gvcf = 'your_gvcf'
+    FLAGS.num_shards = 64
+    FLAGS.regions = None
+    FLAGS.phase_vcf = True
+    FLAGS.customized_model = f'/opt/models/{model_type.lower()}/model.ckpt'
+    commands = run_pangenome_aware_deepvariant.create_all_commands_and_logfiles(
+        '/tmp/pangenome_aware_deepvariant_tmp_output', used_in_test=True
+    )
+
+    self.assertIn(
+        '--output_local_read_phasing'
+        ' "/tmp/pangenome_aware_deepvariant_tmp_output/read-phasing_debug@64.tsv"',
+        commands[0][0],
+    )
+    self.assertIn('--output_phase_info', commands[0][0])
+    self.assertIn(
+        '--phased_reads_input_path'
+        ' "/tmp/pangenome_aware_deepvariant_tmp_output/read-phasing_debug@64.tsv"',
+        commands[2][0],
+    )
+
 
 if __name__ == '__main__':
   absltest.main()
