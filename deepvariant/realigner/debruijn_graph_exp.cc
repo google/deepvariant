@@ -389,14 +389,24 @@ void DeBruijnGraphExp::CandidatePathsRankedHelper(
   int out_degree = 0;
   AdjacencyIterator vi, vend;
   std::tie(vi, vend) = boost::adjacent_vertices(u, g_);
-  for (auto it = vi; it != vend; ++it) {
-    total_edge_frequency += g_[*it].frequency;
+  std::vector<VertexExp> successors(vi, vend);
+  if (successors.size() > 1) {
+    // Successors share a (k-1)-prefix. Comparing only kmer[k_-1] suffices
+    // to order them deterministically, even after Collapse() extends kmer
+    // strings beyond length k_.
+    std::sort(successors.begin(), successors.end(),
+              [this](VertexExp v1, VertexExp v2) {
+                return g_[v1].kmer[k_ - 1] < g_[v2].kmer[k_ - 1];
+              });
+  }
+
+  for (VertexExp v : successors) {
+    total_edge_frequency += g_[v].frequency;
     out_degree++;
   }
 
   double current_path_score = current_path.score;
-  for (; vi != vend; ++vi) {
-    VertexExp v = *vi;
+  for (VertexExp v : successors) {
     if (out_degree > 1) {
       current_path.score = current_path_score + std::log10(g_[v].frequency) -
                            std::log10(total_edge_frequency);
@@ -416,6 +426,9 @@ std::vector<PathExp> DeBruijnGraphExp::CandidatePathsRanked() const {
   std::priority_queue<PathExp> pq;
   int num_paths = 0;
   std::vector<VertexExp> start_nodes = StartNodes();
+  std::sort(
+      start_nodes.begin(), start_nodes.end(),
+      [this](VertexExp v1, VertexExp v2) { return g_[v1].kmer < g_[v2].kmer; });
   std::vector<VertexExp> sinks = SinkNodes();
   absl::flat_hash_set<VertexExp> sink_nodes(sinks.begin(), sinks.end());
 
@@ -425,14 +438,18 @@ std::vector<PathExp> DeBruijnGraphExp::CandidatePathsRanked() const {
     if (num_paths > kMaxNumPaths) break;
   }
 
+  // Deterministic traversal order (sorted start_nodes and successors) ensures
+  // paths are inserted into the priority queue in a deterministic order.
+  // std::stable_sort preserves that order among equal-scored paths.
   std::vector<PathExp> sorted_paths;
+  sorted_paths.reserve(pq.size());
   while (!pq.empty()) {
     sorted_paths.push_back(pq.top());
     pq.pop();
   }
-  std::sort(sorted_paths.begin(), sorted_paths.end(),
-            [](const PathExp& a, const PathExp& b) {
-                 return a.score > b.score; });
+  std::stable_sort(
+      sorted_paths.begin(), sorted_paths.end(),
+      [](const PathExp& a, const PathExp& b) { return a.score > b.score; });
   return sorted_paths;
 }
 

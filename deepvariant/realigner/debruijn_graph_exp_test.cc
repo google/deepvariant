@@ -31,8 +31,11 @@
 
 #include "deepvariant/realigner/debruijn_graph_exp.h"
 
+#include <cstddef>
 #include <memory>
+#include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
@@ -186,6 +189,91 @@ INSTANTIATE_TEST_SUITE_P(
         CandidatePathsTestCase{"GATTACA", {}, {}},
         CandidatePathsTestCase{"GATTACA", {"GATGACA", "GATGACA"},
             {"GATGACA"}}));
+
+TEST_F(DeBruijnGraphTest, TestDeterminismWithBranch) {
+  std::string ref = "GATTACA";
+  DeBruijnGraphOptions opts = options();
+  opts.set_min_k(3);
+  opts.set_max_k(3);
+
+  auto read1 = MakeRead("AGATGACA");
+  auto read2 = MakeRead("GATGACAA");
+  auto read3 = MakeRead("AGATTACA");
+  auto read4 = MakeRead("GATTACAA");
+
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads{
+      nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>(&read1),
+      nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>(&read2),
+      nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>(&read3),
+      nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>(&read4)};
+
+  // Keep all dust alive across iterations to prevent the allocator from
+  // recycling freed addresses, ensuring each iteration genuinely sees
+  // different heap layouts.
+  std::vector<std::vector<std::unique_ptr<char[]>>> all_dust;
+  std::vector<std::vector<std::string>> all_results;
+  for (int i = 0; i < 100; ++i) {
+    std::vector<std::unique_ptr<char[]>> dust;
+    std::mt19937 rng(i);
+    for (int j = 0; j < 50; ++j) {
+      dust.push_back(std::make_unique<char[]>(rng() % 1000 + 1));
+    }
+    all_dust.push_back(std::move(dust));
+
+    auto dbg = DeBruijnGraphExp::Build(ref, reads, opts);
+    ASSERT_NE(dbg, nullptr);
+    auto results = dbg->CandidateHaplotypesRanked(0);
+    all_results.push_back(results);
+  }
+
+  // Check if all results are identical (including order).
+  for (size_t i = 1; i < all_results.size(); ++i) {
+    EXPECT_EQ(all_results[i], all_results[0]);
+  }
+}
+
+TEST_F(DeBruijnGraphTest, TestDeterminismWithBranchAndCollapse) {
+  std::string ref = "GATTACA";
+  DeBruijnGraphOptions opts = options();
+  opts.set_min_k(3);
+  opts.set_max_k(3);
+
+  auto read1 = MakeRead("AGATGACA");
+  auto read2 = MakeRead("GATGACAA");
+  auto read3 = MakeRead("AGATTACA");
+  auto read4 = MakeRead("GATTACAA");
+
+  std::vector<nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>> reads{
+      nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>(&read1),
+      nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>(&read2),
+      nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>(&read3),
+      nucleus::ConstProtoPtr<const nucleus::genomics::v1::Read>(&read4)};
+
+  // Keep all dust alive across iterations to prevent the allocator from
+  // recycling freed addresses, ensuring each iteration genuinely sees
+  // different heap layouts.
+  std::vector<std::vector<std::unique_ptr<char[]>>> all_dust;
+  std::vector<std::vector<std::string>> all_results;
+  for (int i = 0; i < 100; ++i) {
+    std::vector<std::unique_ptr<char[]>> dust;
+    std::mt19937 rng(i);
+    for (int j = 0; j < 50; ++j) {
+      dust.push_back(std::make_unique<char[]>(rng() % 1000 + 1));
+    }
+    all_dust.push_back(std::move(dust));
+
+    auto dbg = DeBruijnGraphExp::Build(ref, reads, opts);
+    ASSERT_NE(dbg, nullptr);
+    dbg->Collapse();
+    auto results = dbg->CandidateHaplotypesRanked(0);
+    all_results.push_back(results);
+  }
+
+  // Check if all results are identical (including order).
+  for (size_t i = 1; i < all_results.size(); ++i) {
+    EXPECT_EQ(all_results[i], all_results[0]);
+  }
+}
 
 }  // namespace deepvariant
 }  // namespace genomics
