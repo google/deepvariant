@@ -102,6 +102,10 @@ _MAX_ENUMERATION_ITERATIONS = 100000
 # Context about the value: internal#comment3
 _FORCE_GROUP_WITHIN_BP = 0
 
+# The threshold in seconds above which progress and completion logging for
+# haplotype enumeration will be emitted as INFO level rather than DEBUG level.
+_ENUMERATION_LOG_THRESHOLD_SECONDS = 10
+
 # True we will generate enough information into our logs to help debug bad
 # regions.
 _DEBUG_PRINTING_IS_ENABLED = False
@@ -477,7 +481,7 @@ def group_variants(
     if not group:
       return True, False
     if new_gt_options_product >= max_gt_options_product:
-      logging.info(
+      logging.debug(
           (
               'Not including more because genotype_options_product will '
               'be %s, which exceeds max(=%s)'
@@ -714,7 +718,9 @@ def enumerate_all_possible_haplotypes(
     if n_genotype_combos % 5000 == 0:
       progress_elapsed = time.time() - t0_enum
       progress_log_fn = (
-          logging.info if progress_elapsed > 1.0 else logging.debug
+          logging.info
+          if progress_elapsed > _ENUMERATION_LOG_THRESHOLD_SECONDS
+          else logging.debug
       )
       progress_log_fn(
           'enumerate_all_possible_haplotypes progress: processed %d genotype '
@@ -729,7 +735,11 @@ def enumerate_all_possible_haplotypes(
         haplotypes_to_genotypes_dict[key] = []
       haplotypes_to_genotypes_dict[key].append(genotypes)
   elapsed = time.time() - t0_enum
-  log_fn = logging.info if elapsed > 1.0 else logging.debug
+  log_fn = (
+      logging.info
+      if elapsed > _ENUMERATION_LOG_THRESHOLD_SECONDS
+      else logging.debug
+  )
   log_fn(
       'enumerate_all_possible_haplotypes done: processed %d genotype combos '
       'in %.1fs',
