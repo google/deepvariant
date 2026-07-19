@@ -42,6 +42,7 @@
 #include <vector>
 
 #include "deepvariant/protos/realigner.pb.h"
+#include "deepvariant/realigner/global_align_simd.h"
 #include "deepvariant/realigner/ssw.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -1292,6 +1293,25 @@ FastPassAligner::GlobalAlignment FastPassAligner::GlobalAlign(
   const int m = target.size();
   if (n == 0 || m == 0) return FastPassAligner::GlobalAlignment();
 
+  // Try SIMD path first (Farrar striped int16 DP with native traceback).
+  SimdGlobalAlignment simd_result = GlobalAlignSimd(
+      query, target, edge_range, match_score_, mismatch_penalty_,
+      gap_opening_penalty_, gap_extending_penalty_);
+
+  // Check for overflow sentinel — fall back to scalar for very long sequences.
+  if (simd_result.sw_score != kSimdOverflowSentinel) {
+    // Convert SimdGlobalAlignment to GlobalAlignment.
+    GlobalAlignment result;
+    result.sw_score = simd_result.sw_score;
+    result.ref_begin = simd_result.ref_begin;
+    result.ref_end = simd_result.ref_end;
+    result.query_begin = simd_result.query_begin;
+    result.query_end = simd_result.query_end;
+    result.cigar_string = std::move(simd_result.cigar_string);
+    return result;
+  }
+
+  // Scalar fallback for sequences too long for int16 SIMD.
   const int kInf = 1e9;
   std::vector<int> M((n + 1) * (m + 1), -kInf);
   std::vector<int> E((n + 1) * (m + 1), -kInf);

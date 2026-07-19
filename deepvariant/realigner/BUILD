@@ -185,6 +185,19 @@ cc_test(
 )
 
 cc_library(
+    name = "global_align_simd",
+    srcs = ["global_align_simd.cc"],
+    hdrs = [
+        "global_align_simd.h",
+        "global_align_simd-inl.h",
+    ],
+    deps = [
+        "@com_google_absl//absl/strings",
+        "@com_google_highway//:hwy",
+    ],
+)
+
+cc_library(
     name = "fast_pass_aligner",
     srcs = [
         "fast_pass_aligner.cc",
@@ -193,6 +206,7 @@ cc_library(
         "fast_pass_aligner.h",
     ],
     deps = [
+        ":global_align_simd",
         ":ssw",
         "//deepvariant/protos:realigner_cc_pb2",
         "//third_party/nucleus/io:sam_writer",
