@@ -194,7 +194,7 @@ def get_one_example_from_examples_path(source, proto=None):
     raise ValueError(
         'Cannot find matching files with the pattern "{}"'.format(source)
     )
-  dataset = tf.data.TFRecordDataset(  # pyrefly: ignore[bad-instantiation]
+  dataset = tf.data.TFRecordDataset(
       files, compression_type='GZIP', num_parallel_reads=tf.data.AUTOTUNE
   )
   if not proto:

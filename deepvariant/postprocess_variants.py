@@ -1257,7 +1257,7 @@ def merge_predictions(
     cvo_probs = get_multiallelic_distributions(
         call_variants_outputs, alt_alleles_to_remove
     )
-    normalized_predictions = multiallelic_model(cvo_probs).numpy().tolist()[0]  # pyrefly: ignore[not-callable]
+    normalized_predictions = multiallelic_model(cvo_probs).numpy().tolist()[0]
   elif _MULTIALLELIC_MODE.value == 'product':
     # New logic: "overlap-count" with product fusion.
     # 1. Collect information about each CVO's example.

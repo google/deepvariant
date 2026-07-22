@@ -64,7 +64,7 @@ def build_classification_head(inputs: tf.Tensor, l2: float = 0.0) -> tf.Tensor:
       name='classification',
       kernel_regularizer=l2_regularizer,
   )
-  return head(inputs)  # pyrefly: ignore[not-callable]
+  return head(inputs)
 
 
 def add_l2_regularizers(
@@ -97,7 +97,7 @@ def add_l2_regularizers(
   def add_l2_regularization(layer):
     def _add_l2():
       l2_reg = tf.keras.regularizers.l2(l2=l2)
-      return l2_reg(layer.kernel)  # pyrefly: ignore[not-callable]
+      return l2_reg(layer.kernel)
 
     return _add_l2
 
@@ -230,7 +230,7 @@ def inceptionv3_with_imagenet(
   weight_decay = _DEFAULT_WEIGHT_DECAY
   backbone_drop_rate = _DEFAULT_BACKBONE_DROPOUT_RATE
 
-  hid = tf.keras.layers.Dropout(backbone_drop_rate)(backbone.output)  # pyrefly: ignore[not-callable]
+  hid = tf.keras.layers.Dropout(backbone_drop_rate)(backbone.output)
 
   outputs = []
   outputs.append(build_classification_head(hid, l2=weight_decay))
@@ -280,7 +280,7 @@ def inceptionv3(
     weight_decay = _DEFAULT_WEIGHT_DECAY
     backbone_dropout_rate = _DEFAULT_BACKBONE_DROPOUT_RATE
 
-  hid = tf.keras.layers.Dropout(backbone_dropout_rate)(backbone.output)  # pyrefly: ignore[not-callable]
+  hid = tf.keras.layers.Dropout(backbone_dropout_rate)(backbone.output)
 
   outputs = []
   outputs.append(build_classification_head(hid, l2=weight_decay))
@@ -342,7 +342,7 @@ def print_model_summary(
   """Runs a forward pass with dummy data then prints the model summary."""
   # Without calling this forward pass, we won't be able to print the summary.
   dummy_data = np.zeros(input_shape)
-  _ = model(dummy_data)  # pyrefly: ignore[not-callable]
+  _ = model(dummy_data)
   model.summary()
 
 

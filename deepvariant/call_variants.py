@@ -518,7 +518,7 @@ def get_dataset(
     )
 
     def load_dataset(filename):
-      dataset = tf.data.TFRecordDataset(  # pyrefly: ignore[bad-instantiation]
+      dataset = tf.data.TFRecordDataset(
           filename,
           buffer_size=_DEFAULT_PREFETCH_BUFFER_BYTES,
           compression_type='GZIP',
