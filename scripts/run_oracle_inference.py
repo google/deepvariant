@@ -617,9 +617,9 @@ def create_all_commands_and_logfiles(
   commands.append(
       make_examples_command(
           ref=_REF.value,  # pyrefly: ignore[bad-argument-type]
-          reads=_READS.value,  # pyrefly: ignore[bad-argument-type]
-          reads_tumor=_READS_TUMOR.value,  # pyrefly: ignore[bad-argument-type]
-          reads_normal=_READS_NORMAL.value,  # pyrefly: ignore[bad-argument-type]
+          reads=_READS.value,
+          reads_tumor=_READS_TUMOR.value,
+          reads_normal=_READS_NORMAL.value,
           examples=examples,
           labeler_algorithm=_LABELER_ALGORITHM.value,  # pyrefly: ignore[bad-argument-type]
           extra_args=_MAKE_EXAMPLES_EXTRA_ARGS.value,
