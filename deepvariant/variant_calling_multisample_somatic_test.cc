@@ -49,6 +49,7 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
 #include "third_party/nucleus/testing/protocol-buffer-matchers.h"
@@ -100,13 +101,13 @@ VariantCallerOptions BasicOptions() {
   return options;
 }
 
-Variant MakeExpectedVariant(const std::string& ref,
+Variant MakeExpectedVariant(absl::string_view ref,
                             absl::Span<const std::string> alts,
                             const int64_t start = kStart) {
   Variant variant;
   variant.set_reference_name(kChr);
   variant.set_start(start);
-  variant.set_reference_bases(ref);
+  variant.set_reference_bases(std::string(ref));
   for (const std::string& alt_allele : alts)
     variant.add_alternate_bases(alt_allele);
 
