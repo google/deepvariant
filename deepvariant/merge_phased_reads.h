@@ -118,7 +118,7 @@ class Merger {
 
   // Scans reads for inconsistent phasing, correct where possible and print out
   // the results.
-  void CorrectAndPrintReadStats(const std::string& output_path);
+  void CorrectAndPrintReadStats(absl::string_view output_path);
 
  private:
   friend class MergerPeer;

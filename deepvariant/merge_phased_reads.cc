@@ -36,13 +36,16 @@
 
 #include "deepvariant/merge_phased_reads.h"
 
+#include <sys/types.h>
+#include <unistd.h>
+
 #include <array>
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <ostream>
 #include <set>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -50,9 +53,11 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/ascii.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "re2/re2.h"
@@ -118,42 +123,55 @@ void Merger::LoadFromFiles(absl::string_view input_path) {
             << " shards";
 
   for (int shard = 0; shard < num_shards_; ++shard) {
-    if (!sharded_input.status().ok()) {
-      LOG(FATAL) << sharded_input.status();
-    }
     const std::string filename =
         generate_sharded_filename(sharded_input.value(), shard);
     LOG(INFO) << "Loading " << filename;
 
     std::ifstream csv_file;
     csv_file.open(filename);
+    if (!csv_file.is_open()) {
+      LOG(FATAL) << "Could not open " << filename;
+    }
     std::string line;
     bool is_first_line = true;
     while (std::getline(csv_file, line)) {
+      absl::string_view stripped = absl::StripAsciiWhitespace(line);
+      if (stripped.empty()) {
+        continue;
+      }
       if (is_first_line) {
         is_first_line = false;
         continue;
       }
 
-      std::istringstream iss(line);
-      std::vector<std::string> tokens(5);
-      int i = 0;
-      while (std::getline(iss, tokens[i], '\t')) {
-        i++;
+      std::vector<absl::string_view> tokens = absl::StrSplit(stripped, '\t');
+      if (tokens.size() < 3) {
+        LOG(WARNING) << "Skipping malformed line with " << tokens.size()
+                     << " columns (expected >= 3): " << line;
+        continue;
+      }
+      int region;
+      int phase;
+      if (!absl::SimpleAtoi(tokens[2], &region) ||
+          !absl::SimpleAtoi(tokens[1], &phase)) {
+        LOG(WARNING) << "Skipping line with invalid integer field: " << line;
+        continue;
+      }
+      if (region <= 0) {
+        LOG(WARNING) << "Skipping line with invalid region: " << line;
+        continue;
       }
       int id = UpdateReadsMap(tokens[0]);
-      int region = std::stoi(tokens[2]);
-      CHECK_GT(region, 0);
       unmerged_reads_.push_back({
-          .fragment_name = tokens[0],
-          .phase = std::stoi(tokens[1]),
+          .fragment_name = std::string(tokens[0]),
+          .phase = phase,
           .region_order = region,
           .shard = shard,
           .id = id,
       });
     }
   }
-  LOG(INFO) << "Total records loaded: " << merged_reads_.size();
+  LOG(INFO) << "Total records loaded: " << unmerged_reads_.size();
 }
 
 int Merger::UpdateReadsMap(absl::string_view fragment_name) {
@@ -261,9 +279,16 @@ void Merger::MergeGroup(const ShardRegion& group) {
 //    group.
 // 3. Group is merged into merged_reads_.
 void Merger::MergeReads(absl::string_view switches_output_path) {
+  // Write to a temporary file first, then atomically rename to prevent
+  // readers from seeing partially-written data.
+  std::string tmp_path;
   std::ofstream csv_file_switches;
   if (!switches_output_path.empty()) {
-    csv_file_switches.open(std::string(switches_output_path));
+    tmp_path = absl::StrCat(switches_output_path, ".tmp.", getpid());
+    csv_file_switches.open(tmp_path);
+    if (!csv_file_switches.is_open()) {
+      LOG(FATAL) << "Failed to open temporary switches file: " << tmp_path;
+    }
   }
   GroupReads();
   int cur_region = 1;
@@ -291,7 +316,19 @@ void Merger::MergeReads(absl::string_view switches_output_path) {
     }
     cur_region++;
   }
-  csv_file_switches.close();
+  if (csv_file_switches.is_open()) {
+    csv_file_switches.close();
+    if (csv_file_switches.fail()) {
+      LOG(FATAL) << "Failed to write out phase switches.";
+    }
+  }
+  if (!tmp_path.empty()) {
+    if (std::rename(tmp_path.c_str(),
+                    std::string(switches_output_path).c_str()) != 0) {
+      LOG(FATAL) << "Failed to rename " << tmp_path << " to "
+                 << switches_output_path;
+    }
+  }
 }
 
 void MergerPeer::SetUnmergedReads(
@@ -313,7 +350,7 @@ void MergerPeer::SetUnmergedReads(
 int Merger::CorrectPhasing() {
   int count_reads_corrected = 0;
   for (auto& read_info : merged_reads_) {
-    std::array<int, 3> phase_counts;
+    std::array<int, 3> phase_counts{};
     for (int phase : {1, 2}) {
       auto it = read_info.phase_dist.find(phase);
       phase_counts[phase] = it == read_info.phase_dist.end()
@@ -332,24 +369,42 @@ int Merger::CorrectPhasing() {
       count_reads_corrected++;
     }
   }
-    return count_reads_corrected;
+  return count_reads_corrected;
 }
 
-void Merger::CorrectAndPrintReadStats(const std::string& output_path) {
+void Merger::CorrectAndPrintReadStats(absl::string_view output_path) {
+  std::string tmp_path;
   std::ofstream csv_file;
-  csv_file.open(output_path);
-
-  int count_reads_corrected = 0;
+  if (!output_path.empty()) {
+    tmp_path = absl::StrCat(output_path, ".tmp.", getpid());
+    csv_file.open(tmp_path);
+    if (!csv_file.is_open()) {
+      LOG(FATAL) << "Failed to open temporary corrected stats file: "
+                 << tmp_path;
+    }
+  }
+  int count_reads_corrected = CorrectPhasing();
   std::array<int, 3> phase_counts = {0, 0, 0};
   int n_reads = 0;
-  count_reads_corrected = CorrectPhasing();
   for (auto& read_info : merged_reads_) {
     phase_counts[read_info.phase]++;
-    LOG_EVERY_N(INFO, 20000) << "Written " << n_reads << " reads";
-    csv_file << read_info.fragment_name << "\t" << read_info.phase << "\n";
+    if (csv_file.is_open()) {
+      LOG_EVERY_N(INFO, 20000) << "Written " << n_reads << " reads";
+      csv_file << read_info.fragment_name << "\t" << read_info.phase << "\n";
+    }
     n_reads++;
   }
-  csv_file.close();
+  if (csv_file.is_open()) {
+    csv_file.close();
+    if (csv_file.fail()) {
+      LOG(FATAL) << "Failed to write out corrected read stats.";
+    }
+  }
+  if (!tmp_path.empty()) {
+    if (std::rename(tmp_path.c_str(), std::string(output_path).c_str()) != 0) {
+      LOG(FATAL) << "Failed to rename " << tmp_path << " to " << output_path;
+    }
+  }
   LOG(INFO) << "Count of reads not phased " << phase_counts[0];
   LOG(INFO) << "Count of reads with phase 1 " << phase_counts[1];
   LOG(INFO) << "Count of reads with phase 2 " << phase_counts[2];

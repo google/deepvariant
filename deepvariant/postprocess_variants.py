@@ -151,20 +151,20 @@ _CHECKPOINT_JSON = flags.DEFINE_string(
 )
 _PHASED_READS_SWITCHES_OUTPUT_PATH = flags.DEFINE_string(
     'phased_reads_switches_output_path',
-    '/tmp/phased_reads_switches.tsv',
+    None,
     (
-        'Optional. Path to a TSV file containing switches information, '
-        'typically an output of the make_examples step. This information '
-        'will be used to extend phase blocks in the output VCF.'
+        'Optional. Path to a TSV file where switches information '
+        'will be written during postprocessing. If not set, '
+        'a unique temporary path is generated automatically.'
     ),
 )
 _PHASED_READS_CORRECTED_OUTPUT_PATH = flags.DEFINE_string(
     'phased_reads_corrected_output_path',
-    '/tmp/phased_reads_corrected.tsv',
+    None,
     (
-        'Optional. Path to a TSV file containing phased read information, '
-        'typically an output of the make_examples step. This information '
-        'will be used to extend phase blocks in the output VCF.'
+        'Optional. Path to a TSV file where corrected phased read information '
+        'will be written during postprocessing. If not set, no corrected reads '
+        'file is produced.'
     ),
 )
 _GVCF_OUTFILE = flags.DEFINE_string(
@@ -1875,26 +1875,6 @@ def _merge_phasing_blocks(
   merger.correct_and_print_read_stats(output_path)
 
 
-def _load_phasing_info(
-    switches_output_path: str,
-) -> dict[tuple[str, str], int]:
-  """Loads the phasing info from the merge_reads output.
-
-  Args:
-    switches_output_path: path to the switches output TSV file.
-
-  Returns:
-    A map from (shard, region) to a boolean indicating whether the phasing
-    blocks in the shard and region need to be switched.
-  """
-  phasing_info = {}
-  with open(switches_output_path, 'r') as f:
-    for line in f:
-      shard, region, switch_status = line.split('\t')
-      phasing_info[shard, region] = int(switch_status)
-  return phasing_info
-
-
 def run_postprocess_variants_on_region(
     output_vcf: str,
     output_gvcf: str,
@@ -2041,6 +2021,14 @@ def stitch_phase_sets(
   )
 
 
+def _safe_remove(path: str) -> None:
+  """Removes a file, ignoring errors if it doesn't exist."""
+  try:
+    os.remove(path)
+  except FileNotFoundError:
+    pass
+
+
 def _process_partitions_in_parallel(
     *,
     contigs: Sequence[reference_pb2.ContigInfo],
@@ -2055,6 +2043,7 @@ def _process_partitions_in_parallel(
     temp_tfrecord_output_files: Sequence[tempfile._TemporaryFileWrapper],
     partitions: Sequence[Sequence[range_pb2.Range]],
     num_partitions: int,
+    switches_output_path: str,
 ):
   """Processes multiple partitions in parallel.
 
@@ -2071,6 +2060,8 @@ def _process_partitions_in_parallel(
     temp_tfrecord_output_files: temporary TFRecord output files.
     partitions: the partitions to process.
     num_partitions: the number of partitions.
+    switches_output_path: path to phase switches file (written by
+      merge_phasing_blocks, read by stitch_phase_sets).
 
   Returns:
     None (the output is written to the output_vcf and output_gvcf files).
@@ -2104,7 +2095,7 @@ def _process_partitions_in_parallel(
     if emit_variants_as_tfrecords:
       stitch_phase_sets(
           tfrecord_paths=[t.name for t in temp_tfrecord_files],
-          switches_output_path=_PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+          switches_output_path=switches_output_path,
           output_tfrecord_paths=[t.name for t in temp_tfrecord_output_files],
       )
       tasks = []
@@ -2135,6 +2126,7 @@ def _process_partitions_sequentially(
     temp_tfrecord_output_files: Sequence[tempfile._TemporaryFileWrapper],
     partitions: Sequence[Sequence[range_pb2.Range]],
     num_partitions: int,
+    switches_output_path: str,
 ):
   """Processes multiple partitions sequentially.
 
@@ -2153,6 +2145,8 @@ def _process_partitions_sequentially(
     temp_tfrecord_output_files: temporary TFRecord output files.
     partitions: the partitions to process.
     num_partitions: the number of partitions.
+    switches_output_path: path to phase switches file (written by
+      merge_phasing_blocks, read by stitch_phase_sets).
 
   Returns:
     None (the output is written to the output_vcf and output_gvcf files).
@@ -2177,7 +2171,7 @@ def _process_partitions_sequentially(
   if emit_variants_as_tfrecords:
     stitch_phase_sets(
         tfrecord_paths=[t.name for t in temp_tfrecord_files],
-        switches_output_path=_PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+        switches_output_path=switches_output_path,
         output_tfrecord_paths=[t.name for t in temp_tfrecord_output_files],
     )
     for task_id in range(num_partitions):
@@ -2198,6 +2192,7 @@ def run_postprocessing_over_multiple_partitions(
     header: variants_pb2.VcfHeader,
     is_empty: bool,
     sample_name: str,
+    switches_output_path: str,
 ) -> None:
   """Runs postprocessing over multiple partitions.
 
@@ -2207,6 +2202,8 @@ def run_postprocessing_over_multiple_partitions(
     header: the VCF header
     is_empty: if the partition is empty.
     sample_name: the sample name to use for the output VCF and gVCF.
+    switches_output_path: path to phase switches file (written by
+      merge_phasing_blocks, read by stitch_phase_sets).
 
   Returns:
     None (the output is written to the output_vcf and output_gvcf files).
@@ -2251,6 +2248,7 @@ def run_postprocessing_over_multiple_partitions(
         temp_tfrecord_output_files=temp_tfrecord_output_files,
         partitions=partitions,
         num_partitions=num_partitions,
+        switches_output_path=switches_output_path,
     )
   else:
     _process_partitions_sequentially(
@@ -2266,6 +2264,7 @@ def run_postprocessing_over_multiple_partitions(
         temp_tfrecord_output_files=temp_tfrecord_output_files,
         partitions=partitions,
         num_partitions=num_partitions,
+        switches_output_path=switches_output_path,
     )
 
   _concat_vcf(_OUTFILE.value, temp_vcf_files)  # pyrefly: ignore[bad-argument-type]
@@ -2288,6 +2287,7 @@ def run_postprocessing_without_partitioning(
     header: variants_pb2.VcfHeader,
     is_empty: bool,
     sample_name: str,
+    switches_output_path: str,
 ) -> None:
   """Runs postprocessing without any partitioning.
 
@@ -2297,6 +2297,8 @@ def run_postprocessing_without_partitioning(
     header: the VCF header
     is_empty: if the partition is empty.
     sample_name: the sample name to use for the output VCF and gVCF.
+    switches_output_path: path to phase switches file (written by
+      merge_phasing_blocks, read by stitch_phase_sets).
 
   Returns:
     None (the output is written to the output_vcf and output_gvcf files).
@@ -2326,7 +2328,7 @@ def run_postprocessing_without_partitioning(
     output_tfrecord_file = tempfile.NamedTemporaryFile(suffix='.tfrecord')
     stitch_phase_sets(
         tfrecord_paths=[tmp_tfrecord_file_name],
-        switches_output_path=_PHASED_READS_SWITCHES_OUTPUT_PATH.value,
+        switches_output_path=switches_output_path,
         output_tfrecord_paths=[output_tfrecord_file.name],
     )
     emit_variants_to_vcf(
@@ -2476,56 +2478,79 @@ def main(argv=()):
           )
       )
 
-    if _PHASED_READS_INPUT_PATH.value:
-      logging.info(
-          'Attempting to merge phasing blocks from %s',
-          _PHASED_READS_INPUT_PATH.value,
-      )
-      logging.info(
-          'Writing switches to %s',
-          _PHASED_READS_SWITCHES_OUTPUT_PATH.value,
-      )
-      logging.info(
-          'Writing corrected reads to %s',
-          _PHASED_READS_CORRECTED_OUTPUT_PATH.value,
-      )
-      _merge_phasing_blocks(
-          _PHASED_READS_INPUT_PATH.value,
-          _PHASED_READS_SWITCHES_OUTPUT_PATH.value,
-          _PHASED_READS_CORRECTED_OUTPUT_PATH.value,
-      )
+    switches_output_path = ''
+    switches_is_temp = False
 
-    is_empty = get_first_cvo_record(all_cvo_paths) is None
-    # Run sequentially in the absence of multiple CPUs or partitions.
-    if _CPUS.value < 1 and _NUM_PARTITIONS.value < 1:
-      run_postprocessing_without_partitioning(
-          contigs=contigs,
-          all_cvo_paths=all_cvo_paths,
-          header=header,
-          is_empty=is_empty,
-          sample_name=sample_name,
-      )
-    else:
-      run_postprocessing_over_multiple_partitions(
-          contigs=contigs,
-          all_cvo_paths=all_cvo_paths,
-          header=header,
-          is_empty=is_empty,
-          sample_name=sample_name,
-      )
+    try:
+      if _PHASED_READS_INPUT_PATH.value:
+        # Resolve default paths for switches output.
+        # Use unique temp files to avoid collisions when multiple instances run
+        # concurrently (see https://github.com/google/deepvariant/issues/1094).
+        switches_output_path = _PHASED_READS_SWITCHES_OUTPUT_PATH.value
+        switches_is_temp = switches_output_path is None
+        if switches_is_temp:
+          fd, switches_output_path = tempfile.mkstemp(
+              prefix='phased_reads_switches_', suffix='.tsv'
+          )
+          os.close(fd)
+        # Corrected reads path is optional diagnostics; only write if
+        # explicitly requested.
+        corrected_output_path = _PHASED_READS_CORRECTED_OUTPUT_PATH.value or ''
+        logging.info(
+            'Attempting to merge phasing blocks from %s',
+            _PHASED_READS_INPUT_PATH.value,
+        )
+        logging.info(
+            'Writing switches to %s',
+            switches_output_path,
+        )
+        if corrected_output_path:
+          logging.info(
+              'Writing corrected reads to %s',
+              corrected_output_path,
+          )
+        _merge_phasing_blocks(
+            _PHASED_READS_INPUT_PATH.value,
+            switches_output_path,
+            corrected_output_path,
+        )
 
-    start_time = time.time()
-    use_csi = _decide_to_use_csi(contigs)
-    if str(_OUTFILE.value).endswith('.gz'):
-      build_index(_OUTFILE.value, use_csi)  # pyrefly: ignore[bad-argument-type]
-    if _NONVARIANT_SITE_TFRECORD_PATH.value and str(
-        _GVCF_OUTFILE.value
-    ).endswith('.gz'):
-      build_index(_GVCF_OUTFILE.value, use_csi)  # pyrefly: ignore[bad-argument-type]
-    logging.info(
-        'Indexing VCF and gVCF took %s minutes.',
-        (time.time() - start_time) / 60,
-    )
+      is_empty = get_first_cvo_record(all_cvo_paths) is None
+      # Run sequentially in the absence of multiple CPUs or partitions.
+      if _CPUS.value < 1 and _NUM_PARTITIONS.value < 1:
+        run_postprocessing_without_partitioning(
+            contigs=contigs,
+            all_cvo_paths=all_cvo_paths,
+            header=header,
+            is_empty=is_empty,
+            sample_name=sample_name,
+            switches_output_path=switches_output_path,
+        )
+      else:
+        run_postprocessing_over_multiple_partitions(
+            contigs=contigs,
+            all_cvo_paths=all_cvo_paths,
+            header=header,
+            is_empty=is_empty,
+            sample_name=sample_name,
+            switches_output_path=switches_output_path,
+        )
+      start_time = time.time()
+      use_csi = _decide_to_use_csi(contigs)
+      if str(_OUTFILE.value).endswith('.gz'):
+        build_index(_OUTFILE.value, use_csi)  # pyrefly: ignore[bad-argument-type]
+      if _NONVARIANT_SITE_TFRECORD_PATH.value and str(
+          _GVCF_OUTFILE.value
+      ).endswith('.gz'):
+        build_index(_GVCF_OUTFILE.value, use_csi)  # pyrefly: ignore[bad-argument-type]
+      logging.info(
+          'Indexing VCF and gVCF took %s minutes.',
+          (time.time() - start_time) / 60,
+      )
+    finally:
+      # Clean up auto-generated temp files.
+      if switches_is_temp:
+        _safe_remove(switches_output_path)
 
 
 if __name__ == '__main__':

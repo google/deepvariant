@@ -351,6 +351,173 @@ class PostprocessVariantsTest(parameterized.TestCase):
       self.assertTrue(tf.io.gfile.exists(FLAGS.gvcf_outfile + '.tbi'))
 
   @flagsaver.flagsaver
+  @mock.patch('tempfile.mkstemp')
+  @mock.patch('os.close')
+  @mock.patch(
+      'deepvariant.postprocess_variants._merge_phasing_blocks'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.run_postprocessing_without_partitioning'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants._safe_remove'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.get_first_cvo_record'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.build_index'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.pysam.FastaFile'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.get_cvo_paths'
+  )
+  def test_temp_files_cleanup_success(
+      self,
+      mock_get_cvo_paths,
+      mock_fasta_file,
+      mock_build_index,
+      mock_get_first_cvo,
+      mock_safe_remove,
+      mock_run_postprocessing,
+      mock_merge_phasing,
+      mock_os_close,
+      mock_mkstemp,
+  ):
+    # Setup flags
+    FLAGS.infile = 'mock_infile'
+    FLAGS.ref = 'mock_ref'
+    FLAGS.outfile = 'mock_outfile.gz'
+    FLAGS.phased_reads_input_path = 'mock_phased_reads_input'
+    FLAGS.phased_reads_switches_output_path = None
+    FLAGS.phased_reads_corrected_output_path = None
+    FLAGS.cpus = 0
+    FLAGS.num_partitions = 0
+
+    # Setup mocks
+    mock_mkstemp.return_value = (11, '/tmp/mock_switches.tsv')
+    mock_get_first_cvo.return_value = None
+    mock_fasta = mock.Mock()
+    mock_fasta.nreferences = 1
+    mock_fasta.references = ['chr20']
+    mock_fasta.lengths = [1000]
+    mock_fasta_file.return_value = mock_fasta
+    mock_get_cvo_paths.return_value = ['mock_infile']
+
+    # Run
+    postprocess_variants.main(['postprocess_variants.py'])
+
+    # Verify mkstemp called for switches
+    self.assertEqual(mock_mkstemp.call_count, 1)
+    mock_mkstemp.assert_called_once_with(
+        prefix='phased_reads_switches_', suffix='.tsv'
+    )
+
+    # Verify os.close called with fd
+    mock_os_close.assert_called_once_with(11)
+
+    # Verify merge called with temp switches path and empty corrected path
+    mock_merge_phasing.assert_called_once_with(
+        'mock_phased_reads_input',
+        '/tmp/mock_switches.tsv',
+        '',
+    )
+
+    # Verify postprocessing called with switches temp path
+    mock_run_postprocessing.assert_called_once()
+    _, kwargs = mock_run_postprocessing.call_args
+    self.assertEqual(kwargs['switches_output_path'], '/tmp/mock_switches.tsv')
+
+    # Verify cleanup called for switches temp file
+    self.assertEqual(mock_safe_remove.call_count, 1)
+    mock_safe_remove.assert_called_once_with('/tmp/mock_switches.tsv')
+
+    # Verify build_index was called
+    mock_build_index.assert_called_once_with('mock_outfile.gz', False)
+
+  @flagsaver.flagsaver
+  @mock.patch('tempfile.mkstemp')
+  @mock.patch('os.close')
+  @mock.patch(
+      'deepvariant.postprocess_variants._merge_phasing_blocks'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.run_postprocessing_without_partitioning'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants._safe_remove'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.get_first_cvo_record'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.build_index'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.pysam.FastaFile'
+  )
+  @mock.patch(
+      'deepvariant.postprocess_variants.get_cvo_paths'
+  )
+  def test_temp_files_cleanup_on_exception(
+      self,
+      mock_get_cvo_paths,
+      mock_fasta_file,
+      mock_build_index,
+      mock_get_first_cvo,
+      mock_safe_remove,
+      mock_run_postprocessing,
+      mock_merge_phasing,
+      mock_os_close,
+      mock_mkstemp,
+  ):
+    # Setup flags
+    FLAGS.infile = 'mock_infile'
+    FLAGS.ref = 'mock_ref'
+    FLAGS.outfile = 'mock_outfile.gz'
+    FLAGS.phased_reads_input_path = 'mock_phased_reads_input'
+    FLAGS.phased_reads_switches_output_path = None
+    FLAGS.phased_reads_corrected_output_path = None
+    FLAGS.cpus = 0
+    FLAGS.num_partitions = 0
+
+    # Setup mocks
+    mock_mkstemp.return_value = (11, '/tmp/mock_switches.tsv')
+    mock_get_first_cvo.return_value = None
+    mock_fasta = mock.Mock()
+    mock_fasta.nreferences = 1
+    mock_fasta.references = ['chr20']
+    mock_fasta.lengths = [1000]
+    mock_fasta_file.return_value = mock_fasta
+    mock_get_cvo_paths.return_value = ['mock_infile']
+    mock_run_postprocessing.side_effect = ValueError(
+        'Mock postprocessing error'
+    )
+
+    # Run and assert exception is propagated
+    with self.assertRaisesRegex(ValueError, 'Mock postprocessing error'):
+      postprocess_variants.main(['postprocess_variants.py'])
+
+    # Verify cleanup was STILL called for switches temp file
+    self.assertEqual(mock_safe_remove.call_count, 1)
+    mock_safe_remove.assert_called_once_with('/tmp/mock_switches.tsv')
+
+    # Verify os.close called with fd
+    mock_os_close.assert_called_once_with(11)
+
+    # Verify merge called with temp switches path and empty corrected path
+    mock_merge_phasing.assert_called_once_with(
+        'mock_phased_reads_input',
+        '/tmp/mock_switches.tsv',
+        '',
+    )
+
+    # Verify build_index was NOT called because we crashed before it
+    mock_build_index.assert_not_called()
+
+  @flagsaver.flagsaver
   def test_output_header_contains_haplotype_format_fields(self):
     FLAGS.infile = make_golden_dataset(False)
     FLAGS.ref = testdata.CHR20_FASTA
