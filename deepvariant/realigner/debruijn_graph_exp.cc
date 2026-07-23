@@ -415,7 +415,8 @@ void DeBruijnGraphExp::CandidatePathsRankedHelper(
     CandidatePathsRankedHelper(v, sink_nodes, current_path, pq, num_paths);
     current_path.path.pop_back();
     if (num_paths > kMaxNumPaths) {
-      LOG(INFO) << "Num paths > " << kMaxNumPaths << ", cutting off";
+      // In a complex graph number of paths can explode exponentially. If we
+      // went over the kMaxNumPaths we stop the search early.
       return;
     }
   }
@@ -435,7 +436,10 @@ std::vector<PathExp> DeBruijnGraphExp::CandidatePathsRanked() const {
   for (VertexExp source : start_nodes) {
     PathExp current_path = {{source}, 0.0};
     CandidatePathsRankedHelper(source, sink_nodes, current_path, pq, num_paths);
-    if (num_paths > kMaxNumPaths) break;
+    if (num_paths > kMaxNumPaths) {
+      LOG(INFO) << "Num paths > " << kMaxNumPaths << ", cutting off";
+      break;
+    }
   }
 
   // Deterministic traversal order (sorted start_nodes and successors) ensures
