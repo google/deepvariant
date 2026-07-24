@@ -234,6 +234,7 @@ cc_test(
         "fast_pass_aligner",
         ":ssw",
         "//deepvariant/protos:realigner_cc_pb2",
+        "//third_party/nucleus/protos:position_cc_pb2",
         "//third_party/nucleus/protos:reads_cc_pb2",
         "//third_party/nucleus/testing:cpp_test_utils",
         "@com_google_absl//absl/log:check",

@@ -368,7 +368,7 @@ class FastPassAligner {
   //    operations of length 1 at a time.
   // 3. Different logic is implemented for each type of merges: =:=, DEL:=,
   //    =:DEL, INS:=, =:INS, DEL:DEL, INS:INS, DEL:INS
-  void CalculateReadToRefAlignment(
+  bool CalculateReadToRefAlignment(
       size_t read_index,
       const ReadAlignment& read_to_haplotype_alignment,
       const std::list<CigarOp>& haplotype_to_ref_cigar_ops_input,

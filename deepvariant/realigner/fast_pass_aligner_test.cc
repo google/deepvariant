@@ -49,6 +49,7 @@
 #include "tensorflow/core/platform/test.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "third_party/nucleus/protos/position.pb.h"
 #include "third_party/nucleus/protos/reads.pb.h"
 #include "third_party/nucleus/testing/test_utils.h"
 #include "google/protobuf/text_format.h"
@@ -1305,6 +1306,45 @@ TEST_F(FastPassAlignerTest, SswAligner_BandedSwInt32Overflow_GH1060) {
   EXPECT_GT(alignment.sw_score, 0);
 }
 
+// Tests that when haplotype to reference alignment score is negative, in which
+// case read that supports this haplotype cannot be realigned to the reference.
+// Read aligns to haplotype starting from 5th position of the read.
+TEST_F(FastPassAlignerTest,
+       NegativeHaplotypeToRefScorePreservesOriginalAlignmentTest) {
+  // Reference sequence of 60 'A's.
+  std::string reference(60, 'A');
+  aligner_.set_reference(reference);
+
+  // Haplotype sequence of 20 'C's. Aligning this haplotype to reference
+  // produces a non-positive (0 or negative) SSW alignment score.
+  std::string haplotype(20, 'C');
+
+  // Read sequence of 20bp: 5 'A's followed by 15 'C's ("AAAAACCCCCCCCCCCCCCC").
+  // Read to haplotype alignment starts from the 5th position of the read.
+  std::string read_seq = "AAAAACCCCCCCCCCCCCCC";
+  nucleus::genomics::v1::Read original_read =
+      nucleus::MakeRead("chr1", 10, read_seq, {"20M"});
+
+  AlignerOptions aligner_options;
+  aligner_options.set_kmer_size(3);
+  aligner_.set_options(aligner_options);
+  aligner_.set_haplotypes({haplotype});
+
+  std::unique_ptr<std::vector<nucleus::genomics::v1::Read>> realigned_reads =
+      aligner_.AlignReads({original_read});
+
+  ASSERT_NE(realigned_reads, nullptr);
+  ASSERT_EQ(realigned_reads->size(), 1);
+
+  // The original read alignment should be preserved.
+  const auto& result_read = (*realigned_reads)[0];
+  EXPECT_EQ(result_read.alignment().position().position(), 10);
+  EXPECT_EQ(result_read.alignment().cigar_size(), 1);
+  EXPECT_EQ(result_read.alignment().cigar(0).operation(),
+            nucleus::genomics::v1::CigarUnit::ALIGNMENT_MATCH);
+  EXPECT_EQ(result_read.alignment().cigar(0).operation_length(), 20);
+}
+
 
 }  // namespace deepvariant
 }  // namespace genomics
@@ -1314,3 +1354,4 @@ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
+

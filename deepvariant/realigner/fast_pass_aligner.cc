@@ -800,9 +800,13 @@ void FastPassAligner::RealignReadsToReference(
                     bestHaplotypeAlignments.read_alignment_scores[read_index]
                         .read_aligned_from_pos});
       }
-      CalculateReadToRefAlignment(
+      if (!CalculateReadToRefAlignment(
           read_index, bestHaplotypeAlignments.read_alignment_scores[read_index],
-          bestHaplotypeAlignments.cigar_ops, &readToRefCigarOps);
+          bestHaplotypeAlignments.cigar_ops, &readToRefCigarOps)) {
+        // Keep original alignment.
+        (*realigned_reads)->push_back(realigned_read);
+        continue;
+      }
 
       // The following block is only executed if normalize_reads flag is not
       // set. This is because if --normalize_reads is true, they will be
@@ -1153,7 +1157,7 @@ inline void MergeOneBaseOperations(
 
 }  // namespace
 
-void FastPassAligner::CalculateReadToRefAlignment(
+bool FastPassAligner::CalculateReadToRefAlignment(
     size_t read_index,
     const ReadAlignment& read_to_haplotype_alignment,
     const std::list<CigarOp>& haplotype_to_ref_cigar_ops_input,
@@ -1172,9 +1176,11 @@ void FastPassAligner::CalculateReadToRefAlignment(
 
   // Sanity check. By design haplotype is built from reads. Therefore it should
   // be impossible that read does not overlap with haplotype.
+  // But, if haplotype to reference alignment score is negative then alignment
+  // is empty. If read aligns to this haplotype we cannot realign it. In that
+  // case the original alignment is kept.
   if (haplotype_to_ref_cigar_ops.empty()) {
-    LOG(WARNING) << "Haplotype to reference alignment is empty.";
-    return;
+    return false;
   }
 
   // Skip heading soft clips.
@@ -1285,6 +1291,7 @@ void FastPassAligner::CalculateReadToRefAlignment(
       cur_read_to_hap_op.length--;
     }
   }
+  return true;
 }
 
 FastPassAligner::GlobalAlignment FastPassAligner::GlobalAlign(
