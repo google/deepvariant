@@ -31,5 +31,6 @@ edition = "2024";
 
 package learning.genomics.deeptrio;
 
+option features.default_symbol_visibility = STRICT;
 option features.utf8_validation = NONE;
 
