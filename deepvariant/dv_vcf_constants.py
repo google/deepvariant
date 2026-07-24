@@ -204,7 +204,10 @@ def deepvariant_header(
       ),
       variants_pb2.VcfFilterInfo(
           id=DEEP_VARIANT_NO_CALL,
-          description='Site has depth=0 resulting in no call.',
+          description=(
+              'Site has insufficient depth or low confidence resulting in no'
+              ' call.'
+          ),
       ),
   ]
   if include_somatic_fields:
