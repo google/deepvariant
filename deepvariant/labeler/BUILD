@@ -31,6 +31,7 @@ py_library(
         "//third_party/nucleus/io:vcf",
         "//third_party/nucleus/util:variant_utils",
         "//third_party/nucleus/util:variantcall_utils",
+        "@absl_py//absl:app",
         "@absl_py//absl/flags",
         "@absl_py//absl/logging",
     ],

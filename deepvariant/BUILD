@@ -1287,6 +1287,7 @@ py_test(
     tags = ["requires-net:external"],
     deps = [
         ":dv_constants",
+        ":dv_utils",
         ":dv_vcf_constants",
         ":postprocess_variants_py_lib",
         ":py_testdata",
@@ -1391,9 +1392,10 @@ py_library(
     name = "dv_utils",
     srcs = ["dv_utils.py"],
     deps = [
+        ":dv_vcf_constants",
         "//deepvariant/protos:deepvariant_py_pb2",
         "//third_party/nucleus/io:sharded_file_utils",
-        "//third_party/nucleus/io:tfrecord",
+        "//third_party/nucleus/io:tfrecord",  # build_cleaner: keep
         "//third_party/nucleus/protos:variants_py_pb2",
         "@absl_py//absl/logging",
     ],

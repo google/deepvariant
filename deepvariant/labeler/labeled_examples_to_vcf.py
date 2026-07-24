@@ -107,6 +107,70 @@ def _example_sort_key(example):
   return variant_utils.variant_range_tuple(dv_utils.example_variant(example))
 
 
+def prune_and_simplify_variant(variant):
+  """Prunes unused alt alleles and simplifies the variant representation."""
+  call = variant_utils.only_call(variant)
+  if not call or not variantcall_utils.has_genotypes(call):
+    return variant
+
+  gt = call.genotype
+  # If genotype is missing (./.), do nothing.
+  if any(g < 0 for g in gt):
+    return variant
+
+  # Genotype indices: 0 is Ref, 1 is Alt1, 2 is Alt2, etc.
+  # Active alt indices (0-based for alternate_bases)
+  active_alt_indices = {g - 1 for g in gt if g > 0}
+
+  # If hom-ref (no active alts), keep the first alt.
+  if not active_alt_indices:
+    active_alt_indices = {0}
+
+  alt_alleles_to_remove = set()
+  for i, alt in enumerate(variant.alternate_bases):
+    if i not in active_alt_indices:
+      alt_alleles_to_remove.add(alt)
+
+  if not alt_alleles_to_remove:
+    # Still simplify even if no alleles were pruned.
+    return variant_utils.simplify_variant_alleles(variant)
+
+  # Use dv_utils.prune_alleles to prune and remap FORMAT fields.
+  pruned_variant = dv_utils.prune_alleles(variant, alt_alleles_to_remove)
+
+  # Remap genotype indices.
+  retained_alts = pruned_variant.alternate_bases
+  index_map = {0: 0}  # Ref maps to Ref
+  new_idx = 1
+  for old_idx_0based, alt in enumerate(variant.alternate_bases):
+    old_idx = old_idx_0based + 1
+    if alt in retained_alts:
+      index_map[old_idx] = new_idx
+      new_idx += 1
+    else:
+      index_map[old_idx] = -1  # Pruned
+
+  new_gt = []
+  for g in gt:
+    new_g = index_map.get(g, -1)
+    if new_g == -1:
+      raise ValueError(
+          f'Genotype index {g} was pruned but it was active in GT {gt}'
+      )
+    new_gt.append(new_g)
+
+  pruned_call = variant_utils.only_call(pruned_variant)
+  variantcall_utils.set_gt(pruned_call, new_gt)
+
+  if 'AD' in pruned_call.info and 'DP' in pruned_call.info:
+    new_ad_values = [v.int_value for v in pruned_call.info['AD'].values]
+    variantcall_utils.set_format(pruned_call, 'DP', [sum(new_ad_values)])
+
+  # Finally, simplify the alleles.
+  simplified_variant = variant_utils.simplify_variant_alleles(pruned_variant)
+  return simplified_variant
+
+
 def examples_to_variants(examples_path, max_records=None):
   """Yields Variant protos from the examples in examples_path.
 
@@ -142,7 +206,10 @@ def examples_to_variants(examples_path, max_records=None):
   for _, group in itertools.groupby(
       variants_and_labels, lambda x: variant_utils.variant_range_tuple(x[0])
   ):
-    (variant, label) = next(group)
+    sorted_group = sorted(
+        group, key=lambda x: (x[1] if x[1] is not None else -1), reverse=True
+    )
+    variant, label = sorted_group[0]
     if not variantcall_utils.has_genotypes(variant_utils.only_call(variant)):
       if label is not None:
         logging.log_every_n(
@@ -173,6 +240,7 @@ def examples_to_variants(examples_path, max_records=None):
                 'with variants that have been labeled.'
             ).format(variant_utils.variant_key(variant))
         )
+    variant = prune_and_simplify_variant(variant)
     yield variant
 
 

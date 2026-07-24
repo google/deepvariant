@@ -40,6 +40,7 @@ import ml_collections
 import numpy as np
 import tensorflow as tf
 
+from deepvariant import dv_vcf_constants
 from deepvariant.protos import deepvariant_pb2
 from third_party.nucleus.io import sharded_file_utils
 from third_party.nucleus.protos import variants_pb2
@@ -443,3 +444,67 @@ def call_variant_to_tfexample(
       )
   ]
   return tfexample
+
+
+ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset([
+    ('AD', True),
+    ('VAF', False),
+    ('MF', True),
+    ('MD', True),
+    ('NAD', True),
+    ('NAF', False),
+    (dv_vcf_constants.DEEP_VARIANT_AD_HP1_FORMAT, True),
+    (dv_vcf_constants.DEEP_VARIANT_AD_HP2_FORMAT, True),
+])
+
+
+class AlleleRemapper:
+  """Facilitates removing alt alleles from a Variant."""
+
+  def __init__(self, original_alt_alleles, alleles_to_remove):
+    self.original_alts = list(original_alt_alleles)
+    self.alleles_to_remove = set(alleles_to_remove)
+
+  def keep_index(self, allele_index, ref_is_zero=False):
+    if ref_is_zero:
+      return True if allele_index == 0 else self.keep_index(allele_index - 1)
+    else:
+      return self.original_alts[allele_index] not in self.alleles_to_remove
+
+  def retained_alt_alleles(self):
+    return [
+        alt for alt in self.original_alts if alt not in self.alleles_to_remove
+    ]
+
+  def reindex_allele_indexed_fields(self, variant, fields):
+    """Updates variant.call fields indexed by ref + alt_alleles."""
+    for field_info in fields:
+      field = field_info[0]
+      ref_is_zero = field_info[1]
+      for call in variant.calls:
+        if field in call.info:
+          entry = call.info[field]
+          updated = [
+              v
+              for i, v in enumerate(entry.values)
+              if self.keep_index(i, ref_is_zero=ref_is_zero)
+          ]
+          del entry.values[:]
+          entry.values.extend(updated)
+
+
+def prune_alleles(variant, alt_alleles_to_remove):
+  """Prunes alt_alleles_to_remove from the variant."""
+  if not alt_alleles_to_remove:
+    return variant
+
+  new_variant = variants_pb2.Variant()
+  new_variant.CopyFrom(variant)
+
+  remapper = AlleleRemapper(variant.alternate_bases, alt_alleles_to_remove)
+  remapper.reindex_allele_indexed_fields(
+      new_variant, ALT_ALLELE_INDEXED_FORMAT_FIELDS
+  )
+  new_variant.alternate_bases[:] = remapper.retained_alt_alleles()
+
+  return new_variant

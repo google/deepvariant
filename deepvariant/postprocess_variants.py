@@ -324,16 +324,7 @@ _SMALL_MODEL_GQ_THRESHOLD = flags.DEFINE_integer(
 # listed here will be have its values cleaned up if we've removed any alt
 # alleles.
 # Each tuple contains: field name, ref_is_zero.
-_ALT_ALLELE_INDEXED_FORMAT_FIELDS = frozenset([
-    ('AD', True),
-    ('VAF', False),
-    ('MF', True),
-    ('MD', True),
-    ('NAD', True),
-    ('NAF', False),
-    (dv_vcf_constants.DEEP_VARIANT_AD_HP1_FORMAT, True),
-    (dv_vcf_constants.DEEP_VARIANT_AD_HP2_FORMAT, True),
-])
+_ALT_ALLELE_INDEXED_FORMAT_FIELDS = dv_utils.ALT_ALLELE_INDEXED_FORMAT_FIELDS
 
 # The number of places past the decimal point to round QUAL estimates to.
 _QUAL_PRECISION = 7
@@ -910,93 +901,6 @@ def is_methylated(call: variants_pb2.VariantCall) -> bool:
   return False
 
 
-class AlleleRemapper:
-  """Facilitates removing alt alleles from a Variant.
-
-  This class provides a one-to-shop for managing the information needed to
-  remove alternative alleles from Variant. It provides functions and properties
-  to get the original alts, the new alts, and asking if alleles (strings) or
-  indices (integers) should be retained or eliminated.
-  """
-
-  def __init__(
-      self, original_alt_alleles: Sequence[str], alleles_to_remove: set[str]
-  ):
-    self.original_alts = list(original_alt_alleles)
-    self.alleles_to_remove = set(alleles_to_remove)
-
-  def keep_index(
-      self, allele_index: int, ref_is_zero: bool | str = False
-  ) -> bool:
-    if ref_is_zero:
-      return True if allele_index == 0 else self.keep_index(allele_index - 1)
-    else:
-      return self.original_alts[allele_index] not in self.alleles_to_remove
-
-  def retained_alt_alleles(self) -> Sequence[str]:
-    return [
-        alt for alt in self.original_alts if alt not in self.alleles_to_remove
-    ]
-
-  def reindex_allele_indexed_fields(
-      self, variant: variants_pb2.Variant, fields: frozenset[tuple[str, bool]]
-  ) -> None:
-    """Updates variant.call fields indexed by ref + alt_alleles.
-
-    Args:
-      variant: Variant proto. We will update the info fields of the Variant.call
-        protos.
-      fields: Iterable of string. Each string should provide a key to an
-        alternative allele indexed field in VariantCall.info fields. Each field
-        specified here will be updated to remove values associated with alleles
-        no longer wanted according to this remapper object.
-    """
-    for field_info in fields:
-      field = field_info[0]
-      ref_is_zero = field_info[1]
-      for call in variant.calls:
-        if field in call.info:
-          entry = call.info[field]
-          updated = [
-              v
-              for i, v in enumerate(entry.values)
-              if self.keep_index(i, ref_is_zero=ref_is_zero)
-          ]
-          # We cannot do entry.values[:] = updated as the ListValue type "does
-          # not support assignment" so we have to do this grossness.
-          del entry.values[:]
-          entry.values.extend(updated)
-
-
-def prune_alleles(
-    variant: variants_pb2.Variant, alt_alleles_to_remove: set[str]
-) -> variants_pb2.Variant:
-  """Remove the alt alleles in alt_alleles_to_remove from canonical_variant.
-
-  Args:
-    variant: variants_pb2.Variant.
-    alt_alleles_to_remove: iterable of str. Alt alleles to remove from variant.
-
-  Returns:
-    variants_pb2.Variant with the alt alleles removed from alternate_bases.
-  """
-  # If we aren't removing any alt alleles, just return the unmodified variant.
-  if not alt_alleles_to_remove:
-    return variant
-
-  new_variant = variants_pb2.Variant()
-  new_variant.CopyFrom(variant)
-
-  # Cleanup any VariantCall.info fields indexed by alt allele.
-  remapper = AlleleRemapper(variant.alternate_bases, alt_alleles_to_remove)
-  remapper.reindex_allele_indexed_fields(
-      new_variant, _ALT_ALLELE_INDEXED_FORMAT_FIELDS
-  )
-  new_variant.alternate_bases[:] = remapper.retained_alt_alleles()
-
-  return new_variant
-
-
 def get_multiallelic_distributions(
     call_variants_outputs: Sequence[deepvariant_pb2.CallVariantsOutput],
     pruned_alleles: set[str],
@@ -1249,7 +1153,9 @@ def merge_predictions(
         '|'.join(canonical_variant.alternate_bases),
     )
   if debug_output_all_candidates != 'ALT':
-    canonical_variant = prune_alleles(canonical_variant, alt_alleles_to_remove)
+    canonical_variant = dv_utils.prune_alleles(
+        canonical_variant, alt_alleles_to_remove
+    )
   # Run alternate model for multiallelic cases.
   num_alts = len(canonical_variant.alternate_bases)
   if num_alts == 2 and multiallelic_model is not None:

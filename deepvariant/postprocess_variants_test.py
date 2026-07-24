@@ -47,6 +47,7 @@ import pysam
 import tensorflow as tf
 
 from deepvariant import dv_constants
+from deepvariant import dv_utils
 from deepvariant import dv_vcf_constants
 from deepvariant import postprocess_variants
 from deepvariant import testdata
@@ -280,7 +281,7 @@ class AlleleRemapperTest(parameterized.TestCase):
       (list('CTG'), ['C', 'G'], [False, True, False]),
   )
   def test_basic(self, alt_alleles, remove, keep_index_expected):
-    remapper = postprocess_variants.AlleleRemapper(alt_alleles, remove)
+    remapper = dv_utils.AlleleRemapper(alt_alleles, remove)
     self.assertEqual(remapper.original_alts, alt_alleles)
     self.assertEqual(remapper.alleles_to_remove, set(remove))
     self.assertEqual(
@@ -301,7 +302,7 @@ class AlleleRemapperTest(parameterized.TestCase):
   def test_makes_copy_of_inputs(self):
     alt_alleles = ['A', 'B']
     removes = {'B'}
-    remapper = postprocess_variants.AlleleRemapper(alt_alleles, removes)
+    remapper = dv_utils.AlleleRemapper(alt_alleles, removes)
     del alt_alleles[0]
     removes -= {'B'}
     self.assertEqual(remapper.original_alts, ['A', 'B'])
@@ -2126,9 +2127,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
       self, canonical_variant, alt_alleles_to_remove, expected_variant
   ):
     self.assertEqual(
-        postprocess_variants.prune_alleles(
-            canonical_variant, alt_alleles_to_remove
-        ),
+        dv_utils.prune_alleles(canonical_variant, alt_alleles_to_remove),
         expected_variant,
     )
 
@@ -2179,7 +2178,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
     variant = _create_variant_with_alleles(
         ref=alleles[0], alts=alleles[1:], start=start
     )
-    pruned = postprocess_variants.prune_alleles(variant, alt_alleles_to_remove)
+    pruned = dv_utils.prune_alleles(variant, alt_alleles_to_remove)
     simplified = variant_utils.simplify_variant_alleles(pruned)
     self.assertEqual(simplified.reference_bases, expected_alleles[0])
     self.assertEqual(simplified.alternate_bases, expected_alleles[1:])
@@ -2223,7 +2222,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
   ):
     variant = _create_variant_with_alleles(alts=alts)
     test_utils.set_list_values(variant.calls[0].info['AD'], orig_ad)
-    actual = postprocess_variants.prune_alleles(variant, to_remove)
+    actual = dv_utils.prune_alleles(variant, to_remove)
     self.assertEqual(
         [v.int_value for v in actual.calls[0].info['AD'].values], expected_ad
     )
@@ -2248,7 +2247,7 @@ class PostprocessVariantsTest(parameterized.TestCase):
         variant.calls[0].info[dv_vcf_constants.DEEP_VARIANT_AD_HP2_FORMAT],
         orig_ad,
     )
-    actual = postprocess_variants.prune_alleles(variant, to_remove)
+    actual = dv_utils.prune_alleles(variant, to_remove)
     self.assertEqual(
         [
             v.int_value

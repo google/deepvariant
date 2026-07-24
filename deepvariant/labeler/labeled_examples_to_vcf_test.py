@@ -92,6 +92,78 @@ class ExamplesToVCFUnitTest(parameterized.TestCase):
     ):
       labeled_examples_to_vcf.main(0)
 
+  @parameterized.parameters(
+      # Case 1: Simple bi-allelic, no pruning, no simplification
+      dict(
+          alleles=['A', 'C'],
+          gt=[0, 1],
+          ad=[10, 15],
+          expected_alleles=['A', 'C'],
+          expected_gt=[0, 1],
+          expected_ad=[10, 15],
+      ),
+      # Case 2: Multi-allelic, prune Alt1, simplify
+      # Ref: CAA, Alt1: C, Alt2: CA
+      # GT: (0, 2) i.e. Ref and Alt2 (CA)
+      # Alt1 (C) is pruned. Remaining: CAA, CA
+      # Simplifies to CA, C.
+      # GT becomes (0, 1).
+      dict(
+          alleles=['CAA', 'C', 'CA'],
+          gt=[0, 2],
+          ad=[10, 5, 8],
+          expected_alleles=['CA', 'C'],
+          expected_gt=[0, 1],
+          expected_ad=[10, 8],
+      ),
+      # Case 3: Multi-allelic, hom-ref (all pruned except first)
+      # Ref: CAA, Alt1: C, Alt2: CA
+      # GT: (0, 0)
+      # Keep first Alt1 (C). Alt2 (CA) pruned.
+      # Remaining: CAA, C.
+      # Cannot simplify CAA, C.
+      dict(
+          alleles=['CAA', 'C', 'CA'],
+          gt=[0, 0],
+          ad=[10, 5, 8],
+          expected_alleles=['CAA', 'C'],
+          expected_gt=[0, 0],
+          expected_ad=[10, 5],
+      ),
+      # Case 4: Multi-allelic, no pruning (all active), simplify
+      # Ref: ATT, Alt1: TTT, Alt2: CTT
+      # GT: (1, 2)
+      # Keep both. Simplifies to A, T, C.
+      dict(
+          alleles=['ATT', 'TTT', 'CTT'],
+          gt=[1, 2],
+          ad=[10, 5, 8],
+          expected_alleles=['A', 'T', 'C'],
+          expected_gt=[1, 2],
+          expected_ad=[10, 5, 8],
+      ),
+  )
+  def test_prune_and_simplify_variant(
+      self, alleles, gt, ad, expected_alleles, expected_gt, expected_ad
+  ):
+    variant = test_utils.make_variant(
+        chrom='chr1', start=10, alleles=alleles, gt=gt, ad=ad
+    )
+    result = labeled_examples_to_vcf.prune_and_simplify_variant(variant)
+
+    self.assertEqual(result.reference_bases, expected_alleles[0])
+    self.assertEqual(list(result.alternate_bases), expected_alleles[1:])
+
+    call = result.calls[0]
+    self.assertEqual(list(call.genotype), expected_gt)
+
+    # Check AD remapping
+    self.assertEqual([v.int_value for v in call.info['AD'].values], expected_ad)
+    # Check DP remapping (should be sum of expected_ad)
+    self.assertEqual(
+        [v.int_value for v in call.info['DP'].values], [sum(expected_ad)]
+    )
+
 
 if __name__ == '__main__':
   absltest.main()
