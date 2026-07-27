@@ -881,7 +881,7 @@ py_test(
     size = "large",
     srcs = ["make_examples_test.py"],
     data = [":testdata"],
-    shard_count = 2,
+    shard_count = 8,
     deps = [
         ":dv_constants",
         ":dv_utils",
@@ -925,6 +925,7 @@ py_test(
     name = "keras_modeling_test",
     size = "large",
     srcs = ["keras_modeling_test.py"],
+    shard_count = 4,
     deps = [
         ":dv_config",
         ":dv_constants",
@@ -1016,6 +1017,7 @@ py_test(
     size = "large",
     srcs = ["call_variants_test.py"],
     data = [":testdata"],
+    shard_count = 6,
     deps = [
         ":call_variants_lib",
         ":dv_utils",
