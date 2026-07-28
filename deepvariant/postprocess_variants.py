@@ -1029,7 +1029,7 @@ def is_non_autosome(variant: variants_pb2.Variant) -> bool:
   # pylint: disable=g-complex-comprehension
   haploid_contigs = [item for part in parts for item in part.split()]
   # pylint: enable=g-complex-comprehension
-  return haploid_contigs and variant.reference_name in haploid_contigs  # pytype: disable=bad-return-type
+  return haploid_contigs and variant.reference_name in haploid_contigs  # pyrefly: ignore[bad-return]
 
 
 def is_in_regions(

@@ -615,7 +615,7 @@ def common_contigs(
 
     def is_common(contig1: reference_pb2.ContigInfo) -> bool:
       contig2 = map2.get(contig1.name, None)
-      return contig2 and contig1.n_bases == contig2.n_bases  # pytype: disable=bad-return-type
+      return contig2 and contig1.n_bases == contig2.n_bases  # pyrefly: ignore[bad-return]
 
     return [c for c in contigs1 if is_common(c)]
 
@@ -2315,8 +2315,8 @@ class RegionProcessor:
       for _, sam_reader in enumerate(sample.sam_readers):  # pyrefly: ignore[bad-argument-type]
         reads = itertools.chain(reads, sam_reader.query(region))
       try:
-        sample.in_memory_sam_reader.replace_reads(reads)  # pytype: disable=attribute-error
-        sample.reads = sample.in_memory_sam_reader.query(region)  # pytype: disable=attribute-error
+        sample.in_memory_sam_reader.replace_reads(reads)  # pyrefly: ignore[missing-attribute]
+        sample.reads = sample.in_memory_sam_reader.query(region)  # pyrefly: ignore[missing-attribute]
         max_bases_to_cover = 0
         if self.options.max_reads_for_dynamic_bases_per_region > 0:
           max_bases_to_cover = (
@@ -2374,7 +2374,7 @@ class RegionProcessor:
     # TODO: For phasing we calculate candidates for all samples.
     # If it is done here then we can reuse these results for phasing thus
     # saving runtime.
-    candidate_positions = main_sample.variant_caller.get_candidate_positions(  # pytype: disable=attribute-error
+    candidate_positions = main_sample.variant_caller.get_candidate_positions(  # pyrefly: ignore[missing-attribute]
         allele_counters=allele_counters, sample_name=main_sample.options.name
     )
     for pos in candidate_positions:
@@ -2485,7 +2485,7 @@ class RegionProcessor:
       )
     for sample_index, sample in enumerate(self.samples):
       if sample_reads_list_to_realign[sample_index]:
-        sample.in_memory_sam_reader.replace_reads(  # pytype: disable=attribute-error
+        sample.in_memory_sam_reader.replace_reads(  # pyrefly: ignore[missing-attribute]
             sample_reads_list_to_realign[sample_index]
         )
       elif sample_reads_list[sample_index]:
@@ -4093,7 +4093,7 @@ def make_examples_runner(options: deepvariant_pb2.MakeExamplesOptions):
           or options.skip_image_data_for_oracle_analysis
       )
       if should_write_examples:
-        region_example_shape = region_processor.writes_examples_in_region(  # pytype: disable=wrong-arg-types
+        region_example_shape = region_processor.writes_examples_in_region(
             candidates_for_pileup_images,
             sample.options.order,  # pyrefly: ignore[bad-argument-type]
             n_cnn_stats,
