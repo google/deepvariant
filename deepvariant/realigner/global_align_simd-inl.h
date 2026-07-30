@@ -77,13 +77,13 @@ namespace hn = hwy::HWY_NAMESPACE;
 //   M_row0, E_row0, F_row0: row 0 values, each (m+1) int16_t
 //   stripe_size: S * W (precomputed)
 //   S: ceil(n/W) (precomputed)
-void PopulateDpMatrixSimd(const char* query, int n, const char* target, int m,
-                          int match_score, int mismatch_pen, int gap_open,
-                          int gap_extend, int edge_range,
-                          int edge_indel_penalty, int16_t* M_striped,
-                          int16_t* E_striped, int16_t* F_striped,
-                          int16_t* M_row0, int16_t* E_row0, int16_t* F_row0,
-                          size_t stripe_size, int S) {
+inline void PopulateDpMatrixSimd(const char* query, int n, const char* target,
+                                 int m, int match_score, int mismatch_pen,
+                                 int gap_open, int gap_extend, int edge_range,
+                                 int edge_indel_penalty, int16_t* M_striped,
+                                 int16_t* E_striped, int16_t* F_striped,
+                                 int16_t* M_row0, int16_t* E_row0,
+                                 int16_t* F_row0, size_t stripe_size, int S) {
   const hn::ScalableTag<int16_t> d;
   const size_t W = hn::Lanes(d);
 
@@ -321,7 +321,7 @@ void PopulateDpMatrixSimd(const char* query, int n, const char* target, int m,
 }
 
 // Returns the SIMD width (number of int16 lanes) for the best available target.
-size_t SimdWidth() {
+inline size_t SimdWidth() {
   const hn::ScalableTag<int16_t> d;
   return hn::Lanes(d);
 }
