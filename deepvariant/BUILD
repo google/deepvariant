@@ -169,8 +169,11 @@ cc_library(
     srcs = ["variant_calling_utils.cc"],
     hdrs = ["variant_calling_utils.h"],
     deps = [
+        ":allelecounter",
+        ":utils",
         "//deepvariant/protos:deepvariant_cc_pb2",
         "//third_party/nucleus/protos:variants_cc_pb2",
+        "//third_party/nucleus/util:cpp_utils",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",

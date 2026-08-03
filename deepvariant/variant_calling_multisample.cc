@@ -35,7 +35,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
 #include <iterator>
 #include <optional>
 #include <string>
@@ -647,58 +646,8 @@ AlleleMap BuildAlleleMap(absl::Span<const Allele> alt_alleles,
   return allele_map;
 }
 
-// Adds the DP, AD, and VAF VCF fields to the first VariantCall of Variant.
-// DP: the total number of observed reads at the site.
-// AD: the number of reads supporting each of our ref and alt alleles.
-// VAF: the allele fraction of the variants (only including alt alleles).
-// These are calculated from the provided allele_count information. The
-// allele_map is needed to map between the Variant reference and alternate_bases
-// and the Alleles used in allele_count.
-void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
-                   absl::string_view allele_map_refbases, Variant* variant) {
-  // Set the DP to the total good reads seen at this position.
-  VariantCall* call = variant->mutable_calls(0);
-  nucleus::SetInfoField(kDPFormatField, TotalAlleleCounts(allele_count), call);
-
-  if (variant->alternate_bases_size() == 1 &&
-      (variant->alternate_bases(0) == kNoAltAllele ||
-       variant->alternate_bases(0) == kGVCFAltAllele)) {
-    // Variant has no alts or is a a gVCF record so only DP is meaningful.
-    return;
-  } else {
-    int dp = TotalAlleleCounts(allele_count);
-    // Build up AD and VAF.
-    std::vector<int> ad;
-    std::vector<double> vaf;
-    ad.push_back(allele_count.ref_supporting_read_count());
-
-    absl::btree_map<std::string, const Allele*, std::less<>> alt_to_alleles;
-    for (const auto& [allele, alt_bases] : allele_map) {
-      const std::string key = SimplifyRefAlt(allele_map_refbases, alt_bases);
-      alt_to_alleles[key] = &allele;
-    }
-    CHECK(alt_to_alleles.size() == allele_map.size())
-        << "Non-unique alternative alleles!";
-    for (const std::string& alt : variant->alternate_bases()) {
-      const std::string simplified_ref_alt =
-          SimplifyRefAlt(variant->reference_bases(), alt);
-      int count_of_allele = 0;
-      auto found = alt_to_alleles.find(simplified_ref_alt);
-      if (found != alt_to_alleles.end()) {
-        count_of_allele = (*found->second).count();
-      }
-      double this_vaf = 0.0;
-      if (dp > 0) {
-        this_vaf = 1.0 * count_of_allele / dp;
-      }
-      ad.push_back(count_of_allele);
-      vaf.push_back(this_vaf);
-    }
-
-    nucleus::SetInfoField(kADFormatField, ad, call);
-    nucleus::SetInfoField(kVAFFormatField, vaf, call);
-  }
-}
+// AddReadDepths is now in variant_calling_utils.
+using variant_calling_utils::AddReadDepths;
 
 // Constructs an allele map with alleles that are ordered using a matched
 // tumor allele map. Only alleles found in the matched tumor will be output.

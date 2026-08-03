@@ -33,14 +33,20 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <string>
+#include <vector>
 
+#include "deepvariant/allelecounter.h"
 #include "deepvariant/protos/deepvariant.pb.h"
+#include "deepvariant/utils.h"
+#include "absl/container/btree_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "third_party/nucleus/protos/variants.pb.h"
+#include "third_party/nucleus/util/utils.h"
 
 namespace learning {
 namespace genomics {
@@ -118,6 +124,55 @@ void AddGenotypes(const std::string& sample_name,
   call->set_call_set_name(sample_name);
   for (const auto genotype : genotypes) {
     call->add_genotype(genotype);
+  }
+}
+
+void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
+                   absl::string_view allele_map_refbases, Variant* variant) {
+  // Set the DP to the total good reads seen at this position.
+  VariantCall* call = variant->mutable_calls(0);
+  nucleus::SetInfoField(kDPFormatField, TotalAlleleCounts(allele_count), call);
+
+  if (variant->alternate_bases_size() == 1 &&
+      (variant->alternate_bases(0) == kNoAltAllele ||
+       variant->alternate_bases(0) == kGVCFAltAllele)) {
+    // Variant has no alts or is a a gVCF record so only DP is meaningful.
+    return;
+  } else {
+    int dp = TotalAlleleCounts(allele_count);
+    // Build up AD and VAF.
+    std::vector<int> ad;
+    std::vector<double> vaf;
+    ad.reserve(variant->alternate_bases_size() + 1);
+    vaf.reserve(variant->alternate_bases_size());
+    ad.push_back(allele_count.ref_supporting_read_count());
+
+    absl::btree_map<std::string, const Allele*, std::less<>> alt_to_alleles;
+    for (const auto& [allele, alt_bases] : allele_map) {
+      const std::string key =
+          SimplifyRefAlt(allele_map_refbases, alt_bases);
+      alt_to_alleles[key] = &allele;
+    }
+    CHECK(alt_to_alleles.size() == allele_map.size())
+        << "Non-unique alternative alleles!";
+    for (const std::string& alt : variant->alternate_bases()) {
+      const std::string simplified_ref_alt =
+          SimplifyRefAlt(variant->reference_bases(), alt);
+      int count_of_allele = 0;
+      auto found = alt_to_alleles.find(simplified_ref_alt);
+      if (found != alt_to_alleles.end()) {
+        count_of_allele = (*found->second).count();
+      }
+      double this_vaf = 0.0;
+      if (dp > 0) {
+        this_vaf = 1.0 * count_of_allele / dp;
+      }
+      ad.push_back(count_of_allele);
+      vaf.push_back(this_vaf);
+    }
+
+    nucleus::SetInfoField(kADFormatField, ad, call);
+    nucleus::SetInfoField(kVAFFormatField, vaf, call);
   }
 }
 

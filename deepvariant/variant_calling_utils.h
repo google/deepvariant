@@ -144,6 +144,17 @@ void AddGenotypes(const std::string& sample_name,
                   absl::Span<const int> genotypes,
                   nucleus::genomics::v1::Variant* variant);
 
+// Adds the DP, AD, and VAF VCF fields to the first VariantCall of Variant.
+// DP: the total number of observed reads at the site.
+// AD: the number of reads supporting each of our ref and alt alleles.
+// VAF: the allele fraction of the variants (only including alt alleles).
+// These are calculated from the provided allele_count information. The
+// allele_map is needed to map between the Variant reference and alternate_bases
+// and the Alleles used in allele_count.
+void AddReadDepths(const AlleleCount& allele_count, const AlleleMap& allele_map,
+                   absl::string_view allele_map_refbases,
+                   nucleus::genomics::v1::Variant* variant);
+
 }  // namespace variant_calling_utils
 }  // namespace deepvariant
 }  // namespace genomics
