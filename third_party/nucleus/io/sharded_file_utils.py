@@ -40,28 +40,17 @@ resolving sharded file specs.
 # Important: Please keep this module free of TensorFlow c++ extensions.
 # This makes it easy to build pure python packages for training that work with
 # CMLE.
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import math
 import os
 import re
 from typing import List, Tuple
 
 from etils import epath
-
-
-import six
-
 SHARD_SPEC_PATTERN = re.compile(R'((.*)\@(\d*[1-9]\d*)(?:\.(.+))?)')
 SHARD_FILE_PATTERN = re.compile(R'(.*)-(\d+)-of-(\d*[1-9]\d*)([^/]+)?$')
 
-
 class ShardError(Exception):
   """An I/O error."""
-
 
 def parse_sharded_file_spec(spec):
   """Parse a sharded file specification.
@@ -90,11 +79,9 @@ def parse_sharded_file_spec(spec):
 
   return m.group(2), int(m.group(3)), suffix
 
-
 def _shard_width(num_shards):
   """Return the width of the shard matcher based on the number of shards."""
   return max(5, int(math.floor(math.log10(num_shards)) + 1))
-
 
 def generate_sharded_filenames(spec: str) -> List[str]:
   """Generate the list of filenames corresponding to the sharding path.
@@ -117,7 +104,6 @@ def generate_sharded_filenames(spec: str) -> List[str]:
     files.append(format_str.format(basename, i, num_shards, suffix))
 
   return files
-
 
 def glob_list_sharded_file_patterns(
     comma_separated_patterns: str, sep: str = ','
@@ -142,7 +128,6 @@ def glob_list_sharded_file_patterns(
               os.path.basename(normalize_to_sharded_file_pattern(pattern)))
   ]))
 
-
 def generate_sharded_file_pattern(basename, num_shards, suffix):
   """Generate a sharded file pattern.
 
@@ -157,7 +142,6 @@ def generate_sharded_file_pattern(basename, num_shards, suffix):
   specifier = '?' * width
   format_str = '{{0}}-{{1}}-of-{{2:0{0}}}{{3}}'.format(width)
   return format_str.format(basename, specifier, num_shards, suffix)
-
 
 def normalize_to_sharded_file_pattern(spec_or_pattern):
   """Take a sharding spec or sharding file pattern and return a sharded pattern.
@@ -177,24 +161,20 @@ def normalize_to_sharded_file_pattern(spec_or_pattern):
     return spec_or_pattern
   return generate_sharded_file_pattern(basename, num_shards, suffix)
 
-
 def is_sharded_filename(filename: str) -> bool:
   """Returns True if filename is a sharded filename."""
   m = SHARD_FILE_PATTERN.match(filename)
   return m is not None
-
 
 def is_sharded_file_spec(spec: str) -> bool:
   """Returns True if spec is a sharded file specification."""
   m = SHARD_SPEC_PATTERN.match(spec)
   return m is not None
 
-
 # TODO: retire when GenerateShardedFilename is added to library.
 def sharded_filename(spec: str, i: int) -> str:
   """Gets a path appropriate for writing the ith file of a sharded spec."""
   return generate_sharded_filenames(spec)[i]
-
 
 # TODO: Improve the return value (instead of using tuple). It hurts
 # readability when there are multiple input filespecs.
@@ -265,7 +245,6 @@ def resolve_filespecs(
 
   return [master_num_shards] + [resolve_one(spec) for spec in filespecs]
 
-
 def maybe_generate_sharded_filenames(filespec):
   """Potentially expands sharded filespec into a list of paths.
 
@@ -284,13 +263,12 @@ def maybe_generate_sharded_filenames(filespec):
   Raises:
     TypeError: if filespec is not in valid string_types.
   """
-  if not isinstance(filespec, six.string_types):
+  if not isinstance(filespec, str):
     raise TypeError('Invalid filespec: %s' % filespec)
   if is_sharded_file_spec(filespec):
     return generate_sharded_filenames(filespec)
   else:
     return [filespec]
-
 
 def parse_sharded_filename(filename):
   """Parse a sharded name specification.

@@ -33,10 +33,6 @@ This class provides wrappers for conveniently interacting with protos defined
 in struct.proto, mostly ListValue and Value objects. It should primarily be used
 by variant_utils and variantcallutils rather than being used directly.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import types
 
 from third_party.nucleus.protos import struct_pb2
@@ -47,7 +43,6 @@ _INT_TYPE = 'int_value'
 _NUMBER_TYPE = 'number_value'
 _STRING_TYPE = 'string_value'
 
-
 def _add_field_with_type(field_map, field_name, value, value_type):
   """Adds values to a particular map field containing a ListValue."""
   if not isinstance(value, (list, types.GeneratorType, tuple)):
@@ -55,18 +50,15 @@ def _add_field_with_type(field_map, field_name, value, value_type):
   struct_values = [struct_pb2.Value(**{value_type: v}) for v in value]
   field_map[field_name].values.extend(struct_values)
 
-
 def _set_field_with_type(field_map, field_name, value, value_type):
   """Sets values to a particular map field containing a ListValue."""
   if field_name in field_map:
     del field_map[field_name]
   _add_field_with_type(field_map, field_name, value, value_type)
 
-
 def _get_field_with_type(field_map, field_name, is_single_field, value_type):
   fields = [getattr(v, value_type) for v in field_map[field_name].values]
   return fields[0] if is_single_field and fields else fields
-
 
 def add_number_field(field_map, field_name, value):
   """Appends the given number value(s) to field_map[field_name].
@@ -79,7 +71,6 @@ def add_number_field(field_map, field_name, value):
   """
   _add_field_with_type(field_map, field_name, value, _NUMBER_TYPE)
 
-
 def set_number_field(field_map, field_name, value):
   """Sets field_map[field_name] with the given number value(s).
 
@@ -90,7 +81,6 @@ def set_number_field(field_map, field_name, value):
       or a list of numbers.
   """
   _set_field_with_type(field_map, field_name, value, _NUMBER_TYPE)
-
 
 def get_number_field(field_map, field_name, is_single_field=False):
   """Returns the number value(s) stored in `field_map[field_name]`.
@@ -110,7 +100,6 @@ def get_number_field(field_map, field_name, is_single_field=False):
   return _get_field_with_type(field_map, field_name, is_single_field,
                               _NUMBER_TYPE)
 
-
 def add_int_field(field_map, field_name, value):
   """Appends the given int value(s) to field_map[field_name].
 
@@ -122,7 +111,6 @@ def add_int_field(field_map, field_name, value):
   """
   _add_field_with_type(field_map, field_name, value, _INT_TYPE)
 
-
 def set_int_field(field_map, field_name, value):
   """Sets field_map[field_name] with the given int value(s).
 
@@ -133,7 +121,6 @@ def set_int_field(field_map, field_name, value):
       or a list of ints.
   """
   _set_field_with_type(field_map, field_name, value, _INT_TYPE)
-
 
 def get_int_field(field_map, field_name, is_single_field=False):
   """Returns the int value(s) stored in `field_map[field_name]`.
@@ -152,7 +139,6 @@ def get_int_field(field_map, field_name, is_single_field=False):
   """
   return _get_field_with_type(field_map, field_name, is_single_field, _INT_TYPE)
 
-
 def add_string_field(field_map, field_name, value):
   """Appends the given string value(s) to field_map[field_name].
 
@@ -164,7 +150,6 @@ def add_string_field(field_map, field_name, value):
   """
   _add_field_with_type(field_map, field_name, value, _STRING_TYPE)
 
-
 def set_string_field(field_map, field_name, value):
   """Sets field_map[field_name] with the given string value(s).
 
@@ -175,7 +160,6 @@ def set_string_field(field_map, field_name, value):
       a list of strings.
   """
   _set_field_with_type(field_map, field_name, value, _STRING_TYPE)
-
 
 def get_string_field(field_map, field_name, is_single_field=False):
   """Returns the string value(s) stored in `field_map[field_name]`.
@@ -195,7 +179,6 @@ def get_string_field(field_map, field_name, is_single_field=False):
   return _get_field_with_type(field_map, field_name, is_single_field,
                               _STRING_TYPE)
 
-
 def add_bool_field(field_map, field_name, value):
   """Appends the given boolean value(s) to field_map[field_name].
 
@@ -207,7 +190,6 @@ def add_bool_field(field_map, field_name, value):
   """
   _add_field_with_type(field_map, field_name, value, _BOOL_TYPE)
 
-
 def set_bool_field(field_map, field_name, value):
   """Sets field_map[field_name] with the given boolean value(s).
 
@@ -218,7 +200,6 @@ def set_bool_field(field_map, field_name, value):
       boolean or a list of booleans.
   """
   _set_field_with_type(field_map, field_name, value, _BOOL_TYPE)
-
 
 def get_bool_field(field_map, field_name, is_single_field=False):
   """Returns the bool value(s) stored in `field_map[field_name]`.

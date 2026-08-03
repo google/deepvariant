@@ -27,18 +27,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Creates tabix indices for VCFs."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.io.python import tabix_indexer
-
 
 def build_index(path):
   """Builds a tabix index for VCF at the specified path."""
   tabix_indexer.tbx_index_build(path)
-
 
 def build_csi_index(path, min_shift):
   """Builds a csi index for VCF at the specified path."""

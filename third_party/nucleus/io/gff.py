@@ -68,17 +68,11 @@ read or written. Otherwise, the filename is treated as a true GFF file.
 Files that end in a '.gz' suffix cause the file to be treated as compressed
 (with BGZF if it is a true GFF file, and with gzip if it is a TFRecord file).
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io.python import gff_reader
 from third_party.nucleus.io.python import gff_writer
 from third_party.nucleus.protos import gff_pb2
-
 
 class NativeGffReader(genomics_reader.GenomicsReader):
   """Class for reading from native GFF files.
@@ -94,7 +88,7 @@ class NativeGffReader(genomics_reader.GenomicsReader):
     Args:
       input_path: string. A path to a resource containing GFF records.
     """
-    super(NativeGffReader, self).__init__()
+    super().__init__()
     gff_path = input_path.encode('utf8')
     reader_options = gff_pb2.GffReaderOptions()
     self._reader = gff_reader.GffReader.from_file(gff_path, reader_options)
@@ -115,7 +109,6 @@ class NativeGffReader(genomics_reader.GenomicsReader):
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
 
-
 class GffReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading GffRecord protos from GFF or TFRecord files."""
 
@@ -124,7 +117,6 @@ class GffReader(genomics_reader.DispatchingGenomicsReader):
 
   def _record_proto(self):
     return gff_pb2.GffRecord
-
 
 class NativeGffWriter(genomics_writer.GenomicsWriter):
   """Class for writing to native GFF files.
@@ -141,7 +133,7 @@ class NativeGffWriter(genomics_writer.GenomicsWriter):
       header: nucleus.genomics.v1.GffHeader. The header that defines all
         information germane to the constituent GFF records.
     """
-    super(NativeGffWriter, self).__init__()
+    super().__init__()
     writer_options = gff_pb2.GffWriterOptions()
     self._writer = gff_writer.GffWriter.to_file(output_path, header,
                                                 writer_options)
@@ -151,7 +143,6 @@ class NativeGffWriter(genomics_writer.GenomicsWriter):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
-
 
 class GffWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing GffRecord protos to GFF or TFRecord files."""

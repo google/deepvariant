@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for vcf_reader CLIF python wrappers."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 
 from third_party.nucleus.io.python import vcf_reader
@@ -131,7 +126,6 @@ expected_samples_filters = [
 ]
 
 # pylint: enable=line-too-long
-
 
 class WrapVcfReaderTests(absltest.TestCase):
 
@@ -251,7 +245,6 @@ class WrapVcfReaderTests(absltest.TestCase):
   #   self.assertIsNotNone(next(iterable))
   #   with self.assertRaises(ValueError):
   #     print(list(iterable))
-
 
 if __name__ == '__main__':
   absltest.main()

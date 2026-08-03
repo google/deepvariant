@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for third_party.nucleus.io.gff."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -49,7 +44,6 @@ TFRECORD_GFF_FILES = ('test_features.gff.tfrecord',
 ALL_GFF_FILES = TEXT_GFF_FILES + TFRECORD_GFF_FILES
 
 EXPECTED_GFF_VERSION = 'gff-version 3.2.1'
-
 
 class GffReaderTests(parameterized.TestCase):
 
@@ -73,7 +67,6 @@ class GffReaderTests(parameterized.TestCase):
     with gff.NativeGffReader(gff_path) as native_reader:
       self.assertEqual(EXPECTED_GFF_VERSION, native_reader.header.gff_version)
 
-
 class GffWriterTests(parameterized.TestCase):
   """Tests for GffWriter."""
 
@@ -96,7 +89,6 @@ class GffWriterTests(parameterized.TestCase):
       v2_records = list(reader.iterate())
 
     self.assertEqual(self.records, v2_records)
-
 
 if __name__ == '__main__':
   absltest.main()

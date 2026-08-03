@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for third_party.nucleus.io.tabix."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import shutil
 
@@ -43,12 +38,11 @@ from third_party.nucleus.io import vcf
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
 
-
 class TabixTest(absltest.TestCase):
   """Test the functionality of tabix.build_index."""
 
   def setUp(self):
-    super(TabixTest, self).setUp()
+    super().setUp()
     self.input_file = test_utils.genomics_core_testdata('test_samples.vcf.gz')
     self.output_file = test_utils.test_tmpfile('test_samples.vcf.gz')
     shutil.copyfile(self.input_file, self.output_file)
@@ -56,7 +50,7 @@ class TabixTest(absltest.TestCase):
     self.csi_index_file = self.output_file + '.csi'
 
   def tearDown(self):
-    super(TabixTest, self).tearDown()
+    super().tearDown()
     os.remove(self.output_file)
     try:
       os.remove(self.tbx_index_file)

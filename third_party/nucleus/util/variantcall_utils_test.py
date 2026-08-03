@@ -28,11 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for variantcall_utils."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import functools
 
 from absl.testing import absltest
@@ -43,7 +38,6 @@ from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import variantcall_utils
-
 
 class VariantcallUtilsTests(parameterized.TestCase):
 
@@ -401,7 +395,6 @@ class VariantcallUtilsTests(parameterized.TestCase):
   def test_get_mf(self, variant_call, expected):
     got = variantcall_utils.get_mf(variant_call=variant_call)
     self.assertEqual(expected, got)
-
 
 if __name__ == '__main__':
   absltest.main()

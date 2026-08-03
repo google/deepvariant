@@ -27,18 +27,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for third_party.nucleus.io.bedgraph."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
 from third_party.nucleus.io import bedgraph
 from third_party.nucleus.protos import bedgraph_pb2
 from third_party.nucleus.testing import test_utils
-
 
 class BedGraphTests(parameterized.TestCase):
 
@@ -71,7 +65,6 @@ class BedGraphTests(parameterized.TestCase):
 
     self.assertLen(records, 4)
     self.assertEqual(records, v2_records)
-
 
 if __name__ == '__main__':
   absltest.main()

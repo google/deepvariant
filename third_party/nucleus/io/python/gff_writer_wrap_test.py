@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for GffWriter CLIF python wrappers."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -43,7 +38,6 @@ from third_party.nucleus.util import ranges
 
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed GffWriter'
 _WRITE_TO_CLOSED_ERROR = 'Cannot write to closed GFF stream'
-
 
 class WrapGffWriterTest(parameterized.TestCase):
 
@@ -93,7 +87,6 @@ class WrapGffWriterTest(parameterized.TestCase):
       # Entering the closed writer should be fine.
       with self.writer:
         pass  # We want to raise an error on exit, so nothing to do in context.
-
 
 if __name__ == '__main__':
   absltest.main()

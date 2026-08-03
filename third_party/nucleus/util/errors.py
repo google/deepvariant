@@ -28,25 +28,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Library of application-specific errors.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import contextlib
 import errno
 import sys
 
 from absl import logging
 
-
 class Error(Exception):
   """Base class for core error types."""
 
-
 class CommandLineError(Error):
   """Exception class related to invalid command-line flags."""
-
 
 def log_and_raise(msg, exception_class=Error):
   """Logs the given message at ERROR level and raises exception.
@@ -60,7 +52,6 @@ def log_and_raise(msg, exception_class=Error):
   """
   logging.error(msg)
   raise exception_class(msg)
-
 
 @contextlib.contextmanager
 def clean_commandline_error_exit(

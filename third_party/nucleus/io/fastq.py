@@ -63,17 +63,11 @@ read or written. Otherwise, the filename is treated as a true FASTQ file.
 Files that end in a '.gz' suffix cause the file to be treated as compressed
 (with BGZF if it is a true FASTQ file, and with gzip if it is a TFRecord file).
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io.python import fastq_reader
 from third_party.nucleus.io.python import fastq_writer
 from third_party.nucleus.protos import fastq_pb2
-
 
 class NativeFastqReader(genomics_reader.GenomicsReader):
   """Class for reading from native FASTQ files.
@@ -89,7 +83,7 @@ class NativeFastqReader(genomics_reader.GenomicsReader):
     Args:
       input_path: str. A path to a resource containing FASTQ records.
     """
-    super(NativeFastqReader, self).__init__()
+    super().__init__()
 
     fastq_path = input_path.encode('utf8')
     options = fastq_pb2.FastqReaderOptions()
@@ -111,7 +105,6 @@ class NativeFastqReader(genomics_reader.GenomicsReader):
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
 
-
 class FastqReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading FastqRecord protos from FASTQ or TFRecord files."""
 
@@ -120,7 +113,6 @@ class FastqReader(genomics_reader.DispatchingGenomicsReader):
 
   def _record_proto(self):
     return fastq_pb2.FastqRecord
-
 
 class NativeFastqWriter(genomics_writer.GenomicsWriter):
   """Class for writing to native FASTQ files.
@@ -136,7 +128,7 @@ class NativeFastqWriter(genomics_writer.GenomicsWriter):
       output_path: str. The path to which to write the FASTQ file.
       **kwargs: optional arguments; presently ignored.
     """
-    super(NativeFastqWriter, self).__init__()
+    super().__init__()
 
     writer_options = fastq_pb2.FastqWriterOptions()
     self._writer = fastq_writer.FastqWriter.to_file(output_path, writer_options)
@@ -146,7 +138,6 @@ class NativeFastqWriter(genomics_writer.GenomicsWriter):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
-
 
 class FastqWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing FastqRecord protos to FASTQ or TFRecord files."""

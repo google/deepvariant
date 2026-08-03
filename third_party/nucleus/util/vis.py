@@ -32,11 +32,6 @@
 Visualization and inspection utility functions enable showing image-like array
 data including those used in DeepVariant.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import enum
 import math
 from typing import List, NamedTuple, Tuple
@@ -49,40 +44,33 @@ from PIL import ImageDraw
 
 from third_party.nucleus.protos import variants_pb2
 
-
 DEEPVARIANT_CHANNEL_NAMES = [
     'read base', 'base quality', 'mapping quality', 'strand',
     'read supports variant', 'base differs from ref', 'haplotype tag',
     'alternate allele 1', 'alternate allele 2'
 ]
 
-
 class Diff(enum.Enum):
   FEW_DIFFS = 1
   MANY_DIFFS = 2
   NEARBY_VARIANTS = 3
 
-
 class BaseQuality(enum.Enum):
   GOOD = 1
   BAD = 2
-
 
 class MappingQuality(enum.Enum):
   GOOD = 1
   BAD = 2
 
-
 class StrandBias(enum.Enum):
   GOOD = 1
   BIASED = 2
-
 
 class ReadSupport(enum.Enum):
   ALL = 1
   HALF = 2
   LOW = 3
-
 
 PileupCuration = NamedTuple('PileupCuration',
                             [('base_quality', BaseQuality),
@@ -90,7 +78,6 @@ PileupCuration = NamedTuple('PileupCuration',
                              ('strand_bias', StrandBias),
                              ('diff_category', Diff),
                              ('read_support', ReadSupport)])
-
 
 def get_image_array_from_example(example):
   """Decode image/encoded and image/shape of an Example into a numpy array.
@@ -110,7 +97,6 @@ def get_image_array_from_example(example):
   shape = features['image/shape'].int64_list.value[0:3]
   return np.frombuffer(img, np.uint8).reshape(shape)
 
-
 def split_3d_array_into_channels(arr):
   """Split 3D array into a list of 2D arrays.
 
@@ -125,7 +111,6 @@ def split_3d_array_into_channels(arr):
   """
   return [arr[:, :, i] for i in range(arr.shape[-1])]
 
-
 def channels_from_example(example):
   """Extract image from an Example and return the list of channels.
 
@@ -138,7 +123,6 @@ def channels_from_example(example):
   """
   image = get_image_array_from_example(example)
   return split_3d_array_into_channels(image)
-
 
 def convert_6_channels_to_rgb(channels):
   """Convert 6-channel image from DeepVariant to RGB for quick visualization.
@@ -162,7 +146,6 @@ def convert_6_channels_to_rgb(channels):
   alpha = np.multiply(channels[4] / 254.0, channels[5] / 254.0)
   return np.multiply(np.stack([base, qual, strand]),
                      alpha).astype(np.uint8).transpose([1, 2, 0])
-
 
 def scale_colors_for_png(arr, vmin=0, vmax=255):
   """Scale an array to integers between 0 and 255 to prep it for a PNG image.
@@ -193,7 +176,6 @@ def scale_colors_for_png(arr, vmin=0, vmax=255):
     scaled = ((scaled - vmin) / (vmax - vmin)) * 255
   return scaled.astype(np.uint8)
 
-
 def _get_image_type_from_array(arr):
   """Find image type based on array dimensions.
 
@@ -215,7 +197,6 @@ def _get_image_type_from_array(arr):
         'Input array must have either 2 dimensions or 3 dimensions where the '
         'third dimension has 3 channels. i.e. arr.shape is (x,y) or (x,y,3). '
         'Found shape {}.'.format(arr.shape))
-
 
 def autoscale_colors_for_png(arr, vmin=None, vmax=None):
   """Adjust an array to prepare it for saving to an image.
@@ -250,7 +231,6 @@ def autoscale_colors_for_png(arr, vmin=None, vmax=None):
 
   scaled = scale_colors_for_png(arr, vmin=vmin, vmax=vmax)
   return scaled, image_mode
-
 
 def add_header(img, labels, mark_midpoints=True, header_height=20):
   """Adds labels to the image, evenly distributed across the top.
@@ -306,7 +286,6 @@ def add_header(img, labels, mark_midpoints=True, header_height=20):
     x_position = int(midpoints[i] - text_width / 2)
     draw.text(xy=(x_position, 0), text=text, fill='black')
   return bigger_img
-
 
 def save_to_png(arr,
                 path=None,
@@ -364,7 +343,6 @@ def save_to_png(arr,
   if show:
     display.display(display.Image(path))
 
-
 def array_to_png(arr,
                  path=None,
                  show=True,
@@ -409,7 +387,6 @@ def array_to_png(arr,
       labels=labels,
       scale=scale)
 
-
 def _deepvariant_channel_names(num_channels):
   """Get DeepVariant channel names for the given number of channels."""
   # Add additional empty labels if there are more channels than expected.
@@ -420,7 +397,6 @@ def _deepvariant_channel_names(num_channels):
   labels = DEEPVARIANT_CHANNEL_NAMES + filler_labels
   # Trim off any extra labels.
   return labels[0:num_channels]
-
 
 def draw_deepvariant_pileup(example=None,
                             channels=None,
@@ -479,7 +455,6 @@ def draw_deepvariant_pileup(example=None,
       vmin=0,
       vmax=254)
 
-
 def variant_from_example(example):
   """Extract Variant object from the 'variant/encoded' feature of an Example.
 
@@ -493,7 +468,6 @@ def variant_from_example(example):
   var_string = features['variant/encoded'].bytes_list.value[0]
   return variants_pb2.Variant.FromString(var_string)
 
-
 def locus_id_from_variant(variant):
   """Create a locus ID of form "chr:pos_ref" from a Variant object.
 
@@ -505,7 +479,6 @@ def locus_id_from_variant(variant):
   """
   return '{}:{}_{}'.format(variant.reference_name, variant.start,
                            variant.reference_bases)
-
 
 def alt_allele_indices_from_example(example):
   """Extract indices of the particular alt allele(s) the example represents.
@@ -523,7 +496,6 @@ def alt_allele_indices_from_example(example):
   # Format is [<field id + type>, <number of elements in array>, ...<array>].
   # Extract the array only, leaving out the metadata.
   return mapped[2:]
-
 
 def alt_bases_from_indices(alt_allele_indices, alternate_bases):
   """Get alt allele bases based on their indices.
@@ -543,7 +515,6 @@ def alt_bases_from_indices(alt_allele_indices, alternate_bases):
   # Avoiding '/' to support use in file paths.
   return '-'.join(alleles)
 
-
 def alt_from_example(example):
   """Get alt allele(s) from a DeepVariant example.
 
@@ -556,7 +527,6 @@ def alt_from_example(example):
   variant = variant_from_example(example)
   indices = alt_allele_indices_from_example(example)
   return alt_bases_from_indices(indices, variant.alternate_bases)
-
 
 def locus_id_with_alt(example):
   """Get complete locus ID from a DeepVariant example.
@@ -571,7 +541,6 @@ def locus_id_with_alt(example):
   locus_id = locus_id_from_variant(variant)
   alt = alt_from_example(example)
   return '{}_{}'.format(locus_id, alt)
-
 
 def label_from_example(example):
   """Get the "label" from an example.
@@ -589,14 +558,12 @@ def label_from_example(example):
   else:
     return None
 
-
 def remove_ref_band(arr: np.ndarray,
                     num_top_rows_to_skip: int = 5) -> np.ndarray:
   """Removes the reference rows at the top of a pileup image array."""
   assert len(arr.shape) == 2
   assert arr.shape[0] > num_top_rows_to_skip
   return arr[num_top_rows_to_skip:, :]
-
 
 def fraction_low_base_quality(channels: List[np.ndarray],
                               threshold: int = 127) -> float:
@@ -618,7 +585,6 @@ def fraction_low_base_quality(channels: List[np.ndarray],
   if num_non_zero == 0:
     return 0.0
   return sum((non_zero_values < threshold) * 1.0) / num_non_zero
-
 
 def fraction_reads_with_low_mapq(channels: List[np.ndarray],
                                  threshold: int = 127) -> float:
@@ -642,7 +608,6 @@ def fraction_reads_with_low_mapq(channels: List[np.ndarray],
     return 0.0
   return sum((non_zero_values < threshold) * 1.0) / num_non_zero
 
-
 def fraction_read_support(channels: List[np.ndarray]) -> float:
   """Gets fraction of reads that support the variant.
 
@@ -661,7 +626,6 @@ def fraction_read_support(channels: List[np.ndarray]) -> float:
   if num_non_zero == 0:
     return 0.0
   return sum(non_zero_values == 254) * 1.0 / num_non_zero
-
 
 def describe_read_support(channels: List[np.ndarray]) -> ReadSupport:
   """Calculates read support and describes it categorically.
@@ -684,7 +648,6 @@ def describe_read_support(channels: List[np.ndarray]) -> ReadSupport:
     return ReadSupport.HALF
   else:
     return ReadSupport.LOW
-
 
 def binomial_test(k: int, n: int) -> float:
   """Calculates a two-tailed binomial test with p=0.5, without scipy.
@@ -717,7 +680,6 @@ def binomial_test(k: int, n: int) -> float:
     sum_of_ps += p_for_i
   return sum_of_ps * 2  # Doubling because it's a two-tailed test.
 
-
 def pvalue_for_strand_bias(channels: List[np.ndarray]) -> float:
   """Calculates a rough p-value for strand bias in pileup.
 
@@ -746,7 +708,6 @@ def pvalue_for_strand_bias(channels: List[np.ndarray]) -> float:
 
   return binomial_test(
       k=forward_supporting, n=forward_supporting + reverse_supporting)
-
 
 def analyze_diff_and_nearby_variants(
     channels: List[np.ndarray]) -> Tuple[float, int]:
@@ -789,7 +750,6 @@ def analyze_diff_and_nearby_variants(
       non_variant_diffs) / total_read_area
   return diff_fraction, num_potential_nearby_variants
 
-
 def describe_diff(channels: List[np.ndarray],
                   diff_fraction_threshold: float = 0.01) -> Diff:
   """Describes a pileup image by its diff channel, including nearby variants.
@@ -821,7 +781,6 @@ def describe_diff(channels: List[np.ndarray],
     return Diff.NEARBY_VARIANTS
   else:
     return Diff.FEW_DIFFS
-
 
 def curate_pileup(channels: List[np.ndarray]) -> PileupCuration:
   """Runs all automated curation functions and outputs categorical tags.

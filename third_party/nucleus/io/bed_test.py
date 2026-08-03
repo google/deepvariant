@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for third_party.nucleus.io.bed."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -41,7 +36,6 @@ from third_party.nucleus.protos import bed_pb2
 from third_party.nucleus.testing import test_utils
 
 _VALID_NUM_BED_FIELDS = [3, 4, 5, 6, 8, 9, 12]
-
 
 class BedReaderTests(parameterized.TestCase):
 
@@ -77,7 +71,6 @@ class BedReaderTests(parameterized.TestCase):
     bed_path = test_utils.genomics_core_testdata('test_regions.bed')
     with self.assertRaisesRegex(ValueError, 'Invalid requested number of fie'):
       _ = bed.BedReader(bed_path, num_fields=invalid_num_fields)
-
 
 class BedWriterTests(parameterized.TestCase):
   """Tests for BedWriter."""
@@ -142,7 +135,6 @@ class BedWriterTests(parameterized.TestCase):
 
       self.assertLen(records, 3)
       self.assertEqual(records, v2_records)
-
 
 if __name__ == '__main__':
   absltest.main()

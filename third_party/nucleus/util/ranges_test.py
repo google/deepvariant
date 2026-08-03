@@ -27,10 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for ranges.py."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import itertools
 
 from absl.testing import absltest
@@ -55,7 +51,6 @@ _TEST_CONTIGS = [
     reference_pb2.ContigInfo(name='chr2', n_bases=100, pos_in_fasta=1),
     reference_pb2.ContigInfo(name='chr3', n_bases=500, pos_in_fasta=2),
 ]
-
 
 class RangesTests(parameterized.TestCase):
 
@@ -803,7 +798,6 @@ class RangesTests(parameterized.TestCase):
   )
   def test_length_is_correct(self, region, expected_length):
     self.assertEqual(expected_length, ranges.length(region))
-
 
 if __name__ == '__main__':
   absltest.main()

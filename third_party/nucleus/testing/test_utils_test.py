@@ -27,16 +27,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for nucleus's testing.test_utils."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 
 from third_party.nucleus.protos import cigar_pb2
 from third_party.nucleus.testing import test_utils
-
 
 class TestUtilsTests(absltest.TestCase):
 
@@ -81,7 +75,6 @@ class TestUtilsTests(absltest.TestCase):
     self.assertGreater(len(read1.fragment_name), 0)
     self.assertGreater(len(read2.fragment_name), 0)
     self.assertNotEqual(read1.fragment_name, read2.fragment_name)
-
 
 if __name__ == '__main__':
   absltest.main()

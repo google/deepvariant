@@ -28,11 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.util.vis."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import glob
 import os
 from absl.testing import absltest
@@ -46,22 +41,18 @@ from third_party.nucleus.util import vis
 from tensorflow.core.example import example_pb2
 from tensorflow.core.example import feature_pb2
 
-
 def _bytes_feature(list_of_strings):
   """Returns a bytes_list from a list of string / byte."""
   return feature_pb2.Feature(
       bytes_list=feature_pb2.BytesList(value=list_of_strings))
-
 
 def _int_feature(list_of_ints):
   """Returns a int64_list from a list of int / bool."""
   return feature_pb2.Feature(
       int64_list=feature_pb2.Int64List(value=list_of_ints))
 
-
 def _image_array(shape):
   return np.random.randint(255, size=shape, dtype=np.uint8)
-
 
 def _mock_example_with_image(shape):
   arr = _image_array(shape)
@@ -72,7 +63,6 @@ def _mock_example_with_image(shape):
   return arr, example_pb2.Example(
       features=feature_pb2.Features(feature=feature))
 
-
 def _mock_example_with_variant_and_alt_allele_indices(
     encoded_indices=b'\n\x01\x00', alleles=('A', 'C')):
   variant = test_utils.make_variant(chrom='X', alleles=alleles, start=10)
@@ -81,7 +71,6 @@ def _mock_example_with_variant_and_alt_allele_indices(
       'alt_allele_indices/encoded': _bytes_feature([encoded_indices])
   }
   return example_pb2.Example(features=feature_pb2.Features(feature=feature))
-
 
 def _mock_pileup_array_with_reads():
   shape = (10, 15)  # (height, width)
@@ -94,7 +83,6 @@ def _mock_pileup_array_with_reads():
   pileup[8, 6:14] = 254
   pileup[8, 8:10] = 100  # Two bases of another read with low value.
   return pileup
-
 
 class VisTest(parameterized.TestCase):
 
@@ -498,7 +486,6 @@ class VisTest(parameterized.TestCase):
     self.assertEqual(tags.diff_category, vis.Diff.MANY_DIFFS)
     # One of four reads supporting is interpreted as roughly heterozygous:
     self.assertEqual(tags.read_support, vis.ReadSupport.HALF)
-
 
 if __name__ == '__main__':
   absltest.main()

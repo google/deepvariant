@@ -28,17 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.util.vcf_constants."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import vcf_constants
-
 
 class VcfConstantsTest(parameterized.TestCase):
 
@@ -266,7 +260,6 @@ class VcfConstantsTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError,
                                  'Unknown reserved FORMAT field to get:'):
       vcf_constants.reserved_format_field_get_fn(field)
-
 
 if __name__ == '__main__':
   absltest.main()

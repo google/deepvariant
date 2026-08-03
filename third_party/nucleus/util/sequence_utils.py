@@ -27,22 +27,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Utility functions for manipulating DNA sequences."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-
 class Error(Exception):
   """Base error class."""
-
 
 def _add_lowercase(d):
   """Returns a dictionary with the lowercase keys and values entered."""
   retval = d.copy()
   retval.update({k.lower(): v.lower() for k, v in d.items()})
   return retval
-
 
 STRICT_DNA_COMPLEMENT_UPPER = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
 DNA_COMPLEMENT_UPPER = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N'}
@@ -86,12 +78,10 @@ STRICT_DNA_COMPLEMENT = _add_lowercase(STRICT_DNA_COMPLEMENT_UPPER)
 DNA_COMPLEMENT = _add_lowercase(DNA_COMPLEMENT_UPPER)
 IUPAC_DNA_COMPLEMENT = _add_lowercase(IUPAC_DNA_COMPLEMENT_UPPER)
 
-
 STRICT_DNA_BASES_UPPER = frozenset(['A', 'C', 'G', 'T'])
 STRICT_DNA_BASES = frozenset(['a', 'c', 'g', 't', 'A', 'C', 'G', 'T'])
 DNA_BASES_UPPER = frozenset(['A', 'C', 'G', 'T', 'N'])
 DNA_BASES = frozenset(['a', 'c', 'g', 't', 'n', 'A', 'C', 'G', 'T', 'N'])
-
 
 def reverse_complement(sequence, complement_dict=None):
   """Returns the reverse complement of a DNA sequence.

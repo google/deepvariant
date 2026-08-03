@@ -1235,7 +1235,9 @@ py_test(
 py_library(
     name = "gfile",
     srcs = ["gfile.py"],
-    deps = ["//third_party/nucleus/io/python:gfile"],
+    deps = [
+        "//third_party/nucleus/io/python:gfile",
+    ],
 )
 
 py_test(

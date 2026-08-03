@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for third_party.nucleus.io.vcf."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -42,7 +37,6 @@ from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
-
 
 class VcfHeaderCacheTests(parameterized.TestCase):
   """Test the functionality of the VcfHeaderCache class."""
@@ -108,7 +102,6 @@ class VcfHeaderCacheTests(parameterized.TestCase):
     with self.assertRaises(KeyError):
       self.cache.format_field_set_fn('ExcessHet')
 
-
 class VcfReaderTests(absltest.TestCase):
   """Test the iteration functionality provided by vcf.VcfReader."""
 
@@ -151,7 +144,6 @@ class VcfReaderTests(absltest.TestCase):
         test_utils.genomics_core_testdata('test_samples.vcf.golden.tfrecord'))
     self.assertNotEqual(tfrecord_reader.c_reader, 0)
 
-
 class VcfReaderInputTests(absltest.TestCase):
   """Tests VcfReader behavior on specific inputs."""
 
@@ -179,11 +171,9 @@ class VcfReaderInputTests(absltest.TestCase):
     self.assertEqual(variants[0].calls[0].genotype, [0, 1])
     self.assertEqual(variants[1].calls[0].genotype, [1, 1])
 
-
 def _format_expected_variant(ref, alts, format_spec, *samples):
   base = ['20', 1, '.', ref, alts, 0, '.', '.', format_spec]
   return base + list(samples)
-
 
 def _format_test_variant(alleles, call_infos):
   variant = test_utils.make_variant(chrom='20', start=0, alleles=alleles)
@@ -195,7 +185,6 @@ def _format_test_variant(alleles, call_infos):
       call.info[key].values.extend(
           [struct_pb2.Value(int_value=v) for v in value])
   return variant
-
 
 class VcfWriterTests(parameterized.TestCase):
   """Tests for VcfWriter."""
@@ -303,7 +292,6 @@ class VcfWriterTests(parameterized.TestCase):
     self.assertWrittenVCFRecordsEqual(
         self.write_variant_to_tempfile(variant), [expected_vcf_line])
 
-
 class VcfWriterHeaderlessTests(absltest.TestCase):
   """Tests for VcfWriter with exclude_header=True."""
 
@@ -321,7 +309,6 @@ class VcfWriterHeaderlessTests(absltest.TestCase):
 
       with vcf.VcfReader(output_vcf, header=reader.header) as actual_reader:
         self.assertEqual(expected_variants, list(actual_reader))
-
 
 class VcfRoundtripTests(parameterized.TestCase):
   """Test the ability to round-trip VCF files."""
@@ -428,7 +415,6 @@ class VcfRoundtripTests(parameterized.TestCase):
         actual = f.read()
       self.assertEqual(actual, expected)
 
-
 class InMemoryVcfReaderTests(parameterized.TestCase):
   """Test the functionality provided by vcf.InMemoryVcfReader."""
 
@@ -478,7 +464,6 @@ class InMemoryVcfReaderTests(parameterized.TestCase):
     self.assertEqual(
         list(self.reader.query(range1)),
         [self.variants[i] for i in expected_variant_indices])
-
 
 if __name__ == '__main__':
   absltest.main()

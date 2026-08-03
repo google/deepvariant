@@ -66,17 +66,11 @@ read or written. Otherwise, the filename is treated as a true BedGraph file.
 Files that end in a '.gz' suffix cause the file to be treated as compressed
 (with BGZF if it is a BedGraph file, and with gzip if it is a TFRecord file).
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io.python import bedgraph_reader
 from third_party.nucleus.io.python import bedgraph_writer
 from third_party.nucleus.protos import bedgraph_pb2
-
 
 class NativeBedGraphReader(genomics_reader.GenomicsReader):
   """Class for reading from native BedGraph files.
@@ -94,7 +88,7 @@ class NativeBedGraphReader(genomics_reader.GenomicsReader):
       num_fields: int. The number of fields to read in the BedGraph. If unset or
         set to zero, all fields in the input are read.
     """
-    super(NativeBedGraphReader, self).__init__()
+    super().__init__()
 
     bedgraph_path = input_path.encode('utf8')
     self._reader = bedgraph_reader.BedGraphReader.from_file(bedgraph_path)
@@ -114,7 +108,6 @@ class NativeBedGraphReader(genomics_reader.GenomicsReader):
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
 
-
 class BedGraphReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading BedGraphRecord protos from BedGraph or TFRecord files."""
 
@@ -123,7 +116,6 @@ class BedGraphReader(genomics_reader.DispatchingGenomicsReader):
 
   def _record_proto(self):
     return bedgraph_pb2.BedGraphRecord
-
 
 class NativeBedGraphWriter(genomics_writer.GenomicsWriter):
   """Class for writing to native BedGraph files.
@@ -138,7 +130,7 @@ class NativeBedGraphWriter(genomics_writer.GenomicsWriter):
     Args:
       output_path: str. The path to which to write the BedGraph file.
     """
-    super(NativeBedGraphWriter, self).__init__()
+    super().__init__()
     self._writer = bedgraph_writer.BedGraphWriter.to_file(output_path)
 
   def write(self, proto):
@@ -146,7 +138,6 @@ class NativeBedGraphWriter(genomics_writer.GenomicsWriter):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
-
 
 class BedGraphWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing BedGraphRecord protos to BedGraph or TFRecord files."""

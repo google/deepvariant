@@ -33,11 +33,6 @@ fidelity of the Reader and Writer classes exist elsewhere in Nucleus.  Rather,
 these tests simply exercise that the conversion *runs* for each input/output
 file type.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import unittest
 
@@ -58,7 +53,6 @@ ORIGINAL_TEST_FILES = [
 # These formats require a header, so conversion from tfrecord to a native file
 # format cannot be done faithfully.
 FORMATS_REQUIRING_HEADER = [".bam", ".gff", ".sam", ".vcf"]
-
 
 class ConvertGenomicsFileTest(parameterized.TestCase):
 
@@ -95,7 +89,6 @@ class ConvertGenomicsFileTest(parameterized.TestCase):
 
     else:
       self._convert(tfrecord_output_path, native_output_path)
-
 
 if __name__ == "__main__":
   absltest.main()

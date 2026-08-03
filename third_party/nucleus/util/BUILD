@@ -94,7 +94,9 @@ py_library(
 py_library(
     name = "cigar",
     srcs = ["cigar.py"],
-    deps = ["//third_party/nucleus/protos:cigar_py_pb2"],
+    deps = [
+        "//third_party/nucleus/protos:cigar_py_pb2",
+    ],
 )
 
 py_test(
@@ -353,7 +355,9 @@ cc_library(
 py_library(
     name = "vis",
     srcs = ["vis.py"],
-    deps = ["//third_party/nucleus/protos:variants_py_pb2"],
+    deps = [
+        "//third_party/nucleus/protos:variants_py_pb2",
+    ],
 )
 
 py_test(

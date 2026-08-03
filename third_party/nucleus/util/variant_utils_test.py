@@ -28,19 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for variant_utils."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import functools
 import itertools
 
 from absl.testing import absltest
 from absl.testing import parameterized
 import mock
-import six
-
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.testing import test_utils
@@ -56,7 +49,6 @@ EVAL_MISS = variant_utils.AlleleMismatchType.unmatched_eval_alleles
 
 _DEFAULT_SAMPLE_NAME = 'NA12878'
 
-
 def _create_variant_with_alleles(ref=None, alts=None, start=0):
   """Creates a Variant record with specified alternate_bases."""
   return variants_pb2.Variant(
@@ -64,7 +56,6 @@ def _create_variant_with_alleles(ref=None, alts=None, start=0):
       alternate_bases=alts,
       start=start,
       calls=[variants_pb2.VariantCall(call_set_name=_DEFAULT_SAMPLE_NAME)])
-
 
 class VariantUtilsTests(parameterized.TestCase):
 
@@ -747,7 +738,7 @@ class VariantUtilsTests(parameterized.TestCase):
       variant_utils.genotype_likelihood(variantcall, [0, 1, 1])
 
   def test_haploid_allele_indices_for_genotype_likelihood_index(self):
-    for aix in six.moves.xrange(20):
+    for aix in range(20):
       allele_indices = (aix,)
       ix = variant_utils.genotype_likelihood_index(allele_indices)
       actual = variant_utils.allele_indices_for_genotype_likelihood_index(
@@ -996,7 +987,6 @@ class VariantUtilsTests(parameterized.TestCase):
       variant.calls.add().genotype[:] = gt
     actual = variant_utils.major_allele_frequency(variant)
     self.assertAlmostEqual(actual, expected)
-
 
 if __name__ == '__main__':
   absltest.main()

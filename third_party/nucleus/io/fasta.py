@@ -47,15 +47,7 @@ If `input_path` ends with '.gz', it is assumed to be compressed.  All FASTA
 files are assumed to be indexed with the index file located at
 `input_path + '.fai'`.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import collections
-
-import six
-
 from etils import epath
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io.python import reference
@@ -66,7 +58,6 @@ from third_party.nucleus.util import ranges
 # TODO: Replace this with a real protocol buffer definition.
 RefFastaHeader = collections.namedtuple(
     'RefFastaHeader', ['contigs'])
-
 
 class FastaReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading (name, bases) tuples from FASTA files."""
@@ -81,7 +72,6 @@ class FastaReader(genomics_reader.DispatchingGenomicsReader):
   def _record_proto(self):
     return fasta_pb2.FastaRecord
 
-
 class IndexedFastaReader(genomics_reader.GenomicsReader):
   """Class for reading from FASTA files containing a reference genome."""
 
@@ -95,7 +85,7 @@ class IndexedFastaReader(genomics_reader.GenomicsReader):
       cache_size: integer. Number of bases to cache from previous queries.
         Defaults to 64K.  The cache can be disabled using cache_size=0.
     """
-    super(IndexedFastaReader, self).__init__()
+    super().__init__()
 
     options = fasta_pb2.FastaReaderOptions(keep_true_case=keep_true_case)
 
@@ -136,7 +126,6 @@ class IndexedFastaReader(genomics_reader.GenomicsReader):
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
 
-
 class UnindexedFastaReader(genomics_reader.GenomicsReader):
   """Class for reading from unindexed FASTA files."""
 
@@ -146,7 +135,7 @@ class UnindexedFastaReader(genomics_reader.GenomicsReader):
     Args:
       input_path: string. A path to a resource containing FASTA records.
     """
-    super(UnindexedFastaReader, self).__init__()
+    super().__init__()
 
     self._reader = reference.UnindexedFastaReader.from_file(input_path)
 
@@ -173,7 +162,6 @@ class UnindexedFastaReader(genomics_reader.GenomicsReader):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
-
 
 class InMemoryFastaReader(genomics_reader.GenomicsReader):
   """An `IndexedFastaReader` getting its bases from an in-memory data structure.
@@ -204,7 +192,7 @@ class InMemoryFastaReader(genomics_reader.GenomicsReader):
     Raises:
       ValueError: If any of the chromosomes tuples are invalid.
     """
-    super(InMemoryFastaReader, self).__init__()
+    super().__init__()
 
     ref_seqs = []
     contigs = []
@@ -259,7 +247,7 @@ class InMemoryFastaReader(genomics_reader.GenomicsReader):
 
     contigs_strs = [
         _format_refseq(refseq)
-        for refseq in six.itervalues(self._reader.reference_sequences)
+        for refseq in self._reader.reference_sequences.values()
     ]
     return 'InMemoryFastaReader(contigs={})'.format(''.join(contigs_strs))
 

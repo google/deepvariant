@@ -27,18 +27,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for third_party.nucleus.util.io."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import itertools
 
 from absl.testing import absltest
 from absl.testing import parameterized
-
-import six
-
 from etils import epath
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import tfrecord
@@ -46,7 +38,6 @@ from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
-
 
 class SamReaderTests(parameterized.TestCase):
   """Test the iteration functionality provided by io.SamReader."""
@@ -212,7 +203,7 @@ class SamReaderTests(parameterized.TestCase):
                                               expected_values):
         if isinstance(expected_value, float):
           self.assertAlmostEqual(actual_value.number_value, expected_value)
-        elif isinstance(expected_value, six.integer_types):
+        elif isinstance(expected_value, int):
           self.assertEqual(actual_value.int_value, expected_value)
         elif isinstance(expected_value, str):
           self.assertEqual(actual_value.string_value, expected_value)
@@ -244,7 +235,6 @@ class SamReaderTests(parameterized.TestCase):
       else:
         self.fail('Unexpected method ' + str(method))
       self.assertEqual(test_utils.iterable_len(reads_iter), expected_n_reads)
-
 
 # Note that CRAM version 2.1 files work with Nucleus but they cannot be used in
 # our test here because CRAM 2.1 embeds an exact path to the reference file
@@ -296,7 +286,6 @@ class CramReaderTests(parameterized.TestCase):
       for interval, n_expected in [('chr1:1-100', 3), ('chr2:1-121', 0)]:
         with reader.query(ranges.parse_literal(interval)) as iterable:
           self.assertEqual(test_utils.iterable_len(iterable), n_expected)
-
 
 class ReadWriterTests(parameterized.TestCase):
   """Tests for sam.SamWriter."""
@@ -376,7 +365,6 @@ class ReadWriterTests(parameterized.TestCase):
         writer.write(record)
     with sam.SamReader(output_path, ref_path=reader_ref_path) as new_reader:
       self.assertEqual(original_records, list(new_reader.iterate()))
-
 
 if __name__ == '__main__':
   absltest.main()

@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for sam_reader CLIF python wrappers."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -41,7 +36,6 @@ from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
-
 
 class SamReaderTest(parameterized.TestCase):
 
@@ -193,7 +187,6 @@ class SamReaderTest(parameterized.TestCase):
                                 'Could not parse file with bad SAM header'):
       sam_reader.SamReader.from_file(
           reads_path=headerless, ref_path='', options=self.options)
-
 
 if __name__ == '__main__':
   absltest.main()

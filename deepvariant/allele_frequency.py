@@ -364,7 +364,9 @@ def make_population_vcf_readers(
     )
 
   # If more than one VCF files are provided.
-  population_vcf_readers = DefaultDict(lambda: None)
+  population_vcf_readers: DefaultDict[str, Optional[vcf.VcfReader]] = (
+      collections.defaultdict(lambda: None)
+  )
 
   for vcf_filename in population_vcf_filenames:
     population_vcf_reader = vcf.VcfReader(vcf_filename, header=None)

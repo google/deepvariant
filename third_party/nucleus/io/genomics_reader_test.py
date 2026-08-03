@@ -27,25 +27,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for third_party.nucleus.io.vcf."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
-import six
-
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.protos import gff_pb2
 from third_party.nucleus.testing import test_utils
-
 
 class DummyReader(genomics_reader.GenomicsReader):
   """A GenomicsReader that produces consecutive integers."""
 
   def __init__(self, input_path):
     self.limit = int(input_path)
-    super(DummyReader, self).__init__()
+    super().__init__()
 
   def iterate(self):
     for i in range(self.limit):
@@ -56,7 +48,6 @@ class DummyReader(genomics_reader.GenomicsReader):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     pass
-
 
 class GenomicsReaderTests(absltest.TestCase):
   """Tests for GenomicsReader."""
@@ -69,9 +60,8 @@ class GenomicsReaderTests(absltest.TestCase):
     dreader = DummyReader('100')
     iter2 = iter(dreader)
     for i in range(100):
-      self.assertEqual(i, six.next(dreader))
-      self.assertEqual(i, six.next(iter2))
-
+      self.assertEqual(i, next(dreader))
+      self.assertEqual(i, next(iter2))
 
 class TFRecordReaderTests(absltest.TestCase):
   """Tests for TFRecordReader."""
@@ -114,7 +104,6 @@ class TFRecordReaderTests(absltest.TestCase):
     records = list(reader.iterate())
     self.assertEqual('GenBank', records[0].source)
     self.assertEqual('ctg123', records[1].range.reference_name)
-
 
 if __name__ == '__main__':
   absltest.main()

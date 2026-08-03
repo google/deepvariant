@@ -28,17 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.util.sequence_utils."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 
 from absl.testing import parameterized
 
 from third_party.nucleus.util import sequence_utils
-
 
 class SequenceUtilsTests(parameterized.TestCase):
 
@@ -101,7 +95,6 @@ class SequenceUtilsTests(parameterized.TestCase):
   def test_base_set_definitions(self, bases_set, complement_dict):
     """Tests that base set and complement dict definitions are consistent."""
     self.assertEqual(bases_set, frozenset(complement_dict.keys()))
-
 
 if __name__ == '__main__':
   absltest.main()

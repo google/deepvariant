@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for gff_reader CLIF python wrappers."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -39,7 +34,6 @@ from third_party.nucleus.io import clif_postproc
 from third_party.nucleus.io.python import gff_reader
 from third_party.nucleus.protos import gff_pb2
 from third_party.nucleus.testing import test_utils
-
 
 class GffReaderTest(parameterized.TestCase):
 
@@ -88,7 +82,6 @@ class GffReaderTest(parameterized.TestCase):
     # At this point the reader is closed.
     with self.assertRaisesRegex(ValueError, 'Cannot Iterate a closed'):
       reader.iterate()
-
 
 if __name__ == '__main__':
   absltest.main()

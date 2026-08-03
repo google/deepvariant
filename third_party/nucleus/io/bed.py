@@ -69,17 +69,11 @@ read or written. Otherwise, the filename is treated as a true BED file.
 Files that end in a '.gz' suffix cause the file to be treated as compressed
 (with BGZF if it is a true BED file, and with gzip if it is a TFRecord file).
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io.python import bed_reader
 from third_party.nucleus.io.python import bed_writer
 from third_party.nucleus.protos import bed_pb2
-
 
 class NativeBedReader(genomics_reader.GenomicsReader):
   """Class for reading from native BED files.
@@ -97,7 +91,7 @@ class NativeBedReader(genomics_reader.GenomicsReader):
       num_fields: int. The number of fields to read in the BED. If unset or set
         to zero, all fields in the input are read.
     """
-    super(NativeBedReader, self).__init__()
+    super().__init__()
 
     bed_path = input_path.encode('utf8')
     options = bed_pb2.BedReaderOptions(num_fields=num_fields)
@@ -116,7 +110,6 @@ class NativeBedReader(genomics_reader.GenomicsReader):
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
 
-
 class BedReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading BedRecord protos from BED or TFRecord files."""
 
@@ -130,7 +123,6 @@ class BedReader(genomics_reader.DispatchingGenomicsReader):
     if hasattr(self, '_reader'):
       return self._reader.has_index()
     return False
-
 
 class NativeBedWriter(genomics_writer.GenomicsWriter):
   """Class for writing to native BED files.
@@ -147,7 +139,7 @@ class NativeBedWriter(genomics_writer.GenomicsWriter):
       header: nucleus.genomics.v1.BedHeader. The header that defines all
         information germane to the constituent BED records.
     """
-    super(NativeBedWriter, self).__init__()
+    super().__init__()
     if header is None:
       header = bed_pb2.BedHeader(num_fields=3)
     writer_options = bed_pb2.BedWriterOptions()
@@ -160,7 +152,6 @@ class NativeBedWriter(genomics_writer.GenomicsWriter):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
-
 
 class BedWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing BedRecord protos to BED or TFRecord files."""

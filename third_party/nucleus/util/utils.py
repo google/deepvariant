@@ -27,16 +27,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Utility functions for working with reads."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import numpy as np
 
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.util.python import utils as utils_cpp
-
 
 def read_overlaps_region(read, region):
   """Returns True if read overlaps read.
@@ -57,7 +51,6 @@ def read_overlaps_region(read, region):
   """
   return utils_cpp.read_overlaps_region(read, region)
 
-
 def read_range(read):
   """Creates a Range proto from the alignment of Read.
 
@@ -71,11 +64,9 @@ def read_range(read):
   utils_cpp.read_range(read, range_pb)
   return range_pb
 
-
 def read_end(read):
   """Returns the read start + alignment length for Read read."""
   return read_range(read).end
-
 
 def reservoir_sample(iterable, k, random=None):
   """Samples k elements with uniform probability from an iterable.

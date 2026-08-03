@@ -69,28 +69,19 @@ with GenomicsReaderSubClass(output_path, **kwargs) as reader:
     do_something(reader.header, proto)
 ```
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import abc
 import errno
 
 from absl import logging
-import six
-
 from third_party.nucleus.io.python import tfrecord_reader
 
 
-class GenomicsReader(six.Iterator):
+class GenomicsReader(metaclass=abc.ABCMeta):
   """Abstract base class for reading genomics data.
 
   In addition to the abstractmethods defined below, subclasses should
   also set a `header` member variable in their objects.
   """
-
-  __metaclass__ = abc.ABCMeta
 
   @abc.abstractmethod
   def iterate(self):
@@ -128,7 +119,7 @@ class GenomicsReader(six.Iterator):
     """Allows users to use the object itself as an iterator."""
     if self.iterator is None:
       self.iterator = self.iterate()
-    return six.next(self.iterator)
+    return next(self.iterator)
 
 
 class TFRecordReader(GenomicsReader):
@@ -158,7 +149,7 @@ class TFRecordReader(GenomicsReader):
     Raises:
       IOError: if there was any problem opening input_path for reading.
     """
-    super(TFRecordReader, self).__init__()
+    super().__init__()
 
     self.input_path = input_path
     self.proto = proto
@@ -195,7 +186,6 @@ class TFRecordReader(GenomicsReader):
     """Returns the underlying C++ reader."""
     return self.reader
 
-
 class DispatchingGenomicsReader(GenomicsReader):
   """A GenomicsReader that dispatches based on the file extension.
 
@@ -208,7 +198,7 @@ class DispatchingGenomicsReader(GenomicsReader):
   """
 
   def __init__(self, input_path, enable_logging=True, **kwargs):
-    super(DispatchingGenomicsReader, self).__init__()
+    super().__init__()
 
     if '.tfrecord' in input_path:
       self._reader = TFRecordReader(

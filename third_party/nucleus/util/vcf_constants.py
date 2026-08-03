@@ -32,11 +32,6 @@
 See the full specification at https://samtools.github.io/hts-specs/VCFv4.3.pdf
 for details.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import functools
 
 from third_party.nucleus.protos import variants_pb2
@@ -356,7 +351,6 @@ SET_FN_LOOKUP = {
     FLAG_TYPE: struct_utils.set_bool_field,
 }
 
-
 def _get_reserved_field(field_id, reserved_fields):
   """Returns the desired reserved field.
 
@@ -375,21 +369,17 @@ def _get_reserved_field(field_id, reserved_fields):
     raise ValueError('No reserved field with id `{}`'.format(field_id))
   return matching_fields[0]
 
-
 def reserved_filter_field(field_id):
   """Returns the reserved FILTER field with the given ID."""
   return _get_reserved_field(field_id, RESERVED_FILTER_FIELDS)
-
 
 def reserved_info_field(field_id):
   """Returns the reserved INFO field with the given ID."""
   return _get_reserved_field(field_id, RESERVED_INFO_FIELDS)
 
-
 def reserved_format_field(field_id):
   """Returns the reserved FORMAT field with the given ID."""
   return _get_reserved_field(field_id, RESERVED_FORMAT_FIELDS)
-
 
 def create_get_fn(value_type, number):
   """Returns a callable that extracts the typed information from a ListValue.
@@ -424,7 +414,6 @@ def create_get_fn(value_type, number):
   else:
     raise ValueError('Invalid value_type: {}'.format(value_type))
 
-
 # Map from INFO field name to the function used to set struct_pb2.Value elements
 # of that field.
 RESERVED_INFO_FIELD_SET_FNS = {
@@ -451,7 +440,6 @@ RESERVED_FORMAT_FIELD_GET_FNS = {
     for fmt in RESERVED_FORMAT_FIELDS
 }
 
-
 def reserved_info_field_set_fn(field_name):
   """Returns the callable that sets the proper field for the given field_name.
 
@@ -469,7 +457,6 @@ def reserved_info_field_set_fn(field_name):
     return RESERVED_INFO_FIELD_SET_FNS[field_name]
   except KeyError:
     raise ValueError('Unknown reserved INFO field: {}'.format(field_name))
-
 
 def reserved_info_field_get_fn(field_name):
   """Returns the callable that gets the proper field for the given field_name.
@@ -491,7 +478,6 @@ def reserved_info_field_get_fn(field_name):
         'Unknown reserved INFO field to get: {}'.format(field_name)
     )
 
-
 def reserved_format_field_set_fn(field_name):
   """Returns the callable that sets the proper field for the given field_name.
 
@@ -509,7 +495,6 @@ def reserved_format_field_set_fn(field_name):
     return RESERVED_FORMAT_FIELD_SET_FNS[field_name]
   except KeyError:
     raise ValueError('Unknown reserved FORMAT field: {}'.format(field_name))
-
 
 def reserved_format_field_get_fn(field_name):
   """Returns the callable that gets the proper field for the given field_name.

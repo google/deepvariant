@@ -39,7 +39,6 @@ from third_party.nucleus.util.python import utils as cpp_utils
 #       working as intended. These tests are not meant to exercise any
 #       of the functionality in the bound functions.
 
-
 class UtilsTest(absltest.TestCase):
 
   def test_read_end_minimal(self):
@@ -88,7 +87,6 @@ class UtilsTest(absltest.TestCase):
   def test_ConstProtoPtr_TypeError(self):
     with self.assertRaises(TypeError):
       cpp_utils.read_end('plain Python str')
-
 
 
 if __name__ == '__main__':

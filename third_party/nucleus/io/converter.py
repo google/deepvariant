@@ -43,11 +43,6 @@ Note: at present we have no convention for encoding a file *header* in
 tfrecords, so conversion is not possible from tfrecord to any native file format
 for which a header is compulsory.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import collections
 import re
 import sys
@@ -62,16 +57,13 @@ from third_party.nucleus.io import gff
 from third_party.nucleus.io import sam
 from third_party.nucleus.io import vcf
 
-
 def _is_native_file(filename):
   """Returns true if filename is a native (non-tfrecord) genomics data file."""
   return not re.match(r".*\.tfrecord(\.gz)?", filename)
 
-
 def _filename_pattern(ext):
   """Returns an re matching native or tfrecord files of format `ext`."""
   return r".*\.{}(\.tfrecord)?(\.gz)?".format(ext)
-
 
 _FileType = collections.namedtuple(
     "_FileType", ("reader_class", "writer_class", "has_header"))
@@ -89,7 +81,6 @@ _FILETYPE_LOOKUP = {
         _FileType(vcf.VcfReader, vcf.VcfWriter, True),
 }
 
-
 def _lookup_filetype(filename):
   for pattern in _FILETYPE_LOOKUP:
     if re.match(pattern, filename):
@@ -98,13 +89,12 @@ def _lookup_filetype(filename):
 
 LOG_EVERY = 100000
 
-
 class ConversionError(Exception):
   """An exception used to signal file conversion error."""
   pass
 
 
-class NullWriter(object):
+class NullWriter:
   """A writer class whose .write() method is a no-op.
 
   This allows us to create and use a writer object where one is required by
@@ -156,7 +146,6 @@ def _reader_writer_classes(in_filename, out_filename):
 
   return in_filetype.reader_class, writer_class
 
-
 def convert(in_filename, out_filename):
   """Converts a recognized genomics file `in_filename` to `out_filename`.
 
@@ -182,7 +171,6 @@ def convert(in_filename, out_filename):
       elapsed = time.time() - start
       logging.info("Done, processed %d records in %0.2f seconds.", i, elapsed)
 
-
 def main(argv):
   if len(argv) not in (2, 3):
     print("Usage: %s <input_filename> [<output_filename>]" % argv[0])
@@ -196,7 +184,6 @@ def main(argv):
   except ConversionError as e:
     print("Could not execute conversion:", e)
     sys.exit(1)
-
 
 if __name__ == "__main__":
   app.run(main)

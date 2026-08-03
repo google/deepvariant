@@ -28,17 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.io.sharded_file_utils."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
 from third_party.nucleus.io import sharded_file_utils as io
 from third_party.nucleus.testing import test_utils
-
 
 class IOTest(parameterized.TestCase):
 
@@ -130,7 +124,6 @@ class IOTest(parameterized.TestCase):
   )
   def test_maybe_generate_sharded_filenames(self, filespec, expected):
     self.assertEqual(io.maybe_generate_sharded_filenames(filespec), expected)
-
 
 class ShardsTest(parameterized.TestCase):
 

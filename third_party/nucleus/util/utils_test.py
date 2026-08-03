@@ -28,10 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.util.utils."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import collections
 
 from absl.testing import absltest
@@ -43,7 +39,6 @@ import numpy.testing as npt
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
-
 
 class UtilsTest(parameterized.TestCase):
 
@@ -162,7 +157,6 @@ class UtilsTest(parameterized.TestCase):
 
     check_overlaps(ref1, s1, e1, ref2, s2, e2, expected)
     check_overlaps(ref2, s2, e2, ref1, s1, e1, expected)
-
 
 if __name__ == '__main__':
   absltest.main()

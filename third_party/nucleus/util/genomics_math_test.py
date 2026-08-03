@@ -28,18 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.util.genomics_math."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 import numpy as np
 import numpy.testing as npt
 
 from third_party.nucleus.util import genomics_math
-
 
 class MathTests(parameterized.TestCase):
 
@@ -233,7 +227,6 @@ class MathTests(parameterized.TestCase):
   def test_normalize_log10_probs(self, log10_probs, expected):
     npt.assert_allclose(
         genomics_math.normalize_log10_probs(log10_probs), expected, atol=1e-6)
-
 
 if __name__ == '__main__':
   absltest.main()

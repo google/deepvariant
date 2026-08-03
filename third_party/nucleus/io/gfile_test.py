@@ -28,16 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.io.gfile."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 
 from third_party.nucleus.io import gfile
 from third_party.nucleus.testing import test_utils
-
 
 class GfileTest(absltest.TestCase):
 
@@ -70,7 +64,6 @@ class GfileTest(absltest.TestCase):
       lines = f2.readlines()
 
     self.assertEqual(['test\n', 'end\n'], lines)
-
 
 if __name__ == '__main__':
   absltest.main()

@@ -58,11 +58,6 @@ with GenomicsWriterSubClass(output_path, options) as writer:
     writer.write(proto)
 ```
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import abc
 import errno
 
@@ -71,7 +66,7 @@ from absl import logging
 from third_party.nucleus.io.python import tfrecord_writer
 
 
-class GenomicsWriter(object):
+class GenomicsWriter:
   """Abstract base class for writing genomics data.
 
   A GenomicsWriter only has one method, write, which writes a single
@@ -132,7 +127,7 @@ class TFRecordWriter(GenomicsWriter):
     Raises:
       IOError:  if there was any problem opening output_path for writing.
     """
-    super(TFRecordWriter, self).__init__()
+    super().__init__()
     self.header = header
 
     if compression_type is None:
@@ -155,7 +150,6 @@ class TFRecordWriter(GenomicsWriter):
     """Explicitly closes writer."""
     self._writer.close()
 
-
 class DispatchingGenomicsWriter(GenomicsWriter):
   """A GenomicsWriter that dispatches based on the file extension.
 
@@ -174,7 +168,7 @@ class DispatchingGenomicsWriter(GenomicsWriter):
       **kwargs: k=v named args. Keyword arguments used to instantiate the native
         writer, if applicable.
     """
-    super(DispatchingGenomicsWriter, self).__init__()
+    super().__init__()
     self.header = kwargs.get('header', None)
 
     if '.tfrecord' in output_path:

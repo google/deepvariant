@@ -28,15 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for hts_verbose."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 
 from third_party.nucleus.io.python import hts_verbose
-
 
 class HtsVerbose(absltest.TestCase):
 
@@ -52,7 +46,6 @@ class HtsVerbose(absltest.TestCase):
     hts_verbose.set(hts_verbose.htsLogLevel.HTS_LOG_DEBUG)
     level = hts_verbose.get()
     self.assertEqual(level, hts_verbose.htsLogLevel.HTS_LOG_DEBUG)
-
 
 if __name__ == '__main__':
   absltest.main()

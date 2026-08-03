@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for BedWriter CLIF python wrappers."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -41,10 +36,8 @@ from third_party.nucleus.io.python import bed_writer
 from third_party.nucleus.protos import bed_pb2
 from third_party.nucleus.testing import test_utils
 
-
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed BedWriter'
 _WRITE_TO_CLOSED_ERROR = 'Cannot write to closed BED stream'
-
 
 class WrapBedWriterTest(parameterized.TestCase):
 
@@ -97,7 +90,6 @@ class WrapBedWriterTest(parameterized.TestCase):
       # Entering the closed writer should be fine.
       with self.writer:
         pass  # We want to raise an error on exit, so nothing to do in context.
-
 
 if __name__ == '__main__':
   absltest.main()

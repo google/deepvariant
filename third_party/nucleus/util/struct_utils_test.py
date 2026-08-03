@@ -28,19 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.util.struct_utils."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import sys
-
 from absl.testing import absltest
 from absl.testing import parameterized
 from third_party.nucleus.protos import struct_pb2
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import struct_utils
-
 
 def _set_protomap_from_dict(d):
   """Returns a proto Map(str --> ListValue) with the given fields set.
@@ -58,14 +50,12 @@ def _set_protomap_from_dict(d):
     v.info[key].values.extend(values)
   return v.info
 
-
 def _wrapped_value_and_num(value):
   """Returns a list containing value plus the list's length."""
   if isinstance(value, (list, tuple)):
     return value, len(value)
   else:
     return [value], 1
-
 
 class StructUtilsTest(parameterized.TestCase):
 
@@ -201,13 +191,6 @@ class StructUtilsTest(parameterized.TestCase):
     struct_utils.set_int_field(field_map, key, value)
     actual = struct_utils.get_int_field(field_map, key, is_single_field)
     self.assertEqual(actual, expected)
-    # Test long handling in Python 2
-    if sys.version_info.major < 3:
-      field_map = _set_protomap_from_dict({})
-      struct_utils.set_int_field(field_map, key, [long(v) for v in value])
-      actual = struct_utils.get_int_field(field_map, key, is_single_field)
-      self.assertEqual(actual, expected)
-
   @parameterized.parameters(
       dict(initial_fields={}, value='hello', expected=['hello']),
       dict(initial_fields={}, value=['hello'], expected=['hello']),
@@ -347,7 +330,6 @@ class StructUtilsTest(parameterized.TestCase):
     struct_utils.set_bool_field(field_map, key, value)
     actual = struct_utils.get_bool_field(field_map, key, is_single_field)
     self.assertEqual(actual, expected)
-
 
 if __name__ == '__main__':
   absltest.main()

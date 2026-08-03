@@ -69,11 +69,6 @@ code is often performance critical and the low-level mathematical operations
 used in this code (e.g., log10) don't distiguish themselves among the types
 of probabilities.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import math
 import numpy as np
 
@@ -102,7 +97,6 @@ _MAX_CONFIDENCE = 1.0 - 1.25e-10
 LOG_10_OF_E = np.log10(np.e)
 LOG_E_OF_10 = np.log(10.0)
 
-
 def perror_to_bounded_log10_perror(perror, min_prob=1.0 - _MAX_CONFIDENCE):
   """Computes log10(p) for the given probability.
 
@@ -121,7 +115,6 @@ def perror_to_bounded_log10_perror(perror, min_prob=1.0 - _MAX_CONFIDENCE):
   if not 0 <= perror <= 1:
     raise ValueError('perror must be between zero and one: {}'.format(perror))
   return perror_to_log10_perror(max(perror, min_prob))
-
 
 def ptrue_to_bounded_phred(ptrue, max_prob=_MAX_CONFIDENCE):
   """Computes the Phred-scaled confidence from the given ptrue probability.
@@ -142,7 +135,6 @@ def ptrue_to_bounded_phred(ptrue, max_prob=_MAX_CONFIDENCE):
   if not 0 <= ptrue <= 1:
     raise ValueError('ptrue must be between zero and one: {}'.format(ptrue))
   return perror_to_phred(1.0 - min(ptrue, max_prob))
-
 
 def log10_binomial(k, n, p):
   """Calculates numerically-stable value of log10(binomial(k, n, p)).
@@ -179,7 +171,6 @@ def log10_binomial(k, n, p):
     r += (n-k) * math.log1p(-p)
   return r / LOG_E_OF_10
 
-
 def log10sumexp(log10_probs):
   """Returns log10(sum(10^log10_probs)) computed in a numerically-stable way.
 
@@ -191,7 +182,6 @@ def log10sumexp(log10_probs):
   """
   m = max(log10_probs)
   return m + math.log10(sum(pow(10.0, x - m) for x in log10_probs))
-
 
 def normalize_log10_probs(log10_probs):
   """Approximately normalizes log10 probabilities.

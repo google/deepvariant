@@ -28,11 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Test that our protobuf implementation behaves as we'd expect."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 
 from google.protobuf.internal import api_implementation
@@ -42,14 +37,12 @@ from google.protobuf.internal import api_implementation
 # pylint: disable=unused-import
 from third_party.nucleus.io import sam
 
-
 class ProtobufImplementationTest(absltest.TestCase):
   """Checks that our protobufs have the properties we expect."""
 
   def test_protobuf_uses_fast_cpp(self):
     """Checks that we are using the fast cpp version of python protobufs."""
     self.assertEqual(api_implementation.Type(), 'cpp')
-
 
 if __name__ == '__main__':
   absltest.main()

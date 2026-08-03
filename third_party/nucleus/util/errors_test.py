@@ -28,11 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.util.errors."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import errno
 import sys
 
@@ -41,7 +36,6 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import mock
 from third_party.nucleus.util import errors
-
 
 class ErrorsTest(parameterized.TestCase):
 
@@ -74,7 +68,6 @@ class ErrorsTest(parameterized.TestCase):
       with errors.clean_commandline_error_exit(exit_value=exit_value):
         raise exc_type()
     mock_exit.assert_called_once_with(exit_value)
-
 
 if __name__ == '__main__':
   absltest.main()

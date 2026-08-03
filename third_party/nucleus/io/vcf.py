@@ -71,11 +71,6 @@ path provided to the constructor.
 
   VCF format used in reading is inferred from the contents of the file.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io.python import vcf_reader
@@ -85,7 +80,6 @@ from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variant_utils
 from third_party.nucleus.util import vcf_constants
 
-
 def _create_get_fn_cache(fields):
   """Returns a dictionary from field to a callable that extracts its value."""
   return {
@@ -93,13 +87,12 @@ def _create_get_fn_cache(fields):
       for field in fields
   }
 
-
 def _create_set_fn_cache(fields):
   """Returns a dictionary from field to a callable that sets its value."""
   return {field.id: vcf_constants.SET_FN_LOOKUP[field.type] for field in fields}
 
 
-class VcfHeaderCache(object):
+class VcfHeaderCache:
   """This class creates a cache of accessors to structured fields in Variants.
 
   The INFO and FORMAT fields within Variant protos are structured and typed,
@@ -180,7 +173,7 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
       header: If not None, specifies the variants_pb2.VcfHeader. The file at
         input_path must not contain any header information.
     """
-    super(NativeVcfReader, self).__init__()
+    super().__init__()
 
     options = variants_pb2.VcfReaderOptions(
         excluded_info_fields=excluded_info_fields,
@@ -212,7 +205,6 @@ class NativeVcfReader(genomics_reader.GenomicsReader):
     """Returns the underlying C++ reader."""
     return self._reader
 
-
 class VcfReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading Variant protos from VCF or TFRecord files."""
 
@@ -237,7 +229,6 @@ class VcfReader(genomics_reader.DispatchingGenomicsReader):
     TFRecordReader, depending on the input_path's extension.
     """
     return self._reader.c_reader
-
 
 class NativeVcfWriter(genomics_writer.GenomicsWriter):
   """Class for writing to native VCF files.
@@ -273,7 +264,7 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
         top-level value in the VariantCall.genotype_likelihood field.
       exclude_header: bool. If True, write a headerless VCF.
     """
-    super(NativeVcfWriter, self).__init__()
+    super().__init__()
 
     if header is None:
       header = variants_pb2.VcfHeader()
@@ -296,7 +287,6 @@ class NativeVcfWriter(genomics_writer.GenomicsWriter):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
-
 
 class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing Variant protos to VCF or TFRecord files."""
@@ -324,7 +314,6 @@ class VcfWriter(genomics_writer.DispatchingGenomicsWriter):
     # need to create a new one.
     self.field_access_cache = getattr(
         self._writer, 'field_access_cache', VcfHeaderCache(self.header))
-
 
 class InMemoryVcfReader(genomics_reader.GenomicsReader):
   """Class for "reading" Variant protos from an in-memory cache of variants.
@@ -377,7 +366,7 @@ class InMemoryVcfReader(genomics_reader.GenomicsReader):
         or None, indicating that we don't have a header associated with this
         reader.
     """
-    super(InMemoryVcfReader, self).__init__()
+    super().__init__()
     self.variants = list(variants)
     self.header = header
 

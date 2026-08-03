@@ -27,18 +27,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for third_party.nucleus.io.fastq."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
 from third_party.nucleus.io import fastq
 from third_party.nucleus.protos import fastq_pb2
 from third_party.nucleus.testing import test_utils
-
 
 class FastqReaderTests(parameterized.TestCase):
 
@@ -55,7 +49,6 @@ class FastqReaderTests(parameterized.TestCase):
       records = list(reader.iterate())
     self.assertLen(records, 4)
     self.assertEqual([r.id for r in records], expected_ids)
-
 
 class FastqWriterTests(parameterized.TestCase):
   """Tests for FastqWriter."""
@@ -83,7 +76,6 @@ class FastqWriterTests(parameterized.TestCase):
       v2_records = list(reader.iterate())
 
     self.assertEqual(self.records, v2_records)
-
 
 if __name__ == '__main__':
   absltest.main()

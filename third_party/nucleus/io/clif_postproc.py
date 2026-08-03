@@ -27,23 +27,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """CLIF postprocessors."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import abc
 from typing import Any
-
-import six
-
 from third_party.nucleus.protos import bed_pb2
 from third_party.nucleus.protos import bedgraph_pb2
 from third_party.nucleus.protos import fastq_pb2
 from third_party.nucleus.protos import gff_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import variants_pb2
-
 
 def ValueErrorOnFalse(ok, *args):
   """Returns None / arg / (args,...) if ok."""
@@ -56,7 +47,6 @@ def ValueErrorOnFalse(ok, *args):
     return args if len(args) > 1 else args[0]
   return None
 
-
 def ValueErrorOnInaccurate(accuracy: int, alignment: Any):
   """Returns Alignment if accuracy is good (equals 0).
 
@@ -68,10 +58,8 @@ def ValueErrorOnInaccurate(accuracy: int, alignment: Any):
     raise ValueError(f"Alignment is not accurate, returned '{accuracy}.'")
 
 
-class WrappedCppIterable(six.Iterator):
+class WrappedCppIterable(metaclass=abc.ABCMeta):
   """This class gives Python iteration semantics on top of a C++ 'Iterable'."""
-
-  __metaclass__ = abc.ABCMeta
 
   def __init__(self, cc_iterable):
     self._cc_iterable = cc_iterable
@@ -115,14 +103,12 @@ class WrappedBedIterable(WrappedCppIterable):
     not_done = self._cc_iterable.PythonNext(record)
     return record, not_done
 
-
 class WrappedBedGraphIterable(WrappedCppIterable):
 
   def _raw_next(self):
     record = bedgraph_pb2.BedGraphRecord()
     not_done = self._cc_iterable.PythonNext(record)
     return record, not_done
-
 
 class WrappedFastqIterable(WrappedCppIterable):
 
@@ -131,7 +117,6 @@ class WrappedFastqIterable(WrappedCppIterable):
     not_done = self._cc_iterable.PythonNext(record)
     return record, not_done
 
-
 class WrappedGffIterable(WrappedCppIterable):
 
   def _raw_next(self):
@@ -139,13 +124,11 @@ class WrappedGffIterable(WrappedCppIterable):
     not_done = self._cc_iterable.PythonNext(record)
     return record, not_done
 
-
 class WrappedReferenceIterable(WrappedCppIterable):
 
   def _raw_next(self):
     not_done, record = self._cc_iterable.Next()
     return record, not_done
-
 
 class WrappedSamIterable(WrappedCppIterable):
 
@@ -153,7 +136,6 @@ class WrappedSamIterable(WrappedCppIterable):
     record = reads_pb2.Read()
     not_done = self._cc_iterable.PythonNext(record)
     return record, not_done
-
 
 class WrappedVariantIterable(WrappedCppIterable):
 

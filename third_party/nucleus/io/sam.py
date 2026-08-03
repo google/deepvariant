@@ -126,11 +126,6 @@ http://www.htslib.org/doc/samtools.html#REFERENCE_SEQUENCES
 http://www.htslib.org/benchmarks/CRAM.html
 """
 # pylint: enable=line-too-long
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io.python import gbz_reader
@@ -139,7 +134,6 @@ from third_party.nucleus.io.python import sam_writer
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import utils
-
 
 class NativeSamReader(genomics_reader.GenomicsReader):
   """Class for reading from native SAM/BAM/CRAM files.
@@ -256,7 +250,7 @@ class NativeSamReader(genomics_reader.GenomicsReader):
 
       self.header = self._reader.header
 
-    super(NativeSamReader, self).__init__()
+    super().__init__()
 
   def iterate(self):
     """Returns an iterable of Read protos in the file."""
@@ -268,7 +262,6 @@ class NativeSamReader(genomics_reader.GenomicsReader):
 
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._reader.__exit__(exit_type, exit_value, exit_traceback)
-
 
 class SamReader(genomics_reader.DispatchingGenomicsReader):
   """Class for reading Read protos from SAM/BAM/CRAM or TFRecord files."""
@@ -305,7 +298,6 @@ class SamReader(genomics_reader.DispatchingGenomicsReader):
   def _record_proto(self):
     return reads_pb2.Read
 
-
 class NativeSamWriter(genomics_writer.GenomicsWriter):
   """Class for writing to native SAM/BAM/CRAM files.
 
@@ -324,7 +316,7 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
       header: A nucleus.SamHeader proto.  The header is used both for writing
         the header, and to control the sorting applied to the rest of the file.
     """
-    super(NativeSamWriter, self).__init__()
+    super().__init__()
     self._writer = sam_writer.SamWriter.to_file(
         output_path,
         ref_path.encode('utf8') if ref_path is not None else '',
@@ -342,7 +334,6 @@ class NativeSamWriter(genomics_writer.GenomicsWriter):
   def __exit__(self, exit_type, exit_value, exit_traceback):
     self._writer.__exit__(exit_type, exit_value, exit_traceback)
 
-
 class SamWriter(genomics_writer.DispatchingGenomicsWriter):
   """Class for writing Read protos to SAM or TFRecord files."""
 
@@ -350,7 +341,7 @@ class SamWriter(genomics_writer.DispatchingGenomicsWriter):
     return NativeSamWriter(output_path, **kwargs)
 
 
-class InMemorySamReader(object):
+class InMemorySamReader:
   """Python interface class for in-memory SAM/BAM/CRAM reader.
 
   Attributes:

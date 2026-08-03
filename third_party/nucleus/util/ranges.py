@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Utilities for Range overlap detection."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import collections
 import re
 from typing import Dict, Iterable, Optional, Sequence
@@ -39,15 +34,12 @@ from typing import Dict, Iterable, Optional, Sequence
 from absl import logging
 from etils import epath
 import intervaltree
-import six
-
 from third_party.nucleus.io import bed
 from third_party.nucleus.io import gfile
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import range_pb2
 from third_party.nucleus.protos import reference_pb2
 from third_party.nucleus.protos import variants_pb2
-
 
 # Regular expressions for matching literal chr:start-stop strings.
 _REGION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)-([0-9,]+)$')
@@ -62,7 +54,7 @@ _POSITION_LITERAL_REGEXP = re.compile(r'^(\S+):([0-9,]+)$')
 _LOG_EVERY_N_RANGES_IN_RANGESET_INIT = 250000
 
 
-class RangeSet(object):
+class RangeSet:
   """Fast overlap detection of a genomic position against a database of Ranges.
 
   Enables O(log n) computation of whether a point chr:pos falls within one of a
@@ -128,7 +120,7 @@ class RangeSet(object):
         logging.info('Adding interval %s to intervaltree', to_literal(range_))
 
     # Merge overlapping / adjacent intervals in each tree.
-    for tree in six.itervalues(self._by_chr):
+    for tree in self._by_chr.values():
       tree.merge_overlaps(strict=False)
 
   def __iter__(self):
@@ -140,9 +132,7 @@ class RangeSet(object):
       contig.pos_in_fasta integer key for the associated contig. These objects
       are new range protos so can be freely modified.
     """
-    for refname in sorted(
-        six.iterkeys(self._by_chr), key=self._contig_sort_key_fn
-    ):
+    for refname in sorted(self._by_chr.keys(), key=self._contig_sort_key_fn):
       for start, end, _ in sorted(self._by_chr[refname]):
         yield make_range(refname, start, end)
 
@@ -263,7 +253,7 @@ class RangeSet(object):
       intersected_intervals = []
       # pylint: disable=protected-access
       # So we can intersect intervals within each contig separately.
-      for refname, intervals in six.iteritems(intersected._by_chr):
+      for refname, intervals in intersected._by_chr.items():
         # If refname is present in other, intersect those two IntervalTrees
         # directly and add those contigs to our growing list of intersected
         # intervals. If refname isn't present, all of the intervals on refname
@@ -290,7 +280,7 @@ class RangeSet(object):
         RangeSet.
     """
     # pylint: disable=protected-access
-    for chrname, chr_intervals in six.iteritems(other._by_chr):
+    for chrname, chr_intervals in other._by_chr.items():
       # If refname is present in self, difference those two IntervalTrees.
       self_intervals = self._by_chr.get(chrname, None)
       if self_intervals:
@@ -302,7 +292,7 @@ class RangeSet(object):
 
   def __len__(self):
     """Gets the number of ranges used by this RangeSet."""
-    return sum(len(for_chr) for for_chr in six.itervalues(self._by_chr))
+    return sum(len(for_chr) for for_chr in self._by_chr.values())
 
   def __nonzero__(self):
     """Returns True if this RangeSet is not empty."""
@@ -408,7 +398,6 @@ def make_position(chrom, position, reverse_strand=False):
       reference_name=chrom, position=position, reverse_strand=reverse_strand
   )
 
-
 def make_range(chrom, start, end):
   """Returns a nucleus.genomics.v1.Range.
 
@@ -421,7 +410,6 @@ def make_range(chrom, start, end):
     A nucleus.genomics.v1.Range.
   """
   return range_pb2.Range(reference_name=chrom, start=start, end=end)
-
 
 def position_overlaps(chrom, pos, interval):
   """Returns True iff the position chr:pos overlaps the interval.
@@ -438,7 +426,6 @@ def position_overlaps(chrom, pos, interval):
       chrom == interval.reference_name and interval.start <= pos < interval.end
   )
 
-
 def ranges_overlap(i1, i2):
   """Returns True iff ranges i1 and i2 overlap.
 
@@ -454,7 +441,6 @@ def ranges_overlap(i1, i2):
       and i1.end > i2.start
       and i1.start < i2.end
   )
-
 
 def bedpe_parser(filename: str) -> Iterable[range_pb2.Range]:
   """Parses Range objects from a BEDPE-formatted file object.
@@ -478,7 +464,6 @@ def bedpe_parser(filename: str) -> Iterable[range_pb2.Range]:
       if parts[0] == parts[3]:
         # only keep events on the same chromosome
         yield make_range(parts[0], int(parts[1]), int(parts[5]))
-
 
 def bed_parser(filename, intersect_ranges=None, enable_logging=True):
   """Parses Range objects from a BED-formatted file object.
@@ -504,7 +489,6 @@ def bed_parser(filename, intersect_ranges=None, enable_logging=True):
     else:
       for r in fin.iterate():
         yield make_range(r.reference_name, r.start, r.end)
-
 
 def from_regions(regions, contig_map=None):
   """Parses each region of `regions` into a Range proto.
@@ -555,7 +539,6 @@ def from_regions(regions, contig_map=None):
         )
       yield parse_literal(region, contig_map)
 
-
 # Cannot be at the top of the file because these parser functions need to be
 # defined before adding them to the dictionary.
 _REGION_FILE_READERS = {
@@ -563,13 +546,11 @@ _REGION_FILE_READERS = {
     bedpe_parser: frozenset(['.bedpe']),
 }
 
-
 def _get_parser_for_file(filename):
-  for reader, exts in six.iteritems(_REGION_FILE_READERS):
+  for reader, exts in _REGION_FILE_READERS.items():
     if any(filename.lower().endswith(ext) for ext in exts):
       return reader
   return None
-
 
 def to_literal(range_pb):
   """Converts Range protobuf into string literal form.
@@ -590,7 +571,6 @@ def to_literal(range_pb):
   return '{}:{}-{}'.format(
       range_pb.reference_name, range_pb.start + 1, range_pb.end
   )
-
 
 def parse_literal(region_literal, contig_map=None):
   """Parses a Range from a string representation like chr:start-end.
@@ -649,16 +629,13 @@ def parse_literal(region_literal, contig_map=None):
       "inputs that don't have it, or vice-versa.".format(region_literal)
   )
 
-
 def parse_literals(region_literals, contig_map=None):
   """Parses each literal of region_literals in order."""
   return [parse_literal(literal, contig_map) for literal in region_literals]
 
-
 def contigs_n_bases(contigs):
   """Returns the sum of all n_bases of contigs."""
   return sum(c.n_bases for c in contigs)
-
 
 def contigs_dict(
     contigs: Iterable[reference_pb2.ContigInfo],
@@ -672,7 +649,6 @@ def contigs_dict(
     A dictionary mapping contig.name: contig for each contig in contigs.
   """
   return {contig.name: contig for contig in contigs}
-
 
 def sorted_ranges(ranges, contigs=None):
   """Sorts ranges by reference_name, start, and end.
@@ -698,11 +674,9 @@ def sorted_ranges(ranges, contigs=None):
 
   return sorted(ranges, key=to_key)
 
-
 def as_tuple(range_):
   """Returns a Python tuple (reference_name, start, end)."""
   return range_.reference_name, range_.start, range_.end
-
 
 def overlap_len(range1, range2):
   """Computes the number of overlapping bases of range1 and range2.
@@ -718,7 +692,6 @@ def overlap_len(range1, range2):
   if range1.reference_name != range2.reference_name:
     return 0
   return max(0, (min(range1.end, range2.end) - max(range1.start, range2.start)))
-
 
 def find_max_overlapping(query_range, search_ranges):
   """Gets the index of the element in search_ranges with max overlap with query.
@@ -742,7 +715,6 @@ def find_max_overlapping(query_range, search_ranges):
   argmax = max(range(len(search_ranges)), key=lambda i: overlaps[i])
   # We return None if the read doesn't overlap at all.
   return None if overlaps[argmax] == 0 else argmax
-
 
 def expand(region, n_bp, contig_map=None):
   """Expands region by n_bp in both directions.
@@ -777,7 +749,6 @@ def expand(region, n_bp, contig_map=None):
     new_end = min(new_end, contig_map[region.reference_name].n_bases)
   return make_range(region.reference_name, new_start, new_end)
 
-
 def span(regions):
   """Returns a region that spans all of the bases in regions.
 
@@ -805,7 +776,6 @@ def span(regions):
     start = min(r.start for r in regions)
     end = max(r.end for r in regions)
     return make_range(regions[0].reference_name, start, end)
-
 
 def length(region):
   """Returns the length in basepairs of region."""

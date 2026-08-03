@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for VcfWriter CLIF python wrappers."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import copy
 
 from absl.testing import absltest
@@ -54,7 +49,6 @@ _DISCORDANT_SAMPLE_NAMES_ERROR = (
     'to samples declared in VCF header.')
 _UNKNOWN_CONTIG_ERROR = "Record's reference name is not available in VCF header"
 _FILTER_NOT_FOUND_ERROR = 'Filter must be found in header'
-
 
 class WrapVcfWriterTest(parameterized.TestCase):
 
@@ -272,7 +266,6 @@ class WrapVcfWriterTest(parameterized.TestCase):
       with self.writer:
         pass  # We want to raise an error on exit, so nothing to do in context.
 
-
 class WrapVcfWriterRoundTripTests(parameterized.TestCase):
 
   @parameterized.parameters(('test_samples.vcf',), ('test_samples.vcf.gz',),
@@ -303,7 +296,6 @@ class WrapVcfWriterRoundTripTests(parameterized.TestCase):
 
     self.assertEqual(v1_records, v2_records,
                      'Round-tripped variants not as expected')
-
 
 if __name__ == '__main__':
   absltest.main()

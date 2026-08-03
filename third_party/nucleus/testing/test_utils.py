@@ -28,18 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Utilities to help with testing code."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 
 from absl import flags
 from absl.testing import absltest
 from etils import epath
-import six
-
 from third_party.nucleus.protos import position_pb2
 from third_party.nucleus.protos import reads_pb2
 from third_party.nucleus.protos import struct_pb2
@@ -54,7 +47,6 @@ DEFAULT_WORKSPACE = ''
 
 # In the OSS version this becomes 'nucleus/testdata'
 RELATIVE_TESTDATA_PATH = 'third_party/nucleus/testdata'
-
 
 def genomics_testdata(path, datadir=DATADIR):
   """Gets the path to a testdata file in genomics at relative path.
@@ -84,7 +76,6 @@ def genomics_testdata(path, datadir=DATADIR):
     test_srcdir = os.path.join(os.environ['TEST_SRCDIR'], test_workspace)
   return os.path.join(test_srcdir, datadir, path)
 
-
 # TODO: is this necessary?
 def genomics_core_testdata(filename):
   """Gets the path to a testdata named filename in util/testdata.
@@ -99,7 +90,6 @@ def genomics_core_testdata(filename):
     The absolute path to a testdata file.
   """
   return genomics_testdata(os.path.join(RELATIVE_TESTDATA_PATH, filename))
-
 
 def test_tmpfile(name, contents=None):
   """Returns a path to a tempfile named name in the test_tmpdir.
@@ -117,7 +107,6 @@ def test_tmpfile(name, contents=None):
     epath.Path(path).write_text(contents)
   return path
 
-
 def set_list_values(list_value, values):
   """Sets a ListValue to have the values in values."""
 
@@ -126,7 +115,7 @@ def set_list_values(list_value, values):
       return struct_pb2.Value(string_value=value)
     elif isinstance(value, float):
       return struct_pb2.Value(number_value=value)
-    elif isinstance(value, six.integer_types):
+    elif isinstance(value, int):
       return struct_pb2.Value(int_value=value)
     else:
       raise ValueError('Unsupported type ', value)
@@ -134,7 +123,6 @@ def set_list_values(list_value, values):
   del list_value.values[:]
   list_value.values.extend([format_one(value) for value in values])
   # list_value.values.extend(vals)
-
 
 def make_variant(
     chrom='chr1',
@@ -195,7 +183,6 @@ def make_variant(
       is_phased=None if is_phased is None else [is_phased],
       ad=None if ad is None else [ad],
   )
-
 
 def make_variant_multiple_calls(
     chrom='chr1',
@@ -284,7 +271,6 @@ def make_variant_multiple_calls(
 
   return variant
 
-
 def make_read(
     bases,
     start,
@@ -315,9 +301,7 @@ def make_read(
   make_read.counter += 1
   return read
 
-
 make_read.counter = 0
-
 
 def cc_iterable_len(cc_iterable):
   """Count the number of elements in an Iterable object.
@@ -336,11 +320,9 @@ def cc_iterable_len(cc_iterable):
     count += 1
   return count
 
-
 def iterable_len(iterable):
   """Returns the length of a Python iterable, by advancing it."""
   return sum(1 for _ in iterable)
-
 
 # TODO: remove and replace uses when bug is fixed in mock.
 def assert_not_called_workaround(mock):
@@ -378,7 +360,6 @@ def assert_not_called_workaround(mock):
             mock.name, mock.call_count
         )
     )
-
 
 # TODO: remove and replace uses when bug is fixed in mock.
 def assert_called_once_workaround(mock):

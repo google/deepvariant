@@ -28,15 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for genomics_io's plugin system."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 
 from third_party.nucleus.io import sam
-
 
 class PluginAbsenceTest(absltest.TestCase):
   """Test that we get the right error when the plugin cannot load."""
@@ -45,7 +39,6 @@ class PluginAbsenceTest(absltest.TestCase):
     with self.assertRaisesRegex(
         ImportError, 'tfbam_lib module not found, cannot read .tfbam files.'):
       _ = sam.SamReader('mouse@25.tfbam')
-
 
 if __name__ == '__main__':
   absltest.main()

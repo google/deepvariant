@@ -45,11 +45,6 @@ Instead, we directly implement the four commands run by pip install
   * setup.py bdist_wheel -d XXX
   * setup.py clean
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from distutils import dist
 import distutils.command.install as dist_install
 import glob
@@ -60,14 +55,11 @@ import sys
 # Basename of the .egg-info directory.
 _EGG_DIR_BASENAME = 'google_nucleus.egg-info'
 
-
 def _unsafe_filename(filename):
   return any(c in filename for c in ' \t\n\r;&<>*')
 
-
 def touch(fname):
   open(fname, 'w+').close()
-
 
 def find_destination(is_user):
   """Returns the directory we are supposed to install into."""
@@ -77,7 +69,6 @@ def find_destination(is_user):
     return install_cmd.install_usersite
   else:
     return install_cmd.install_platlib
-
 
 def copy_egg_info(dest_dir):
   """Copies the .egg-info directory to the specified location.
@@ -98,7 +89,6 @@ def copy_egg_info(dest_dir):
   print('Copying egg-info from ', egg_src, ' to ', dest_dir)
   shutil.copytree(egg_src, dest_dir)
   return 0
-
 
 def main():
   if len(sys.argv) < 2:
@@ -148,7 +138,6 @@ def main():
 
   print('Unknown command: ', cmd)
   sys.exit(1)
-
 
 if __name__ == '__main__':
   main()

@@ -27,13 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Test that our Nucleus installation does not cause issues with TensorFlow."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
-
 
 class TensorflowIntegrationTest(absltest.TestCase):
   """Checks that Nucleus and TensorFlow interact well together."""
@@ -42,7 +36,6 @@ class TensorflowIntegrationTest(absltest.TestCase):
     """Checks that we can import TensorFlow."""
     # N.B. This test is only invoked when testing the pip package.
     import tensorflow
-
 
 if __name__ == '__main__':
   absltest.main()

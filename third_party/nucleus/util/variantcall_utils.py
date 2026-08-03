@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """VariantCall utilities."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import struct_utils
 from third_party.nucleus.util import vcf_constants
@@ -50,7 +45,6 @@ _AD_HP2 = 'AD_HP2'
 
 # The max number of regions we can expect to be processed by a single shard.
 _MAX_REGIONS_INSIDE_SHARD = 100_000
-
 
 def set_format(variant_call, field_name, value, vcf_object=None):
   """Sets a field of the info map of the `VariantCall` to the given value(s).
@@ -109,7 +103,6 @@ def set_format(variant_call, field_name, value, vcf_object=None):
     set_field_fn = vcf_object.field_access_cache.format_field_set_fn(field_name)
   set_field_fn(variant_call.info, field_name, value)
 
-
 def get_format(variant_call, field_name, vcf_object=None):
   """Returns the value of the `field_name` FORMAT field.
 
@@ -152,7 +145,6 @@ def get_format(variant_call, field_name, vcf_object=None):
     get_field_fn = vcf_object.field_access_cache.format_field_get_fn(field_name)
   return get_field_fn(variant_call.info, field_name)
 
-
 # The following functions are convenience methods for getting/setting some
 # reserved FORMAT fields of a VariantCall as well as some non-reserved FORMAT
 # fields used by DeepVariant. Note that these functions will use the types of
@@ -163,11 +155,9 @@ def set_ad(variant_call, ad):
   """Sets the allele depth of the VariantCall."""
   set_format(variant_call, 'AD', ad)
 
-
 def get_ad(variant_call):
   """Gets the allele depth of the VariantCall."""
   return get_format(variant_call, 'AD')
-
 
 def set_gl(variant_call, gl):
   """Sets the genotype likelihoods of the VariantCall.
@@ -180,7 +170,6 @@ def set_gl(variant_call, gl):
   # VariantCall. Consequently, we just set its value directly here.
   variant_call.genotype_likelihood[:] = gl
 
-
 def get_gl(variant_call):
   """Returns the genotype likelihoods of the VariantCall.
 
@@ -191,7 +180,6 @@ def get_gl(variant_call):
     A list of floats representing the genotype likelihoods of this call.
   """
   return variant_call.genotype_likelihood
-
 
 def set_gt(variant_call, gt):
   """Sets the genotypes of the VariantCall.
@@ -204,7 +192,6 @@ def set_gt(variant_call, gt):
   # VariantCall. Consequently, we just set its value directly here.
   variant_call.genotype[:] = gt
 
-
 def get_gt(variant_call):
   """Returns the genotypes of the VariantCall.
 
@@ -216,21 +203,17 @@ def get_gt(variant_call):
   """
   return variant_call.genotype
 
-
 def set_gq(variant_call, gq):
   """Sets the genotype quality of the VariantCall."""
   set_format(variant_call, 'GQ', gq)
-
 
 def get_gq(variant_call):
   """Gets the genotype quality of the VariantCall."""
   return get_format(variant_call, 'GQ')
 
-
 def set_med_dp(variant_call, med_dp):
   """Sets the 'MED_DP' field of the VariantCall."""
   struct_utils.set_int_field(variant_call.info, 'MED_DP', med_dp)
-
 
 def get_med_dp(variant_call):
   """Gets the 'MED_DP' field of the VariantCall."""
@@ -238,21 +221,17 @@ def get_med_dp(variant_call):
       variant_call.info, 'MED_DP', is_single_field=True
   )
 
-
 def set_min_dp(variant_call, min_dp):
   """Sets the 'MIN_DP' field of the VariantCall."""
   struct_utils.set_int_field(variant_call.info, 'MIN_DP', min_dp)
-
 
 def set_model_id(variant_call, model_id):
   """Sets the 'MID' (Model ID) field of the VariantCall."""
   set_format(variant_call, 'MID', model_id)
 
-
 def get_model_id(variant_call):
   """Gets the 'MID' (Model ID) field of the VariantCall."""
   return get_format(variant_call, 'MID')
-
 
 def get_min_dp(variant_call):
   """Gets the 'MIN_DP' field of the VariantCall."""
@@ -260,18 +239,15 @@ def get_min_dp(variant_call):
       variant_call.info, 'MIN_DP', is_single_field=True
   )
 
-
 def set_bam_fname(variant_call, bam_fname):
   """Sets 'BAM_FNAME' field of the VariantCall."""
   return struct_utils.set_string_field(
       variant_call.info, 'BAM_FNAME', bam_fname
   )
 
-
 def set_ps(variant_call, first_variant_in_phase_set: variants_pb2.Variant):
   """Sets the 'PS' field of the VariantCall."""
   set_format(variant_call, 'PS', first_variant_in_phase_set.start + 1)
-
 
 def get_ad_hp1(variant_call):
   """Gets the 'AD_HP1' field of the VariantCall."""
@@ -279,23 +255,19 @@ def get_ad_hp1(variant_call):
       variant_call.info, 'AD_HP1', is_single_field=False
   )
 
-
 def get_ad_hp2(variant_call):
   """Gets the 'AD_HP2' field of the VariantCall."""
   return struct_utils.get_int_field(
       variant_call.info, 'AD_HP2', is_single_field=False
   )
 
-
 def set_ad_hp1(variant_call, ad_hp1):
   """Sets the 'AD_HP1' field of the VariantCall."""
   struct_utils.set_int_field(variant_call.info, 'AD_HP1', ad_hp1)
 
-
 def set_ad_hp2(variant_call, ad_hp2):
   """Sets the 'AD_HP2' field of the VariantCall."""
   struct_utils.set_int_field(variant_call.info, 'AD_HP2', ad_hp2)
-
 
 def has_genotypes(variant_call):
   """Returns True iff the VariantCall has one or more called genotypes.
@@ -308,7 +280,6 @@ def has_genotypes(variant_call):
   """
   return any(gt >= 0 for gt in variant_call.genotype)
 
-
 def has_full_genotypes(variant_call):
   """Returns True iff the VariantCall has only known genotypes.
 
@@ -319,7 +290,6 @@ def has_full_genotypes(variant_call):
     True if all `genotype` fields are known genotypes.
   """
   return all(gt >= 0 for gt in variant_call.genotype)
-
 
 def ploidy(variant_call):
   """Returns the ploidy of the VariantCall.
@@ -335,7 +305,6 @@ def ploidy(variant_call):
   # a separate padding value of -2**30 - 1 is inserted into the calls.
   return sum(gt >= -1 for gt in variant_call.genotype)
 
-
 def has_variation(variant_call):
   """Returns True if and only if the call has a non-reference genotype.
 
@@ -347,7 +316,6 @@ def has_variation(variant_call):
   """
   return any(gt > 0 for gt in variant_call.genotype)
 
-
 def is_heterozygous(variant_call):
   """Returns True if and only if the call is heterozygous.
 
@@ -358,7 +326,6 @@ def is_heterozygous(variant_call):
     True if and only if the call is heterozygous.
   """
   return len({gt for gt in variant_call.genotype if gt >= 0}) >= 2
-
 
 def get_mt(variant_call):
   """Returns the methylation type (MT) of the VariantCall.
@@ -374,7 +341,6 @@ def get_mt(variant_call):
     return ''
   return variant_call.info['MT'].values[0].string_value
 
-
 def set_mt(variant_call, mt_value):
   """Sets the methylation type (MT) in VariantCall.
 
@@ -383,7 +349,6 @@ def set_mt(variant_call, mt_value):
       mt_value: str. The methylation type (e.g., "0/0", "0/1", "1/1").
   """
   struct_utils.set_string_field(variant_call.info, 'MT', mt_value)
-
 
 def get_mf(variant_call):
   """Returns the methylation depth (MD) of the VariantCall.
@@ -396,7 +361,6 @@ def get_mf(variant_call):
 
   mf_values = variant_call.info['MF'].values
   return [val.number_value for val in mf_values if hasattr(val, 'number_value')]
-
 
 def get_mi(variant_call):
   """Returns the p-value for allele-specific methylation sites (MI).
@@ -412,7 +376,6 @@ def get_mi(variant_call):
 
   return variant_call.info['MI'].values[0].number_value
 
-
 def set_mi(variant_call, mi_value):
   """Sets the p-value for allele-specific methylation sites (MI) in VariantCall.
 
@@ -421,7 +384,6 @@ def set_mi(variant_call, mi_value):
       mi_value: float. The p-value for allele-specific methylation sites.
   """
   struct_utils.set_number_field(variant_call.info, 'MI', mi_value)
-
 
 def get_nad(variant_call):
   """Returns the number of reads supporting each allele in the normal sample.
@@ -438,7 +400,6 @@ def get_nad(variant_call):
       if hasattr(x, 'int_value')
   ]
 
-
 def set_nad(variant_call, ad_n_value):
   """Sets the number of reads supporting each allele in the normal sample.
 
@@ -448,7 +409,6 @@ def set_nad(variant_call, ad_n_value):
         sample.
   """
   struct_utils.set_int_field(variant_call.info, 'NAD', ad_n_value)
-
 
 def get_ndp(variant_call):
   """Returns the total depth observed in the normal sample.
@@ -461,7 +421,6 @@ def get_ndp(variant_call):
 
   return variant_call.info['NDP'].values[0].int_value
 
-
 def set_ndp(variant_call, dp_n_value):
   """Sets the number of reads observed in the normal sample.
 
@@ -470,7 +429,6 @@ def set_ndp(variant_call, dp_n_value):
       dp_n_value: int. The number of reads supporting the reference allele.
   """
   struct_utils.set_int_field(variant_call.info, 'NDP', dp_n_value)
-
 
 def get_naf(variant_call):
   """Returns the number of reads supporting the reference allele.
@@ -483,7 +441,6 @@ def get_naf(variant_call):
 
   return variant_call.info['NAF'].values[0].number_value
 
-
 def set_naf(variant_call, vaf_n_value):
   """Sets the number of reads supporting the reference allele (NAF) in VariantCall.
 
@@ -492,7 +449,6 @@ def set_naf(variant_call, vaf_n_value):
       vaf_n_value: float. The number of reads supporting the reference allele.
   """
   struct_utils.set_number_field(variant_call.info, 'NAF', vaf_n_value)
-
 
 def determine_methylation_type(
     mf_values, low_threshold=0.2, high_threshold=0.8

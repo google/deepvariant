@@ -27,11 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for FastqWriter CLIF python wrappers."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -44,7 +39,6 @@ from third_party.nucleus.testing import test_utils
 
 _DOUBLE_CLOSE_ERROR = 'Cannot close an already closed FastqWriter'
 _WRITE_TO_CLOSED_ERROR = 'Cannot write to closed FASTQ stream'
-
 
 class WrapFastqWriterTest(parameterized.TestCase):
 
@@ -109,7 +103,6 @@ class WrapFastqWriterTest(parameterized.TestCase):
       with self.writer:
         pass  # We want to raise an error on exit, so nothing to do in context.
 
-
 class WrapFastqWriterRoundTripTests(parameterized.TestCase):
 
   @parameterized.parameters('test_reads.fastq', 'test_reads.fastq.gz')
@@ -136,7 +129,6 @@ class WrapFastqWriterRoundTripTests(parameterized.TestCase):
     v2_records = list(v2_reader.iterate())
     self.assertEqual(v1_records, v2_records,
                      'Round-tripped FASTQ files not as expected')
-
 
 if __name__ == '__main__':
   absltest.main()

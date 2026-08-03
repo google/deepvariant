@@ -28,20 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for third_party.nucleus.io.fasta."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from absl.testing import parameterized
-
-import six
 from third_party.nucleus.io import fasta
 from third_party.nucleus.io.python import reference
 from third_party.nucleus.testing import test_utils
 from third_party.nucleus.util import ranges
-
 
 class FastaReaderTests(parameterized.TestCase):
 
@@ -56,7 +48,6 @@ class FastaReaderTests(parameterized.TestCase):
       # query().
       with self.assertRaises(NotImplementedError):
         reader.query(ranges.make_range('chrM', 1, 5))
-
 
 class IndexedFastaReaderTests(parameterized.TestCase):
 
@@ -84,7 +75,6 @@ class IndexedFastaReaderTests(parameterized.TestCase):
       self.assertIsInstance(reader.c_reader,
                             reference.IndexedFastaReader)
 
-
 class UnindexedFastaReaderTests(parameterized.TestCase):
 
   def test_query(self):
@@ -104,7 +94,6 @@ class UnindexedFastaReaderTests(parameterized.TestCase):
     self.assertEqual(
         list(indexed_fasta_reader.iterate()),
         list(unindexed_fasta_reader.iterate()))
-
 
 class InMemoryFastaReaderTests(parameterized.TestCase):
 
@@ -201,8 +190,8 @@ class InMemoryFastaReaderTests(parameterized.TestCase):
       self.assertContigsAreEqual(self.in_mem.contig(contig.name), contig)
 
   def test_str_and_repr(self):
-    self.assertIsInstance(str(self.in_mem), six.string_types)
-    self.assertIsInstance(repr(self.in_mem), six.string_types)
+    self.assertIsInstance(str(self.in_mem), str)
+    self.assertIsInstance(repr(self.in_mem), str)
 
   def test_unknown_contig(self):
     for reader in [self.fasta_reader, self.in_mem]:
@@ -238,7 +227,6 @@ class InMemoryFastaReaderTests(parameterized.TestCase):
   def test_c_reader(self):
     self.assertIsInstance(self.in_mem.c_reader,
                           reference.InMemoryFastaReader)
-
 
 if __name__ == '__main__':
   absltest.main()

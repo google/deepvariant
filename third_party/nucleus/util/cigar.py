@@ -34,13 +34,7 @@ https://samtools.github.io/hts-specs/SAMv1.pdf
 This module provides utility functions for interacting with the parsed
 representations of CIGAR strings.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import re
-import six
 from third_party.nucleus.protos import cigar_pb2
 
 # A frozenset of all CigarUnit.Operation enum values that advance the alignment
@@ -91,7 +85,6 @@ VALID_CIGAR_RE = re.compile(
 CIGAR_STR_SPLITTER_RE = re.compile(
     r'(\d+[' + ''.join(CHAR_TO_CIGAR_OPS.keys()) + '])')
 
-
 def format_cigar_units(cigar_units):
   """Returns the string version of an iterable of CigarUnit protos.
 
@@ -105,7 +98,6 @@ def format_cigar_units(cigar_units):
   return ''.join(
       str(unit.operation_length) + CIGAR_OPS_TO_CHAR[unit.operation]
       for unit in cigar_units)
-
 
 def parse_cigar_string(cigar_str):
   """Parse a cigar string into a list of cigar units.
@@ -133,7 +125,6 @@ def parse_cigar_string(cigar_str):
   parts = CIGAR_STR_SPLITTER_RE.finditer(cigar_str)
   return [to_cigar_unit(part.group(1)) for part in parts]
 
-
 def alignment_length(cigar_units):
   """Computes the span in basepairs of the cigar units.
 
@@ -146,7 +137,6 @@ def alignment_length(cigar_units):
   return sum(unit.operation_length
              for unit in cigar_units
              if unit.operation in REF_ADVANCING_OPS)
-
 
 def to_cigar_unit(source):
   """Creates a cigar_pb2 CigarUnit from source.
@@ -172,14 +162,14 @@ def to_cigar_unit(source):
   try:
     if isinstance(source, cigar_pb2.CigarUnit):
       return source
-    elif isinstance(source, six.string_types):
+    elif isinstance(source, str):
       l, op = source[:-1], source[-1]
     elif isinstance(source, (tuple, list)):
       l, op = source
     else:
       raise ValueError('Unexpected source', source)
 
-    if isinstance(op, six.string_types):
+    if isinstance(op, str):
       op = CHAR_TO_CIGAR_OPS[op]
     l = int(l)
     if l < 1:
@@ -187,7 +177,6 @@ def to_cigar_unit(source):
     return cigar_pb2.CigarUnit(operation=op, operation_length=int(l))
   except (KeyError, IndexError):
     raise ValueError('Failed to convert {} into a CigarUnit'.format(source))
-
 
 def to_cigar_units(source):
   """Converts object to a list of CigarUnit.
@@ -204,7 +193,7 @@ def to_cigar_units(source):
   Returns:
     list[CigarUnit].
   """
-  if isinstance(source, six.string_types):
+  if isinstance(source, str):
     return parse_cigar_string(source)
   else:
     return [to_cigar_unit(singleton) for singleton in source]

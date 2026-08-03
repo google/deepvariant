@@ -27,15 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Tests for Math CLIF python wrappers."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 
 from third_party.nucleus.util.python import math
-
 
 class MathWrapTest(absltest.TestCase):
 
@@ -70,7 +64,6 @@ class MathWrapTest(absltest.TestCase):
   def test_zero_shift_log10_probs(self):
     self.assertSequenceEqual([0, -1, -2],
                              math.zero_shift_log10_probs([-1, -2, -3]))
-
 
 if __name__ == '__main__':
   absltest.main()

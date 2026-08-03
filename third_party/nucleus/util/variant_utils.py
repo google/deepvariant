@@ -27,22 +27,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Variant utilities."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import collections
 import enum
 import itertools
-
-import six
-
 from third_party.nucleus.protos import variants_pb2
 from third_party.nucleus.util import ranges
 from third_party.nucleus.util import variantcall_utils
 from third_party.nucleus.util import vcf_constants
-
 
 def only_call(variant):
   """Ensures the Variant has exactly one VariantCall, and returns it.
@@ -60,7 +51,6 @@ def only_call(variant):
     raise ValueError('Expected exactly one VariantCall in {}'.format(variant))
   return variant.calls[0]
 
-
 def decode_variants(encoded_iter):
   """Yields a genomics.Variant from encoded_iter.
 
@@ -74,7 +64,6 @@ def decode_variants(encoded_iter):
   """
   for encoded in encoded_iter:
     yield variants_pb2.Variant.FromString(encoded)
-
 
 def variant_position(variant):
   """Returns a new Range at the start position of variant.
@@ -90,7 +79,6 @@ def variant_position(variant):
   return ranges.make_range(variant.reference_name, variant.start,
                            variant.start + 1)
 
-
 def variant_range(variant):
   """Returns a new Range covering variant.
 
@@ -101,7 +89,6 @@ def variant_range(variant):
     A new Range with the same reference_name, start, and end as variant.
   """
   return ranges.make_range(variant.reference_name, variant.start, variant.end)
-
 
 def variant_range_tuple(variant):
   """Returns a new tuple of (reference_name, start, end) for the variant.
@@ -117,7 +104,6 @@ def variant_range_tuple(variant):
   """
   return (variant.reference_name, variant.start, variant.end)
 
-
 @enum.unique
 class GenotypeType(enum.Enum):
   """An enumeration of the types of genotypes."""
@@ -132,7 +118,6 @@ class GenotypeType(enum.Enum):
     self.example_gt = example_gt
     self.class_id = class_id
 
-
 @enum.unique
 class VariantType(enum.Enum):
   """An enumeration of the types of variants."""
@@ -144,7 +129,6 @@ class VariantType(enum.Enum):
   # A non-reference variant.proto where at least one of ref or alt alleles are
   # longer than 1 bp.
   indel = 2
-
 
 def format_filters(variant):
   """Returns a human-readable string showing the filters applied to variant.
@@ -163,7 +147,6 @@ def format_filters(variant):
   else:
     return vcf_constants.MISSING_FIELD
 
-
 def format_alleles(variant):
   """Gets a string representation of the variant's alleles.
 
@@ -176,7 +159,6 @@ def format_alleles(variant):
   return '{}/{}'.format(variant.reference_bases, ','.join(
       variant.alternate_bases))
 
-
 def format_position(variant):
   """Gets a string representation of the variant's position.
 
@@ -187,7 +169,6 @@ def format_position(variant):
     A string chr:start + 1 (as start is zero-based).
   """
   return '{}:{}'.format(variant.reference_name, variant.start + 1)
-
 
 def _non_excluded_alts(alts, exclude_alleles=None):
   """Exclude any alts listed, by default: '<*>', '.', and '<NON_REF>'.
@@ -213,7 +194,6 @@ def _non_excluded_alts(alts, exclude_alleles=None):
     ]
   return [a for a in alts if a not in exclude_alleles]
 
-
 def is_snp(variant, exclude_alleles=None):
   """Is variant a SNP?
 
@@ -227,7 +207,6 @@ def is_snp(variant, exclude_alleles=None):
   relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
   return (len(variant.reference_bases) == 1 and len(relevant_alts) >= 1 and
           all(len(x) == 1 for x in relevant_alts))
-
 
 def is_indel(variant, exclude_alleles=None):
   """Is variant an indel?
@@ -249,7 +228,6 @@ def is_indel(variant, exclude_alleles=None):
   return (len(variant.reference_bases) > 1 or
           any(len(alt) > 1 for alt in relevant_alts))
 
-
 def is_biallelic(variant, exclude_alleles=None):
   """Returns True if variant has exactly one alternate allele.
 
@@ -263,7 +241,6 @@ def is_biallelic(variant, exclude_alleles=None):
   relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
   return len(relevant_alts) == 1
 
-
 def is_multiallelic(variant, exclude_alleles=None):
   """Does variant have multiple alt alleles?
 
@@ -276,7 +253,6 @@ def is_multiallelic(variant, exclude_alleles=None):
   """
   relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
   return len(relevant_alts) > 1
-
 
 def variant_is_insertion(variant, exclude_alleles=None):
   """Are all the variant's alt alleles insertions?
@@ -294,7 +270,6 @@ def variant_is_insertion(variant, exclude_alleles=None):
   return all(
       is_insertion(variant.reference_bases, alt) for alt in relevant_alts)
 
-
 def variant_is_deletion(variant, exclude_alleles=None):
   """Are all the variant's alt alleles deletions?
 
@@ -309,7 +284,6 @@ def variant_is_deletion(variant, exclude_alleles=None):
   if not relevant_alts:
     return False
   return all(is_deletion(variant.reference_bases, alt) for alt in relevant_alts)
-
 
 def is_ref(variant, exclude_alleles=None):
   """Returns true if variant is a reference record.
@@ -328,7 +302,6 @@ def is_ref(variant, exclude_alleles=None):
   relevant_alts = _non_excluded_alts(variant.alternate_bases, exclude_alleles)
   return not relevant_alts
 
-
 def variant_type(variant):
   """Gets the VariantType of variant.
 
@@ -344,7 +317,6 @@ def variant_type(variant):
     return VariantType.snp
   else:
     return VariantType.indel
-
 
 def is_transition(allele1, allele2):
   """Is the pair of single bp alleles a transition?
@@ -369,7 +341,6 @@ def is_transition(allele1, allele2):
   alleles_set = {allele1, allele2}
   return any(alleles_set == x for x in [{'A', 'G'}, {'C', 'T'}])
 
-
 def is_insertion(ref, alt):
   """Is alt an insertion w.r.t. ref?
 
@@ -382,7 +353,6 @@ def is_insertion(ref, alt):
   """
   return len(ref) < len(alt)
 
-
 def is_deletion(ref, alt):
   """Is alt a deletion w.r.t. ref?
 
@@ -394,7 +364,6 @@ def is_deletion(ref, alt):
     True if alt is a deletion w.r.t. ref.
   """
   return len(ref) > len(alt)
-
 
 def has_insertion(variant):
   """Does variant have an insertion?
@@ -410,7 +379,6 @@ def has_insertion(variant):
   return (is_indel(variant) and
           any(is_insertion(ref, alt) for alt in variant.alternate_bases))
 
-
 def has_deletion(variant):
   """Does variant have a deletion?
 
@@ -425,7 +393,6 @@ def has_deletion(variant):
   return (is_indel(variant) and
           any(is_deletion(ref, alt) for alt in variant.alternate_bases))
 
-
 @enum.unique
 class AlleleMismatchType(enum.Enum):
   """An enumeration of the types of allele mismatches we detect."""
@@ -436,7 +403,6 @@ class AlleleMismatchType(enum.Enum):
   unmatched_true_alleles = 3
   # Eval has an allele that doesn't match any allele in truth.
   unmatched_eval_alleles = 4
-
 
 def allele_mismatches(evalv, truev):
   """Determines the set of allele mismatch discordances between evalv and truev.
@@ -488,10 +454,9 @@ def allele_mismatches(evalv, truev):
     types.add(AlleleMismatchType.duplicate_true_alleles)
   if unmatched_eval_alleles:
     types.add(AlleleMismatchType.unmatched_eval_alleles)
-  if any(len(match) != 1 for match in six.itervalues(allele_matches)):
+  if any(len(match) != 1 for match in allele_matches.values()):
     types.add(AlleleMismatchType.unmatched_true_alleles)
   return types
-
 
 def simplify_alleles(*alleles):
   """Simplifies alleles by stripping off common postfix bases.
@@ -533,7 +498,6 @@ def simplify_alleles(*alleles):
     # Fast path for the case where there's no shared postfix.
     return alleles
 
-
 def simplify_variant_alleles(variant):
   """Replaces the alleles in variants with their simplified versions.
 
@@ -555,12 +519,10 @@ def simplify_variant_alleles(variant):
   variant.end = variant.start + len(variant.reference_bases)
   return variant
 
-
 def is_filtered(variant):
   """Returns True if variant has a non-PASS filter field, or False otherwise."""
   return bool(variant.filter) and any(
       f not in {'PASS', vcf_constants.MISSING_FIELD} for f in variant.filter)
-
 
 def is_variant_call(variant,
                     require_non_ref_genotype=True,
@@ -619,7 +581,6 @@ def is_variant_call(variant,
           return True
     return False
 
-
 def has_calls(variant):
   """Does variant have any genotype calls?
 
@@ -630,7 +591,6 @@ def has_calls(variant):
     True if variant has one or more VariantCalls.
   """
   return bool(variant.calls)
-
 
 def genotype_type(variant):
   """Gets the GenotypeType for variant.
@@ -662,7 +622,6 @@ def genotype_type(variant):
       return GenotypeType.het
     else:
       return GenotypeType.hom_var
-
 
 def genotype_as_alleles(variant, call_ix=0):
   """Gets genotype of the sample in variant as a list of actual alleles.
@@ -697,7 +656,6 @@ def genotype_as_alleles(variant, call_ix=0):
                list(variant.alternate_bases))
     return [alleles[i + 1] for i in variant.calls[call_ix].genotype]
 
-
 def unphase_all_genotypes(variant):
   """Sorts genotype and removes phasing bit of all calls in variant.
 
@@ -714,7 +672,6 @@ def unphase_all_genotypes(variant):
     c.genotype.sort()
   return variant
 
-
 def is_gvcf(variant):
   """Returns true if variant encodes a standard gVCF reference block.
 
@@ -728,7 +685,6 @@ def is_gvcf(variant):
     Boolean. True if variant is a gVCF record, False otherwise.
   """
   return variant.alternate_bases == [vcf_constants.GVCF_ALT_ALLELE]
-
 
 def _genotype_order_in_likelihoods(num_alts, ploidy=2):
   """Yields tuples of `ploidy` ints for the given number of alt alleles.
@@ -761,7 +717,6 @@ def _genotype_order_in_likelihoods(num_alts, ploidy=2):
   else:
     raise NotImplementedError('Only haploid and diploid supported.')
 
-
 def genotype_ordering_in_likelihoods(variant):
   """Yields (i, j, allele_i, allele_j) for the genotypes ordering in GLs.
 
@@ -788,7 +743,6 @@ def genotype_ordering_in_likelihoods(variant):
       len(variant.alternate_bases), ploidy=2):
     yield i, j, alleles[i], alleles[j]
 
-
 def genotype_likelihood(variant_call, allele_indices):
   """Returns the genotype likelihood for the given allele indices.
 
@@ -803,7 +757,6 @@ def genotype_likelihood(variant_call, allele_indices):
   """
   return variant_call.genotype_likelihood[genotype_likelihood_index(
       allele_indices)]
-
 
 def genotype_likelihood_index(allele_indices):
   """Returns the genotype likelihood index for the given allele indices.
@@ -830,7 +783,6 @@ def genotype_likelihood_index(allele_indices):
     raise NotImplementedError(
         'Genotype likelihood index only supports haploid and diploid: {}'.
         format(allele_indices))
-
 
 def allele_indices_for_genotype_likelihood_index(gl_index, ploidy=2):
   """Returns a tuple of allele_indices corresponding to the given GL index.
@@ -862,7 +814,6 @@ def allele_indices_for_genotype_likelihood_index(gl_index, ploidy=2):
   else:
     raise NotImplementedError(
         'Allele calculations only supported for haploid and diploid.')
-
 
 def allele_indices_with_num_alts(variant, num_alts, ploidy=2):
   """Returns a list of allele indices configurations with `num_alts` alternates.
@@ -901,7 +852,6 @@ def allele_indices_with_num_alts(variant, num_alts, ploidy=2):
             for i in range(1, max_candidate_alt_ix + 1)
             for j in range(i, max_candidate_alt_ix + 1)]
 
-
 def variants_overlap(variant1, variant2):
   """Returns True if the range of variant1 and variant2 overlap.
 
@@ -917,7 +867,6 @@ def variants_overlap(variant1, variant2):
     True if the variants overlap, False otherwise.
   """
   return ranges.ranges_overlap(variant_range(variant1), variant_range(variant2))
-
 
 def variant_key(variant, sort_alleles=True):
   """Gets a human-readable string key that is almost unique for Variant.
@@ -955,11 +904,9 @@ def variant_key(variant, sort_alleles=True):
   return '{}:{}:{}->{}'.format(variant.reference_name, variant.start + 1,
                                variant.reference_bases, '/'.join(alts))
 
-
 def sorted_variants(variants):
   """Returns sorted(variants, key=variant_range_tuple)."""
   return sorted(variants, key=variant_range_tuple)
-
 
 def variants_are_sorted(variants):
   """Returns True if variants are sorted w.r.t. variant_range.
@@ -974,13 +921,12 @@ def variants_are_sorted(variants):
   def _pairwise(iterable):
     a, b = itertools.tee(iterable)
     next(b, None)
-    return six.moves.zip(a, b)
+    return zip(a, b)
 
   for r1, r2 in _pairwise(variant_range_tuple(v) for v in variants):
     if r2 < r1:
       return False
   return True
-
 
 def set_info(variant, field_name, value, vcf_object=None):
   """Sets a field of the info map of the `Variant` to the given value(s).
@@ -1004,7 +950,6 @@ def set_info(variant, field_name, value, vcf_object=None):
     set_field_fn = vcf_object.field_access_cache.info_field_set_fn(field_name)
   set_field_fn(variant.info, field_name, value)
 
-
 def get_info(variant, field_name, vcf_object=None):
   """Returns the value of the `field_name` INFO field.
 
@@ -1026,7 +971,6 @@ def get_info(variant, field_name, vcf_object=None):
     get_field_fn = vcf_object.field_access_cache.info_field_get_fn(field_name)
   return get_field_fn(variant.info, field_name)
 
-
 def calc_ac(variant):
   """Returns a list of alt counts based on variant.calls."""
   counts = [0] * len(variant.alternate_bases)
@@ -1036,12 +980,10 @@ def calc_ac(variant):
         counts[gt - 1] += 1
   return counts
 
-
 def calc_an(variant):
   """Returns the total number of alleles in called genotypes in variant."""
   return sum(
       len([1 for gt in call.genotype if gt > -1]) for call in variant.calls)
-
 
 def is_singleton(variant):
   """Returns True iff the variant has exactly one non-ref VariantCall."""
@@ -1052,7 +994,6 @@ def is_singleton(variant):
       if non_ref_count > 1:
         return False
   return non_ref_count == 1
-
 
 def major_allele_frequency(variant):
   """Returns the frequency of the most common allele in the variant."""
@@ -1066,7 +1007,6 @@ def major_allele_frequency(variant):
     return float(numer) / denom
   else:
     return 0
-
 
 def get_shard_and_region_from_ps_contig(
     variant,

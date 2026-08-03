@@ -35,11 +35,6 @@ serialized TensorFlow Example protocol buffers.
 # Important: Please keep this module free of TensorFlow C++ extensions.
 # This makes it easy to build pure python packages for training that work with
 # CMLE.
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import contextlib
 import heapq
 
@@ -47,7 +42,6 @@ from third_party.nucleus.io import genomics_reader
 from third_party.nucleus.io import genomics_writer
 from third_party.nucleus.io import sharded_file_utils
 from tensorflow.core.example import example_pb2
-
 
 # pylint: disable=invalid-name
 def Reader(path, proto=None, compression_type=None):
@@ -58,14 +52,11 @@ def Reader(path, proto=None, compression_type=None):
   return genomics_reader.TFRecordReader(
       path, proto, compression_type=compression_type)
 
-
 def Writer(path, compression_type=None):
   """A convenience wrapper around genomics_writer.TFRecordWriter."""
   return genomics_writer.TFRecordWriter(path, compression_type=compression_type)
 
-
 # pylint: enable=invalid-name
-
 
 # TODO: Refactor all of the following (internal).
 def read_tfrecords(path, proto=None, max_records=None, compression_type=None):
@@ -101,7 +92,6 @@ def read_tfrecords(path, proto=None, max_records=None, compression_type=None):
           return
         yield record
 
-
 def expanded_paths_if_sharded(path):
   """Returns all file paths for the given (optionally sharded) tfrecord path.
 
@@ -115,7 +105,6 @@ def expanded_paths_if_sharded(path):
   else:
     paths = [path]
   return paths
-
 
 def read_shard_sorted_tfrecords(path,
                                 key,
@@ -155,7 +144,6 @@ def read_shard_sorted_tfrecords(path,
     if max_records is not None and i >= max_records:
       return
     yield value
-
 
 def write_tfrecords(protos, output_path, compression_type=None):
   """Writes protos to output_path.

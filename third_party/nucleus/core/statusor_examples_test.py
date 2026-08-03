@@ -26,14 +26,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from absl.testing import absltest
 from third_party.nucleus.core.python import statusor_examples
-
 
 class StatusorClifWrapTest(absltest.TestCase):
 
@@ -80,7 +74,6 @@ class StatusorClifWrapTest(absltest.TestCase):
     # TODO: OpError exception not propagated.
     with self.assertRaisesRegexp(ValueError, 'FuncReturningStatusFail'):
       statusor_examples.FuncReturningStatusFail()
-
 
 if __name__ == '__main__':
   absltest.main()

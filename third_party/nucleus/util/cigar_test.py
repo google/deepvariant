@@ -28,11 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """Tests for cigar."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import itertools
 
 from absl.testing import absltest
@@ -71,7 +66,6 @@ _CIGAR_TUPLES_AND_CIGAR_UNITS = [
          operation=cigar_pb2.CigarUnit.SEQUENCE_MISMATCH, operation_length=9)),
 ]
 
-
 def _example_cigar_string_and_units(repeat=3):
   examples = {}
   for x in itertools.product(_CIGAR_TUPLES_AND_CIGAR_UNITS, repeat=repeat):
@@ -79,7 +73,6 @@ def _example_cigar_string_and_units(repeat=3):
     cigar_str = ''.join(str(l) + opstr for l, opstr in lengths_and_opstrs)
     examples[cigar_str] = list(cigar_units)
   return examples
-
 
 class CigarTests(parameterized.TestCase):
 
@@ -186,7 +179,6 @@ class CigarTests(parameterized.TestCase):
   def test_parse_cigar_string_detects_bad_inputs(self, bad_cigar_str):
     with self.assertRaises(ValueError):
       cigar.parse_cigar_string(bad_cigar_str)
-
 
 if __name__ == '__main__':
   absltest.main()

@@ -27,25 +27,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """A Python interface for files."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import six
-
 from third_party.nucleus.io.python import gfile
-
 
 def Exists(filename):
   return gfile.Exists(filename)
-
 
 def Glob(pattern):
   return gfile.Glob(pattern)
 
 
-class ReadableFile(six.Iterator):
+class ReadableFile:
   """Wraps gfile.ReadableFile to add iteration, enter/exit and readlines."""
 
   def __init__(self, filename):

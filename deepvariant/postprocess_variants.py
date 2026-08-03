@@ -1826,7 +1826,8 @@ def run_postprocess_variants_on_region(
     pon_reader = (
         vcf.VcfReader(_PON_FILTERING.value) if _PON_FILTERING.value else None
     )
-    variant_generator = add_pon_filter(variant_generator, pon_reader)
+    if pon_reader is not None:
+      variant_generator = add_pon_filter(variant_generator, pon_reader)
   else:
     logging.info('call_variants_output is empty. Writing out empty VCF.')
     variant_generator = iter([])
