@@ -1441,8 +1441,33 @@ class PostprocessVariantsTest(parameterized.TestCase):
       ),
   )
   def test_uncall_gt_if_no_ad(self, variant, expected_gt):
+    original_variant = copy.deepcopy(variant)
     postprocess_variants.uncall_gt_if_no_ad(variant)
     self.assertEqual(variant.calls[0].genotype, expected_gt)
+    if sum(variantcall_utils.get_ad(original_variant.calls[0])):
+      self.assertEqual(variant, original_variant)
+
+  @parameterized.parameters((['C'], 3), (['C', 'G'], 6))
+  def test_uncall_gt_if_no_ad_retains_diploid_likelihood_count(
+      self, alternate_bases, expected_count
+  ):
+    variant = _create_variant(
+        '1',
+        1,
+        'A',
+        alternate_bases,
+        0.0,
+        dv_vcf_constants.DEEP_VARIANT_NO_CALL,
+        [0, 0],
+        25,
+        [-1.0] * expected_count,
+        [0] * (len(alternate_bases) + 1),
+    )
+    postprocess_variants.uncall_gt_if_no_ad(variant)
+    call = variant.calls[0]
+    self.assertEqual(list(call.genotype), [-1, -1])
+    self.assertEqual(list(call.genotype_likelihood), [0.0] * expected_count)
+    self.assertEqual(variantcall_utils.get_gq(call), 0)
 
   @parameterized.parameters(
       (
