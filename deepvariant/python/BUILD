@@ -215,6 +215,17 @@ pybind_library(
     ],
 )
 
+py_test(
+    name = "methylation_aware_phasing_wrap_test",
+    srcs = ["methylation_aware_phasing_wrap_test.py"],
+    deps = [
+        ":methylation_aware_phasing",
+        "//deepvariant/protos:deepvariant_py_pb2",
+        "//third_party/nucleus/protos:reads_py_pb2",
+        "@absl_py//absl/testing:absltest",
+    ],
+)
+
 pybind_extension(
     name = "pileup_image_native",
     srcs = ["pileup_image_native_pybind.cc"],
