@@ -36,6 +36,8 @@
 
 #include <pybind11/stl.h>
 
+#include <vector>
+
 #include "deepvariant/methylation_aware_phasing.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_status.h"
 #include "third_party/nucleus/core/python/type_caster_nucleus_statusor.h"
@@ -49,7 +51,13 @@ PYBIND11_MODULE(methylation_aware_phasing, m) {
   using namespace ::learning::genomics::deepvariant;  // NOLINT
 
   m.def("phase",
-        &PerformMethylationAwarePhasing,
+        [](const std::vector<nucleus::genomics::v1::Read>& reads_to_phase,
+           const std::vector<int>& initial_read_phases,
+           std::vector<DeepVariantCall>& methylated_ref_sites, int max_iter) {
+          return PerformMethylationAwarePhasing(
+              reads_to_phase, initial_read_phases, methylated_ref_sites,
+              max_iter);
+        },
         py::arg("reads_to_phase"),
         py::arg("initial_read_phases"),
         py::arg("methylated_ref_sites"),
