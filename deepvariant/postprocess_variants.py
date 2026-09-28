@@ -467,7 +467,8 @@ def uncall_gt_if_no_ad(variant: variants_pb2.Variant) -> None:
   if sum(variantcall_utils.get_ad(vcall)) == 0:
     # Set GT to ./.; GLs set to 0; GQ=0
     vcall.genotype[:] = [-1, -1]
-    vcall.genotype_likelihood[:] = [0, 0]
+    n_alleles = 1 + len(variant.alternate_bases)
+    vcall.genotype_likelihood[:] = [0.0] * (n_alleles * (n_alleles + 1) // 2)
     variantcall_utils.set_gq(vcall, 0)
 
 
