@@ -16,3 +16,8 @@ _site
 .sass-cache
 .jekyll-metadata
 .DS_Store
+
+# Bundler local artifacts
+.bundle/
+vendor/
+*.html

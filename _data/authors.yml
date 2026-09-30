@@ -1,6 +1,6 @@
 pichuan:
         name: Pi-Chuan Chang
-        link: https://ai.google/research/people/author39216
+        link: https://research.google/people/author39216/
         img: /deepvariant/assets/images/authors/pichuan.jpg
 
 awcarroll:
@@ -39,7 +39,7 @@ tedyun:
 
 cym:
         name: Cory McLean
-        link: https://ai.google/research/people/CoryMcLean
+        link: https://research.google/people/CoryMcLean/
         img: /deepvariant/assets/images/authors/cym.png
 
 marianattestad:
@@ -84,3 +84,19 @@ yuchenzz:
 akiraly:
         name: Atilla Kiraly
         img: /deepvariant/assets/images/authors/akiraly.jpg
+
+satwood:
+        name: Sarah Atwood
+
+spaulraj:
+        name: Sushmitha Paulraj
+
+jcao:
+        name: Jun Cao
+
+srennybyfield:
+        name: Simon Renny-Byfield
+
+ssriram:
+        name: Shreedharan Sriram
+
