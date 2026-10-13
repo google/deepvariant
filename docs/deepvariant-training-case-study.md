@@ -361,6 +361,11 @@ We can shuffle the validation set locally using
 `--direct_num_workers=0` sets the number of threads/subprocess to the number of
 cores of the machine where the pipeline is running.
 
+FACT CHECK: With apache_beam 2.71.0, DirectRunner runs this pipeline on the
+Prism runner, which ignores `--direct_num_workers`. On a 64-core machine,
+`--direct_num_workers=0` and `--direct_num_workers=1` both took 2:26 for the
+validation set and used about 2-3 cores.
+
 ```bash
 time python3 ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py \
   --project="${YOUR_PROJECT}" \
