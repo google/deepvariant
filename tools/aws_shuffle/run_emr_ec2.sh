@@ -7,8 +7,9 @@
 #    created with emr_bootstrap.sh as a bootstrap action).
 #
 # Disk, not RAM, is what a large shuffle needs: Spark spills the shuffle to the
-# EBS volumes of core/task nodes. Give the cluster in total roughly 3x the
-# compressed size of your input examples.
+# EBS volumes of core/task nodes. Give the cluster in total at least 1.5x the
+# gzipped size of your input examples (WORKER_COUNT x WORKER_EBS_GB). Output
+# goes to S3, so it needs no extra local disk.
 set -euo pipefail
 
 BUCKET="${BUCKET:?set BUCKET, e.g. s3://my-bucket}"
