@@ -258,6 +258,11 @@ and also [DirectRunner](https://beam.apache.org/documentation/runners/direct/).
 Beam can also use other runners, such as
 [Spark Runner](https://beam.apache.org/documentation/runners/spark/).
 
+NOTE: DirectRunner holds the whole shuffle in memory, so it needs a lot of RAM
+for large datasets. If you don't use Google Cloud, see
+[tools/aws_shuffle](../tools/aws_shuffle/README.md) for a PySpark alternative
+that spills to disk and runs on AWS EMR or a single machine.
+
 First, create a virtual environment to install beam on your machine.
 
 ```bash
