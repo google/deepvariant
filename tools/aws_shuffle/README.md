@@ -84,6 +84,8 @@ the same records in the same order:
   order in every shard.
 - Training runs on 4 cores (`local[4]`) and 64 cores (`local[*]`) gave
   identical output in all 8 shards. The core count does not change the result.
+- The same shuffle on AWS EMR (2 nodes) and on the local server (64 cores) gave
+  identical output.
 - The `.gz` files themselves differ by checksum between runs, because gzip
   stores a timestamp in each file header. Compare decompressed records instead.
 
@@ -91,11 +93,13 @@ Beam's output order changes on every run, even with identical settings.
 
 ### AWS EMR test
 
-The same script shuffled the validation set from S3 on a temporary EMR
+`run_emr_ec2.sh` shuffled the validation set from S3 on a temporary EMR
 cluster: emr-7.5.0, 1 m5.xlarge primary node and 2 m5.2xlarge core nodes with
-100 GB gp3 each. Provisioning and bootstrap took about 4 minutes and the
-shuffle step 5.5 minutes, for roughly $0.25. The output had the same 59,401
-records and label counts as the input.
+100 GB gp3 each, using the account's existing EMR roles through
+`SERVICE_ROLE` and `INSTANCE_PROFILE`. Provisioning and bootstrap took about
+3.5 minutes and the shuffle step about 5.7 minutes, for roughly $0.25. The
+output passed the same checks as above, and was identical, record for record
+and in the same order, to the output of the same shuffle on the local server.
 
 ## Option 1: one machine
 
@@ -134,11 +138,14 @@ SUBNET_ID=subnet-xxxxxxxx WORKER_COUNT=4 WORKER_EBS_GB=500 \
 ```
 
 The cluster installs the dependencies (`google-crc32c psutil boto3`) through
-`emr_bootstrap.sh`. It uses the standard EMR roles (create them once with
-`aws emr create-default-roles`). To use an existing cluster that was created
-with that bootstrap action, set `CLUSTER_ID=j-...`. On EMR, Spark already
-spills to the EBS volumes under `/mnt`, so `WORKER_COUNT x WORKER_EBS_GB` is
-the total spill space.
+`emr_bootstrap.sh`. By default it uses the standard EMR roles,
+`EMR_DefaultRole` and `EMR_EC2_DefaultRole`, which
+`aws emr create-default-roles` creates. Creating them needs IAM permissions,
+so ask your AWS admin if you don't have them. If your account uses other EMR
+roles, set `SERVICE_ROLE` and `INSTANCE_PROFILE`. To use an existing cluster
+that was created with that bootstrap action, set `CLUSTER_ID=j-...`. On EMR,
+Spark already spills to the EBS volumes under `/mnt`, so
+`WORKER_COUNT x WORKER_EBS_GB` is the total spill space.
 
 ## Resource needs
 
