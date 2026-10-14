@@ -258,6 +258,11 @@ and also [DirectRunner](https://beam.apache.org/documentation/runners/direct/).
 Beam can also use other runners, such as
 [Spark Runner](https://beam.apache.org/documentation/runners/spark/).
 
+NOTE: DirectRunner holds the whole shuffle in memory, so it needs a lot of RAM
+for large datasets. If you don't use Google Cloud, see
+[tools/aws_shuffle](../tools/aws_shuffle/README.md) for a PySpark alternative
+that spills to disk and runs on AWS EMR or a single machine.
+
 First, create a virtual environment to install beam on your machine.
 
 ```bash
@@ -356,6 +361,11 @@ We can shuffle the validation set locally using
 `--direct_num_workers=0` sets the number of threads/subprocess to the number of
 cores of the machine where the pipeline is running.
 
+FACT CHECK: With apache_beam 2.71.0, DirectRunner runs this pipeline on the
+Prism runner, which ignores `--direct_num_workers`. On a 64-core machine,
+`--direct_num_workers=0` and `--direct_num_workers=1` both took 2:26 for the
+validation set and used about 2-3 cores.
+
 ```bash
 time python3 ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py \
   --project="${YOUR_PROJECT}" \
@@ -365,8 +375,21 @@ time python3 ${SHUFFLE_SCRIPT_DIR}/shuffle_tfrecords_beam.py \
   --output_dataset_config_pbtxt="${OUTPUT_DIR}/validation_set.dataset_config.pbtxt" \
   --job_name=shuffle-tfrecords \
   --runner=DirectRunner \
-  --direct_num_workers=0
+  --direct_num_workers=0 \
+  --job_server_timeout=86400
 ```
+
+NOTE: Set `--job_server_timeout` to a large number (in seconds) whenever you
+use DirectRunner. In recent Beam versions (2.61 and later), DirectRunner runs
+the pipeline on Beam's Prism runner, and the Python client gives up on the
+job's status stream after `--job_server_timeout` seconds (default 300, raised
+from 60 in [apache/beam#36517](https://github.com/apache/beam/pull/36517)). Any
+local shuffle that takes longer than 5 minutes then fails with
+`StatusCode.DEADLINE_EXCEEDED`, even though the job itself was still running.
+The validation set above finishes in about 2.5 minutes, so it never hits the
+limit. A local shuffle of the training set takes about 10 minutes and fails at
+the 5-minute mark without this flag. Tested with apache_beam 2.71.0, the
+version pinned above.
 
 Here is the validation_set:
 
